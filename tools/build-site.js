@@ -238,7 +238,8 @@ function build(options) {
             .replace(/(src=["']print-export\.js)(?:\?[^"']*)?(["'])/g, '$1?v=20261113-5$2')
             .replace(/(src=["']note-runtime\.js)(?:\?[^"']*)?(["'])/g, '$1?v=20261114-2$2')
             .replace(/(src=["']account\.js)(?:\?[^"']*)?(["'])/g, '$1?v=20261117-contests$2')
-            .replace(/(src=["'](?:script|experimental-reader|home-motion|note-runtime|print-export)\.js)(?:\?[^"']*)?(["'])/g, '$1?v=20261121-1$2');
+            .replace(/(src=["']home-motion\.js)(?:\?[^"']*)?(["'])/g, '$1?v=20261121-1$2')
+            .replace(/(src=["'](?:script|experimental-reader|note-runtime|print-export|russian-ege|duty\/view)\.js)(?:\?[^"']*)?(["'])/g, '$1?v=20261121-2$2');
         let published = updated;
         // The browser decides whether to take a navigation snapshot before
         // deferred scripts run. Make the opt-in available with the first bytes of HTML.

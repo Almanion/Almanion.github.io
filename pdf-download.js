@@ -350,7 +350,7 @@
         const output = [], inline = [];
         const flush = async () => { if (inline.length) output.push(...await paragraph(inline.splice(0), width, measure)); };
         for (const node of parent.childNodes) {
-            if (node.nodeType === 1 && node.matches('button,script,style,summary,[hidden],.note-filter-hidden,.note-filter-empty,.inline-edit-btn,.note-edit-btn,.copy-block-btn,.bookmark-btn')) continue;
+            if (node.nodeType === 1 && node.matches('button,script,style,summary,[hidden],[data-print-exclude],.note-filter-hidden,.note-filter-empty,.inline-edit-btn,.note-edit-btn,.copy-block-btn,.bookmark-btn')) continue;
             if (node.nodeType === 3 || (node.nodeType === 1 && /^(STRONG|B|EM|I|SPAN|A|SUB|SUP|BR)$/.test(node.tagName) && !node.matches(BLOCKS) && !node.querySelector(BLOCKS + ',svg,img,table,figure,p,ul,ol,details'))) { inline.push(node); continue; }
             if (node.nodeType !== 1) continue;
             await flush();
@@ -451,7 +451,7 @@
                     node.removeAttribute('aria-hidden');
                 });
                 clone.querySelectorAll('details').forEach(node => { node.open = true; });
-                clone.querySelectorAll('[hidden],[data-note-filter-hidden],.note-filter-empty,button,script,.inline-edit-btn,.note-edit-btn').forEach(node => node.remove());
+                clone.querySelectorAll('[hidden],[data-print-exclude],[data-note-filter-hidden],.note-filter-empty,button,script,.inline-edit-btn,.note-edit-btn').forEach(node => node.remove());
                 // A diagram's own stylesheet is part of its drawing, not UI.
                 clone.querySelectorAll('style').forEach(node => { if (!node.closest('svg')) node.remove(); });
                 clone.querySelectorAll('[data-note-filter-shell]').forEach(node => node.replaceWith(...node.childNodes));

@@ -18,10 +18,10 @@
         filterStyles: 'styles/note-filter.css?v=20261113-5',
         filter: 'note-filter.js?v=20261121-1',
         settings: 'settings.js?v=20261002-1',
-        searchText: 'search-text.js?v=1',
-        search: 'search.js?v=20261114-2',
-        print: 'print-export.js?v=20261121-1',
-        knowledge: 'knowledge-check.js?v=20261016-1',
+        searchText: 'search-text.js?v=20261121-2',
+        search: 'search.js?v=20261121-2',
+        print: 'print-export.js?v=20261121-2',
+        knowledge: 'knowledge-check.js?v=20261121-2',
         newyear: 'newyear.js?v=20261002-1',
         firebaseApp: 'https://www.gstatic.com/firebasejs/12.18.0/firebase-app-compat.js',
         firebaseDatabase: 'https://www.gstatic.com/firebasejs/12.18.0/firebase-database-compat.js',
@@ -212,6 +212,24 @@
             ? function (callback, timeout) { requestIdleCallback(callback, { timeout: timeout }); }
             : function (callback, timeout) { setTimeout(callback, Math.min(timeout, 400)); };
         if (document.body.classList.contains('home-page')) {
+            const dialog = document.getElementById('homeSearchDialog');
+            const input = dialog?.querySelector('#searchInput');
+            if (input) {
+                const load = () => ensure('search').catch(() => { input.placeholder = 'Поиск не загрузился. Повторите ввод'; });
+                document.getElementById('homeSearchOpen').addEventListener('click', () => {
+                    if (!dialog.open) dialog.showModal();
+                    input.focus();
+                    input.select();
+                    load();
+                });
+                input.addEventListener('input', () => { if (!window.AlmanionSearch) load(); });
+                document.getElementById('homeSearchClose').addEventListener('click', () => dialog.close());
+                dialog.addEventListener('close', () => document.getElementById('homeSearchOpen').focus({ preventScroll: true }));
+                dialog.addEventListener('click', event => {
+                    const rect = dialog.getBoundingClientRect();
+                    if (event.target === dialog && (event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom)) dialog.close();
+                });
+            }
             schedule(function () {
                 ensure('account').then(function () { return loadScript('analytics'); }).catch(function () {});
             }, 800);

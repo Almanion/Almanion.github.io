@@ -23,6 +23,53 @@
         return topic;
     }
 
+    function addAlphabet(grid) {
+        const initials = new Map();
+        for (const card of grid.children) {
+            const letter = card.dataset.searchWord?.charAt(0).toLocaleUpperCase('ru');
+            if (letter && !initials.has(letter)) initials.set(letter, card);
+        }
+        if (!initials.size) return;
+        const label = document.createElement('label');
+        label.className = 'stress-alphabet';
+        label.dataset.printExclude = 'true';
+        label.append('А–Я');
+        const list = document.createElement('select');
+        list.setAttribute('aria-label', 'Перейти к словам на букву');
+        list.add(new Option('Выбрать букву', ''));
+        for (const letter of [...initials.keys()].sort((a, b) => a.localeCompare(b, 'ru'))) {
+            initials.get(letter).querySelector('.accent-word').id = 'stress-all-letter-' + letter.toLocaleLowerCase('ru');
+            list.add(new Option(letter, letter));
+        }
+        list.addEventListener('change', () => {
+            const target = initials.get(list.value);
+            if (!target) return;
+            const anchor = target.querySelector('.accent-word');
+            const url = new URL(location.href);
+            url.hash = anchor.id;
+            history.replaceState(history.state, '', url);
+            target.tabIndex = -1;
+            target.focus({ preventScroll: true });
+            const inset = (parseFloat(getComputedStyle(label).top) || 0) + label.getBoundingClientRect().height + 8;
+            window.scrollBy({ top: target.getBoundingClientRect().top - inset, behavior: 'instant' });
+            list.selectedIndex = 0;
+        });
+        label.append(list);
+        grid.before(label);
+        requestAnimationFrame(() => {
+            const controls = document.querySelector('.note-reader-controls');
+            if (!controls) return;
+            const place = () => {
+                const css = getComputedStyle(controls);
+                const top = css.position === 'sticky' ? controls.getBoundingClientRect().height + (parseFloat(css.top) || 0) : 0;
+                label.style.setProperty('--alphabet-top', top + 'px');
+            };
+            place();
+            if ('ResizeObserver' in window) new ResizeObserver(place).observe(controls);
+            window.addEventListener('experimental-mode-changed', place);
+        });
+    }
+
     function buildAllStressWords() {
         const section = document.querySelector('.russian-stress-section');
         if (!section) return;
@@ -44,6 +91,7 @@
         });
 
         grid.replaceChildren(fragment);
+        addAlphabet(grid);
         grid.dataset.ready = 'true';
     }
 

@@ -118,8 +118,13 @@
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#academic-site"/></svg>
                 <span>Almanion</span>
             </h1>
+            <button type="button" class="home-search-open" id="homeSearchOpen" aria-label="Поиск по конспектам" aria-haspopup="dialog" aria-controls="homeSearchDialog"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/></svg><span>Поиск</span></button>
             <div class="home-controls" id="homeControls" role="group" aria-label="Аккаунт и настройки"></div>
         </header>
+        <dialog class="home-search-dialog" id="homeSearchDialog" aria-labelledby="homeSearchTitle">
+            <header><h2 id="homeSearchTitle">Поиск по конспектам</h2><button type="button" id="homeSearchClose" aria-label="Закрыть поиск">×</button></header>
+            <div class="search-box"><input id="searchInput" type="search" placeholder="Тема, термин или формула" aria-label="Поиск по всем конспектам" autocomplete="off" autofocus></div>
+        </dialog>
         <nav class="home-privileged-actions" id="homePrivilegedActions" aria-label="Рабочие инструменты" hidden></nav>
 
         <section class="extra-section home-quick-section" aria-labelledby="homeQuickTitle">
@@ -231,6 +236,10 @@
                     <div class="card-header"><div class="subject-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#academic-geography"/></svg></div></div>
                     <div class="card-body"><div class="home-quick-copy"><h2>География</h2><span class="home-quick-context">Страны и столицы</span></div></div>
                 </a>
+                <a href="games/" class="subject-card home-quick-card home-game-link" data-subject="games" aria-label="Открыть каталог игр">
+                    <div class="card-header"><div class="subject-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 8.5h8a4.5 4.5 0 0 1 4.35 3.35l1.05 4a2.35 2.35 0 0 1-4.03 2.17l-1.55-1.77H8.18l-1.55 1.77a2.35 2.35 0 0 1-4.03-2.17l1.05-4A4.5 4.5 0 0 1 8 8.5Z"/><path d="M8 11.5v4M6 13.5h4M15.7 12.25h.01M18 14.55h.01"/></svg></div></div>
+                    <div class="card-body"><h2>Игры</h2></div>
+                </a>
             </div>
         </section>
             <section class="class-section" aria-labelledby="homeClassTitle">
@@ -248,11 +257,6 @@
 
                     </div>
                 </section>
-            <a href="games/" class="home-editor-link home-game-link" aria-label="Открыть каталог игр">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 8.5h8a4.5 4.5 0 0 1 4.35 3.35l1.05 4a2.35 2.35 0 0 1-4.03 2.17l-1.55-1.77H8.18l-1.55 1.77a2.35 2.35 0 0 1-4.03-2.17l1.05-4A4.5 4.5 0 0 1 8 8.5Z"/><path d="M8 11.5v4M6 13.5h4M15.7 12.25h.01M18 14.55h.01"/></svg>
-                <span>Игры</span>
-                <span class="home-game-name">Каталог</span>
-            </a>
         </aside>
 
         <!-- Предметы по классам -->

@@ -10,8 +10,9 @@ for (const [formula, expected] of [
     ['', ''],
     ['  Объём   сосуда  ', 'Объём сосуда'],
     ['$\\frac{240}{12}$, \\sqrt{121}', '240/12, √(121)'],
-    ['\\begin{aligned}\\left(\\mathrm{Fe}_2\\right)^3\\end{aligned}', '(Fe2)3'],
-    ['\\alpha + \\Gamma = \\operatorname{const}', '+ = const']
+    ['\\begin{aligned}\\left(\\mathrm{Fe}_2\\right)^3\\end{aligned}', '(Fe₂)³'],
+    ['\\alpha + \\Gamma = \\operatorname{const}', 'α + Γ = const'],
+    ['Давление \\(p_0\\), температура \\[T_{12}\\]', 'Давление p₀, температура T₁₂']
 ]) {
     assert.equal(plainText(formula), expected);
     assert.equal(cleanText(formula), expected);

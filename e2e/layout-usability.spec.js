@@ -38,7 +38,8 @@ for (const width of [320, 390, 430, 768, 1024, 1440]) {
             expect(settingsBounds.y).toBeGreaterThanOrEqual(headerBounds.y);
             expect(settingsBounds.y + settingsBounds.height).toBeLessThanOrEqual(headerBounds.y + headerBounds.height);
             expect(Math.abs(layout.cardY[0] - layout.cardY[1])).toBeLessThan(2);
-            expect(Math.abs(layout.cardY[2] - layout.cardY[3])).toBeLessThan(2);
+            expect(layout.cardY[3]).toBeGreaterThan(layout.cardY[2]);
+            await expect(page.locator('.home-additional-grid .home-game-link')).toBeVisible();
             expect(layout.dutyBottom).toBeLessThan(900);
             const duty = page.locator('#homeDutyCard');
             const bounds = await duty.boundingBox();
@@ -66,6 +67,7 @@ for (const width of [320, 390, 430, 768, 1024, 1440]) {
         await page.goto('/physics-10.html');
         await page.locator('#knowledgeCheckBtn').evaluate(el => el.click());
         await expect(page.locator('#kcSelectOverlay')).toBeVisible();
+        await page.getByRole('button', { name: 'Настроить', exact: true }).click();
         await page.waitForTimeout(350);
         const layout = await page.locator('#kcSelectModal').evaluate(modal => {
             const body = modal.querySelector('.kc-select-scroll');
@@ -153,6 +155,7 @@ test('stress dictionary ignores obsolete generic block filters and retains searc
     await page.locator('#searchInput').fill('вероисповедание');
     await expect(page.locator('#searchResultsPanel')).toContainText('вероисповЕдание');
     await page.locator('#knowledgeCheckBtn').click();
+    await page.getByRole('button', { name: 'Настроить', exact: true }).click();
     await expect(page.locator('#kcTypeList [data-kind="stress"]')).toBeEnabled();
 });
 
@@ -174,6 +177,12 @@ test('duty months have visible navigation and selection preserves strip position
     await page.setViewportSize({ width: 320, height: 740 });
     await page.goto('/duty-10-1.html');
     await expect(page.locator('#dutyMonthsNext')).toBeVisible();
+    const active = page.locator('#dutyMonthFilters [aria-pressed="true"]');
+    await expect.poll(() => active.evaluate(button => {
+        const item = button.getBoundingClientRect(), strip = button.parentElement.getBoundingClientRect();
+        return item.left >= strip.left - 1 && item.right <= strip.right + 1;
+    })).toBe(true);
+    await page.locator('#dutyMonthFilters').evaluate(el => el.scrollLeft = 0);
     await expect(page.locator('#dutyMonthsPrev')).toBeDisabled();
     await page.locator('#dutyMonthsNext').click();
     await expect.poll(() => page.locator('#dutyMonthFilters').evaluate(el => el.scrollLeft)).toBeGreaterThan(50);

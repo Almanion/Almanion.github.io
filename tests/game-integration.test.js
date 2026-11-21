@@ -12,8 +12,8 @@ const game = fs.readFileSync(gamePath);
 const GameBuild = require('../tools/build-game.js');
 const portable = fs.readFileSync(path.join(root, 'games', 'orbital-courier', 'offline.html'), 'utf8');
 
-assert.match(home, /href="games\/"[^>]*class="home-editor-link home-game-link"/,
-    'the home page must expose the game button');
+assert.match(home.match(/<section class="home-additional-section"[\s\S]*?<\/section>/)[0], /href="games\/"[^>]*home-game-link/,
+    'the additional services must include the game catalogue');
 assert.strictEqual(portable, GameBuild.bundle(),
     'the downloadable standalone game must match its canonical sources exactly');
 const releaseVersion = require('../game-source/orbital-courier/package.json').version.split('.').slice(0, 2).join('.');

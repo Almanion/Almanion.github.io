@@ -9,6 +9,7 @@ async function open(page){
     // Use the existing public launcher even when the sidebar is collapsed.
     await page.locator('#knowledgeCheckBtn').evaluate(e=>e.click());
     await expect(page.locator('#kcSelectOverlay')).toBeVisible();
+    await page.getByRole('button',{name:'Настроить',exact:true}).click();
 }
 async function rows(page){return page.evaluate(()=>window.__kcFSRS.extractCards([...document.querySelectorAll('article.topic')].map(t=>t.id),['table']));}
 async function dark(page){

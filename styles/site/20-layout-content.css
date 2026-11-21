@@ -335,6 +335,21 @@ body.dark-theme .search-box input:focus {
 }
 
 .search-result-item + .search-result-item { margin-top: 0.18rem; }
+.search-result-item { box-sizing: border-box; text-decoration: none; }
+.search-results-more {
+    display: block;
+    width: calc(100% - 1.1rem);
+    margin: .2rem auto .5rem;
+    min-height: 38px;
+    color: var(--text-primary);
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: 9px;
+    font: inherit;
+    cursor: pointer;
+}
+.search-results-more[hidden] { display: none; }
+.site-search-panel:has(.search-results-more:not([hidden])) .search-results-list { max-height: calc(min(54vh, 520px) - 132px); }
 .search-result-item:hover,
 .search-result-item.active {
     background: var(--bg-tertiary);
@@ -2910,3 +2925,35 @@ input:focus:not(:focus-visible) {
     }
 }
 
+
+@media (min-width: 769px) and (max-width: 1050px) {
+    body.tablet-reader-layout .main-content,
+    body.tablet-reader-layout.sidebar-collapsed .main-content {
+        box-sizing: border-box;
+        width: 100%;
+        max-width: none;
+        margin-inline: 0;
+        padding-inline: max(66px, calc((100vw - 840px) / 2));
+    }
+    body.tablet-reader-layout .sidebar-expand-btn { width: 44px; height: 44px; left: 10px; top: 10px; }
+    body.tablet-reader-layout .sidebar-expand-btn svg { width: 18px; height: 18px; }
+    body.tablet-reader-layout:not(.sidebar-collapsed) .sidebar-overlay {
+        display: block;
+        position: fixed;
+        inset: 0;
+        z-index: 998;
+        visibility: visible;
+        opacity: 1;
+        pointer-events: auto;
+        background: rgb(10 13 28 / 30%);
+    }
+}
+@media (max-width: 768px) {
+    .site-search-panel .search-result-meta { flex-direction: column; align-items: start; gap: 2px; }
+    .site-search-panel .search-result-meta strong { white-space: normal; line-height: 1.35; font-size: .9rem; }
+    .sidebar.open.exp-search-on .close-sidebar svg { width: 18px; height: 18px; }
+    .sidebar.open.exp-search-on:has(.site-search-panel:not(.hidden)) :is(.sidebar-header-buttons:not(:has(.close-sidebar)), .sidebar-header-buttons .account-btn, .sidebar-header-buttons .settings-button-sidebar) { display: none; }
+    .sidebar.open:has(.site-search-panel:not(.hidden)) > :is(.sidebar-actions, .print-export-menu-slot, .nav-menu, .sidebar-footer) { display: none; }
+    .sidebar.open:has(.site-search-panel:not(.hidden)) .site-search-panel { display: flex; flex-direction: column; min-height: 0; max-height: none; flex: 1 1 auto; }
+    .sidebar.open .site-search-panel .search-results-list { min-height: 0; max-height: none; overflow-y: auto; }
+}

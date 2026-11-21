@@ -625,9 +625,11 @@ function initMobileMenu() {
     
     menuToggle.setAttribute('aria-controls', sidebar.id);
     syncSidebarVisibility(sidebar);
+    let lastFocused = document.activeElement;
+    document.addEventListener('focusin', event => { lastFocused = event.target; });
     matchMedia('(max-width: 768px)').addEventListener('change', event => {
-        const focusInside = sidebar.contains(document.activeElement);
-        const collapsed = !event.matches && _safeGet('sidebarCollapsed') === 'true';
+        const focusInside = sidebar.contains(document.activeElement) || (document.activeElement === document.body && sidebar.contains(lastFocused));
+        const collapsed = !event.matches && (usesTabletDrawer() || _safeGet('sidebarCollapsed') === 'true');
         sidebar.classList.toggle('collapsed', collapsed);
         document.body.classList.toggle('sidebar-collapsed', collapsed);
         closeMobileMenu(false);
@@ -646,12 +648,14 @@ function initMobileMenu() {
     });
     
     // Закрытие при клике/тапе на оверлей
-    overlay.addEventListener('click', () => {
-        closeMobileMenu();
-    });
+    function dismissDrawer() {
+        if (usesTabletDrawer()) collapseSidebar();
+        else closeMobileMenu();
+    }
+    overlay.addEventListener('click', dismissDrawer);
     overlay.addEventListener('touchend', (e) => {
         e.preventDefault();
-        closeMobileMenu();
+        dismissDrawer();
     });
     
     // Закрытие при клике вне сайдбара (только на мобильных)
@@ -810,6 +814,12 @@ if (window.visualViewport) {
 // СВОРАЧИВАНИЕ САЙДБАРА (ДЕСКТОП)
 // ============================================
 
+const tabletReaderWidth = window.matchMedia('(min-width: 769px) and (max-width: 1050px)');
+
+function usesTabletDrawer() {
+    return tabletReaderWidth.matches && document.body.classList.contains('tablet-reader-layout');
+}
+
 function initSidebarCollapse() {
     const sidebar = document.getElementById('sidebar');
     if (!sidebar) return;
@@ -857,12 +867,41 @@ function initSidebarCollapse() {
     }
     
     // Восстанавливаем состояние из localStorage
-    const isCollapsed = _safeGet('sidebarCollapsed') === 'true';
+    const isReader = !!mainContent.querySelector('.content-section > .topic') && !document.body.classList.contains('matcenter-page');
+    document.body.classList.toggle('tablet-reader-layout', isReader);
+    const isCollapsed = usesTabletDrawer() || _safeGet('sidebarCollapsed') === 'true';
     if (isCollapsed && window.innerWidth > 768) {
         sidebar.classList.add('collapsed');
         document.body.classList.add('sidebar-collapsed');
     }
     syncSidebarVisibility(sidebar);
+    expandBtn.setAttribute('aria-controls', sidebar.id);
+    if (isReader) {
+        tabletReaderWidth.addEventListener('change', () => {
+            const collapsed = usesTabletDrawer() || (window.innerWidth > 768 && _safeGet('sidebarCollapsed') === 'true');
+            const focusInside = sidebar.contains(document.activeElement);
+            sidebar.classList.toggle('collapsed', collapsed);
+            document.body.classList.toggle('sidebar-collapsed', collapsed);
+            syncSidebarVisibility(sidebar);
+            if (collapsed && focusInside) expandBtn.focus({ preventScroll: true });
+        });
+        sidebar.addEventListener('click', event => {
+            if (usesTabletDrawer() && event.target.closest('a.nav-link')) collapseSidebar();
+        });
+        document.addEventListener('keydown', event => {
+            if (!usesTabletDrawer() || sidebar.inert || event.defaultPrevented) return;
+            if ([...document.querySelectorAll('[aria-modal="true"], dialog[open]')].some(dialog => dialog.getClientRects().length)) return;
+            if (event.key === 'Escape') collapseSidebar();
+            if (event.key === 'Tab') {
+                const buttons = [...sidebar.querySelectorAll('a[href],button:not(:disabled),input,select,[tabindex="0"]')].filter(el => el.getClientRects().length && el.tabIndex >= 0);
+                const end = event.shiftKey ? buttons[0] : buttons.at(-1);
+                if (document.activeElement === end) {
+                    event.preventDefault();
+                    (event.shiftKey ? buttons.at(-1) : buttons[0])?.focus();
+                }
+            }
+        });
+    }
     
     collapseBtn.addEventListener('click', () => {
         collapseSidebar();
@@ -879,7 +918,7 @@ function collapseSidebar() {
 
     sidebar.classList.add('collapsed');
     document.body.classList.add('sidebar-collapsed');
-    _safeSet('sidebarCollapsed', 'true');
+    if (!usesTabletDrawer()) _safeSet('sidebarCollapsed', 'true');
     syncSidebarVisibility(sidebar);
     document.querySelector('.sidebar-expand-btn')?.focus({ preventScroll: true });
 }
@@ -890,7 +929,7 @@ function expandSidebar() {
 
     sidebar.classList.remove('collapsed');
     document.body.classList.remove('sidebar-collapsed');
-    _safeSet('sidebarCollapsed', 'false');
+    if (!usesTabletDrawer()) _safeSet('sidebarCollapsed', 'false');
     syncSidebarVisibility(sidebar);
     sidebar.querySelector('.sidebar-collapse-btn')?.focus({ preventScroll: true });
 }
@@ -916,6 +955,9 @@ document.addEventListener('keydown', (e) => {
         e.preventDefault();
         const searchInput = document.getElementById('searchInput');
         if (searchInput) {
+            const homeSearch = document.getElementById('homeSearchOpen');
+            if (homeSearch) { homeSearch.click(); return; }
+            if (window.innerWidth > 768 && searchInput.closest('#sidebar.collapsed')) expandSidebar();
             if (window.innerWidth <= 768 && searchInput.closest('#sidebar')) {
                 const searchButton = document.querySelector('#expBottomNav [aria-label="Поиск"]');
                 if (searchButton?.getClientRects().length) { searchButton.click(); return; }

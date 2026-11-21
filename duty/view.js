@@ -145,6 +145,21 @@
         next.disabled = list.scrollLeft >= list.scrollWidth - list.clientWidth - 2;
     }
 
+    function revealMonth(button) {
+        if (!button) return;
+        const strip = button.parentElement;
+        const bounds = strip.getBoundingClientRect();
+        const item = button.getBoundingClientRect();
+        if (item.left < bounds.left) strip.scrollLeft += item.left - bounds.left;
+        else if (item.right > bounds.right) strip.scrollLeft += item.right - bounds.right;
+        updateMonthScroll();
+    }
+
+    function revealSelectedMonth() {
+        updateMonthScroll();
+        revealMonth(byId('dutyMonthFilters').querySelector('[aria-pressed="true"]'));
+    }
+
     function renderMonthFilters() {
         const rootElement = byId('dutyMonthFilters');
         const scrollLeft = rootElement.scrollLeft;
@@ -167,18 +182,18 @@
             button.dataset.month = item.key;
             button.addEventListener('click', function () {
                 selectedMonth = item.key;
-                // Keep both keyboard focus and the position of the month strip.
                 rootElement.querySelectorAll('button').forEach(function (filter) {
                     const active = filter.dataset.month === selectedMonth;
                     filter.classList.toggle('is-active', active);
                     filter.setAttribute('aria-pressed', String(active));
                 });
+                revealMonth(button);
                 renderGroups();
             });
             rootElement.appendChild(button);
         });
         rootElement.scrollLeft = scrollLeft;
-        updateMonthScroll();
+        requestAnimationFrame(revealSelectedMonth);
     }
 
     function makeWeekCard(entry, state) {
@@ -368,7 +383,10 @@
                 months.scrollBy({ left: control[1] * Math.max(120, months.clientWidth * 0.8), behavior: reduced ? 'instant' : 'smooth' });
             });
         });
-        root.addEventListener('resize', updateMonthScroll);
+        months?.addEventListener('focusin', event => revealMonth(event.target.closest('button')));
+        if (months && typeof ResizeObserver !== 'undefined') {
+            new ResizeObserver(revealSelectedMonth).observe(months);
+        } else root.addEventListener('resize', revealSelectedMonth);
         loadCloudSchedule(database, editor.onRevisionChanged);
     }
 

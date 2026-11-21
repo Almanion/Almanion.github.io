@@ -2604,3 +2604,19 @@ body:not(.no-hover) .kc-pause-btn:not(:disabled):hover {
     }
 }
 
+
+.kc-paragraph-choice {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: .75rem;
+    padding: .3rem 0;
+}
+.kc-paragraph-choice > strong { grid-column: 1 / -1; line-height: 1.4; }
+#kcCustomOptions:not([hidden]) { display: grid; gap: 1rem; }
+#kcSelectModal [hidden] { display: none !important; }
+#kcSelectModal:has(#kcQuickChoice:not([hidden])):has(#kcCustomOptions[hidden]) .kc-head .kc-subtitle { display: none; }
+body.experimental .kc-modal .kc-btn-primary { color: var(--exp-accent-contrast); }
+body:is(.dark-theme, .midnight-theme):not(.experimental) .kc-modal .kc-btn-primary { color: #101528; }
+@media (max-width: 480px) {
+    .kc-paragraph-choice { grid-template-columns: 1fr; }
+}

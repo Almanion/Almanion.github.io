@@ -1255,6 +1255,10 @@
                     '<p class="kc-subtitle">' + escapeHtml(profile.subtitle) + '</p></div></div>' +
                 '<div class="kc-select-scroll">' +
                 '<div class="kc-session-resume" id="kcSessionResume" hidden></div>' +
+                '<div class="kc-paragraph-choice" id="kcQuickChoice" hidden><strong id="kcQuickTopic"></strong>' +
+                    '<button type="button" class="kc-btn kc-btn-primary" id="kcQuickStart">Учить этот параграф</button>' +
+                    '<button type="button" class="kc-btn kc-btn-ghost" id="kcConfigure" aria-controls="kcCustomOptions" aria-expanded="false">Настроить</button></div>' +
+                '<div id="kcCustomOptions">' +
                 '<div class="kc-study-sections" id="kcStudySections" role="group" aria-label="Вид заданий" hidden>' +
                     '<button type="button" class="kc-size-option" data-section="blocks" aria-pressed="true">Блоки</button>' +
                     '<button type="button" class="kc-size-option" data-section="tables" aria-pressed="false">Таблицы</button>' +
@@ -1279,6 +1283,7 @@
                 '</div>' +
                 '<div class="kc-recommendation" id="kcRecommendation" aria-live="polite"></div>' +
                 '<div class="kc-session-notice kc-session-notice-error" id="kcSelectNotice" hidden aria-live="polite"></div>' +
+                '</div>' +
                 '</div>' +
                 '<div class="kc-actions">' +
                     '<button class="kc-btn kc-btn-ghost" id="kcSelectAll">Выбрать всё</button>' +
@@ -1325,7 +1330,13 @@
         review.addEventListener('click', e => { if (e.target === review) closeReview(); });
 
         document.getElementById('kcSelectAll').addEventListener('click', toggleSelectAll);
-        document.getElementById('kcStart').addEventListener('click', startSession);
+        document.getElementById('kcStart').addEventListener('click', () => startSession(selected, selectedKinds, sessionLimit));
+        document.getElementById('kcQuickStart').addEventListener('click', () => {
+            if (quickChoice) startSession(quickChoice.ids, quickChoice.kinds, 'all');
+        });
+        document.getElementById('kcConfigure').addEventListener('click', () => {
+            setCustomOptions(document.getElementById('kcCustomOptions').hidden);
+        });
         document.querySelectorAll('#kcStudySections [data-section]').forEach(button => {
             button.addEventListener('click', () => {
                 if (studySection === button.dataset.section) return;
@@ -1443,6 +1454,32 @@
     let sessionLimit = 'all';
     let studySection = 'blocks';
     let sectionPreferences = {};
+    let quickChoice = null;
+
+    function currentParagraphChoice() {
+        const current = document.querySelector('.topic.exp-reader-current')
+            || [...document.querySelectorAll('.main-content article.topic[id]')].find(topic =>
+                topic.getClientRects().length && topic.getBoundingClientRect().bottom > 90);
+        if (!current) return null;
+        const topics = current.id === 'stress-all'
+            ? TOPICS.filter(topic => topic.counts.stress > 0)
+            : TOPICS.filter(topic => topic.id === current.id);
+        const kinds = CARD_TYPES.filter(type => topics.some(topic => topic.counts[type.kind])).map(type => type.kind);
+        return kinds.length ? { ids: topics.map(topic => topic.id), kinds, name: current.querySelector('.topic-title').textContent.trim() } : null;
+    }
+
+    function setCustomOptions(open) {
+        document.getElementById('kcCustomOptions').hidden = !open;
+        document.querySelector('#kcSelectModal > .kc-actions').hidden = !open;
+        const toggle = document.getElementById('kcConfigure');
+        toggle.setAttribute('aria-expanded', String(open));
+        toggle.textContent = open ? 'Свернуть настройки' : 'Настроить';
+        if (open) {
+            renderTypeFilters();
+            renderDeckList();
+            renderSessionSize();
+        }
+    }
 
     function sectionTopics() {
         return TOPICS.filter(topic => studySection === 'tables' ? topic.counts.table > 0 :
@@ -1516,10 +1553,11 @@
             if (!selectedKinds.length) selectedKinds = CARD_TYPES.filter(type => type.kind !== 'table' && kindCounts[type.kind] > 0).map(type => type.kind);
         }
         renderStudySection();
-        renderTypeFilters();
-        renderDeckList();
-        renderSessionSize();
         renderResumeBanner();
+        quickChoice = currentParagraphChoice();
+        document.getElementById('kcQuickChoice').hidden = !quickChoice;
+        document.getElementById('kcQuickTopic').textContent = quickChoice?.name || '';
+        setCustomOptions(!quickChoice);
         savePreferences();
         if (storeDirty) { saveStore(); storeDirty = false; }
         lastDialogOpener = document.activeElement;
@@ -1668,20 +1706,20 @@
     // ============================================
     //  Сессия повторения
     // ============================================
-    function startSession() {
-        if (selected.length === 0 || selectedKinds.length === 0) return;
+    function startSession(topicIds, kinds, limit) {
+        if (!topicIds.length || !kinds.length) return;
         const now = Date.now();
-        const cards = extractCards(selected, selectedKinds);
-        const plan = buildRecommendation(cards, now, { limit: sessionLimit, kinds: selectedKinds });
+        const cards = extractCards(topicIds, kinds);
+        const plan = buildRecommendation(cards, now, { limit, kinds });
         const queue = plan.queue;
 
         if (queue.length === 0) { showEmptyState(); document.getElementById('kcSelectOverlay').classList.add('hidden'); document.getElementById('kcReviewOverlay').classList.remove('hidden'); return; }
 
         session = {
             queue: queue,
-            selectedTopicIds: selected.slice(),
-            selectedKinds: selectedKinds.slice(),
-            limit: sessionLimit,
+            selectedTopicIds: topicIds.slice(),
+            selectedKinds: kinds.slice(),
+            limit,
             startedAt: now,
             updatedAt: now,
             reviewed: 0,
@@ -1712,11 +1750,6 @@
         const restored = savedSession();
         if (!restored) { renderResumeBanner(); return; }
         session = restored;
-        selected = restored.selectedTopicIds.slice();
-        selectedKinds = restored.selectedKinds.slice();
-        studySection = selectedKinds.length === 1 && selectedKinds[0] === 'table' ? 'tables' : 'blocks';
-        savePreferences();
-        sessionLimit = restored.limit;
         document.getElementById('kcSelectOverlay').classList.add('hidden');
         document.getElementById('kcReviewOverlay').classList.remove('hidden');
         setTimeout(() => document.getElementById('kcReviewModal')?.focus(), 0);
@@ -1997,7 +2030,7 @@
     function nextDueAcrossSelected() {
         const now = Date.now();
         let min = null;
-        extractCards(selected, selectedKinds).forEach(c => {
+        extractCards(session?.selectedTopicIds || selected, session?.selectedKinds || selectedKinds).forEach(c => {
             const st = normalizeState(stateForCard(c));
             const due = st && st.pendingConfirmations > 0 ? st.confirmationDue : (st && st.due);
             if (st && due > now) min = (min == null) ? due : Math.min(min, due);

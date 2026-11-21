@@ -34,6 +34,7 @@
             if (id) state.sidebarLinks.set(id, link);
         });
         buildReaderUi(main);
+        if (location.pathname.split('/').pop() === 'likbez.html') buildCourseSwitcher();
         bindReaderEvents(main);
 
         window.experimentalReader = {
@@ -101,6 +102,36 @@
         state.footer = footer;
     }
 
+    function buildCourseSwitcher() {
+        const label = document.createElement('label');
+        label.className = 'reader-course-switch';
+        label.dataset.printExclude = 'true';
+        label.append('Курс');
+        const select = document.createElement('select');
+        select.setAttribute('aria-label', 'Курс ликбеза');
+        const firstTopics = state.sections.map(section => section.querySelector(':scope > .topic[id]'));
+        firstTopics.forEach(topic => select.add(new Option(getPartTitle(topic).replace(/^\d+\.\s*/, ''), topic.id)));
+        select.addEventListener('change', () => {
+            const topic = document.getElementById(select.value);
+            if (!topic) return;
+            if (location.hash !== '#' + topic.id) location.hash = topic.id;
+            else if (state.active) goToId(topic.id);
+            else topic.scrollIntoView();
+        });
+        label.append(select);
+        state.anchor.before(label);
+        state.courseSelect = select;
+        if ('IntersectionObserver' in window) {
+            const observer = new IntersectionObserver(entries => {
+                if (state.active) return;
+                for (const entry of entries) {
+                    if (entry.isIntersecting) select.selectedIndex = state.sections.indexOf(entry.target);
+                }
+            }, { rootMargin: '0px 0px -70% 0px' });
+            state.sections.forEach(section => observer.observe(section));
+        }
+    }
+
     function bindReaderEvents(main) {
         [state.toolbar, state.footer].forEach(controls => {
             controls.addEventListener('click', event => {
@@ -139,6 +170,63 @@
         main.addEventListener('pointermove', onPointerMove, { passive: false });
         main.addEventListener('pointerup', onPointerEnd, { passive: true });
         main.addEventListener('pointercancel', cancelSwipe, { passive: true });
+        bindBottomPull(main);
+    }
+
+    function bindBottomPull(main) {
+        const threshold = 76;
+        let pull = null;
+        const next = state.footer.querySelector('[data-reader-action="next"]');
+        const atBottom = () => {
+            const page = document.scrollingElement;
+            return page && page.scrollHeight - page.scrollTop - page.clientHeight <= 4;
+        };
+        function reset() {
+            pull = null;
+            next.style.removeProperty('--reader-pull');
+            next.classList.remove('is-pulling');
+        }
+        function canPull() {
+            return state.active && state.index + 1 < state.topics.length && atBottom()
+                && (window.visualViewport?.scale || 1) <= 1.01 && !window.getSelection()?.toString()
+                && !document.body.classList.contains('sidebar-open')
+                && !document.querySelector('dialog[open], .auth-overlay:not(.hidden), .settings-modal:not(.hidden), .lightbox-overlay.open');
+        }
+        main.addEventListener('touchstart', event => {
+            reset();
+            if (event.touches.length !== 1 || !canPull()) return;
+            if (event.target.closest(SWIPE_BLOCK_SELECTOR) && !event.target.closest('.exp-reader-footer-button')) return;
+            for (let el = event.target; el && el !== main; el = el.parentElement) {
+                if (el.scrollHeight > el.clientHeight + 2 && /auto|scroll/.test(getComputedStyle(el).overflowY)) return;
+            }
+            const touch = event.touches[0];
+            pull = { x: touch.clientX, y: touch.clientY, id: touch.identifier, index: state.index };
+        }, { passive: true });
+        function distance(touch) {
+            const up = pull.y - touch.clientY;
+            return up > Math.abs(pull.x - touch.clientX) * 1.5 ? up : 0;
+        }
+        main.addEventListener('touchmove', event => {
+            if (!pull) return;
+            const touch = event.touches[0];
+            if (event.touches.length !== 1 || touch.identifier !== pull.id
+                || Math.abs(touch.clientX - pull.x) > Math.max(26, Math.abs(touch.clientY - pull.y))) return reset();
+            const up = distance(touch);
+            next.classList.toggle('is-pulling', up > 12);
+            next.style.setProperty('--reader-pull', Math.min(1, up / threshold));
+        }, { passive: true });
+        main.addEventListener('touchend', event => {
+            if (!pull) return;
+            const touch = event.changedTouches[0];
+            const advance = !event.touches.length && touch.identifier === pull.id && state.index === pull.index
+                && distance(touch) >= threshold && canPull();
+            reset();
+            if (advance) {
+                if (event.cancelable) event.preventDefault();
+                goToIndex(state.index + 1, { source: 'swipe' });
+            }
+        }, { passive: false });
+        main.addEventListener('touchcancel', reset, { passive: true });
     }
 
     function syncExperimentalReader() {
@@ -349,6 +437,7 @@
 
     function updateReaderUi() {
         const current = state.topics[state.index];
+        if (state.courseSelect) state.courseSelect.selectedIndex = state.sections.indexOf(current.parentElement);
         const part = getPartTitle(current);
         const sectionTopics = state.topics.filter(topic => topic.parentElement === current.parentElement);
         const currentNumber = sectionTopics.indexOf(current) + 1;
