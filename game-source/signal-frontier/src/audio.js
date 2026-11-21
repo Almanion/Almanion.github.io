@@ -182,7 +182,7 @@
               ? type + e.id
               : type;
       const interval =
-        type === "shot"
+        type === "field-heal" ? .22 : type === "shot"
           ? 0.045
           : ["hit", "spark", "shield"].includes(type)
             ? 0.07
@@ -349,6 +349,9 @@
         tone(420, 260, 0.045, 0.035);
         noise(1600, 500, 0.06, 0.07, 0.82);
         tone(320, 240, 0.055, 0.025, 1.02);
+      } else if (type === "field-heal") {
+        tone(480, 620, .10, .026, 0, "sine");
+        tone(720, 790, .13, .018, .055, "sine");
       } else if (type === "order") {
         tone(640, 520, 0.055, 0.035);
         tone(970, 860, 0.06, 0.02, 0.035);

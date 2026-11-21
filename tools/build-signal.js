@@ -31,7 +31,7 @@ const files = [
   "babylon-view.js",
   "babylon-LICENSE.txt",
 ];
-const embedded = ["cloud-core.js", "persistence.js", "account-ui.js", "selection-ui.js", "renderer-loader.js"];
+const embedded = ["cloud-core.js", "persistence.js", "account-ui.js", "renderer-loader.js"];
 function render(root = path.resolve(__dirname, "..")) {
   const source = path.join(root, "game-source/signal-frontier/src"),
     read = (f) =>
@@ -55,6 +55,8 @@ function render(root = path.resolve(__dirname, "..")) {
         read("recon.js") + "\n;\n" + read("construction.js") + "\n;\n" + read("support.js") + "\n;\n" + text;
     if (file === "app.js")
       text = embedded.map(read).join("\n;\n") + "\n;\n" + text;
+    if (file === "development-ui.js")
+      text = read("selection-ui.js") + "\n;\n" + text;
     if (file === "view.js")
       text =
         read("unit-models.js") + "\n;\n" + read("minimap.js") + "\n;\n" + read("terrain-art.js") + "\n;\n" + text;

@@ -345,7 +345,7 @@ export class BabylonView extends Legacy {
     if(task.target&&!task.target.unknown)this.groundRing(c,task.target.x,task.target.y,task.radius,"#d5dab078",1.4);
     // Existing feedback and construction effects retain their observed events,
     // seeded animation and tactical-pause clock while migrating independently.
-    this.effects(c,dt,ui,frame.active);c.restore();this.productionBars(s,ui);
+    this.effects(c,dt,ui,frame.active,s);c.restore();this.productionBars(s,ui);
   }
   statusOverlay(c,s,ui) {
     if(ui.mode==="tactical")for(const mine of s.campaign?.mines||[]) {

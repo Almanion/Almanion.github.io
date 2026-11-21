@@ -22,6 +22,7 @@
     "archive-depot": {hp:1000,r:65,speed:0,range:0,damage:0,rate:0},
     hero: { hp: 150, r: 14, speed: 205, range: 620, damage: 24, rate: 0.16 },
     rifle: { hp: 115, r: 12, speed: 125, range: 300, damage: 13, rate: 0.44 },
+    medic: { hp: 90, r: 12, speed: 140, range: 0, damage: 0, rate: 0 },
     artillery: { hp: 220, r: 20, speed: 78, range: 540, damage: 98, rate: 2.6 },
     sentinel: { hp: 90, r: 13, speed: 82, range: 310, damage: 10, rate: 1.35 },
     runner: { hp: 55, r: 11, speed: 145, range: 48, damage: 13, rate: 0.85 },
@@ -53,7 +54,7 @@
     ["sentinel", 420, 720], ["runner", 56, 700], ["warden", 500, 780],
     ["rocket", 620, 820], ["flamer", 240, 720], ["bomber", 64, 740],
     ["tank", 640, 840], ["mortar", 840, 940],
-    ["scout", 0, 980], ["drone", 0, 240],
+    ["scout", 0, 980], ["medic", 0, 580], ["drone", 0, 240],
     ["base", 0, 800], ["outpost", 0, 840], ["barracks", 0, 360],
     ["bunker", 0, 360], ["logistics", 0, 240], ["condenser", 0, 400], ["foundry", 0, 400], ["arsenal", 0, 400], ["jammer", 0, 720],
     ["turret", 540, 800], ["bastion", 620, 940], ["citadel", 840, 980],
@@ -1093,16 +1094,16 @@
     if (cache.size > 16) cache.delete(cache.keys().next().value);
     return grid;
   }
-  function firingPath(from, target) {
+  function firingPath(from, target, supportRange) {
     const world = navigation(from),
       state = owners.get(from) || world.state,
       def = state ? stats(state, from, target) : C[from.kind],
-      range = from.kind === "scout" ? balanced(state) ? sightRange(state, from) * 0.9 : 650 : def.range * 0.9,
+      range = supportRange ?? (from.kind === "scout" ? balanced(state) ? sightRange(state, from) * 0.9 : 650 : def.range * 0.9),
       minimum = from.kind === "mortar" ? 240 : 0;
     const goal = (p) =>
       dist(p, target) >= minimum &&
       rangeDistance(p, target) <= range &&
-      fireClear({ ...p, map: world.id, kind: from.kind }, target);
+      fireClear({ ...p, map: supportRange ? world : world.id, kind: from.kind }, target);
     if (goal(from)) return [];
     const edge = targetEdge(from, target),
       d = dist(from, edge),
@@ -1168,7 +1169,7 @@
         return smoothRoute(from, route.reverse(), def.r, world);
       }
       for (const [n, step] of edges(k))
-        if (cost + step < costs[n] - 1e-7) {
+        if (cost + step < costs[n] - 1e-7 && (!supportRange || cost + step <= supportRange * 4)) {
           costs[n] = cost + step;
           prev[n] = k;
           push(n, costs[n]);
@@ -1195,6 +1196,7 @@
       };
       u.target = null;
       u.order = target;
+      if (u.kind === "medic") u.flash = 0;
       u.path = pathTo(u, target, C[u.kind].r);
     });
     const producers = s.campaign
@@ -1317,6 +1319,7 @@
     for (const { u, path, target, origin } of plans) {
       support.leave(s, u, origin);
       u.target = null;
+      if (u.kind === "medic") u.flash = 0;
       u.order = target;
       u.path = path;
     }
@@ -1326,18 +1329,26 @@
   }
   function attackUnits(s, ids, targetId) {
     const target = s.units.find((u) => u.id === targetId && u.team && u.hp > 0);
-    if (
-      !target ||
-      !visible(s, 0, target) ||
-      !orderUnits(s, ids, target.x, target.y)
-    )
-      return false;
-    const chosen = new Set(ids);
-    for (const u of s.units)
-      if (chosen.has(u.id) && !u.team && u.hp > 0 && [1, 2].includes(u.group)) {
-        u.target = { x: target.x, y: target.y, id: target.id };
-        u.think = 0;
+    if (!Array.isArray(ids) || !target || !visible(s, 0, target)) return false;
+    const chosen = new Set(ids), members = s.units.filter((u) => chosen.has(u.id) && !u.team && u.hp > 0 && u.group),
+      medics = members.filter((u) => u.kind === "medic"),
+      line = medics.length ? members.filter((u) => u.kind !== "medic") : members;
+    if (!line.length || !orderUnits(s, medics.length ? line.map((u) => u.id) : ids, target.x, target.y)) return false;
+    for (const u of line) {
+      u.target = { x: target.x, y: target.y, id: target.id };
+      u.think = 0;
+    }
+    if (medics.length) {
+      // Plan an escort route to a nearby squadmate, never to the enemy's tile.
+      const foot = line.filter((u) => u.kind === "rifle"), armed = line.filter((u) => C[u.kind].damage),
+        leaders = foot.length ? foot : armed.length ? armed : line, escorts = new Map();
+      for (const medic of medics) {
+        const leader = leaders.reduce((best, u) => dist(medic, u) < dist(medic, best) ? u : best);
+        if (!escorts.has(leader.id)) escorts.set(leader.id, []);
+        escorts.get(leader.id).push(medic.id);
       }
+      for (const [id, group] of escorts) followUnits(s, group, id, false);
+    }
     const event = s.events.at(-1);
     if (event?.type === "order") event.intent = "attack";
     return true;
@@ -1547,6 +1558,7 @@
     for (const { u, order, origin } of plans) {
       support.leave(s, u, origin);
       u.order = order;
+      if (u.kind === "medic") u.flash = 0;
       u.think = 0;
       updateFollow(s, u, 0, units);
     }
@@ -1858,7 +1870,7 @@
     if (
       s.campaign?.armor &&
       !u.team &&
-      ["hero", "rifle", "artillery"].includes(u.kind)
+      ["hero", "rifle", "medic", "artillery"].includes(u.kind)
     )
       damage *= 0.85;
     if (s.version >= 4 && u.defense) damage *= 0.35;
@@ -2191,6 +2203,12 @@
             burst: 0,
             gap: 0,
           });
+        continue;
+      }
+      if (u.kind === "medic") {
+        if (u.order?.followId !== undefined)
+          updateFollow(s, u, dt, (followLeaders ||= new Map(s.units.map((v) => [v.id, v]))));
+        support.fieldTick(s, u, dt);
         continue;
       }
       if (u.kind === "scout" || u.kind === "carrier") {
@@ -2604,6 +2622,7 @@
           !Object.hasOwn(C, u.kind) ||
           [
             "scout",
+            "medic",
             "warden",
             "bastion",
             "rocket",
@@ -2930,7 +2949,7 @@
     spawnPoint,
   });
   const Support = typeof module !== "undefined" && module.exports ? require("./support.js") : root.SignalSupport;
-  support = Support.create({ ...API, map: mapFor, follow, emit, get development() { return campaign; } });
+  support = Support.create({ ...API, map: mapFor, follow, emit, nearby, get development() { return campaign; } });
   API.support = support;
   API.map = mapFor;
   API.pads = (s) =>

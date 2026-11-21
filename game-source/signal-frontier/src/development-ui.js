@@ -19,7 +19,7 @@
     condenser: '<path d="M5 19V7h14v12ZM8 16h8M9 5V3m6 2V3M12 7v6m-3-3 3 3 3-3"/>',
     alloy: '<path d="m12 3 8 9-8 9-8-9Zm-8 9h16M12 3v18"/>',
   };
-  const icon = (name) => ["rifle", "scout", "artillery", "drone"].includes(name) && root.SignalSelectionPanel
+  const icon = (name) => ["rifle", "scout", "medic", "artillery", "drone"].includes(name) && root.SignalSelectionPanel
     ? root.SignalSelectionPanel.icon(name)
     : `<svg viewBox="0 0 24 24" aria-hidden="true">${paths[name] || paths.node}</svg>`;
   class DevelopmentPanel {
@@ -577,11 +577,12 @@
           condenser: "На кратере · 2 зонда · тёмная материя",
           logistics: "+12 снабжения · +4 зонда · 2×2",
           bunker: "4 места · дальность и обзор +25%",
-          barracks: "Бойцы и дозорные",
+          barracks: items.medic ? "Пехота, разведка и лечение" : "Бойцы и дозорные",
           outpost: "4×4 · рядом со свободным месторождением",
           foundry: "Тяжёлая артиллерия",
           arsenal: "Улучшения армии и проникновение",
           rifle: E.balance.enabled(s) ? "Основная пехота · 11 клеток" : "Основная боевая пехота",
+          medic: "Лечит бойцов и героя · " + E.support.fieldCare.range / 40 + " клетки",
           scout: E.balance.enabled(s) ? "Разведка · обзор 24,5 клетки" : "Дальний обзор и разведка",
           artillery: E.balance.enabled(s) ? "20 клеток · огонь с разведкой" : "Дальнобойный огонь по укреплениям",
           drone: "Добыча, строительство и ремонт",
@@ -652,7 +653,7 @@
               ? roles[action] || "Нажмите для заказа"
               : reason(o),
           `data-action="${action}" ${site !== undefined ? `data-site="${site}"` : ""} ${o.producer ? `data-producer="${o.producer.id}"` : ""} ${o.allowed ? "" : "disabled"}`,
-          paths[action] || ["rifle", "scout", "artillery", "drone"].includes(action) ? action : "command",
+          paths[action] || ["rifle", "scout", "medic", "artillery", "drone"].includes(action) ? action : "command",
         );
       };
       const queue = (u, cycle = false) => {
@@ -743,14 +744,7 @@
             ),
           );
         } else {
-          const troops =
-              {
-                base: ["drone"],
-                outpost: ["drone"],
-                barracks: ["rifle", "scout"],
-                foundry: ["artillery"],
-                arsenal: [],
-              }[selected.kind] || [],
+          const troops = root.SignalSelectionPanel.recruits(selected.kind, items),
             tech =
               {
                 base: ["network", "command", "defense"],
@@ -770,7 +764,7 @@
               `data-care="admit" data-care-id="${selected.id}" ${(!bunker && h.hp >= E.C.hero.hp) || h.care || patients.length >= 4 ? "disabled" : ""}`, bunker ? "bunker" : "repair"),
               tile("develop-exit-all", "Вывести всех", `Занято ${patients.length} из 4 мест`, "Выход всех бойцов по вашему приказу",
                 `data-care="evacuate" data-care-id="${selected.id}" ${patients.length ? "" : "disabled"}`, "command"),
-              ...patients.map((u) => tile("develop-patient-" + u.id, ({ hero: "Разведчик", rifle: "Боец", scout: "Дозорный", artillery: "Артиллерия" })[u.kind],
+              ...patients.map((u) => tile("develop-patient-" + u.id, items[u.kind]?.label || "Разведчик",
                 Math.ceil(u.hp) + " / " + E.C[u.kind].hp + (u.care.inside ? u.care.exit ? " · выход занят" : bunker ? " · в гарнизоне" : u.hp >= E.C[u.kind].hp ? " · вылечен" : " · лечится" : " · в пути"), !bunker && u.care.inside && !u.care.exit && u.hp >= E.C[u.kind].hp ? "Выходит автоматически" : "Нажать — выйти",
                 `data-care="exit" data-care-id="${u.id}"`, bunker ? "bunker" : "repair"))];
             if (bunker) {
@@ -876,11 +870,7 @@
           ready = buildings.filter((u) => !u.build),
           ids = ready.map((u) => u.id),
           list =
-            kind === "barracks"
-              ? ["rifle", "scout"]
-              : kind === "foundry"
-                ? ["artillery"]
-                : ["weapons", "armor", "hack"];
+            kind === "arsenal" ? ["weapons", "armor", "hack"] : root.SignalSelectionPanel.recruits(kind, items);
         heading =
           (items[kind]?.label || "Производство") + ` · ${ready.length} готово`;
         cards = ready.length

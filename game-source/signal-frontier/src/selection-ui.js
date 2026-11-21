@@ -1,9 +1,10 @@
 /* Bounded, paginated roster. No canvas or per-frame portrait rendering. */
 (function (root) {
   "use strict";
-  const names = { condenser: "Конденсатор", carrier: "Носитель архива", logistics: "Узел снабжения", hero: "Разведчик", rifle: "Боец", scout: "Дозорный", artillery: "Артиллерия", drone: "Зонд",
+  const names = { condenser: "Конденсатор", carrier: "Носитель архива", logistics: "Узел снабжения", hero: "Разведчик", rifle: "Боец", medic: "Медик", scout: "Дозорный", artillery: "Артиллерия", drone: "Зонд",
     base: "База", outpost: "Экстрактор", barracks: "Казармы", foundry: "Тяжёлый цех", arsenal: "Арсенал", bunker: "Бункер" };
   const shapes = {
+    medic: '<path d="M9 46V15l6-5h8v21m1-11V12l6-5h11l6 6v13l-6 6H30l-6-6ZM25 33l-7 6-4 16h33l-2-17-5-5"/><path class="visor" d="M27 17h17v5H27Z"/><path d="M32 37v11m-5-6h10m6-7 7 4 4-8m-3-4 4 3 5-3M14 18v11"/>',
     carrier: '<path d="M8 22h48v26H8ZM15 16h34v28H15ZM9 49h46M12 55h12m16 0h12M23 25h18v10H23Z"/>',
     hero: '<path d="M22 27V15a10 10 0 0 1 20 0v12l-6 5h-8ZM24 8l16 2M21 30l-9 6-5 19h49l-5-19-9-6M21 34l11 8 11-8M24 43v10m16-10v10M11 35V19h8"/><path class="visor" d="M24 19h16v5H24Z"/><path d="m17 51 29-11 3 6-29 11Zm29-11 10-4 3 5-10 5M11 23v7"/>',
     logistics: "<path d=\"M7 55V24h19v31Zm31 0V24h19v31ZM7 35h19m12 0h19M13 44h7m24 0h7M32 13v30M22 13h20M29 7h6M32 7V3\"/><path class=\"visor\" d=\"M12 49h9v4h-9Zm31 0h9v4h-9ZM27 10h10v6H27Z\"/>",
@@ -20,8 +21,8 @@
     arsenal: '<path d="M8 55V23l24-13 24 13v32ZM15 27l17-9 17 9M8 55h48"/><path class="visor" d="m32 26-10 15h8l-2 10 15-17h-9l2-8Z"/>',
   };
   const icon = (kind) => `<svg viewBox="0 0 64 64" aria-hidden="true">${shapes[kind] || (kind === "hero" ? shapes.rifle : shapes.base)}</svg>`;
-  const productionTypes = { base: ["drone"], outpost: ["drone"], barracks: ["rifle", "scout"], foundry: ["artillery"] },
-    roles = { rifle: "Линейная пехота", scout: "Разведка · без оружия", artillery: "Дальнобойное орудие", drone: "Добыча · стройка · ремонт" },
+  const productionTypes = { base: ["drone"], outpost: ["drone"], barracks: ["rifle", "scout", "medic"], foundry: ["artillery"] },
+    roles = { rifle: "Линейная пехота", medic: "Лечит пехоту и героя", scout: "Разведка · без оружия", artillery: "Дальнобойное орудие", drone: "Добыча · стройка · ремонт" },
     alloyIcon = '<svg class="production-alloy" viewBox="0 0 20 20" aria-hidden="true"><path d="m10 2 7 8-7 8-7-8Zm-7 8h14M10 2v16"/></svg>',
     escape = (text) => String(text).replaceAll("&", "&amp;").replaceAll('"', "&quot;").replaceAll("<", "&lt;");
   // Patch only changed nodes/attributes, retaining focused buttons while timers tick.
@@ -118,7 +119,7 @@
       const el = this.options.production;
       if (!el) return;
       const E = root.SignalEngine, items = s.campaign ? E.development.items(s) : {},
-        actions = (productionTypes[detail?.kind] || []).filter((a) => items[a]),
+        actions = SelectionPanel.recruits(detail?.kind, items),
         active = !!this.options.combat?.() && !!detail && !!s.campaign && (actions.length > 0 || buildings.length > 1);
       el.hidden = !active;
       document.body.classList.toggle("has-production", active);
@@ -135,7 +136,7 @@
       }).join("");
       const message = this.feedback && performance.now() < this.feedback.until ? this.feedback.message : "";
       const pager = buildings.length > 1 ? `<div class="production-pager"><button data-production-page="-1" aria-label="Предыдущее производство">‹</button><span>${buildings.indexOf(u) + 1}/${buildings.length}</span><button data-production-page="1" aria-label="Следующее производство">›</button></div>` : "";
-      patch(el, `<div class="production-heading"><span title="${names[u.kind]} №${u.id}">${names[u.kind]}</span>${pager}<small title="Занято мест в очереди">${actions.length ? (u.jobs || []).length + "/3" : ""}</small></div><div class="production-grid">${cards || '<span class="production-empty">Это здание не выпускает войска</span>'}</div>${actions.length ? queue(s, u, true) : ""}<p class="production-feedback" role="status" aria-live="polite">${escape(message)}</p>`);
+      patch(el, `<div class="production-heading"><span title="${names[u.kind]} №${u.id}">${names[u.kind]}</span>${pager}<small title="Занято мест в очереди">${actions.length ? (u.jobs || []).length + "/3" : ""}</small></div><div class="production-grid${actions.length > 2 ? " trio" : ""}">${cards || '<span class="production-empty">Это здание не выпускает войска</span>'}</div>${actions.length ? queue(s, u, true) : ""}<p class="production-feedback" role="status" aria-live="polite">${escape(message)}</p>`);
     }
     render() {
       const E = root.SignalEngine, s = this.options.state(), members = this.options.members(),
@@ -193,8 +194,14 @@
           else body += queue(s, u) + '<small class="roster-note">' + (jobs.length ? E.development.matter.enabled(s) ? 'Отмена до начала — 100% · после — 75%' : 'Нажмите на заказ для отмены · возврат 75%' : 'Новые заказы появятся здесь') + '</small>';
         } else {
           const stat = E.stats(s, u), task = u.care ? u.care.inside ? u.care.exit ? 'Ожидает свободного выхода' : u.care.garrison ? 'В гарнизоне · дальность и обзор +25%' : 'Лечится · выход автоматически' : u.care.garrison ? 'Идёт в бункер' : 'Идёт на лечение' : u.mineId && !u.workerTask ? 'Добывает ресурс' : u.workerTask?.kind === 'repair' ? 'Ремонтирует здание' : u.buildingId ? 'Строит здание' : u.order?.followId ? 'Следует за ведущим' : u.order ? 'Выполняет приказ' : u.kind === 'hero' ? 'Личное управление' : 'Готов к приказу';
-          body += '<p class="roster-task">' + task + '</p>';
+          const duty = u.kind === 'medic' && !u.care && (u.flash > 0 ? 'Оказывает помощь' :
+            !u.order ? (u.path.length ? 'Идёт к раненому' : 'Ищет раненых рядом') : null);
+          body += '<p class="roster-task">' + (duty || task) + '</p>';
           if (u.care) body += '<button class="roster-inspect" data-care="exit" data-care-id="' + u.id + '">Выйти из ' + (u.care.garrison ? 'бункера' : 'экстрактора') + '</button>';
+          else if (u.kind === "medic") {
+            const care = E.support.fieldCare;
+            body += '<div class="roster-stats"><span>Лечение<b>+' + care.amount + '</b></span><span>Интервал<b>' + care.interval.toLocaleString('ru-RU') + ' с</b></span><span>Дальность<b>' + care.range / 40 + ' кл.</b></span></div><small class="roster-note">Следует за выбранным союзником. Лечит бойцов и героя.</small>';
+          }
           else body += '<div class="roster-stats"><span>Урон<b>' + (stat.damage || '—') + '</b></span><span>Дальность<b>' + (stat.range ? (stat.range / 40).toLocaleString('ru-RU', { maximumFractionDigits: 1 }) : '—') + '</b></span><span>Обзор<b>' + (E.sightRange(s, u) / 40).toLocaleString('ru-RU', { maximumFractionDigits: 1 }) + '</b></span></div>';
         }
         info = '<aside class="roster-detail" data-key="detail' + u.id + '">' + head + '<div class="roster-detail-body">' + body + '</div></aside>';
@@ -204,5 +211,6 @@
     }
   }
   SelectionPanel.icon = icon;
+  SelectionPanel.recruits = (kind, items) => (productionTypes[kind] || []).filter((key) => items[key]);
   root.SignalSelectionPanel = SelectionPanel;
 })(window);

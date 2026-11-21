@@ -20,6 +20,7 @@
         ...Object.fromEntries(Object.entries(base.items).map(([key, value]) =>
           [key, Object.freeze({ ...value, matter: prices[key] || 0 })])),
         condenser: Object.freeze({ cost: 180, matter: 0, time: 40, pop: 0, label: "Конденсатор" }),
+        medic: Object.freeze({ ...base.items.rifle, matter: 0, label: "Медик" }),
       }),
     }));
     return configs.get(base);

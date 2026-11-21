@@ -1435,7 +1435,7 @@
       for (const e of events) {
         if (
           e.type === "care-door" || (e.type === "reinforce" &&
-          ["rifle", "scout", "artillery", "drone"].includes(e.action))
+          ["rifle", "medic", "scout", "artillery", "drone"].includes(e.action))
         ) {
           this.modelExits.set(e.x + ":" + e.y, this.modelClock || 0);
           if (this.modelExits.size > 128)
@@ -1464,6 +1464,7 @@
             "build",
             "post-ready",
             "repair-ready",
+            "field-heal",
             "salvage",
             "breach",
           ].includes(e.type)
@@ -1472,7 +1473,7 @@
             ...e,
             seed,
             life: 0,
-            max: ["destroy", "blast"].includes(e.type)
+            max: e.type === "field-heal" ? E.support.fieldCare.pulse : ["destroy", "blast"].includes(e.type)
               ? 1.1
               : e.type === "order"
                 ? 0.8
@@ -2036,7 +2037,7 @@
         ellipse(c, hero.x, hero.y - 17, 2, 2, "#d3f1e4");
         c.restore();
       }
-      this.effects(c, dt, ui, active);
+      this.effects(c, dt, ui, active, s);
       const task = s.observationTask || E.objective(s),
         objective = task.target;
       if (objective && s.status === "playing") {
@@ -3215,7 +3216,7 @@
         );
       c.restore();
     }
-    effects(c, dt, ui, active) {
+    effects(c, dt, ui, active, s) {
       for (const f of this.fx) {
         f.life += f.type === "order" ? dt : active ? dt : 0;
         const t = f.life / f.max;
@@ -3225,7 +3226,19 @@
             ? "#99e6e2" : f.team ? "#e7aa87" : "#afe1cc";
         c.save();
         c.translate(0, -this.z(f.x, f.y));
-        if (f.type === "destroy" || f.type === "blast") {
+        if (f.type === "field-heal") {
+          const medic = s.units.find((u) => u.id === f.medic), patient = s.units.find((u) => u.id === f.patient);
+          if (medic?.hp > 0 && medic.flash > 0 && patient?.hp > 0 && !medic.care && !patient.care &&
+              E.dist(medic, patient) <= E.support.fieldCare.range) {
+            const a = Math.atan2(patient.y-medic.y, patient.x-medic.x),
+              x = medic.x + 19*Math.cos(a) - 8*Math.sin(a),
+              y = medic.y + 19*Math.sin(a) + 8*Math.cos(a) - 20,
+              endY = patient.y - 16 + this.z(f.x, f.y) - this.z(patient.x, patient.y);
+            c.globalAlpha = (1 - t) * .85; c.setLineDash([4, 6]);
+            line(c, [[x, y], [patient.x, endY]], "#a4e6e8", 1.7);
+            c.setLineDash([]); ring(c, patient.x, endY, 3 + t * 5, "#a4e6e8", 1.2);
+          }
+        } else if (f.type === "destroy" || f.type === "blast") {
           const heavy =
               f.type === "blast" ||
               ["citadel", "base", "jammer"].includes(f.kind),
@@ -3839,7 +3852,7 @@
           ],
           u.hp,
           u.defense,
-          ui.reduced ? 0 : u.flash,
+          u.kind === "medic" ? u.flash > 0 : ui.reduced ? 0 : u.flash,
           !ui.reduced && u.hit > 0,
           u.wind > 0,
           ["runner", "rocket", "flamer", "bomber"].includes(u.kind) &&

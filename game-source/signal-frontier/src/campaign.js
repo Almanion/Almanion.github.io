@@ -381,6 +381,7 @@
       "frontier-9", "frontier-10",
     ].includes(s.campaign?.id);
   const SPECIAL = ["rocket", "flamer", "bomber", "tank", "mortar"];
+  const recruits = ["rifle", "medic", "scout", "artillery", "drone"];
   function create(E) {
     const alive = (s, kind) =>
       s.units.filter((u) => u.hp > 0 && (!kind || u.kind === kind));
@@ -402,7 +403,7 @@
     const capacity = (s) => logistics(s) ? Math.min(120, 24 + ready(s, "logistics").length * 12) : 6 + ready(s, "outpost").length * 3;
     const workerCapacity = (s) => logistics(s) ? Math.min(48, 16 + ready(s, "logistics").length * 4) : expedition(s) ? 24 : 16;
     const miningCapacity = (s, mine) => mine?.resource === "matter" ? 2 : logistics(s) ? 6 : 4;
-    const activeCount = (s) => logistics(s) ? alive(s).length + queued(s).filter((j) => ["rifle", "scout", "artillery", "drone"].includes(j.action)).length : s.units.length;
+    const activeCount = (s) => logistics(s) ? alive(s).length + queued(s).filter((j) => recruits.includes(j.action)).length : s.units.length;
     const objectLimit = (s) => logistics(s) ? 512 : rules(s).unitLimit;
     const mineWorkers = (s, mine) => alive(s, "drone").filter((u) => !u.buildingId && !u.workerTask &&
       (u.mineId || mineFor(s, s.units.find((n) => n.id === u.node))?.id) === mine.id);
@@ -800,6 +801,7 @@
         activeCount(s) >= objectLimit(s) - 6 &&
         [
           "rifle",
+          "medic",
           "scout",
           "artillery",
           "drone",
@@ -863,7 +865,7 @@
           if (!E.construction.enabled(s) && !mineFor(s, producer)?.remaining)
             return fail("exhausted");
         } else if (E.construction.enabled(s)) {
-          const kind = ["rifle", "scout"].includes(action)
+          const kind = ["rifle", "scout", "medic"].includes(action)
             ? "barracks"
             : action === "artillery"
               ? "foundry"
@@ -908,7 +910,7 @@
           if (!ready(s, "outpost").length) return fail("expansion");
         }
         if (
-          ["hack", "weapons", "armor", "artillery"].includes(action) &&
+          ["hack", "weapons", "armor", "artillery", "medic"].includes(action) &&
           s.campaign.tier < 2
         )
           return fail("network");
@@ -1035,7 +1037,7 @@
         if (supplyBlocked(s, job)) continue;
         if (
           !u.construction &&
-          ["rifle", "scout", "artillery", "drone"].includes(job.action) &&
+          recruits.includes(job.action) &&
           !E.spawnPoint(s, u, job.action)
         )
           continue;
@@ -1043,7 +1045,7 @@
         if (job.remaining > 0) continue;
         if (
           u.construction &&
-          ["rifle", "scout", "artillery", "drone"].includes(job.action) &&
+          recruits.includes(job.action) &&
           !E.spawnPoint(s, u, job.action)
         )
           continue;
@@ -1068,7 +1070,7 @@
               0,
               p.x,
               p.y,
-              ["rifle", "scout"].includes(job.action) ? 1 : 2,
+              job.action === "artillery" ? 2 : 1,
             ),
           );
           if (u.rally) {
@@ -2409,6 +2411,7 @@
           "base",
           "outpost",
           "rifle",
+          "medic",
           "artillery",
           "drone",
           "barracks",
@@ -2467,6 +2470,7 @@
             (u.eastRole!==undefined && (!eastern(s)||!["carrier","gate","depot","power","turret","guard","raid"].includes(u.eastRole))) ||
             (["carrier","archive-gate","power-node","archive-depot"].includes(u.kind)&&!eastern(s)) ||
             (u.kind === "scout" && !E.fogged(s)) ||
+            (u.kind === "medic" && (!Matter.enabled(s) || c.tier < 2 || u.target !== null)) ||
             (!combat(s) &&
               (SPECIAL.includes(u.kind) || u.combat !== undefined)) ||
             (!u.team && u.combat !== undefined) ||
@@ -2504,10 +2508,10 @@
           )
             return null;
           if (
-            (["rifle", "scout"].includes(u.kind) && u.group !== 1) ||
+            (["rifle", "scout", "medic"].includes(u.kind) && u.group !== 1) ||
             (u.kind === "artillery" && u.group !== 2) ||
             (u.kind === "carrier" && u.group !== (s.east?.claimed?1:0)) ||
-            (!["rifle", "scout", "carrier", "artillery"].includes(u.kind) && u.group !== 0)
+            (!["rifle", "scout", "medic", "carrier", "artillery"].includes(u.kind) && u.group !== 0)
           )
             return null;
           if (
@@ -2579,6 +2583,7 @@
                   barracks: [
                     "rifle",
                     "scout",
+                    ...(Matter.enabled(s) && c.tier >= 2 ? ["medic"] : []),
                     ...(!E.construction.enabled(s) ? ["weapons"] : []),
                     ...(extended(s) ? ["repair"] : []),
                   ],

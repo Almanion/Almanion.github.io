@@ -53,6 +53,7 @@
               [
                 "hero",
                 "rifle",
+                "medic",
                 "scout",
                 "artillery",
                 "runner",

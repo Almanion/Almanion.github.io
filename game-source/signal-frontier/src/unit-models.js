@@ -4,6 +4,7 @@
   const TYPES = Object.freeze([
     "hero",
     "rifle",
+    "medic",
     "scout",
     "drone",
     "artillery",
@@ -33,6 +34,7 @@
   const GAITS = Object.freeze({
     hero: 48,
     rifle: 42,
+    medic: 36,
     scout: 36,
     drone: 24,
     artillery: 40,
@@ -614,6 +616,26 @@
         bone(c, knee, [0, side * wide * .55, 13], 4, p.angle, dark);
         cap(c, knee[0] + .5, knee[1], 4.8, 4.4, knee[2] - .5, 2.6, p.angle, hero ? pilotCeramic : fieldArmor);
       }
+    }
+    function medic(c, d) {
+      const { u, p, aim: a } = d, pulse = u.flash > 0 && !d.ui.memory,
+        tip = pulse ? 15 : 5, lampColor = "#8ed9df";
+      infantryFeet(c, p, false);
+      c.save(); c.translate(0, -Math.abs(Math.sin(p.phase)) * p.move * .35);
+      cast(c, 0, 0, 14, 14, 3.5, 12, 10, a, ceramic);
+      cast(c, -8, -1, 7.5, 11, 2, 13, 21, a, dark);
+      cap(c, -8, -1, 7, 10, 33, 2, a, ceramic);
+      lightStrip(c, [[-10, -3], [-7, -3], [-7, 1]], 35.4, a, lampColor, 1.4);
+      cast(c, 2, 0, 11, 10, 3, 23, 8, a, ceramic);
+      cap(c, 7, 0, 2.2, 8, 26, 3, a, dark);
+      lightStrip(c, [[8, -2.5], [8, 2.5]], 27.8, a, lampColor, 1);
+      bone(c, [0, -6, 20], [3, -8, 13], 3.5, a, alloy);
+      bone(c, [0, 6, 21], [2, 10, 13], 4, a, dark);
+      bone(c, [2, 10, 13], [tip, 8, 19], 3, a, alloy);
+      cap(c, tip, 8, 6, 4, 18, 3, a, ceramic);
+      for (const side of [-1, 1]) bone(c, [tip + 2, 8, 19], [tip + 5, 8 + side * 2, 20], 1.2, a, alloy);
+      if (pulse) lamp(c, tip + 4, 8, 20, a, 1.5, lampColor);
+      c.restore();
     }
     function infantryRifle(c, a, recoil, material, mount) {
       // Keep X=31, Y=5 and the actual bore height of each infantry weapon.
@@ -1951,6 +1973,11 @@
           cast(c,-13,side*6,10,5,1.5,0,2,a,dark,.5);
         }
         launcherTube(c,a+.16,0,5,wreck);
+      } else if (u.kind === "medic") {
+        cast(c,-1,0,17,12,3,0,4,a,wreck,1);
+        cap(c,-6,-4,15,7,3,4,a+.24,dark);
+        cap(c,8,0,8,8,0,4,a,wreck);
+        bone(c,[1,5,3],[8,10,1],2.5,a,alloy);
       } else if (["hero", "rifle"].includes(u.kind)) {
         cast(c,-1,0,14.5,14,4,0,4,a,wreck,1);
         cap(c,-8,0,6,u.kind==="hero"?13:11,0,4,a,dark);
@@ -2081,6 +2108,7 @@
     const painters = {
       hero: (c, d) => person(c, d, true),
       rifle: (c, d) => person(c, d, false),
+      medic,
       sentinel: robot,
       warden: robot,
       runner,
@@ -2201,7 +2229,15 @@
       }
       if (u.hp <= 0) {
         add(chamfer(r * 1.7, r * 1.1), 5, a);
+        if (u.kind === "medic") add(rounded(15, 7, 2, -6, -4), 7, a + .24);
         if (u.kind === "rocket") add(chamfer(32, 7, 1, 4, -7), 4, a + 0.16);
+        return shapes;
+      }
+      if (u.kind === "medic") {
+        add(rounded(14, 14, 3), 22, a);
+        add(rounded(11, 10, 3, 2, 0), 31, a);
+        add(rounded(7.5, 11, 2, -8, -1), 35, a);
+        add(chamfer(u.flash > 0 ? 19 : 8, 4, 1, u.flash > 0 ? 10 : 4, 8), 19, a);
         return shapes;
       }
       if (u.kind === "rocket") {

@@ -7,6 +7,7 @@
     names = {
       hero: "Герой",
       rifle: "Стрелок",
+      medic: "Полевой медик",
       scout: "Дозорный игрока",
       drone: "Рабочий дрон",
       artillery: "Артиллерия",
@@ -46,7 +47,8 @@
         height: id === "citadel" ? 80 : id === "base" ? 70 : 50,
       };
     }),
-    all = [...current, ...studies.specs],
+    all = [...current, ...studies.specs.map((spec) => spec.id === "medic"
+      ? { ...spec, id: "study-medic", study: spec.id, name: "Медик · эскиз" } : spec)],
     $ = (id) => document.getElementById(id),
     canvas = $("model-canvas"),
     group = $("group"),
@@ -64,6 +66,7 @@
   const ally = new Set([
     "hero",
     "rifle",
+    "medic",
     "scout",
     "drone",
     "artillery",
@@ -82,7 +85,7 @@
         options.progress ??
         (running ? (t % 3) / 3 : Number(progress.value) / 100);
     if (spec.group !== "current")
-      return studies.draw(c, spec.id, {
+      return studies.draw(c, spec.study || spec.id, {
         mode: m,
         angle: a,
         time: t,
@@ -110,7 +113,7 @@
         hp: m === "wreck" ? 0 : m === "damaged" ? def.hp * 0.3 : def.hp,
         angle: a,
         wind: action ? total * (1 - q) : 0,
-        flash: 0,
+        flash: id === "medic" && action ? E.support.fieldCare.pulse : 0,
         hit: 0,
         build: build ? E.development.items(state)[id].time * (1 - q) : 0,
         jobs:

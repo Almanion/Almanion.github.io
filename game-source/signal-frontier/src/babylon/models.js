@@ -37,7 +37,7 @@ export class Models {
   foot(x,y,w,d,lift,color=P.shell,a=this.a) {
     const p=this.point(x,y,0,a),ground=this.E.elevation(p[0],p[1],this.view.mapId)-this.floor,
       z=lift+Math.max(-7,Math.min(7,ground));
-    if(!this.u.team&&['hero','rifle','scout','drone'].includes(this.u.kind))this.prefab('drive-pod',x,y,z,a,w/9.5,d/6,1);
+    if(!this.u.team&&['hero','rifle','medic','scout','drone'].includes(this.u.kind))this.prefab('drive-pod',x,y,z,a,w/9.5,d/6,1);
     else if(this.u.kind==='sentinel')this.prefab('sentinel-boot',x,y,z,a,w/9.5,d/6,1);
     else {this.box(x+1,y,w,d,z,2.5,P.dark,a);this.box(x+1,y,w*.7,d*.7,z+2.5,1.6,color,a);}
     return z;
@@ -66,6 +66,17 @@ export class Models {
       this.box(knee[0]+.5,knee[1],4.8,4.4,knee[2]-.5,2.6,material);
     }
     this.box(-1,0,12,12,10+bob,5,P.dark);
+    if(this.u.kind==="medic"){
+      const pulse=this.u.flash>0&&!this.memory,tip=pulse?15:5;
+      this.prefab('medic-armour',0,0,bob,a);
+      this.beam([0,-6,20],[3,-8,13],3.5,P.steel,a);
+      this.beam([0,6,21],[2,10,13],4,P.dark,a);
+      this.joint(2,10,13,2,P.steel,a);this.beam([2,10,13],[tip,8,19],3,P.steel,a);
+      this.box(tip,8,6,4,18,3,P.shell,a);
+      for(const side of [-1,1])this.beam([tip+2,8,19],[tip+5,8+side*2,20],1.2,P.steel,a);
+      if(pulse)this.light(tip+4,8,2.4,2.4,20,1,a,'#8ed9df');
+      return;
+    }
     this.prefab(hero?'hero-armour':'rifle-armour',0,0,bob,a);
     for(const side of [-1,1]) {
       const elbow=[5,side*8,16.5+bob],grip=side>0?[11-this.recoil,5.5,17.5]:channel?[14,-5,28]:[21-hand*12-this.recoil,3-hand*6,18-hand*5];
@@ -267,6 +278,7 @@ export class Models {
     } else {
       this.box(-1,0,r*1.4,r*1.2,3,4,P.steel);for(const side of [-1,1])this.beam([-3,side*3,2],[-r,side*7,1],3,P.dark);
       if(this.u.kind==="scout"){this.beam([-4,0,4],[7,5,3],2.5,P.dark);this.box(7,5,14,8,2,3,P.steel,this.a+.2);}
+      else if(this.u.kind==="medic"){this.box(-6,-4,15,7,3,4,P.dark,this.a+.24);this.beam([1,5,3],[8,10,1],2.5,P.steel);}
       else if(!["drone","runner","bomber"].includes(this.u.kind))this.beam([3,6,3],[this.u.kind==="rocket"?28:24,8,2],this.u.kind==="rocket"?7:3,P.dark);
     }
   }
@@ -277,7 +289,7 @@ export class Models {
     this.begin(u,s,ui,memory);
     if(['carrier','archive-gate','power-node','archive-depot'].includes(u.kind)){this.archiveModel();return;}
     if(u.hp<=0){this.wreck();return;}
-    if(u.kind==="hero"||u.kind==="rifle")this.infantry();
+    if(u.kind==="hero"||u.kind==="rifle"||u.kind==="medic")this.infantry();
     else if(u.kind==="sentinel"||u.kind==="warden")this.robot();
     else if(u.kind==="runner")this.runner();else if(u.kind==="scout")this.scout();else if(u.kind==="drone")this.drone();
     else if(u.kind==="artillery")this.artillery();else if(u.kind==="rocket")this.rocket();

@@ -4,10 +4,55 @@
   function create(E) {
     const capacity = 4, rate = 8, enabled = (s) => E.construction.enabled(s),
       facility = (u) => u && !u.team && u.hp > 0 && !u.build && ["outpost", "bunker"].includes(u.kind),
-      patient = (u) => u && !u.team && u.hp > 0 && ["hero", "rifle", "scout", "artillery"].includes(u.kind),
+      patient = (u) => u && !u.team && u.hp > 0 && ["hero", "rifle", "medic", "scout", "artillery"].includes(u.kind),
       occupants = (s, id) => s.units.filter((u) => u.hp > 0 && u.care?.facility === id),
       fail = (reason) => ({ allowed: false, reason });
     const source = (s, p) => ({ ...p, map: E.navigation(s) });
+    const fieldCare = Object.freeze({ range: 120, search: 240, amount: 15, interval: 1.25, pulse: .24 });
+    function fieldTick(s, u, dt) {
+      const escort = u.order?.followId !== undefined;
+      // A destination takes priority over autonomous triage. An escort may
+      // briefly stop for a pulse while the formation is moving.
+      if (u.order && !escort && u.path.length) { E.follow(u, dt); return; }
+      if (!escort) u.order = null;
+      if (u.cool > 0) {
+        if (!u.flash) E.follow(u, dt);
+        return;
+      }
+      const from = source(s, u), candidates = [];
+      for (const v of E.nearby(s, 0, u, fieldCare.search)) {
+        if (v.hp <= 0 || v.care || (v.kind !== "hero" && v.kind !== "rifle") || v.hp >= E.C[v.kind].hp) continue;
+        const distance = E.dist(u, v);
+        if (distance > fieldCare.search) continue;
+        const ready = distance <= fieldCare.range && E.fireClear(from, v);
+        if (!escort || ready) candidates.push({ v, ready, distance, fraction: v.hp / E.C[v.kind].hp });
+      }
+      candidates.sort((a, b) => Number(b.ready) - Number(a.ready) ||
+        Number(b.v.id === u.order?.followId) - Number(a.v.id === u.order?.followId) ||
+        a.fraction - b.fraction || a.distance - b.distance || a.v.id - b.v.id);
+      u.cool = .4 + (u.id % 5) * .04;
+      for (const { v, ready } of candidates) {
+        if (ready) {
+          if (!escort) u.path = [];
+          u.angle = Math.atan2(v.y - u.y, v.x - u.x);
+          v.hp = Math.min(E.C[v.kind].hp, v.hp + fieldCare.amount);
+          u.cool = fieldCare.interval; u.flash = fieldCare.pulse;
+          E.emit(s, "field-heal", u.x, u.y, { medic: u.id, patient: v.id, team: 0 });
+          return;
+        }
+        const end = u.path.at(-1);
+        if (!(end && E.dist(end, v) <= fieldCare.range &&
+            E.fireClear({ ...end, kind: u.kind, map: from.map }, v))) {
+          const path = E.firingPath(u, v, fieldCare.range * .85);
+          if (!path.length) continue;
+          u.path = path;
+        }
+        E.follow(u, dt);
+        return;
+      }
+      if (!escort) u.path = [];
+      E.follow(u, dt);
+    }
     function route(s, u, p) {
       const r = E.C[u.kind].r;
       if (!E.free(p.x, p.y, r, E.navigation(s))) return null;
@@ -183,7 +228,7 @@
       }
       return true;
     }
-    return { enabled, capacity, rate, facility, patient, occupants, assignResource, admit,
+    return { enabled, capacity, rate, facility, patient, occupants, assignResource, admit, fieldCare, fieldTick,
       port, origin, departure, leave, evacuate, tick, onDeath, validate };
   }
   const api = { create };

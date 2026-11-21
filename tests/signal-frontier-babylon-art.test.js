@@ -2,7 +2,7 @@
 const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),Module=require('node:module'),esbuild=require('esbuild');
 const source=path.resolve('game-source/signal-frontier/src/babylon/prefabs.js'),compiled=esbuild.transformSync(fs.readFileSync(source,'utf8'),{format:'cjs',target:'node20'}),moduleFile=new Module(source,module);
 moduleFile._compile(compiled.code,source);const {PREFAB_NAMES,prefabData,Kit}=moduleFile.exports;
-assert.equal(PREFAB_NAMES.length,41);let triangles=0,shadowTriangles=0;
+assert.equal(PREFAB_NAMES.length,42);assert.ok(PREFAB_NAMES.includes('medic-armour'));let triangles=0,shadowTriangles=0;
 for(const name of PREFAB_NAMES){
  const model=prefabData(name);assert.equal(model,prefabData(name),name+': immutable geometry must be reused');
  for(const part of ['solid','shadow']){
@@ -30,4 +30,4 @@ for(const a of catalog.assets){
  assert.equal(image.toString('ascii',0,4),'RIFF');assert.equal(image.toString('ascii',8,12),'WEBP');
  assert.equal(image.readUInt32LE(4)+8,image.length,a.kind+': Git must preserve every binary preview byte');
 }
-console.log('PASS 41 cached 3D assemblies: finite geometry, normals, winding, reduced shadow detail, and 20 verified reference mappings ('+triangles+' triangles in the full catalogue)');
+console.log('PASS '+PREFAB_NAMES.length+' cached 3D assemblies: finite geometry, normals, winding, reduced shadow detail, and 20 verified reference mappings ('+triangles+' triangles in the full catalogue)');
