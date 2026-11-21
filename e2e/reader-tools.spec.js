@@ -76,10 +76,24 @@ test.describe('properties block actions', () => {
         await expect(block.locator(':scope > .copy-block-btn')).toHaveCount(1);
         const buttons = block.locator(':scope > :is(.copy-block-btn, .bookmark-btn, .personal-note-btn)');
         await expect(buttons).toHaveCount(3);
-        const rects = await buttons.evaluateAll(nodes => nodes.map(el => { const r = el.getBoundingClientRect(); const svg = el.querySelector('svg'); const icon = svg.getBoundingClientRect(); const style = getComputedStyle(svg); return { width: r.width, height: r.height, left: r.left, right: r.right, iconWidth: icon.width, iconHeight: icon.height, centerY: icon.top + icon.height / 2, stroke: style.strokeWidth, cap: style.strokeLinecap, join: style.strokeLinejoin }; }));
+        await buttons.first().evaluate(el => el.scrollIntoView({ block: 'center', inline: 'nearest' }));
+        const rects = await buttons.evaluateAll(nodes => nodes.map(el => {
+            const r = el.getBoundingClientRect(), button = getComputedStyle(el);
+            const svg = el.querySelector('svg'), icon = svg.getBoundingClientRect(), style = getComputedStyle(svg);
+            const scale = r.width / parseFloat(button.width), cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+            // All four corners, 1 CSS px inside the 44px target, must hit this button.
+            const hit = [-21, 21].every(dx => [-21, 21].every(dy => {
+                const target = document.elementFromPoint(cx + dx * scale, cy + dy * scale);
+                return target === el || el.contains(target);
+            }));
+            return { width: button.width, height: button.height, radius: button.borderRadius,
+                left: cx - 22 * scale, right: cx + 22 * scale, hit,
+                iconWidth: parseFloat(style.width), iconHeight: parseFloat(style.height),
+                centerY: icon.top + icon.height / 2, stroke: style.strokeWidth, cap: style.strokeLinecap, join: style.strokeLinejoin };
+        }));
         for (const r of rects) {
-            expect(r.width).toBeGreaterThanOrEqual(44); expect(r.height).toBeGreaterThanOrEqual(44);
-            expect(r.iconWidth).toBeLessThanOrEqual(20); expect(r.iconHeight).toBeLessThanOrEqual(20);
+            expect(r.width).toBe('22px'); expect(r.height).toBe('22px'); expect(r.radius).toBe('5px');
+            expect(r.iconWidth).toBe(16); expect(r.iconHeight).toBe(16); expect(r.hit).toBe(true);
             expect(r.iconWidth).toBeCloseTo(rects[0].iconWidth, 1);
             expect(r.iconHeight).toBeCloseTo(rects[0].iconHeight, 1);
             expect(r.centerY).toBeCloseTo(rects[0].centerY, 1);
@@ -124,13 +138,14 @@ test('block action icons share geometry and hover/focus styling across desktop t
         await page.waitForTimeout(180);
         const geometry = await buttons.evaluateAll(nodes => nodes.map(el => {
             const icon = el.querySelector('svg'), r = icon.getBoundingClientRect(), style = getComputedStyle(icon), button = getComputedStyle(el);
-            return { width: r.width, height: r.height, centerY: r.top + r.height / 2, stroke: style.strokeWidth, cap: style.strokeLinecap, join: style.strokeLinejoin, color: button.color, radius: button.borderRadius };
+            return { width: r.width, height: r.height, buttonWidth: button.width, buttonHeight: button.height, centerY: r.top + r.height / 2, stroke: style.strokeWidth, cap: style.strokeLinecap, join: style.strokeLinejoin, color: button.color, radius: button.borderRadius };
         }));
         for (const item of geometry) {
             expect(item.width).toBe(16); expect(item.height).toBe(16);
+            expect(item.buttonWidth).toBe('22px'); expect(item.buttonHeight).toBe('22px');
             expect(item.centerY).toBeCloseTo(geometry[0].centerY, 1);
             expect(item.stroke).toBe('1.8px'); expect(item.cap).toBe('round'); expect(item.join).toBe('round');
-            expect(item.color).toBe(geometry[0].color); expect(item.radius).toBe('8px');
+            expect(item.color).toBe(geometry[0].color); expect(item.radius).toBe('5px');
         }
         let hover;
         for (const button of await buttons.all()) {
@@ -141,7 +156,7 @@ test('block action icons share geometry and hover/focus styling across desktop t
             expect(state).toEqual(hover);
             await page.keyboard.press('Tab');
             await button.focus();
-            expect(await button.evaluate(el => ({ outline: getComputedStyle(el).outlineStyle, width: getComputedStyle(el).outlineWidth, offset: getComputedStyle(el).outlineOffset }))).toEqual({ outline: 'solid', width: '2px', offset: '2px' });
+            expect(await button.evaluate(el => ({ outline: getComputedStyle(el).outlineStyle, width: getComputedStyle(el).outlineWidth, offset: getComputedStyle(el).outlineOffset }))).toEqual({ outline: 'solid', width: '2px', offset: '0px' });
         }
         await page.evaluate(() => document.activeElement?.blur());
         await block.hover();

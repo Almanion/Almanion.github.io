@@ -30,7 +30,6 @@
     display: block;
 }
 
-/* The blue outline belongs to keyboard focus, never the idle icon. */
 .copy-block-btn:focus-visible { outline: 2px solid var(--accent-color); outline-offset: 2px; }
 .copyable-block > .copy-block-btn:is(.is-copied, .is-error) { color: var(--button-accent); }
 
@@ -70,21 +69,23 @@
     right: 3.5rem;
 }
 
-/* One visual treatment for the block's three actions, including deferred tools. */
+/* Shared block actions. */
 html body .main-content .copyable-block > :is(.copy-block-btn, .personal-note-btn, .bookmark-btn) {
     --block-action-ink: var(--text-secondary);
     --block-action-emphasis: var(--accent-color);
+    --block-action-hit-padding: 2px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
     box-sizing: border-box;
     top: 0.45rem;
-    width: 26px;
-    height: 26px;
+    width: 22px;
+    height: 22px;
     min-height: 0;
     padding: 0;
-    border: 1px solid transparent;
-    border-radius: 8px;
+    margin: var(--block-action-hit-padding);
+    border: 0;
+    border-radius: 5px;
     background: transparent;
     color: var(--block-action-ink);
     box-shadow: none;
@@ -95,6 +96,12 @@ html body .main-content .copyable-block > :is(.copy-block-btn, .personal-note-bt
     transition: color 150ms ease, background-color 150ms ease;
     -webkit-tap-highlight-color: transparent;
     touch-action: manipulation;
+}
+/* Extend the hit area past the highlight. */
+.copyable-block > :is(.copy-block-btn, .personal-note-btn, .bookmark-btn)::before {
+    content: "";
+    position: absolute;
+    inset: calc(0px - var(--block-action-hit-padding));
 }
 html body .main-content .copyable-block > :is(.personal-note-btn, .bookmark-btn) { opacity: 1; }
 html body .main-content .copyable-block > :is(.copy-block-btn, .personal-note-btn, .bookmark-btn) > svg {
@@ -115,7 +122,7 @@ html body .main-content .copyable-block > .copy-block-btn.is-copied { --block-ac
 html body .main-content .copyable-block > .copy-block-btn.is-error { --block-action-ink: var(--error-color); --block-action-emphasis: var(--error-color); }
 html body .main-content .copyable-block > :is(.copy-block-btn, .personal-note-btn, .bookmark-btn):focus-visible {
     outline: 2px solid var(--accent-color);
-    outline-offset: 2px;
+    outline-offset: 0;
 }
 @media (hover: hover) {
     body:not(.no-hover) .main-content .copyable-block > :is(.copy-block-btn, .personal-note-btn, .bookmark-btn):hover {
@@ -146,8 +153,8 @@ html body .main-content .copyable-block > :is(.copy-block-btn, .personal-note-bt
 
 @media screen and (max-width: 768px), screen and (pointer: coarse) {
     html body .main-content .copyable-block > :is(.copy-block-btn, .bookmark-btn, .personal-note-btn) {
-        width: 44px; height: 44px; min-height: 44px; top: 0; padding: 0;
-        border-radius: 10px; background: transparent; transform: none;
+        --block-action-hit-padding: 11px;
+        top: 0;
     }
     html body .main-content .copyable-block > .bookmark-btn { top: 0 !important; right: 0 !important; padding: 0 !important; }
     html body .main-content .copyable-block > .personal-note-btn { right: 44px; }
@@ -156,7 +163,6 @@ html body .main-content .copyable-block > :is(.copy-block-btn, .personal-note-bt
     html body .main-content .copyable-block:has(> .personal-note-btn):not(:has(> .bookmark-btn)) > .personal-note-btn { right: 0; }
     html body .main-content .copyable-block:has(> .personal-note-btn) > .copy-block-btn { right: 88px; }
     html body .main-content .copyable-block:has(> .personal-note-btn):not(:has(> .bookmark-btn)) > .copy-block-btn { right: 44px; }
-    html body .main-content .copyable-block > :is(.copy-block-btn, .bookmark-btn)::before { inset: 0; }
 }
 
 /* Всплывающее уведомление «Скопировано» */
