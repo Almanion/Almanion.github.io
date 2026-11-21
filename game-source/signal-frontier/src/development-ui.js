@@ -19,7 +19,7 @@
     condenser: '<path d="M5 19V7h14v12ZM8 16h8M9 5V3m6 2V3M12 7v6m-3-3 3 3 3-3"/>',
     alloy: '<path d="m12 3 8 9-8 9-8-9Zm-8 9h16M12 3v18"/>',
   };
-  const icon = (name) => ["rifle", "scout", "medic", "shield", "artillery", "drone"].includes(name) && root.SignalSelectionPanel
+  const icon = (name) => ["rifle", "scout", "medic", "shield", "grenadier", "artillery", "drone"].includes(name) && root.SignalSelectionPanel
     ? root.SignalSelectionPanel.icon(name)
     : `<svg viewBox="0 0 24 24" aria-hidden="true">${paths[name] || paths.node}</svg>`;
   class DevelopmentPanel {
@@ -584,6 +584,7 @@
           rifle: E.balance.enabled(s) ? "Основная пехота · 11 клеток" : "Основная боевая пехота",
           medic: "Лечит бойцов и героя · " + E.support.fieldCare.range / 40 + " клетки",
           shield: "Принимает огонь спереди · сектор " + Math.round(E.support.plate.halfAngle * 360 / Math.PI) + "°",
+          grenadier: "Огонь по площади · радиус " + E.GRENADE.radius / 40 + " кл. · цель успевает выйти из круга",
           scout: E.balance.enabled(s) ? "Разведка · обзор 24,5 клетки" : "Дальний обзор и разведка",
           artillery: E.balance.enabled(s) ? "20 клеток · огонь с разведкой" : "Дальнобойный огонь по укреплениям",
           drone: "Добыча, строительство и ремонт",
@@ -654,7 +655,7 @@
               ? roles[action] || "Нажмите для заказа"
               : reason(o),
           `data-action="${action}" ${site !== undefined ? `data-site="${site}"` : ""} ${o.producer ? `data-producer="${o.producer.id}"` : ""} ${o.allowed ? "" : "disabled"}`,
-          paths[action] || ["rifle", "scout", "medic", "shield", "artillery", "drone"].includes(action) ? action : "command",
+          paths[action] || ["rifle", "scout", "medic", "shield", "grenadier", "artillery", "drone"].includes(action) ? action : "command",
         );
       };
       const queue = (u, cycle = false) => {

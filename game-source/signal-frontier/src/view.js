@@ -1163,6 +1163,25 @@
       }
       this.groundLine(c, arc, "#b9edd2", 3);
     }
+    grenadeMark(c, s, point, remaining, inFlight = false) {
+      const r = E.GRENADE.radius;
+      if (!this.inView(point.x, point.y, r) || !E.visible(s, 0, point)) return;
+      const area = E.impactArea(s, point, r), [x,y] = this.p(point.x, point.y), scale = this.camera.scale;
+      c.save();
+      if (!inFlight) c.setLineDash([5/scale,3/scale]);
+      c.lineWidth = 1.5 / scale;
+      poly(c, this.groundPoints(area.points.map(p => [p.x,p.y])), "#9acbb81a", "#a4d6be");
+      c.setLineDash([]);
+      c.translate(x,y);
+      const size = Math.min(1, r * scale * Y / 18);
+      c.scale(size / scale, size / (scale * Y));
+      const gap = 2 + 5 * Math.max(0, Math.min(1, remaining));
+      for (const side of [-1,1]) {
+        line(c, [[side*gap,0],[side*(gap+4),0]], "#d4e8d3", 2);
+        line(c, [[0,side*gap],[0,side*(gap+4)]], "#d4e8d3", 2);
+      }
+      c.restore();
+    }
     shadow(c, x, y, shape, height, angle = 0) {
       if (!["highlands", "districts", "districts-east"].includes(this.mapId)) return;
       const T = E.terrainFor(this.mapId),
@@ -1444,7 +1463,7 @@
       for (const e of events) {
         if (
           e.type === "care-door" || (e.type === "reinforce" &&
-          ["rifle", "medic", "shield", "scout", "artillery", "drone"].includes(e.action))
+          ["rifle", "medic", "shield", "grenadier", "scout", "artillery", "drone"].includes(e.action))
         ) {
           this.modelExits.set(e.x + ":" + e.y, this.modelClock || 0);
           if (this.modelExits.size > 128)
@@ -1845,7 +1864,9 @@
           }
         }
       }
+      let grenadeMarks;
       for (const u of s.units) {
+        if (u.grenadeAim) (grenadeMarks ||= []).push(u.grenadeAim);
         if (u.care?.inside) continue;
         const area = E.dangerArea(s, u);
         if (area)
@@ -1936,6 +1957,8 @@
         c.save();
         this.fogClip(c, s.fog, "visible");
       }
+      if (grenadeMarks) for (const mark of grenadeMarks)
+        this.grenadeMark(c, s, mark, mark.remaining / E.GRENADE.windup);
       // Elevated flights share their height with collision tests; legacy flights keep their visual arc.
       for (const b of s.bullets) {
         const owner = s.units.find((u) => u.id === b.owner),
@@ -1991,6 +2014,10 @@
             "#7c6658",
           );
           c.restore();
+        } else if (b.kind === "grenade") {
+          this.grenadeMark(c, s, { x:b.tx, y:b.ty }, b.life / b.duration, true);
+          line(c, [[b.x-b.vx*.018,b.y-z-b.vy*.018],[b.x,b.y-z]], "#acd6bd", 2.5);
+          ellipse(c, b.x, b.y-z, 3.6, 3.6, "#dce6bc", "#405e56");
         } else if (b.kind === "shell") {
           const arcHeight =
             (b.z0 === undefined ? Math.sin(progress * Math.PI) * 55 : 0) + z;
@@ -3259,7 +3286,7 @@
           const heavy =
               f.type === "blast" ||
               ["citadel", "base", "jammer"].includes(f.kind),
-            r = heavy ? 65 : 34;
+            r = f.kind === "grenade" ? f.radius - 7 : heavy ? 65 : 34;
           c.globalAlpha = (1 - t) * 0.32;
           ellipse(
             c,
@@ -3870,6 +3897,7 @@
           u.hp,
           u.defense,
           u.guard ? [u.guard.angle, u.guard.lift, u.guard.pulse > 0] : null,
+          u.kind === "grenadier" ? [u.grenadeAim?.remaining ?? 0, u.cool] : null,
           u.kind === "medic" ? u.flash > 0 : ui.reduced ? 0 : u.flash,
           !ui.reduced && u.hit > 0,
           u.wind > 0,

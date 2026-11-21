@@ -381,7 +381,8 @@
       "frontier-9", "frontier-10",
     ].includes(s.campaign?.id);
   const SPECIAL = ["rocket", "flamer", "bomber", "tank", "mortar"];
-  const recruits = ["rifle", "medic", "shield", "scout", "artillery", "drone"];
+  const barracksRecruits = ["rifle", "medic", "shield", "grenadier", "scout"];
+  const recruits = [...barracksRecruits, "artillery", "drone"];
   function create(E) {
     const alive = (s, kind) =>
       s.units.filter((u) => u.hp > 0 && (!kind || u.kind === kind));
@@ -803,6 +804,7 @@
           "rifle",
           "medic",
           "shield",
+          "grenadier",
           "scout",
           "artillery",
           "drone",
@@ -866,7 +868,7 @@
           if (!E.construction.enabled(s) && !mineFor(s, producer)?.remaining)
             return fail("exhausted");
         } else if (E.construction.enabled(s)) {
-          const kind = ["rifle", "scout", "medic", "shield"].includes(action)
+          const kind = barracksRecruits.includes(action)
             ? "barracks"
             : action === "artillery"
               ? "foundry"
@@ -911,7 +913,7 @@
           if (!ready(s, "outpost").length) return fail("expansion");
         }
         if (
-          ["hack", "weapons", "armor", "artillery", "medic", "shield"].includes(action) &&
+          ["hack", "weapons", "armor", "artillery", "medic", "shield", "grenadier"].includes(action) &&
           s.campaign.tier < 2
         )
           return fail("network");
@@ -1797,6 +1799,34 @@
       )
         u.path = route;
     }
+    function grenadeTarget(s, u, from, opponents, range) {
+      const aim = v => s.east ? E.east.contact(E.map(s), from, v) : v;
+      const seen = v => v && v.team !== u.team && v.hp > 0 && !v.care?.inside &&
+        !(v.kind === "citadel" && E.shielded(s)) && E.visible(s, u.team, v, u);
+      let target;
+      if (u.target) {
+        const v = opponents.find(v => v.id === u.target.id);
+        if (seen(v) && E.rangeDistance(from, v) <= range && E.fireClear(from, aim(v))) target = v;
+      } else {
+        const candidates = [];
+        for (const v of opponents) {
+          const distance = E.rangeDistance(from, v);
+          if (distance <= range + E.GRENADE.radius && seen(v)) candidates.push({ v, distance, count: 1 });
+        }
+        candidates.sort((a, b) => a.v.x - b.v.x);
+        for (let i = 0; i < candidates.length; i++) {
+          const a = candidates[i];
+          for (let j = i + 1; j < candidates.length; j++) {
+            const b = candidates[j], dx = b.v.x - a.v.x, dy = b.v.y - a.v.y;
+            if (dx > E.GRENADE.radius) break;
+            if (dx * dx + dy * dy < E.GRENADE.radius ** 2) { a.count++; b.count++; }
+          }
+        }
+        candidates.sort((a, b) => b.count - a.count || a.distance - b.distance || a.v.id - b.v.id);
+        target = candidates.find(p => p.distance <= range && E.fireClear(from, aim(p.v)))?.v;
+      }
+      return target && aim(target);
+    }
     function enemy(s, u, dt, opponents) {
       const ai = u.ai;
       let def = E.stats(s, u);
@@ -2414,6 +2444,7 @@
           "rifle",
           "medic",
           "shield",
+          "grenadier",
           "artillery",
           "drone",
           "barracks",
@@ -2473,6 +2504,12 @@
             (["carrier","archive-gate","power-node","archive-depot"].includes(u.kind)&&!eastern(s)) ||
             (u.kind === "scout" && !E.fogged(s)) ||
             (u.kind === "medic" && (!Matter.enabled(s) || c.tier < 2 || u.target !== null)) ||
+            (u.kind === "grenadier" && (!Matter.enabled(s) || c.tier < 2)) ||
+            (u.grenadeAim !== undefined && (u.kind !== "grenadier" || u.hp <= 0 ||
+              u.cool !== 0 || u.wind !== 0 || u.path.length || !point(u.grenadeAim) ||
+              !s.units.some(v => v.id === u.grenadeAim.id && v.team === 1) ||
+              !num(u.grenadeAim.remaining, Number.MIN_VALUE, E.GRENADE.windup) ||
+              (u.care && !(u.care.garrison && u.care.inside && !u.care.exit)))) ||
             (u.kind === "shield" ? !Matter.enabled(s) || c.tier < 2 || !u.guard ||
               !num(u.guard.angle, -Math.PI, Math.PI) || !num(u.guard.lift, 0, 1) ||
               !num(u.guard.scan, 0, .29) || !num(u.guard.pulse, 0, E.support.plate.pulse) ||
@@ -2515,10 +2552,10 @@
           )
             return null;
           if (
-            (["rifle", "scout", "medic", "shield"].includes(u.kind) && u.group !== 1) ||
+            (barracksRecruits.includes(u.kind) && u.group !== 1) ||
             (u.kind === "artillery" && u.group !== 2) ||
             (u.kind === "carrier" && u.group !== (s.east?.claimed?1:0)) ||
-            (!["rifle", "scout", "medic", "shield", "carrier", "artillery"].includes(u.kind) && u.group !== 0)
+            (!barracksRecruits.includes(u.kind) && !["carrier", "artillery"].includes(u.kind) && u.group !== 0)
           )
             return null;
           if (
@@ -2590,7 +2627,7 @@
                   barracks: [
                     "rifle",
                     "scout",
-                    ...(Matter.enabled(s) && c.tier >= 2 ? ["medic", "shield"] : []),
+                    ...(Matter.enabled(s) && c.tier >= 2 ? ["medic", "shield", "grenadier"] : []),
                     ...(!E.construction.enabled(s) ? ["weapons"] : []),
                     ...(extended(s) ? ["repair"] : []),
                   ],
@@ -2900,7 +2937,8 @@
                 "ty",
               ].every((k) => Number.isFinite(b[k])) ||
               !(
-                combat(s) ? ["shell", "bolt", "missile"] : ["shell", "bolt"]
+                Matter.enabled(s) ? ["shell", "bolt", "missile", "grenade"] :
+                  combat(s) ? ["shell", "bolt", "missile"] : ["shell", "bolt"]
               ).includes(b.kind) ||
               (b.kind === "missile" &&
                 (!int(b.lockId, 1, s.seq) ||
@@ -2910,7 +2948,15 @@
                   !s.units.some(
                     (u) => u.id === b.owner && u.kind === "rocket",
                   ))) ||
-              (b.radius !== undefined &&
+              (b.kind === "grenade" && (b.team !== 0 || c.tier < 2 || b.radius !== E.GRENADE.radius ||
+                !s.units.some(u => u.id === b.owner && u.kind === "grenadier") ||
+                ![E.C.grenadier.damage, E.C.grenadier.damage * 1.2].includes(b.damage) ||
+                b.guided !== undefined || b.lockId !== undefined || !point({ x: b.tx, y: b.ty }) ||
+                !num(b.duration, .05, (E.C.grenadier.range * 1.25 + 144) / E.GRENADE.speed) ||
+                Math.abs(b.age + b.life - b.duration) > 1e-6 ||
+                Math.hypot(b.vx, b.vy) > E.GRENADE.speed + 1e-6 ||
+                Math.hypot(b.tx - b.x - b.vx * b.life, b.ty - b.y - b.vy * b.life) > .001)) ||
+              (b.radius !== undefined && b.kind !== "grenade" &&
                 (!combat(s) ||
                   b.radius !== 78 ||
                   b.kind !== "shell" ||
@@ -3039,6 +3085,7 @@
       CACHES,
       BUILDINGS,
       enemy,
+      grenadeTarget,
       operation,
       restore,
     };

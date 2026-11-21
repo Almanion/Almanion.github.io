@@ -9,6 +9,7 @@
       rifle: "Стрелок",
       medic: "Полевой медик",
       shield: "Щитоносец",
+      grenadier: "Гранатомётчик",
       scout: "Дозорный игрока",
       drone: "Рабочий дрон",
       artillery: "Артиллерия",
@@ -48,7 +49,7 @@
         height: id === "citadel" ? 80 : id === "base" ? 70 : 50,
       };
     }),
-    all = [...current, ...studies.specs.map((spec) => ["medic", "shield"].includes(spec.id)
+    all = [...current, ...studies.specs.map((spec) => ["medic", "shield", "grenadier"].includes(spec.id)
       ? { ...spec, id: "study-" + spec.id, study: spec.id, name: spec.name + " · эскиз" } : spec)],
     $ = (id) => document.getElementById(id),
     canvas = $("model-canvas"),
@@ -69,6 +70,7 @@
     "rifle",
     "medic",
     "shield",
+    "grenadier",
     "scout",
     "drone",
     "artillery",
@@ -116,6 +118,9 @@
         angle: a,
         wind: action ? total * (1 - q) : 0,
         flash: id === "medic" && action ? E.support.fieldCare.pulse : 0,
+        ...(id === "grenadier" && action ? q < .35
+          ? { grenadeAim: { x: 300 * Math.cos(a), y: 300 * Math.sin(a), remaining: E.GRENADE.windup * (1 - q / .35) } }
+          : { cool: def.rate * (1 - q) / .65 } : {}),
         ...(id === "shield" ? { guard: { angle: a, lift: action ? Math.min(1, q * 3) : 0,
           pulse: action && q > .65 && q < .75 ? E.support.plate.pulse : 0 } } : {}),
         hit: 0,

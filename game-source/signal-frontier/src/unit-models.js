@@ -6,6 +6,7 @@
     "rifle",
     "medic",
     "shield",
+    "grenadier",
     "scout",
     "drone",
     "artillery",
@@ -37,6 +38,7 @@
     rifle: 42,
     medic: 36,
     shield: 36,
+    grenadier: 36,
     scout: 36,
     drone: 24,
     artillery: 40,
@@ -55,6 +57,20 @@
     const lift = u.guard?.lift || 0;
     return { lift, a: (u.guard?.angle ?? u.angle ?? 0) - (1 - lift) * .85,
       x: 8 + lift * 3 - (reduced ? 0 : (u.guard?.pulse || 0) * 12), y: -5 * (1 - lift), z: 7 - lift * 4 };
+  }
+  function launcherPose(E, s, u) {
+    const aim = u.grenadeAim, round = !aim && u.flash > 0 && s.bullets?.find(b => b.owner === u.id && b.kind === "grenade");
+    const brace = aim ? 1 - aim.remaining / E.GRENADE.windup : round ? Math.min(1, u.flash / .1) : 0;
+    let pitch = 0;
+    if (aim || round) {
+      const x = aim?.x ?? round.tx, y = aim?.y ?? round.ty;
+      const travel = Math.max(1, Math.hypot(x - u.x, y - u.y) - E.GRENADE.muzzle);
+      const rise = E.elevation(x, y, u.map) + 10 - E.elevation(u.x, u.y, u.map) - E.MOUNTS.grenadier;
+      pitch = brace * Math.atan2(rise + Math.PI * E.GRENADE.arc, travel);
+    }
+    const muzzle = 19 + (E.MOUNTS.grenadier - 19) * brace;
+    return { brace, muzzle, rear: E.GRENADE.muzzle - 13 * Math.cos(pitch), breech: muzzle - 13 * Math.sin(pitch),
+      open: Math.sin(Math.min(1, (u.cool || 0) / E.C.grenadier.rate) * Math.PI) };
   }
   function motion(poses, u, time, reduced = false) {
     let p = poses.get(u.id);
@@ -669,6 +685,25 @@
       slab(c, 22-recoil, 0, 6, 4, mount-1.5, 3, gun, dark);
       flash(c, d, 25-recoil, 0, mount, gun, .6);
       if (!behind) handShield(c, pose, u.guard?.pulse);
+    }
+    function grenadier(c, d) {
+      const { u, aim: a } = d, pose = launcherPose(E, d.s, u);
+      const r = d.recoil * .55, rear = pose.rear - r, tip = E.GRENADE.muzzle - r;
+      infantryFeet(c, d.p, false, pose.brace);
+      cast(c,-1,0,16,15,3,12,10,a,fieldArmor);
+      cap(c,-8,0,7,18,14,12,a,alloy);
+      for (const side of [-1,1]) cap(c,-8,side*5,8,4,24,3,a,ceramic);
+      cast(c,1,0,11,11,3,23,8,a,fieldArmor);
+      lightStrip(c,[[6,-3],[6,3]],27,a,"#a4d6ba",1.1);
+      for (const side of [-1,1]) {
+        const hand = side < 0 ? rear-2-pose.open*3 : rear+4;
+        bone(c,[0,side*6,21],[5,side*9,15],3.8,a,alloy);
+        bone(c,[5,side*9,15],[hand,side*5,pose.breech],3.1,a,dark);
+        bone(c,[rear,side*4,pose.breech],[tip,side*4,pose.muzzle],4.1,a,fieldArmor);
+      }
+      cap(c,rear-2,-pose.open*4,8,10,pose.breech-3,5,a,alloy);
+      cap(c,tip-1,0,3,11,pose.muzzle-2,3,a,ceramic);
+      flash(c,d,tip,0,pose.muzzle,a,.65);
     }
     function infantryRifle(c, a, recoil, material, mount) {
       // Keep X=31, Y=5 and the actual bore height of each infantry weapon.
@@ -2006,6 +2041,9 @@
           cast(c,-13,side*6,10,5,1.5,0,2,a,dark,.5);
         }
         launcherTube(c,a+.16,0,5,wreck);
+      } else if (u.kind === "grenadier") {
+        cast(c,-2,0,18,13,3,0,4,a,wreck); cap(c,-7,-6,10,16,1,3,a,alloy);
+        cap(c,11,7,16,10,1,3,a+.3,wreck); cap(c,15,7,4,12,3,2,a+.3,alloy);
       } else if (u.kind === "shield") {
         cast(c,-2,0,18,13,3,0,4,a,wreck);
         cap(c,8,1,10,9,0,4,a,wreck);
@@ -2148,6 +2186,7 @@
       rifle: (c, d) => person(c, d, false),
       medic,
       shield,
+      grenadier,
       sentinel: robot,
       warden: robot,
       runner,
@@ -2270,7 +2309,13 @@
         add(chamfer(r * 1.7, r * 1.1), 5, a);
         if (u.kind === "medic") add(rounded(15, 7, 2, -6, -4), 7, a + .24);
         if (u.kind === "shield") add(chamfer(24,17,3,0,-14), 4, a + .37);
+        if (u.kind === "grenadier") add(chamfer(17,11,2,11,7), 4, a+.3);
         if (u.kind === "rocket") add(chamfer(32, 7, 1, 4, -7), 4, a + 0.16);
+        return shapes;
+      }
+      if (u.kind === "grenadier") {
+        add(rounded(16,15,3,-1,0), 24, a); add(rounded(10,10,3,1,0),31,a);
+        add(chamfer(8,18,2,-8,0), 26, a); add(chamfer(16,11,2,16,0),u.grenadeAim ? 25 : 19,a);
         return shapes;
       }
       if (u.kind === "shield") {
@@ -2467,7 +2512,7 @@
       },
     };
   }
-  const api = { create, types: TYPES, motion, contact, shieldPose, gaits: GAITS };
+  const api = { create, types: TYPES, motion, contact, shieldPose, launcherPose, gaits: GAITS };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   else root.SignalUnitModels = api;
 })(typeof globalThis !== "undefined" ? globalThis : window);

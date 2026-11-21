@@ -22,6 +22,7 @@
         condenser: Object.freeze({ cost: 180, matter: 0, time: 40, pop: 0, label: "Конденсатор" }),
         medic: Object.freeze({ ...base.items.rifle, matter: 0, label: "Медик" }),
         shield: Object.freeze({ ...base.items.rifle, matter: 0, label: "Щитоносец" }),
+        grenadier: Object.freeze({ ...base.items.rifle, matter: 0, label: "Гранатомётчик" }),
       }),
     }));
     return configs.get(base);

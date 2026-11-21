@@ -127,6 +127,7 @@ test("rendered sound has distinct layers, direction, headroom, a silent tail and
         "hurt",
         "shield",
         "shield-block",
+        "grenade-launch",
         "dash",
         "reload",
         "order",

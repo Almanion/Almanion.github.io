@@ -111,6 +111,17 @@ function medicArmour(){
   for(const side of [-1,1])k.box(-.4,side*6.5,18.5,6,4,4,C.sage,{radius:1.2});
   k.vents(-8,-.2,35.3,2.5,4,2);return k.result();
 }
+function grenadierArmour(){
+  const k=new Kit();
+  k.box(-1,0,12,16,15,11,C.sage,{radius:3});k.box(-8,0,14,8,19,12,C.graphite,{radius:1.8});
+  for(const side of [-1,1]){
+    k.box(-8,side*5,23,8.5,5.4,4,C.ivory,{radius:1});
+    k.panel(-7,side*5,27.1,4.5,2,C.joint);k.box(0,side*6.2,19,7,4,4.5,C.sage,{radius:1.3});
+  }
+  k.box(1,0,23,11,11,8,C.sage,{radius:3});k.box(6.2,0,25.5,2,7,3,C.joint);
+  k.box(7.3,0,26.7,.5,5.2,.9,C.mint,{emission:true,shadow:false});
+  return k.result();
+}
 function shieldPlate(){
   const k=new Kit(),outline=[[-3,-17],[-1,-20],[2,-19],[5,-10],[6,0],[5,10],[2,19],[-1,20],[-3,17]];
   k.extrusion(outline,0,0,0,24,C.sage,{bevel:1});
@@ -353,7 +364,7 @@ function building(kind,roof){
   return k.result();
 }
 const factories={
-  'hero-armour':()=>infantry(true),'rifle-armour':()=>infantry(false),'medic-armour':medicArmour,'shield-plate':shieldPlate,'infantry-rifle':rifle,'drive-pod':drivePod,
+  'hero-armour':()=>infantry(true),'rifle-armour':()=>infantry(false),'medic-armour':medicArmour,'shield-plate':shieldPlate,'grenadier-armour':grenadierArmour,'infantry-rifle':rifle,'drive-pod':drivePod,
   'scout-chassis':scout,'scout-sensor':sensor,'drone-chassis':drone,'allied-track':track,
   'artillery-chassis':artillery,'artillery-turret':turret,'rocket-armour':rocketBody,'rocket-launcher':launcher,'runner-carapace':runner,
   'sentinel-armour':sentinel,'sentinel-rifle':()=>rifle(C.enemy),'sentinel-boot':()=>drivePod(C.enemy),

@@ -300,7 +300,8 @@ export class BabylonView extends Legacy {
     this.parts.opacity=1;
     for(const b of s.bullets) {
       const z=E.projectileHeight(b)??this.z(b.x,b.y)+16,speed=Math.hypot(b.vx,b.vy)||1,
-        length=b.kind==="shell"?10:b.kind==="missile"?15:11;
+        length=b.kind==="grenade"?6:b.kind==="shell"?10:b.kind==="missile"?15:11;
+      if(b.kind==="grenade")this.parts.part("sphere",b.x,b.y,z-3,6.6,6.6,6.6,0,"#dce6bc",-10000,false,true);
       this.parts.beam(b.x-b.vx/speed*length,b.y-b.vy/speed*length,z,b.x,b.y,z,b.kind==="missile"?2:1.2,b.team?"#efae8c":"#d5f4df",-10000,false,true);
     }
     this.parts.commit();this.timings.models=performance.now()-time;time=performance.now();
@@ -318,6 +319,7 @@ export class BabylonView extends Legacy {
     if(ui.modelPreview)return;
     c.setTransform(this.dpr,0,0,this.dpr,0,0);c.save();c.translate(this.origin.x,this.origin.y);c.scale(cam.scale,cam.scale*Y);c.translate(-cam.x,-cam.y);
     for(const u of s.units) {
+      if(u.grenadeAim)this.grenadeMark(c,s,u.grenadeAim,u.grenadeAim.remaining/E.GRENADE.windup);
       if(u.care?.inside||u.hp<=0)continue;
       const selected=!u.team&&(ui.selectionIds!=null?ui.selectionIds.includes(u.id):ui.mode==="tactical"&&u.group===ui.group);
       if(selected) {
@@ -340,6 +342,7 @@ export class BabylonView extends Legacy {
         c.fillStyle="#102832";c.fillRect(u.x-r,y,r*2,3);c.fillStyle=u.team?"#d29c83":"#9cd8c7";c.fillRect(u.x-r,y,r*2*Math.max(0,u.hp)/E.C[u.kind].hp,3);
       }
     }
+    for(const b of s.bullets)if(b.kind==="grenade")this.grenadeMark(c,s,{x:b.tx,y:b.ty},b.life/b.duration,true);
     this.statusOverlay(c,s,ui);
     if(ui.placement)this.placementOverlay(c,s,ui.placement);
     const task=s.observationTask||E.objective(s);

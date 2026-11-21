@@ -4,7 +4,7 @@
   function create(E) {
     const capacity = 4, rate = 8, enabled = (s) => E.construction.enabled(s),
       facility = (u) => u && !u.team && u.hp > 0 && !u.build && ["outpost", "bunker"].includes(u.kind),
-      patient = (u) => u && !u.team && u.hp > 0 && ["hero", "rifle", "shield", "medic", "scout", "artillery"].includes(u.kind),
+      patient = (u) => u && !u.team && u.hp > 0 && ["hero", "rifle", "shield", "grenadier", "medic", "scout", "artillery"].includes(u.kind),
       occupants = (s, id) => s.units.filter((u) => u.hp > 0 && u.care?.facility === id),
       fail = (reason) => ({ allowed: false, reason });
     const source = (s, p) => ({ ...p, map: E.navigation(s) });
@@ -62,7 +62,7 @@
       }
       const from = source(s, u), candidates = [];
       for (const v of E.nearby(s, 0, u, fieldCare.search)) {
-        if (v.hp <= 0 || v.care || (v.kind !== "hero" && v.kind !== "rifle" && v.kind !== "shield") || v.hp >= E.C[v.kind].hp) continue;
+        if (v.hp <= 0 || v.care || !["hero", "rifle", "shield", "grenadier"].includes(v.kind) || v.hp >= E.C[v.kind].hp) continue;
         const distance = E.dist(u, v);
         if (distance > fieldCare.search) continue;
         const ready = distance <= fieldCare.range && E.fireClear(from, v);
@@ -151,6 +151,7 @@
           ...(garrison ? { garrison: true, slot } : {}) };
         if (garrison) slots.add(slot);
         if (u.guard) Object.assign(u.guard, { lift: 0, pulse: 0, scan: 0, watch: 0 });
+        if (u.grenadeAim) delete u.grenadeAim;
         u.path = path; u.target = u.order = null; u.wind = 0;
         if (u.kind === "hero") s.dashT = 0;
         reserved++; count++;
@@ -193,6 +194,7 @@
     }
     function leave(s, u, point = departure(s, u)) {
       if (!u.care) return true;
+      if (u.grenadeAim) delete u.grenadeAim;
       if (!point) { u.care.exit = true; return false; }
       if (u.care.inside) {
         const b = s.units.find((v) => v.id === u.care.facility);

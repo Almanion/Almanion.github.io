@@ -234,15 +234,15 @@ test("all model types render without mutating an operation and instances stay bo
       ...(SignalEngine.construction.shapes[kind]?{construction:{turn:i%4}}:{})}));
     s.heroId=s.units.find(u=>u.kind==='hero').id;
     s.bullets=[];s.events=[];const saved=JSON.stringify(s);v.reset(s);v.render(s,{mode:'tactical',reduced:true,selectionIds:[]},1/60);
-    const pure=saved===JSON.stringify(s),meshes=v.scene.meshes.length,medic=s.units.find(u=>u.kind==="medic"),shield=s.units.find(u=>u.kind==="shield");
-    for(let i=0;i<20;i++){const member=i%2?medic:shield;s.units.push({...member,id:3000+i,x:member.x+i*2});}
+    const pure=saved===JSON.stringify(s),meshes=v.scene.meshes.length,infantry=["medic","shield","grenadier"].map(kind=>s.units.find(u=>u.kind===kind));
+    for(let i=0;i<20;i++){const member=infantry[i%infantry.length];s.units.push({...member,id:3000+i,x:member.x+i*2});}
     v.render(s,{mode:'tactical',reduced:true,selectionIds:[]},1/60);
     return {results,pure,types:kinds.sort(),meshes,formationMeshes:v.scene.meshes.length,maxMeshes:v.diagnostics().maxBatches*2+1};
   });
   // Cover the canonical registry, including the four eastern archive objects.
-  // Four primitives and 43 rigid assemblies, each with one shadow, plus terrain.
+  // Four primitives and 44 rigid assemblies, each with one shadow, plus terrain.
   expect(results.pure).toBe(true);expect(results.types).toEqual(Object.keys(E.C).sort());expect(results.meshes).toBeLessThanOrEqual(results.maxMeshes);
-  expect(results.maxMeshes).toBe(95);expect(results.formationMeshes).toBe(results.meshes);
+  expect(results.maxMeshes).toBe(97);expect(results.formationMeshes).toBe(results.meshes);
   for(const row of results.results){expect(row.gpu.units).toBe(row.count);expect(row.gpu.batches).toBeGreaterThan(4);expect(row.gpu.batches).toBeLessThanOrEqual(45);expect(row.gpu.drawCalls).toBeLessThanOrEqual(row.gpu.activeBatches*2+1);expect(row.gpu.parts).toBeLessThan(row.count*60+100);}
   expect(results.results.map(r=>r.gpu.batches)).toEqual(Array(4).fill(results.results[0].gpu.batches));
 });

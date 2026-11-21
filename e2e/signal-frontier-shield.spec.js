@@ -35,7 +35,7 @@ for (const [w, h, renderer] of [[1440, 900, "babylon"], [390, 844, "babylon"], [
       expect(await page.locator(".roster-detail-head strong").evaluate(el => el.scrollWidth <= el.clientWidth + 1)).toBe(true);
       await expect(page.locator(".roster-task")).toHaveText("Держит щит");
       await expect(page.locator(".roster-stats")).toContainText("120°");
-      await expect(page.locator(".plate-note")).toBeInViewport();
+      await expect(page.locator(".role-note")).toBeInViewport();
       await page.clock.runFor(60);
       const sectorVisible = await page.evaluate(id => {
         const u = SignalGame.snapshot().units.find(unit => unit.id === id), radius = SignalEngine.C.shield.r + 13;
@@ -53,7 +53,7 @@ for (const [w, h, renderer] of [[1440, 900, "babylon"], [390, 844, "babylon"], [
       await page.screenshot({ path: info.outputPath("shield-field.png") });
       await group(2);
       const cards = page.locator("[data-train]:visible"), shieldCard = page.locator('[data-train="shield"]:visible');
-      await expect(cards).toHaveCount(4);
+      await expect(cards).toHaveCount(5);
       await expect(shieldCard).toHaveAccessibleName(/Щитоносец.*65 сплава.*24 с.*Защита спереди/);
       const bounds = () => cards.evaluateAll(nodes => nodes.map(el => {
         const b = el.getBoundingClientRect(), name = el.querySelector("strong");

@@ -12,7 +12,7 @@
   const guards=[['sentinel',4160,1960],['sentinel',4160,2200],['sentinel',3880,1880],['warden',4080,2240],['sentinel',4040,1120],['sentinel',4600,1160],['warden',4360,1160],['rocket',4880,1160],['sentinel',3880,3040],['sentinel',4800,3080],['runner',4240,3000],['runner',4600,3040],['flamer',4840,2960],['sentinel',4480,2000],['sentinel',4560,2080],['sentinel',4640,2280],['warden',4480,1880],['warden',4680,2200],['tank',4520,1800],['tank',4560,2360],['rocket',4840,2320],['mortar',4840,1840],['sentinel',5160,1960],['sentinel',5200,2280],['sentinel',5360,2200],['warden',5360,1960],['rocket',5280,1800],['tank',5280,2480]].map(([kind,x,y])=>({kind,x,y}));
   const mines=[...D.mines,{id:'east-gate',x:3880,y:2280,stock:1440},{id:'service-deck',x:4520,y:3240,stock:1440}],
     caches=[...D.caches,{id:'E-C01',x:3800,y:2440},{id:'E-C02',x:4800,y:3320}];
-  let terrain,baseMap;const worlds=new WeakMap();
+  let terrain,baseMap;const worlds=new WeakMap(), missionBodies=new WeakMap();
   function geometry(){return terrain ||= T.create({W:5600,regions,links});}
   function map(base){return baseMap ||= {...base,id:'districts-east',W:5600,regions:[...D.regions,...regions],districts:[...D.regions,...regions],links:[...base.links,...links],walls:[...base.walls,...walls]};}
   function world(s,base){
@@ -20,14 +20,39 @@
     const key=s.east.revision,old=worlds.get(s);
     if(old?.key===key)return old.world;
     const g=actor(s,'gate'),d=actor(s,'depot'),p=actor(s,'power');
-    const gates=[];
+    const gates=[], objectives=[
+      {x:4300,y:1960,w:40,h:240,gate:'direct',unitId:g?.id},
+      {x:4640,y:1720,w:160,h:160,mission:true,unitId:d?.id},
+      {x:4440,y:1040,w:80,h:80,mission:true,unitId:p?.id}];
     if(!s.east.entrance)gates.push({x:3580,y:1960,w:40,h:240,gate:'entrance'});
-    if(!s.east.power&&g?.hp!==0)gates.push({x:4300,y:1960,w:40,h:240,gate:'direct',unitId:g?.id});
+    if(!s.east.power&&g?.hp!==0)gates.push(objectives[0]);
     if(!s.east.service)gates.push({x:4980,y:2880,w:40,h:240,gate:'service'});
-    if(d?.hp>0)gates.push({x:4640,y:1720,w:160,h:160,mission:true,unitId:d.id});
-    if(p?.hp>0)gates.push({x:4440,y:1040,w:80,h:80,mission:true,unitId:p.id});
+    if(d?.hp>0)gates.push(objectives[1]);
+    if(p?.hp>0)gates.push(objectives[2]);
     const layout=[s.east.entrance,s.east.power,s.east.service,g?.hp>0,d?.hp>0,p?.hp>0].join(':');
-    const value={...map(base),walls:[...map(base).walls,...gates],revision:layout};worlds.set(s,{key,world:value});return value;
+    const value={...map(base),walls:[...map(base).walls,...gates],revision:layout};
+    const bodies=new Map();
+    for(const w of objectives)if(w.unitId){
+      const samples=[];
+      for(const f of [.15,.5,.85]){
+        samples.push({x:w.x-2,y:w.y+f*w.h},{x:w.x+w.w+2,y:w.y+f*w.h},
+          {x:w.x+f*w.w,y:w.y-2},{x:w.x+f*w.w,y:w.y+w.h+2});
+      }
+      bodies.set(w.unitId,{wall:w,samples});
+    }
+    missionBodies.set(value,bodies);worlds.set(s,{key,world:value});return value;
+  }
+  function visibleFace(world,target,visible){
+    const body=missionBodies.get(world)?.get(target?.id);
+    if(!body || target.x!==body.wall.x+body.wall.w/2 || target.y!==body.wall.y+body.wall.h/2)return false;
+    return body.samples.some(visible);
+  }
+  function contact(world,from,target){
+    const w=missionBodies.get(world)?.get(target.id)?.wall;
+    if(!w)return target;
+    const x=Math.max(w.x,Math.min(w.x+w.w,from.x)),y=Math.max(w.y,Math.min(w.y+w.h,from.y)),
+      dx=from.x-x,dy=from.y-y,k=Math.min(1,2/(Math.hypot(dx,dy)||1));
+    return {x:x+dx*k,y:y+dy*k,id:target.id,map:target.map};
   }
   const dock={x:5280,y:2080},consolePoint={x:5360,y:2040};
   const enabled=s=>s?.campaign?.id==='frontier-10',carrier=s=>s.units.find(u=>u.kind==='carrier');
@@ -138,6 +163,6 @@
       (!e.claimed||e.open)&&(!e.entrance||e.open)&&(!e.transmitting||e.claimed)&&(!e.upload||e.transmitting)&&
       (s.status!=='won'||e.upload===1)&&(!e.open||!E.living(s,'citadel'));
   }
-  const API={regions,links,walls,guards,mines,caches,geometry,map,world,initialize,interaction,objective,tick,validate,carrier,dock};
+  const API={regions,links,walls,guards,mines,caches,geometry,map,world,visibleFace,contact,initialize,interaction,objective,tick,validate,carrier,dock};
   if(typeof module!=='undefined'&&module.exports)module.exports=API;else root.SignalEast=API;
 })(typeof globalThis!=='undefined'?globalThis:window);

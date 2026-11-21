@@ -182,7 +182,7 @@
               ? type + e.id
               : type;
       const interval =
-        type === "field-heal" ? .22 : type === "shot"
+        type === "field-heal" ? .22 : type === "grenade-launch" ? .09 : type === "shot"
           ? 0.045
           : ["hit", "spark", "shield", "shield-block"].includes(type)
             ? 0.07
@@ -337,6 +337,9 @@
       } else if (type === "hurt") {
         noise(680, 180, 0.16, 0.12);
         tone(105, 60, 0.19, 0.14);
+      } else if (type === "grenade-launch") {
+        noise(920, 210, .092, .074, 0, "bandpass");
+        tone(150, 71, .13, .065, 0, "triangle");
       } else if (type === "shield-block") {
         noise(2800, 850, .055, .048, 0, "bandpass");
         tone(390, 215, .085, .039, 0, "triangle");
