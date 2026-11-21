@@ -298,6 +298,10 @@
         if (e.kind === "runner") {
           noise(1200, 180, 0.12, 0.18);
           tone(145, 58, 0.1, 0.08);
+        } else if (e.kind === "armored") {
+          noise(2600, 650, .06, .13, 0, "bandpass");
+          tone(144 * variation, 56, .14, .12);
+          noise(1120, 510, .045, .042, .075, "bandpass");
         } else if (e.team) {
           tone(280 * variation, 86, 0.22, 0.1, 0, "triangle");
           noise(1800, 520, 0.07, 0.1);

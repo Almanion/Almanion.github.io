@@ -195,6 +195,24 @@ export class Models {
     this.tracks();this.prefab('artillery-chassis');this.prefab('artillery-turret',-this.recoil*.25,0,0,this.aim);
     this.gun(this.aim,this.E.MOUNTS.artillery);
   }
+  armoredWheels(broken=false) {
+    for(const side of [-1,1]) for(const axle of globalThis.SignalUnitModels.armoredAxles) {
+      const socket=this.point(axle,side*13,0), yaw=this.a+(axle===15?(this.pose.turn||0)*.45:0);
+      socket[2]=this.E.elevation(socket[0],socket[1],this.view.mapId);
+      this.parts.part('armored-wheel',...socket,1,1,1,yaw,broken?P.steel:'#ffffff',this.floor,this.memory);
+      if(!broken) {
+        const phase=((side<0?this.pose.left:this.pose.right)||0)/6, spoke=2.6*Math.cos(phase),
+          hub=[socket[0]-Math.sin(yaw)*side*3.55,socket[1]+Math.cos(yaw)*side*3.55,socket[2]+6];
+        this.parts.beam(...hub,hub[0]+Math.cos(yaw)*spoke,hub[1]+Math.sin(yaw)*spoke,hub[2]+2.6*Math.sin(phase),1.2,P.shell,this.floor,this.memory);
+      }
+    }
+  }
+  armored() {
+    this.armoredWheels(); this.prefab('armored-chassis');
+    this.box(-1,0,17,13,16,6,P.field,this.aim);
+    this.box(-3,-5,8,4,21.5,2,P.shell,this.aim);
+    this.gun(this.aim,this.E.MOUNTS.armored,31,3.2,6,P.steel);
+  }
   rocket() {
     const a=this.aim,brace=this.progress;
     for(const side of [-1,1]) {
@@ -299,6 +317,9 @@ export class Models {
     this.box(0,0,w,h,0,3,P.dark);
     if(shape||!this.E.C[this.u.kind].speed) {
       for(let i=0;i<3;i++)this.box((i-1)*w*.23,(i%2-.5)*h*.3,w*.31,h*.42,3,5+i*3,P.steel,this.a+i*.13);
+    } else if(this.u.kind==="armored") {
+      this.armoredWheels(true); this.box(-1,0,39,21,3,3,P.steel);
+      this.box(-3,1,16,12,6,3,P.dark,this.aim); this.beam([3,0,8],[23,4,3],3,P.dark,this.aim);
     } else if(["artillery","tank","mortar"].includes(this.u.kind)) {
       this.tracks(this.u.kind==="tank"?45:39,14,P.steel);this.box(-3,0,23,19,5,5,P.steel,this.a+.15);this.beam([0,0,9],[32,6,4],5,P.dark);
     } else {
@@ -320,7 +341,7 @@ export class Models {
     if(u.kind==="hero"||u.kind==="rifle"||u.kind==="medic"||u.kind==="shield"||u.kind==="grenadier")this.infantry();
     else if(u.kind==="sentinel"||u.kind==="warden")this.robot();
     else if(u.kind==="runner")this.runner();else if(u.kind==="scout")this.scout();else if(u.kind==="drone")this.drone();
-    else if(u.kind==="artillery")this.artillery();else if(u.kind==="rocket")this.rocket();
+    else if(u.kind==="armored")this.armored();else if(u.kind==="artillery")this.artillery();else if(u.kind==="rocket")this.rocket();
     else if(u.kind==="tank"||u.kind==="mortar")this.tank();else if(u.kind==="flamer"||u.kind==="bomber")this.specialist();
     else if(["base","outpost","barracks","foundry","arsenal","bunker","logistics","condenser"].includes(u.kind))this.building();else this.fortification();
   }

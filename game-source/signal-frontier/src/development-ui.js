@@ -19,7 +19,7 @@
     condenser: '<path d="M5 19V7h14v12ZM8 16h8M9 5V3m6 2V3M12 7v6m-3-3 3 3 3-3"/>',
     alloy: '<path d="m12 3 8 9-8 9-8-9Zm-8 9h16M12 3v18"/>',
   };
-  const icon = (name) => ["rifle", "scout", "medic", "shield", "grenadier", "artillery", "drone"].includes(name) && root.SignalSelectionPanel
+  const icon = (name) => ["rifle", "scout", "medic", "shield", "grenadier", "armored", "artillery", "drone"].includes(name) && root.SignalSelectionPanel
     ? root.SignalSelectionPanel.icon(name)
     : `<svg viewBox="0 0 24 24" aria-hidden="true">${paths[name] || paths.node}</svg>`;
   class DevelopmentPanel {
@@ -243,6 +243,7 @@
                 scout: "barracks",
                 weapons: "barracks",
                 artillery: "foundry",
+                armored: "foundry",
                 armor: "foundry",
                 network: "base",
                 command: "base",
@@ -299,6 +300,7 @@
         rifle: "Универсальная пехота · прикрытие и наступление",
         scout: "Без оружия · широкий обзор и быстрая разведка",
         artillery: "Дальний огонь · осада укреплений",
+        armored: "Быстрый резерв · прикрытие добычи",
         drone: "Добыча и доставка сплава",
         weapons: "Урон союзников +20%",
         armor: "Урон по армии и разведчику −15%",
@@ -367,7 +369,7 @@
               u.kind === "barracks"
                 ? ["rifle", ...(E.fogged(s) ? ["scout"] : [])]
                 : u.kind === "foundry"
-                  ? ["artillery"]
+                  ? root.SignalSelectionPanel.recruits("foundry", ITEMS)
                   : ["drone"];
             const tech =
               u.kind === "barracks"
@@ -494,6 +496,7 @@
                 undefined,
                 action === "rifle" ? "Обучить бойца" : "Собрать орудие",
               ) +
+                (kind === "foundry" && ITEMS.armored ? button("armored", u.id, "Собрать бронемашину", descriptions.armored) : "") +
                 (kind === "barracks" && E.fogged(s)
                   ? button(
                       "scout",
@@ -579,12 +582,13 @@
           bunker: "4 места · дальность и обзор +25%",
           barracks: items.medic ? "Пехота, разведка и лечение" : "Бойцы и дозорные",
           outpost: "4×4 · рядом со свободным месторождением",
-          foundry: "Тяжёлая артиллерия",
+          foundry: items.armored ? "Бронемашины и артиллерия" : "Тяжёлая артиллерия",
           arsenal: "Улучшения армии и проникновение",
           rifle: E.balance.enabled(s) ? "Основная пехота · 11 клеток" : "Основная боевая пехота",
           medic: "Лечит бойцов и героя · " + E.support.fieldCare.range / 40 + " клетки",
           shield: "Принимает огонь спереди · сектор " + Math.round(E.support.plate.halfAngle * 360 / Math.PI) + "°",
           grenadier: "Огонь по площади · радиус " + E.GRENADE.radius / 40 + " кл. · цель успевает выйти из круга",
+          armored: "Быстрый резерв · защита добычи · 9 клеток",
           scout: E.balance.enabled(s) ? "Разведка · обзор 24,5 клетки" : "Дальний обзор и разведка",
           artillery: E.balance.enabled(s) ? "20 клеток · огонь с разведкой" : "Дальнобойный огонь по укреплениям",
           drone: "Добыча, строительство и ремонт",
@@ -655,7 +659,7 @@
               ? roles[action] || "Нажмите для заказа"
               : reason(o),
           `data-action="${action}" ${site !== undefined ? `data-site="${site}"` : ""} ${o.producer ? `data-producer="${o.producer.id}"` : ""} ${o.allowed ? "" : "disabled"}`,
-          paths[action] || ["rifle", "scout", "medic", "shield", "grenadier", "artillery", "drone"].includes(action) ? action : "command",
+          paths[action] || ["rifle", "scout", "medic", "shield", "grenadier", "armored", "artillery", "drone"].includes(action) ? action : "command",
         );
       };
       const queue = (u, cycle = false) => {

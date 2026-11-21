@@ -56,6 +56,7 @@ export class BabylonView extends Legacy {
       if(!p){p={};this.previousUnits.set(u.id,p);}
       p.time=s.t;p.kind=u.kind;p.x=u.x;p.y=u.y;p.angle=u.angle||0;
       p.combatAngle=u.combat?.angle;
+      if (u.drive) p.heading = u.drive.heading;
       p.inside=!!u.care?.inside;p.visible=!u.team||!!this.visibleUnits?.has(u.id);
     }
     if(this.previousUnits.size>512)for(const [id,p]of this.previousUnits)if(p.time!==s.t)this.previousUnits.delete(id);
@@ -74,6 +75,7 @@ export class BabylonView extends Legacy {
     if(!Number.isFinite(alpha)||alpha<0||alpha>=1||this.previousTime===null||
         Math.abs(s.t-this.previousTime-E.DT)>1e-7)return s;
     const world=E.map(s),blend=(a,b)=>a+(b-a)*alpha,
+      blendAngle=(a,b)=>a+Math.atan2(Math.sin(b-a),Math.cos(b-a))*alpha,
       units=observed.units.map(u=>{
         const p=this.previousUnits.get(u.id);
         // Reveals, spawns, deaths, shelter changes and teleports appear at
@@ -81,15 +83,13 @@ export class BabylonView extends Legacy {
         if(!p||p.time!==this.previousTime||p.kind!==u.kind||!p.visible||u.hp<=0||
             p.inside!==!!u.care?.inside)return u;
         const rotating=Number.isFinite(p.combatAngle)&&Number.isFinite(u.combat?.angle)&&p.combatAngle!==u.combat.angle;
-        if(p.x===u.x&&p.y===u.y&&p.angle===u.angle&&!rotating)return u;
+        const steering = u.drive && Number.isFinite(p.heading) && p.heading !== u.drive.heading;
+        if(p.x===u.x&&p.y===u.y&&p.angle===u.angle&&!rotating&&!steering)return u;
         if(Math.hypot(u.x-p.x,u.y-p.y)>32||
             Math.abs(E.elevation(u.x,u.y,world)-E.elevation(p.x,p.y,world))>8)return u;
-        const turn=Math.atan2(Math.sin((u.angle||0)-p.angle),Math.cos((u.angle||0)-p.angle));
-        const next={...u,x:blend(p.x,u.x),y:blend(p.y,u.y),angle:p.angle+turn*alpha};
-        if(rotating){
-          const rotation=Math.atan2(Math.sin(u.combat.angle-p.combatAngle),Math.cos(u.combat.angle-p.combatAngle));
-          next.combat={...u.combat,angle:p.combatAngle+rotation*alpha};
-        }
+        const next={...u,x:blend(p.x,u.x),y:blend(p.y,u.y),angle:blendAngle(p.angle,u.angle||0)};
+        if (steering) next.drive={...u.drive,heading:blendAngle(p.heading,u.drive.heading)};
+        if (rotating) next.combat={...u.combat,angle:blendAngle(p.combatAngle,u.combat.angle)};
         return next;
       }),
       bullets=observed.bullets.map(b=>{

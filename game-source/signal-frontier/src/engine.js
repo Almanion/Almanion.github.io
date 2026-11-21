@@ -25,6 +25,7 @@
     medic: { hp: 90, r: 12, speed: 140, range: 0, damage: 0, rate: 0 },
     shield: { hp: 115, r: 16, speed: 110, range: 280, damage: 9, rate: .72 },
     grenadier: { hp: 100, r: 14, speed: 112, range: 400, damage: 54, rate: 2.6 },
+    armored: { hp: 210, r: 22, speed: 215, range: 360, damage: 18, rate: .48 },
     artillery: { hp: 220, r: 20, speed: 78, range: 540, damage: 98, rate: 2.6 },
     sentinel: { hp: 90, r: 13, speed: 82, range: 310, damage: 10, rate: 1.35 },
     runner: { hp: 55, r: 11, speed: 145, range: 48, damage: 13, rate: 0.85 },
@@ -52,7 +53,7 @@
   // World units: one construction cell is 40. Older operations retain C above.
   const ENGAGEMENT = Object.freeze(Object.fromEntries([
     ["carrier",0,240],["archive-gate",0,120],["power-node",0,120],["archive-depot",0,300],
-    ["hero", 680, 780], ["rifle", 440, 640], ["artillery", 800, 720],
+    ["hero", 680, 780], ["rifle", 440, 640], ["armored", 360, 680], ["artillery", 800, 720],
     ["sentinel", 420, 720], ["runner", 56, 700], ["warden", 500, 780],
     ["rocket", 620, 820], ["flamer", 240, 720], ["bomber", 64, 740],
     ["tank", 640, 840], ["mortar", 840, 940],
@@ -65,7 +66,7 @@
     balanced = (s) => balanceEligible(s) && s.campaign.balance === 1,
     rangedStats = Object.freeze(Object.fromEntries(Object.entries(ENGAGEMENT)
       .map(([kind, values]) => [kind, Object.freeze({ ...C[kind], range: values.range })]))),
-    legacySight = Object.freeze({ hero: 600, scout: 720, rifle: 440, shield: 440, grenadier: 440, artillery: 480,
+    legacySight = Object.freeze({ hero: 600, scout: 720, rifle: 440, shield: 440, grenadier: 440, armored: 480, artillery: 480,
       bunker: 280, drone: 180, base: 380, outpost: 380, barracks: 280, foundry: 280, arsenal: 280 });
   const sheltered = (u) => u.care?.inside && u.care.garrison === true,
     garrisonStats = [C, rangedStats].map((table) => Object.freeze(Object.fromEntries(
@@ -87,6 +88,7 @@
     hero: 19.5,
     shield: 16,
     grenadier: 25,
+    armored: 21,
     citadel: 64,
     turret: 24,
     artillery: 23,
@@ -407,6 +409,7 @@
     if (s.campaign) u.map = mapFor(s).id;
     if (kind === "shield") u.guard = { angle: u.angle, lift: 0, pulse: 0, scan: 0, watch: 0 };
     if (kind === "grenadier") u.cool = 0;
+    if (kind === "armored") u.drive = { heading: u.angle, speed: 0 };
     owners.set(u, s);
     s.units.push(u);
     return u;
@@ -1193,6 +1196,10 @@
     }
     return [];
   }
+  function interruptAim(u) {
+    if (u.kind === "medic") u.flash = 0;
+    if (u.grenadeAim) delete u.grenadeAim;
+  }
   function order(s, group, x, y) {
     if (
       s.status !== "playing" ||
@@ -1212,8 +1219,7 @@
       };
       u.target = null;
       u.order = target;
-      if (u.kind === "medic") u.flash = 0;
-      if (u.grenadeAim) delete u.grenadeAim;
+      interruptAim(u);
       u.path = pathTo(u, target, C[u.kind].r);
     });
     const producers = s.campaign
@@ -1350,8 +1356,7 @@
     for (const { u, path, target, origin } of plans) {
       support.leave(s, u, origin);
       u.target = null;
-      if (u.kind === "medic") u.flash = 0;
-      if (u.grenadeAim) delete u.grenadeAim;
+      interruptAim(u);
       u.order = target;
       u.path = path;
     }
@@ -1591,8 +1596,7 @@
     for (const { u, order, origin } of plans) {
       support.leave(s, u, origin);
       u.order = order;
-      if (u.kind === "medic") u.flash = 0;
-      if (u.grenadeAim) delete u.grenadeAim;
+      interruptAim(u);
       u.think = 0;
       updateFollow(s, u, 0, units);
     }
@@ -1729,6 +1733,7 @@
     }
   }
   function follow(u, dt) {
+    if (u.drive) return campaign.driveArmored(u, dt);
     const speed = C[u.kind].speed;
     let distance = (u.guard ? speed + (support.plate.speed - speed) * u.guard.lift : speed) * dt;
     // Consume the exact travel budget, including small arc segments: no corner
@@ -1908,12 +1913,7 @@
       u.guard.pulse = support.plate.pulse;
       emit(s, "shield-block", attacker.x, attacker.y, { team: u.team });
     }
-    if (
-      s.campaign?.armor &&
-      !u.team &&
-      ["hero", "rifle", "medic", "shield", "grenadier", "artillery"].includes(u.kind)
-    )
-      damage *= 0.85;
+    if (s.campaign && !u.team) damage = campaign.armorDamage(s, u, attacker, damage);
     if (s.version >= 4 && u.defense) damage *= 0.35;
     u.hp -= damage;
     if (!blocked) u.hit = 0.14;
@@ -2125,19 +2125,6 @@
     owners.set(port, s);
     return port;
   }
-  function prepareGrenade(s, u, opponents, dt) {
-    if (u.cool || u.path.length) return;
-    const from = launcherOrigin(s, u), range = stats(s, u).range;
-    if (!u.target) {
-      u.think = Math.max(0, u.think - dt);
-      if (u.think) return;
-      u.think = .2 + (u.id % 5) * .02;
-    }
-    const target = campaign.grenadeTarget(s, u, from, opponents, range);
-    if (!target) return;
-    u.angle = Math.atan2(target.y - from.y, target.x - from.x);
-    u.grenadeAim = { id: target.id, x: target.x, y: target.y, remaining: GRENADE.windup };
-  }
   function windGrenade(s, u, dt) {
     const mark = u.grenadeAim, from = launcherOrigin(s, u);
     const foe = s.units.find(v => v.id === mark.id);
@@ -2161,7 +2148,7 @@
   // A garrison never runs mobile pursuit/pathfinding. Reuse its target between
   // bounded scans and verify the actual roof-to-target corridor before firing.
   function garrisonFire(s, u, opponents, dt) {
-    if (u.kind === "grenadier") { prepareGrenade(s, u, opponents, dt); return; }
+    if (u.kind === "grenadier") { campaign.prepareGrenade(s, u, opponents, dt); return; }
     const def = stats(s, u);
     if (!def.range) return;
     const from = support.origin(s, u), eligible = (v) => v && v.team !== u.team &&
@@ -2328,6 +2315,7 @@
       }
       const def = stats(s, u);
       if (!def.range || u.build) continue;
+      if (u.drive && u.order?.post) campaign.watchPost(s, u, dt);
       const opponents = (
         combatTeams ? nearby(s, 1 - u.team, u, Math.max(def.range, detectionRange(s, u))) : s.units
       ).filter(
@@ -2380,6 +2368,7 @@
           );
         if (
           !escorting &&
+          !u.order?.post &&
           !u.target &&
           target &&
           def.speed &&
@@ -2427,7 +2416,8 @@
         }
         if (u.guard) support.turnShield(s, u, opponents, dt);
         if (u.path.length) follow(u, dt);
-        if (u.kind === "grenadier") { prepareGrenade(s, u, opponents, dt); continue; }
+        if (u.drive && !campaign.aimArmored(u, target, dt)) continue;
+        if (u.kind === "grenadier") { campaign.prepareGrenade(s, u, opponents, dt); continue; }
         // Movement can change both the angle and the cover corridor this frame.
         if (
           target &&
@@ -2722,6 +2712,7 @@
             "medic",
             "shield",
             "grenadier",
+            "armored",
             "warden",
             "bastion",
             "rocket",
@@ -2730,7 +2721,8 @@
             "tank",
             "mortar",
           ].includes(u.kind) ||
-          u.combat !== undefined || u.guard !== undefined || u.grenadeAim !== undefined ||
+          u.combat !== undefined || u.guard !== undefined || u.grenadeAim !== undefined || u.drive !== undefined ||
+          u.order?.post !== undefined || u.order?.scan !== undefined ||
           ![0, 1].includes(u.team) ||
           !Number.isInteger(u.id) ||
           ids.has(u.id) ||
@@ -3038,6 +3030,7 @@
     ...API,
     get support() { return support; },
     makeClassic,
+    launcherOrigin,
     initializeRecon: (s) => recon.init(s),
     map: mapFor,
     unit,

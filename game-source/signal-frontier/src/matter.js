@@ -23,6 +23,7 @@
         medic: Object.freeze({ ...base.items.rifle, matter: 0, label: "Медик" }),
         shield: Object.freeze({ ...base.items.rifle, matter: 0, label: "Щитоносец" }),
         grenadier: Object.freeze({ ...base.items.rifle, matter: 0, label: "Гранатомётчик" }),
+        armored: Object.freeze({ cost: 130, matter: 0, time: 38, pop: 2, label: "Бронемашина" }),
       }),
     }));
     return configs.get(base);

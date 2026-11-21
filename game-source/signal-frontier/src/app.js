@@ -585,6 +585,8 @@
         notice("Ко входу бункера · дальность и обзор внутри +25%");
       else if (target?.kind === "outpost" && state.units.some((u) => ids.includes(u.id) && u.care?.facility === target.id))
         notice("Ко входу экстрактора · лечение внутри · 8 прочности/с");
+      else if (target?.kind === "outpost" && state.units.some(u => ids.includes(u.id) && u.order?.post === target.id))
+        notice("Охрана экстрактора · перехват налётчиков");
       else if (target && state.units.some((u) => ids.includes(u.id) && u.workerTask?.targetId === target.id))
         notice("Зонд назначен на ремонт · 12 прочности/с · 1 сплава за 8 прочности");
       else if (
@@ -598,7 +600,9 @@
     } else
       notice(
         mining ? (mining.reason === "empty-resource" ? "Месторождение истощено" : "Нет доступного экстрактора: проверьте места для зондов и путь")
+        : target?.kind === "bunker" && selectedUnits().every(u => u.kind === "armored") ? "Бронемашина остаётся снаружи. Для ремонта направьте её в экстрактор"
         : target?.kind === "bunker" && selectedUnits().some(E.support.patient) ? "Нужны готовый бункер, свободное место из четырёх и путь ко входу"
+        : target?.kind === "outpost" && selectedUnits().some(u => u.drive && u.hp === E.C.armored.hp) ? "Нужен готовый экстрактор и свободный подъезд"
         : target?.kind === "outpost" && selectedUnits().some(E.support.patient) ? "Нужны раненые бойцы, свободное место лечения и путь ко входу"
         : producer
           ? "Здесь нельзя поставить точку сбора"

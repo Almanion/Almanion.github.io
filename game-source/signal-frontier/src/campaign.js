@@ -382,8 +382,97 @@
     ].includes(s.campaign?.id);
   const SPECIAL = ["rocket", "flamer", "bomber", "tank", "mortar"];
   const barracksRecruits = ["rifle", "medic", "shield", "grenadier", "scout"];
-  const recruits = [...barracksRecruits, "artillery", "drone"];
+  const foundryRecruits = ["armored", "artillery"];
+  const recruits = [...barracksRecruits, ...foundryRecruits, "drone"];
   function create(E) {
+    const lightArmor = .25;
+    function armorDamage(s, u, shot, damage) {
+      if (u.drive && shot.kind === "bolt" && shot.team === 1) {
+        const shooter = s.units.find((v) => v.id === shot.owner);
+        if (shooter?.kind === "sentinel" || shooter?.kind === "warden") damage *= 1 - lightArmor;
+      }
+      return s.campaign.armor && ["hero", "rifle", "medic", "shield", "grenadier", "armored", "artillery"].includes(u.kind)
+        ? damage * .85 : damage;
+    }
+    // The hull steers along the same clearance-tested route as the rest of the army.
+    // Short orders behind the rear axle reverse; longer trips turn the nose around.
+    function driveArmored(u, dt) {
+      const drive = u.drive, radius = E.C.armored.r, map = E.navigation(u);
+      while (u.path.length > 1 && E.dist(u, u.path[0]) < 8 &&
+          E.travelClear(u, u.path[1], radius, map)) u.path.shift();
+      if (!u.path.length) { drive.speed = 0; return; }
+      const point = u.path[0], distance = E.dist(u, point),
+        bearing = Math.atan2(point.y - u.y, point.x - u.x),
+        reverse = distance < 90 && Math.cos(bearing - drive.heading) < -.8,
+        desired = reverse ? bearing + Math.PI : bearing;
+      drive.heading = E.turnAngle(drive.heading, desired, dt * 3);
+      const error = Math.abs(E.turnAngle(0, desired - drive.heading, Math.PI)),
+        top = reverse ? 76 : E.C.armored.speed,
+        // Near a wall rotate into the route before proceeding. Brake at the final order only.
+        limit = error > .85 ? 0 : top * Math.cos(error) ** 3,
+        goal = (reverse ? -1 : 1) * Math.min(limit, u.path.length === 1 ? Math.sqrt(2 * 430 * distance) : top);
+      drive.speed += Math.max(-430 * dt, Math.min(430 * dt, goal - drive.speed));
+      if (error > .85 || Math.sign(drive.speed) !== Math.sign(goal)) return;
+      const step = Math.min(distance, Math.abs(drive.speed) * dt) * Math.sign(drive.speed),
+        next = { x: u.x + Math.cos(drive.heading) * step, y: u.y + Math.sin(drive.heading) * step };
+      if (E.travelClear(u, next, radius, map)) { u.x = next.x; u.y = next.y; }
+      else drive.speed = 0;
+      if (E.dist(u, point) <= .05 && E.travelClear(u, point, radius, map)) {
+        u.x = point.x; u.y = point.y; u.path.shift();
+        if (!u.path.length) drive.speed = 0;
+      }
+    }
+    function aimArmored(u, target, dt) {
+      if (!u.path.length) u.drive.speed = 0;
+      const bearing = target ? E.aimAngle(u, target) : u.drive.heading;
+      u.angle = E.turnAngle(u.angle, bearing, dt * 4);
+      return target && Math.cos(u.angle - bearing) >= .997;
+    }
+    function guardPost(s, u, post) {
+      if (!u.care && u.order?.post === post.id) return true;
+      const r = E.C.armored.r, nav = E.navigation(s), mine = mineFor(s, post),
+        door = E.construction.exit(post, r), start = E.support.departure(s, u);
+      if (!start || !mine) return false;
+      // Leave the mine-to-door lane free for loaded probes. Fall back to the
+      // doorway if the preferred shoulder of the lane meets a wall or a cliff.
+      const dx = mine.x - door.x, dy = mine.y - door.y, length = Math.hypot(dx,dy) || 1,
+        side = (u.id % 2 ? 1 : -1) * 46,
+        occupied = s.units.filter(v => v !== u && v.hp > 0 && v.order?.post === post.id);
+      for (const offset of [side, -side, side*2, -side*2, side*3, -side*3, 0, null]) {
+        const p = offset === null ? door : { x: door.x + dx * .65 - dy / length * offset,
+          y: door.y + dy * .65 + dx / length * offset };
+        if (!E.free(p.x, p.y, r, nav) || occupied.some(v => E.dist(v.order, p) < 2*r)) continue;
+        const path = E.pathTo({ ...start, map: nav }, p, r);
+        if (E.dist(path.at(-1) || start, p) > 2) continue;
+        if (!E.support.leave(s, u, start)) return false;
+        u.order = { ...p, post: post.id, scan: 0 };
+        u.target = null; u.think = 0; u.path = path;
+        return true;
+      }
+      return false;
+    }
+    function watchPost(s, u, dt) {
+      const order = u.order;
+      order.scan = Math.max(0, order.scan - dt);
+      if (order.scan > 0) return;
+      order.scan = .45;
+      const post = s.units.find(v => v.id === order.post);
+      if (!post?.hp) { u.order = u.target = null; u.path = []; return; }
+      const mine = mineFor(s, post) || post;
+      let threat, best = Infinity;
+      if (E.dist(u, post) < 740) for (const v of E.nearby(s, 1, post, 480)) {
+        if (v.hp <= 0 || !E.C[v.kind].speed || E.dist(v, post) > 480 || !E.visible(s, 0, v)) continue;
+        const score = Math.min(E.dist(v, mine), E.dist(v, post)) - (v.id === u.target?.id ? 70 : 0);
+        if (score < best) { threat = v; best = score; }
+      }
+      if (threat) {
+        if (threat.id !== u.target?.id) {
+          u.target = { x: threat.x, y: threat.y, id: threat.id }; u.think = 0;
+        }
+      } else if (u.target || E.dist(u.path.at(-1) || u, order) > 5) {
+        u.target = null; u.path = E.pathTo(u, order, E.C.armored.r);
+      }
+    }
     const alive = (s, kind) =>
       s.units.filter((u) => u.hp > 0 && (!kind || u.kind === kind));
     const ready = (s, kind) => alive(s, kind).filter((u) => !u.build);
@@ -806,6 +895,7 @@
           "shield",
           "grenadier",
           "scout",
+          "armored",
           "artillery",
           "drone",
           "outpost",
@@ -870,7 +960,7 @@
         } else if (E.construction.enabled(s)) {
           const kind = barracksRecruits.includes(action)
             ? "barracks"
-            : action === "artillery"
+            : foundryRecruits.includes(action)
               ? "foundry"
               : ["weapons", "armor", "hack"].includes(action)
                 ? "arsenal"
@@ -913,7 +1003,7 @@
           if (!ready(s, "outpost").length) return fail("expansion");
         }
         if (
-          ["hack", "weapons", "armor", "artillery", "medic", "shield", "grenadier"].includes(action) &&
+          ["hack", "weapons", "armor", "armored", "artillery", "medic", "shield", "grenadier"].includes(action) &&
           s.campaign.tier < 2
         )
           return fail("network");
@@ -1073,7 +1163,7 @@
               0,
               p.x,
               p.y,
-              job.action === "artillery" ? 2 : 1,
+              foundryRecruits.includes(job.action) ? 2 : 1,
             ),
           );
           if (u.rally) {
@@ -1454,6 +1544,10 @@
     }
     function onDeath(s, u) {
       E.construction.onDeath(s, u);
+      if (u.drive) { u.drive.speed = 0; u.order = u.target = null; u.path = []; }
+      if (u.kind === "outpost") for (const v of s.units) if (v.order?.post === u.id) {
+        v.order = v.target = null; v.path = [];
+      }
       if (u.kind === "drone") {
         if (u.cargoType === "matter") s.campaign.matter.lostCargo += u.cargo;
         else s.campaign.lostCargo += u.cargo;
@@ -1798,6 +1892,19 @@
         !E.travelClear(u, u.path[0], radius, E.navigation(u))
       )
         u.path = route;
+    }
+    function prepareGrenade(s, u, opponents, dt) {
+      if (u.cool || u.path.length) return;
+      const from = E.launcherOrigin(s, u), range = E.stats(s, u).range;
+      if (!u.target) {
+        u.think = Math.max(0, u.think - dt);
+        if (u.think) return;
+        u.think = .2 + (u.id % 5) * .02;
+      }
+      const target = grenadeTarget(s, u, from, opponents, range);
+      if (!target) return;
+      u.angle = Math.atan2(target.y - from.y, target.x - from.x);
+      u.grenadeAim = { id: target.id, x: target.x, y: target.y, remaining: E.GRENADE.windup };
     }
     function grenadeTarget(s, u, from, opponents, range) {
       const aim = v => s.east ? E.east.contact(E.map(s), from, v) : v;
@@ -2445,6 +2552,7 @@
           "medic",
           "shield",
           "grenadier",
+          "armored",
           "artillery",
           "drone",
           "barracks",
@@ -2505,6 +2613,12 @@
             (u.kind === "scout" && !E.fogged(s)) ||
             (u.kind === "medic" && (!Matter.enabled(s) || c.tier < 2 || u.target !== null)) ||
             (u.kind === "grenadier" && (!Matter.enabled(s) || c.tier < 2)) ||
+            (u.kind === "armored" ? !Matter.enabled(s) || c.tier < 2 || !u.drive ||
+              !num(u.drive.heading, -Math.PI, Math.PI) || !num(u.drive.speed, -76, E.C.armored.speed) : u.drive !== undefined) ||
+            ((u.order?.post !== undefined || u.order?.scan !== undefined) &&
+              (u.kind !== "armored" || u.order.followId !== undefined || !num(u.order.scan, 0, .45) ||
+              !s.units.some(v => v.id === u.order.post && v.kind === "outpost" && v.hp > 0 && !v.build &&
+                E.dist(v, u.order) <= 500))) ||
             (u.grenadeAim !== undefined && (u.kind !== "grenadier" || u.hp <= 0 ||
               u.cool !== 0 || u.wind !== 0 || u.path.length || !point(u.grenadeAim) ||
               !s.units.some(v => v.id === u.grenadeAim.id && v.team === 1) ||
@@ -2553,9 +2667,9 @@
             return null;
           if (
             (barracksRecruits.includes(u.kind) && u.group !== 1) ||
-            (u.kind === "artillery" && u.group !== 2) ||
+            (foundryRecruits.includes(u.kind) && u.group !== 2) ||
             (u.kind === "carrier" && u.group !== (s.east?.claimed?1:0)) ||
-            (!barracksRecruits.includes(u.kind) && !["carrier", "artillery"].includes(u.kind) && u.group !== 0)
+            (!barracksRecruits.includes(u.kind) && !foundryRecruits.includes(u.kind) && u.kind !== "carrier" && u.group !== 0)
           )
             return null;
           if (
@@ -2637,6 +2751,7 @@
                     ? ["weapons", "armor", "hack", "repair"]
                     : [],
                   foundry: [
+                    ...(Matter.enabled(s) && c.tier >= 2 ? ["armored"] : []),
                     "artillery",
                     ...(!E.construction.enabled(s) ? ["armor"] : []),
                     ...(extended(s) ? ["repair"] : []),
@@ -3073,6 +3188,7 @@
       ITEMS,
       items, cacheValue,
       rules, matter: Matter,
+      driveArmored, aimArmored, armorDamage, lightArmor, guardPost, watchPost,
       extended,
       expedition,
       combat,
@@ -3085,7 +3201,7 @@
       CACHES,
       BUILDINGS,
       enemy,
-      grenadeTarget,
+      grenadeTarget, prepareGrenade,
       operation,
       restore,
     };

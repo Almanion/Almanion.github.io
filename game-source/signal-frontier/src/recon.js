@@ -56,6 +56,7 @@
                 "medic",
                 "shield",
                 "grenadier",
+                "armored",
                 "scout",
                 "artillery",
                 "runner",

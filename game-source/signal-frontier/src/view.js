@@ -1463,7 +1463,7 @@
       for (const e of events) {
         if (
           e.type === "care-door" || (e.type === "reinforce" &&
-          ["rifle", "medic", "shield", "grenadier", "scout", "artillery", "drone"].includes(e.action))
+          ["rifle", "medic", "shield", "grenadier", "scout", "armored", "artillery", "drone"].includes(e.action))
         ) {
           this.modelExits.set(e.x + ":" + e.y, this.modelClock || 0);
           if (this.modelExits.size > 128)
@@ -3890,8 +3890,8 @@
             pose.angle,
             pose.direction,
             pose.cycle,
-            ["tank", "mortar", "artillery"].includes(u.kind)
-              ? [pose.left, pose.right]
+            ["tank", "mortar", "armored", "artillery"].includes(u.kind)
+              ? [pose.left, pose.right, pose.turn]
               : null,
           ],
           u.hp,

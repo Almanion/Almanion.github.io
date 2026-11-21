@@ -1,7 +1,7 @@
 /* Bounded, paginated roster. No canvas or per-frame portrait rendering. */
 (function (root) {
   "use strict";
-  const names = { condenser: "Конденсатор", carrier: "Носитель архива", logistics: "Узел снабжения", hero: "Разведчик", rifle: "Боец", medic: "Медик", shield: "Щитоносец", grenadier: "Гранатомётчик", scout: "Дозорный", artillery: "Артиллерия", drone: "Зонд",
+  const names = { condenser: "Конденсатор", carrier: "Носитель архива", logistics: "Узел снабжения", hero: "Разведчик", rifle: "Боец", medic: "Медик", shield: "Щитоносец", grenadier: "Гранатомётчик", scout: "Дозорный", armored: "Бронемашина", artillery: "Артиллерия", drone: "Зонд",
     base: "База", outpost: "Экстрактор", barracks: "Казармы", foundry: "Тяжёлый цех", arsenal: "Арсенал", bunker: "Бункер" };
   const shapes = {
     shield: '<path d="m9 25 18-6 15 6v18l-7 10-8 5-10-6-8-10Z"/><path d="m27 24 1 27m-13-21 9-3m7 0 6 3M26 16l3-7h13l5 6v11l-5 3m5 3 7 3v12l-8 1"/><path class="visor" d="M32 15h12v4H32Z"/>',
@@ -12,6 +12,7 @@
     logistics: "<path d=\"M7 55V24h19v31Zm31 0V24h19v31ZM7 35h19m12 0h19M13 44h7m24 0h7M32 13v30M22 13h20M29 7h6M32 7V3\"/><path class=\"visor\" d=\"M12 49h9v4h-9Zm31 0h9v4h-9ZM27 10h10v6H27Z\"/>",
     rifle: '<path d="M21 16 25 6h14l5 10v12l-7 5H28l-7-5ZM22 16h21M25 32l-11 5-6 18h48l-6-18-11-5M24 36l8 7 8-7M22 45v9m20-9v9M12 34V20h7"/><path class="visor" d="M24 20h17v5H24Z"/><path d="m15 51 31-12 3 6-31 12Zm31-12 10-4 3 5-10 5M12 25v6"/>',
     scout: '<path d="M21 7h22a3 3 0 0 1 3 3v6H18v-6a3 3 0 0 1 3-3ZM27 16v17h9V16M14 34l14-5 21 8v10l-21 6-14-9ZM27 34v10M14 38l-6-4-3 4 8 7m35-7 8-4 3 4-10 7M18 49l-7 8H5v-6l10-6m28 4 9 8h7v-6l-10-6"/><path class="visor" d="M42 10h4v5h-4ZM36 39h9v3h-9Z"/>',
+    armored: '<path d="M5 36l4-10h22l6-5 9 3 12 10-2 8h-5m-31 0h4m12 0h4M16 26v-7l5-4h10l5 5-3 6m3-6 17-2 1 4-16 2"/><path class="visor" d="m37 27 7 1 6 5-14-1Z"/><circle cx="13" cy="42" r="6"/><circle cx="30" cy="42" r="6"/><circle cx="47" cy="42" r="6"/>',
     artillery: '<rect x="5" y="43" width="52" height="14" rx="7"/><path d="M10 43l6-7h30l7 7M18 36V26a5 5 0 0 1 5-5h13a5 5 0 0 1 5 5v10ZM41 28h14v5H41M55 25h5v11h-5M23 21v-5h10v5"/><path class="visor" d="M20 27h4v7h-4Z"/><circle cx="13" cy="50" r="3"/><circle cx="25" cy="50" r="3"/><circle cx="37" cy="50" r="3"/><circle cx="49" cy="50" r="3"/>',
     drone: '<rect x="12" y="18" width="28" height="28" rx="8"/><rect x="19" y="24" width="14" height="16" rx="2"/><path d="M26 24v16m-7-8h14M15 19l-6-8H4v8l8 8m23-7 3-9h8v8l-8 9M15 45l-6 8H4v-8l8-7m23 7 3 8h8v-8l-8-7M40 26l7-4 6 3m-1-4 7 3v5l-6 1m-13 8 7 4 6-3m-1 4 7-3v-5l-6-1"/><path class="visor" d="M36 29h3v6h-3Z"/>',
     base: '<path d="m32 7 13 9v12l12 7v19H7V35l12-7V16Zm-13 9 13 8 13-8M19 28v14h26V28M7 35l12 7m26 0 12-7"/><path class="visor" d="M27 29h10v13H27Z"/>',
@@ -23,10 +24,10 @@
     arsenal: '<path d="M8 55V23l24-13 24 13v32ZM15 27l17-9 17 9M8 55h48"/><path class="visor" d="m32 26-10 15h8l-2 10 15-17h-9l2-8Z"/>',
   };
   const icon = (kind) => `<svg viewBox="0 0 64 64" aria-hidden="true">${shapes[kind] || (kind === "hero" ? shapes.rifle : shapes.base)}</svg>`;
-  const cardName = kind => ({ shield: "Щито<wbr>носец", grenadier: "Грана<wbr>то<wbr>мётчик", scout: "Дозор<wbr>ный" })[kind] || names[kind];
-  const productionTypes = { base: ["drone"], outpost: ["drone"], barracks: ["rifle", "scout", "medic", "shield", "grenadier"], foundry: ["artillery"] },
+  const cardName = kind => ({ armored: "Броне<wbr>машина", shield: "Щито<wbr>носец", grenadier: "Грана<wbr>то<wbr>мётчик", scout: "Дозор<wbr>ный" })[kind] || names[kind];
+  const productionTypes = { base: ["drone"], outpost: ["drone"], barracks: ["rifle", "scout", "medic", "shield", "grenadier"], foundry: ["armored", "artillery"] },
     barracksRoles = { rifle: "Пехота", scout: "Разведка", medic: "Лечение", shield: "Защита", grenadier: "Взрыв" },
-    roles = { rifle: "Линейная пехота", medic: "Лечит пехоту и героя", shield: "Защита спереди", grenadier: "Огонь по площади", scout: "Разведка · без оружия", artillery: "Дальнобойное орудие", drone: "Добыча · стройка · ремонт" },
+    roles = { rifle: "Линейная пехота", medic: "Лечит пехоту и героя", shield: "Защита спереди", grenadier: "Огонь по площади", scout: "Разведка · без оружия", armored: "Защита фланга", artillery: "Дальнобойное орудие", drone: "Добыча · стройка · ремонт" },
     alloyIcon = '<svg class="production-alloy" viewBox="0 0 20 20" aria-hidden="true"><path d="m10 2 7 8-7 8-7-8Zm-7 8h14M10 2v16"/></svg>',
     escape = (text) => String(text).replaceAll("&", "&amp;").replaceAll('"', "&quot;").replaceAll("<", "&lt;");
   // Patch only changed nodes/attributes, retaining focused buttons while timers tick.
@@ -131,7 +132,7 @@
       if (!active) { this.feedback = null; return; }
       const u = detail;
       if (this.feedback?.id !== u.id) this.feedback = null;
-      const slots = u.jobs?.length || 0, full = actions.length > 2 && slots === 3;
+      const slots = u.jobs?.length || 0, full = slots === 3 && (actions.length > 2 || actions.includes("armored"));
       const cards = actions.map((a) => {
         const item = items[a], offer = E.supplyStatus(s, a, u.id),
           allowed = !u.build && offer.allowed,
@@ -204,11 +205,14 @@
           const guard = u.guard && !u.care && (u.guard.lift === 1 ? "Держит щит" :
             u.guard.watch ? "Поднимает щит" : null);
           const launcher = u.kind === "grenadier" && !u.care && (u.grenadeAim ? "Целится" : u.cool > 0 && !u.path.length ? "Перезаряжает" : null);
-          body += '<p class="roster-task">' + (guard || duty || launcher || task) + '</p>';
+          const patrol = u.order?.post && (u.target ? "Перехватывает налётчика" : "Охраняет экстрактор");
+          body += '<p class="roster-task">' + (guard || duty || launcher || patrol || task) + '</p>';
           if (u.care) body += '<button class="roster-inspect" data-care="exit" data-care-id="' + u.id + '">Выйти из ' + (u.care.garrison ? 'бункера' : 'экстрактора') + '</button>';
           else if (u.guard) {
             const plate = E.support.plate;
             body += '<div class="roster-stats"><span>Спереди<b>' + Math.round(plate.reduction * 100) + '%</b></span><span>Сектор<b>' + Math.round(plate.halfAngle * 360 / Math.PI) + '°</b></span><span>Огонь<b>' + stat.range / 40 + ' кл.</b></span></div><small class="roster-note role-note">Щит задерживает пули. Фланги открыты. Ракеты и взрывы наносят полный урон.</small>';
+          } else if (u.kind === "armored") {
+            body += '<div class="roster-stats"><span>Скорость<b>' + (stat.speed / 40).toLocaleString("ru-RU", {maximumFractionDigits: 1}) + ' кл./с</b></span><span>Огонь<b>' + stat.range / 40 + ' кл.</b></span><span>От пуль<b>−' + E.development.lightArmor * 100 + '%</b></span></div><small class="roster-note role-note">Приказ на экстрактор — охрана и ремонт. Броня гасит пули дозорных и стражей.</small>';
           } else if (u.kind === "grenadier") {
             body += '<div class="roster-stats"><span>Урон<b>' + Math.round(stat.damage * (s.campaign.weapons ? 1.2 : 1)) + '</b></span><span>Радиус<b>' + E.GRENADE.radius / 40 + ' кл.</b></span><span>Огонь<b>' + stat.range / 40 + ' кл.</b></span></div><small class="roster-note role-note">Бьёт по отмеченному месту. Быстрый противник может выйти из круга.</small>';
           } else if (u.kind === "medic") {

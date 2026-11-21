@@ -4,7 +4,7 @@
   function create(E) {
     const capacity = 4, rate = 8, enabled = (s) => E.construction.enabled(s),
       facility = (u) => u && !u.team && u.hp > 0 && !u.build && ["outpost", "bunker"].includes(u.kind),
-      patient = (u) => u && !u.team && u.hp > 0 && ["hero", "rifle", "shield", "grenadier", "medic", "scout", "artillery"].includes(u.kind),
+      patient = (u) => u && !u.team && u.hp > 0 && ["hero", "rifle", "shield", "grenadier", "medic", "scout", "armored", "artillery"].includes(u.kind),
       occupants = (s, id) => s.units.filter((u) => u.hp > 0 && u.care?.facility === id),
       fail = (reason) => ({ allowed: false, reason });
     const source = (s, p) => ({ ...p, map: E.navigation(s) });
@@ -140,7 +140,12 @@
         existing = occupants(s, id);
       let count = 0, reserved = existing.length;
       for (const u of members) {
+        if (garrison && u.kind === "armored") continue;
         if (u.care?.facility === id) { count++; continue; }
+        if (u.drive && !garrison && u.hp >= E.C.armored.hp) {
+          if (E.development.guardPost(s, u, b)) count++;
+          continue;
+        }
         if (reserved >= capacity || (!garrison && u.hp >= E.C[u.kind].hp)) continue;
         // Changing infirmaries is an explicit exit first; never teleport a patient.
         if (u.care?.inside) continue;
@@ -152,6 +157,7 @@
         if (garrison) slots.add(slot);
         if (u.guard) Object.assign(u.guard, { lift: 0, pulse: 0, scan: 0, watch: 0 });
         if (u.grenadeAim) delete u.grenadeAim;
+        if (u.drive) u.drive.speed = 0;
         u.path = path; u.target = u.order = null; u.wind = 0;
         if (u.kind === "hero") s.dashT = 0;
         reserved++; count++;
@@ -221,18 +227,19 @@
         const b = s.units.find((v) => v.id === c.facility);
         if (!facility(b)) c.exit = true;
         c.retry = Math.max(0, c.retry - dt);
-        if (c.exit) { if (!c.retry) { leave(s, u); if (u.care) c.retry = .8; } continue; }
-        if (c.inside) {
-          if (!c.garrison) {
-            u.hp = Math.min(E.C[u.kind].hp, u.hp + rate * dt);
-            // Discharge in the healing tick, including fully healed legacy saves.
-            // A blocked patient keeps the reservation and retries at the normal cadence.
-            if (u.hp >= E.C[u.kind].hp) {
-              c.exit = true;
-              if (!leave(s, u)) c.retry = .8;
-            }
+        if (c.inside && !c.exit && !c.garrison) {
+          u.hp = Math.min(E.C[u.kind].hp, u.hp + rate * dt);
+          if (u.hp >= E.C[u.kind].hp) { c.exit = true; c.retry = 0; }
+        }
+        if (c.exit) {
+          if (!c.retry) {
+            if (!leave(s, u)) c.retry = .8;
+            else if (u.drive && b?.hp > 0 && u.hp === E.C.armored.hp) E.development.guardPost(s, u, b);
           }
-        } else if (E.dist(u, c.entry) <= 5) {
+          continue;
+        }
+        if (c.inside) continue;
+        if (E.dist(u, c.entry) <= 5) {
           E.emit(s, "care-door", b.x, b.y);
           c.inside = true; u.x = b.x; u.y = b.y; u.path = []; u.wind = u.flash = 0; u.think = 0;
         } else {
@@ -257,7 +264,7 @@
           typeof c.inside !== "boolean" || typeof c.exit !== "boolean" ||
           !Number.isFinite(c.retry) || c.retry < 0 || c.retry > .81) return false;
         const b = s.units.find((v) => v.id === c.facility);
-        if (!b || b.team || !["outpost", "bunker"].includes(b.kind) || b.build || (!b.hp && !c.exit) ||
+        if (!b || b.team || !["outpost", "bunker"].includes(b.kind) || (b.kind === "bunker" && u.drive) || b.build || (!b.hp && !c.exit) ||
           !Number.isFinite(c.entry?.x) || !Number.isFinite(c.entry?.y) ||
           E.dist(c.entry, E.construction.exit(b, E.C[u.kind].r)) > .001 ||
           (b.kind === "bunker" ? c.garrison !== true || !Number.isInteger(c.slot) || c.slot < 0 || c.slot >= capacity : c.garrison !== undefined || c.slot !== undefined) ||

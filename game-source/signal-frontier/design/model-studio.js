@@ -10,6 +10,7 @@
       medic: "Полевой медик",
       shield: "Щитоносец",
       grenadier: "Гранатомётчик",
+      armored: "Бронемашина",
       scout: "Дозорный игрока",
       drone: "Рабочий дрон",
       artillery: "Артиллерия",
@@ -49,7 +50,7 @@
         height: id === "citadel" ? 80 : id === "base" ? 70 : 50,
       };
     }),
-    all = [...current, ...studies.specs.map((spec) => ["medic", "shield", "grenadier"].includes(spec.id)
+    all = [...current, ...studies.specs.map((spec) => ["medic", "shield", "grenadier", "armored"].includes(spec.id)
       ? { ...spec, id: "study-" + spec.id, study: spec.id, name: spec.name + " · эскиз" } : spec)],
     $ = (id) => document.getElementById(id),
     canvas = $("model-canvas"),
@@ -71,6 +72,7 @@
     "medic",
     "shield",
     "grenadier",
+    "armored",
     "scout",
     "drone",
     "artillery",
@@ -114,10 +116,11 @@
         x: 0,
         y: 0,
         team: ally.has(id) ? 0 : 1,
+        ...(id === "armored" ? { drive: { heading: a, speed: moving ? def.speed : 0 } } : {}),
         hp: m === "wreck" ? 0 : m === "damaged" ? def.hp * 0.3 : def.hp,
         angle: a,
         wind: action ? total * (1 - q) : 0,
-        flash: id === "medic" && action ? E.support.fieldCare.pulse : 0,
+        flash: id === "armored" && action ? Math.max(0, .1 - (t % def.rate)) : id === "medic" && action ? E.support.fieldCare.pulse : 0,
         ...(id === "grenadier" && action ? q < .35
           ? { grenadeAim: { x: 300 * Math.cos(a), y: 300 * Math.sin(a), remaining: E.GRENADE.windup * (1 - q / .35) } }
           : { cool: def.rate * (1 - q) / .65 } : {}),
@@ -141,7 +144,7 @@
         path: [],
         combat: {
           mode: action ? "aim" : "idle",
-          angle: a,
+          angle: id === "armored" && action ? a + Math.sin(q * Math.PI * 2) * .85 : a,
           time: total * (1 - q),
           total,
         },

@@ -7,6 +7,7 @@
     "medic",
     "shield",
     "grenadier",
+    "armored",
     "scout",
     "drone",
     "artillery",
@@ -39,6 +40,7 @@
     medic: 36,
     shield: 36,
     grenadier: 36,
+    armored: 38,
     scout: 36,
     drone: 24,
     artillery: 40,
@@ -53,6 +55,8 @@
   });
   const TAU = Math.PI * 2,
     wrap = (a) => Math.atan2(Math.sin(a), Math.cos(a));
+  const armoredHull = Object.freeze([[-21,-9],[-17,-12],[8,-12],[22,-7],[25,0],[22,7],[8,12],[-17,12],[-21,9]]);
+  const armoredAxles = Object.freeze([-15, 0, 15]);
   function shieldPose(u, reduced = false) {
     const lift = u.guard?.lift || 0;
     return { lift, a: (u.guard?.angle ?? u.angle ?? 0) - (1 - lift) * .85,
@@ -82,7 +86,7 @@
         y: u.y,
         time,
         phase: ((u.id * 0.61803398875) % 1) * TAU,
-        angle: u.angle || 0,
+        angle: u.drive?.heading ?? u.angle ?? 0,
         direction: u.angle || 0,
         move: 0,
         settle: 0,
@@ -103,18 +107,21 @@
         moved = distance > 0.005 && distance < Math.max(96, dt * 700),
         direction = moved ? Math.atan2(dy, dx) : p.direction,
         next =
-          u.kind === "hero"
+          u.drive ? u.drive.heading : u.kind === "hero"
             ? (u.angle ?? direction)
             : moved
               ? direction
               : (u.angle ?? p.angle),
         turn = wrap(next - p.angle),
-        rotation = moved ? turn : Math.max(-dt * 7, Math.min(dt * 7, turn));
+        rotation = moved || u.drive ? turn : Math.max(-dt * 7, Math.min(dt * 7, turn)),
+        travel = !moved ? 0 : u.drive ? dx * Math.cos(next) + dy * Math.sin(next) : distance;
       p.phase += moved ? (distance / cycle) * TAU : Math.abs(rotation) * 0.6;
       p.phase %= TAU;
       p.turn = Math.max(-1, Math.min(1, rotation / Math.max(dt * 4, 0.001)));
-      p.left += (moved ? distance : 0) - rotation * 13;
-      p.right += (moved ? distance : 0) + rotation * 13;
+      if (u.drive?.speed < 0) p.turn = -p.turn;
+      const differential = u.drive ? (moved ? -rotation * 13 : 0) : rotation * 13;
+      p.left += travel - differential;
+      p.right += travel + differential;
       p.angle = wrap(p.angle + rotation);
       p.direction = direction;
       const lastMove = p.move;
@@ -1064,6 +1071,44 @@
         lamp(c, carriage, slide, load, a, 1.2, "#e6c795");
       }
     }
+    function armoredWheels(c, p, broken = false) {
+      for (const side of [-1, 1]) for (const axle of armoredAxles) {
+        const y = side * 13, yaw = p.angle + (axle === 15 ? (p.turn || 0) * .45 : 0),
+          phase = ((side < 0 ? p.left : p.right) || 0) / 6,
+          face = Math.cos(yaw) >= 0 ? 1 : -1, hub = face * 3.4;
+        c.save();
+        c.translate(...point(axle, y, ground(p, axle, y), p.angle));
+        const rim = (offset, r) => Array.from({length: 12}, (_, i) => {
+          const t = i * TAU / 12;
+          return point(Math.cos(t) * r, offset, 6 + Math.sin(t) * r, yaw);
+        });
+        const back = rim(-hub, 6), front = rim(hub, 6);
+        poly(c, back, dark.side);
+        for (let i = 0; i < 12; i++) {
+          const j = (i + 1) % 12;
+          poly(c, [back[i], back[j], front[j], front[i]], i < 6 ? dark.top : dark.side);
+        }
+        poly(c, front, dark.front);
+        poly(c, rim(hub, 3.7), broken ? wreck.front : alloy.top);
+        bone(c, [0,hub,6], [2.8*Math.cos(phase),hub,6+2.8*Math.sin(phase)], 1, yaw, broken ? dark : ceramic);
+        c.restore();
+      }
+    }
+    function armored(c,d) {
+      const {p, aim, recoil, accent} = d, a = p.angle, z = E.MOUNTS.armored;
+      armoredWheels(c,p);
+      plate(c,armoredHull,6,6,a,pilotCeramic);
+      cap(c,-14,0,11,18,12,3,a,fieldArmor);
+      for (const x of [-17,-14,-11]) lightStrip(c,[[x,-6],[x,6]],15.2,a,dark.front,1.4);
+      plate(c,[[8,-9],[16,-6],[19,0],[16,6],[8,9]],12,2,a,dark);
+      for (const side of [-1,1]) lightStrip(c,[[17,side*7],[21,side*4]],12.5,a,accent,1.5);
+      plate(c,disc(7),13,3,aim,dark);
+      cap(c,-1,0,17,13,16,6,aim,fieldArmor);
+      cap(c,-3,-5,8,4,21.5,2,aim,pilotCeramic);
+      slab(c,18-recoil,0,24,3.2,z-1.6,3.2,aim,dark);
+      cap(c,28-recoil,0,6,5,z-2.5,5,aim,alloy);
+      flash(c,d,31-recoil,0,z,aim,.68);
+    }
     function artilleryTracks(c,p,material) {
       for(const side of [-1,1]) {
         const y=side*14, lift=ground(p,0,y),
@@ -2009,6 +2054,13 @@
       const { u } = d,
         r = E.C[u.kind].r,
         a = frame?.a ?? (u.angle || 0);
+      if (u.kind === "armored") {
+        armoredWheels(c,d.p,true);
+        plate(c,armoredHull,3,3,d.p.angle,wreck);
+        cap(c,-3,1,16,12,6,3,a,wreck);
+        bone(c,[3,0,8],[23,4,3],3,a,dark);
+        return;
+      }
       if (u.kind === "outpost") {
         const w=frame?.w||58,h=frame?.h||58;
         cast(c,0,0,w-8,h-8,Math.min(w,h)*.115,0,3,a,dark,1);
@@ -2187,6 +2239,7 @@
       medic,
       shield,
       grenadier,
+      armored,
       sentinel: robot,
       warden: robot,
       runner,
@@ -2286,6 +2339,13 @@
         shapes = [],
         add = (shape, height, angle = bodyAngle) =>
           shapes.push({ shape, height, angle });
+      if (u.kind === "armored") {
+        const alive = u.hp > 0;
+        add(armoredHull, alive ? 12 : 6);
+        for (const side of [-1,1]) for (const x of armoredAxles) add(chamfer(12,7,2,x,side*13),9);
+        add(chamfer(alive ? 32 : 24,5,1,alive ? 15 : 10,0),alive ? E.MOUNTS.armored : 6,a);
+        return shapes;
+      }
       if (u.kind === "condenser") {
         const w=frame?.w||58,h=frame?.h||58,turn=frame?.a||0;
         add(rounded(w-8,h-8,8),3,turn);
@@ -2512,7 +2572,7 @@
       },
     };
   }
-  const api = { create, types: TYPES, motion, contact, shieldPose, launcherPose, gaits: GAITS };
+  const api = { create, types: TYPES, motion, contact, shieldPose, launcherPose, armoredHull, armoredAxles, gaits: GAITS };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   else root.SignalUnitModels = api;
 })(typeof globalThis !== "undefined" ? globalThis : window);
