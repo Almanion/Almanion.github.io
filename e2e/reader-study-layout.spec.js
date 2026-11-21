@@ -179,6 +179,10 @@ test('a short tablet topic reveals its successor from the bottom margin with red
     const current = page.locator('article.exp-reader-current');
     await expect(current).toBeVisible();
     await page.evaluate(() => document.fonts.ready);
+    await expect.poll(() => page.evaluate(() => {
+        const root = document.scrollingElement;
+        return root.scrollHeight - root.clientHeight;
+    })).toBeLessThanOrEqual(4);
     const origin = await scrollToBottom(page);
     const nextTitle = await page.locator('.exp-reader-footer-next strong').innerText();
     await page.mouse.move(410, 1130);
