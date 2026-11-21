@@ -101,29 +101,35 @@ body.experimental .print-export-button:hover {
 /* Одинаковые действия бокового меню, включая ещё не загруженные инструменты. */
 .sidebar .print-export-menu-slot {
     display: grid;
-    gap: 8px;
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(0, 1fr);
+    gap: 3px;
+    padding: .35rem .55rem;
+    background: var(--bg-secondary);
 }
 
 .sidebar .print-export-menu-slot > button:is(.print-export-button, .reader-tool-menu-button) {
     display: flex;
     align-items: center;
-    justify-content: flex-start;
-    gap: 0.65rem;
+    flex-direction: column;
+    justify-content: center;
+    gap: 2px;
     box-sizing: border-box;
     width: 100%;
     min-height: 44px;
+    min-width: 0;
     margin: 0;
-    padding: 0.68rem 0.78rem;
-    border: 1px solid var(--border-color);
-    border-radius: 12px;
+    padding: 3px 2px;
+    border: 1px solid transparent;
+    border-radius: 8px;
     color: var(--text-secondary);
     background: var(--bg-secondary);
     box-shadow: none;
     font: inherit;
-    font-size: 0.86rem;
+    font-size: .75rem;
     font-weight: 600;
     line-height: 1.25;
-    text-align: left;
+    text-align: center;
     cursor: pointer;
     transform: none;
     touch-action: manipulation;
@@ -133,9 +139,9 @@ body.experimental .print-export-button:hover {
 }
 
 .sidebar .print-export-menu-slot > button:is(.print-export-button, .reader-tool-menu-button) > svg {
-    width: 20px;
-    height: 20px;
-    flex: 0 0 20px;
+    width: 16px;
+    height: 16px;
+    flex: none;
     margin: 0;
     fill: none;
     stroke: currentColor;
@@ -146,7 +152,7 @@ body.experimental .print-export-button:hover {
 
 .sidebar .print-export-menu-slot > button > span {
     min-width: 0;
-    flex: 1;
+    overflow-wrap: anywhere;
 }
 
 .sidebar .print-export-menu-slot .print-export-chevron { display: none; }

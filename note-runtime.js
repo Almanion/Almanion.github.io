@@ -12,15 +12,15 @@
         bookmarksStyles: 'styles/bookmarks.css?v=20260920-2',
         editorStyles: 'styles/note-editor.css?v=20260929-2',
         readerToolsStyles: 'styles/reader-tools.css?v=20261002-2',
-        personalNotes: 'personal-notes.js?v=20261018-1',
+        personalNotes: 'personal-notes.js?v=20261121-4',
         offline: 'offline-library.js?v=20261114',
-        printStyles: 'styles/print.css?v=20261113-4',
-        filterStyles: 'styles/note-filter.css?v=20261113-5',
-        filter: 'note-filter.js?v=20261121-1',
+        printStyles: 'styles/print.css?v=20261121-4',
+        filterStyles: 'styles/note-filter.css?v=20261121-4',
+        filter: 'note-filter.js?v=20261121-4',
         settings: 'settings.js?v=20261002-1',
         searchText: 'search-text.js?v=20261121-2',
-        search: 'search.js?v=20261121-2',
-        print: 'print-export.js?v=20261121-2',
+        search: 'search.js?v=20261121-4',
+        print: 'print-export.js?v=20261121-4',
         knowledge: 'knowledge-check.js?v=20261121-2',
         newyear: 'newyear.js?v=20261002-1',
         firebaseApp: 'https://www.gstatic.com/firebasejs/12.18.0/firebase-app-compat.js',
@@ -238,9 +238,10 @@
         if (document.querySelector('.experiment-box')) ensure('experiments').catch(function () {});
         onIntent('.experiment-box', 'pointerdown', 'experiments');
         // Restore reading filters independently of the PDF dialog.
-        loadStyle('filterStyles').then(function () { return loadScript('filter'); }).catch(function () {});
+        const filterReady = loadStyle('filterStyles').then(function () { return loadScript('filter'); }).catch(function () {});
         onIntent('#searchInput, .search-box', 'pointerdown', 'search');
         onIntent('#searchInput', 'focusin', 'search');
+        if (new URLSearchParams(location.search).has('find')) filterReady.then(loadSearch).catch(function () {});
         window.addEventListener('almanion-load-newyear', function () { ensure('newyear').catch(function () {}); });
         const icons = {
             knowledge: '<path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="m9 14 2 2 4-4"/>',
@@ -282,10 +283,17 @@
             const slot = document.createElement('div');
             slot.className = 'print-export-menu-slot';
             nav.before(slot);
-            launcher('printExportButton', 'print', 'Скачать PDF', slot);
+            const en = document.documentElement.lang === 'en';
+            slot.setAttribute('role', 'group');
+            slot.setAttribute('aria-label', en ? 'Note tools' : 'Инструменты конспекта');
+            launcher('printExportButton', 'print', 'PDF', slot);
+            const pdf = slot.querySelector('#printExportButton');
+            if (pdf) pdf.setAttribute('aria-label', en ? 'Download PDF' : 'Скачать PDF');
             const offline = document.createElement('button');
             offline.type = 'button'; offline.id = 'offlineLibraryButton'; offline.className = 'reader-tool-menu-button';
-            offline.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M12 3v12m-4-4 4 4 4-4M5 16v5h14v-5"/></svg><span>Читать без сети</span>';
+            offline.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M12 3v12m-4-4 4 4 4-4M5 16v5h14v-5"/></svg><span></span>';
+            offline.querySelector('span').textContent = en ? 'Offline' : 'Без сети';
+            offline.setAttribute('aria-label', en ? 'Read offline' : 'Читать без сети');
             offline.addEventListener('click', async function () {
                 offline.disabled = true;
                 try { await ensure('offline'); await window.AlmanionOffline.open(); }

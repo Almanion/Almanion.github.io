@@ -17,9 +17,12 @@
         swipe: null
     };
 
-    const ICON_LEFT = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>';
-    const ICON_RIGHT = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>';
-    const SWIPE_BLOCK_SELECTOR = 'a, button, input, textarea, select, option, label, [contenteditable="true"], img, table, pre, code, .katex-display, .chem-table-wrap, .table-wrapper, [data-no-reader-swipe]';
+    function arrowIcon(path) {
+        return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="' + path + '"/></svg>';
+    }
+    const ICON_LEFT = arrowIcon('m15 18-6-6 6-6');
+    const ICON_RIGHT = arrowIcon('m9 18 6-6-6-6');
+    const SWIPE_BLOCK_SELECTOR = 'a, button, input, textarea, select, option, label, [contenteditable="true"], img, figure, table, pre, code, .katex-display, .chem-table-wrap, .table-wrapper, [data-no-reader-swipe]';
 
     function initExperimentalReader() {
         const main = document.querySelector('.main-content');
@@ -35,6 +38,11 @@
         });
         buildReaderUi(main);
         if (location.pathname.split('/').pop() === 'likbez.html') buildCourseSwitcher();
+        const titleButton = state.toolbar.querySelector('.exp-reader-topic');
+        titleButton.addEventListener('click', () => {
+            if (window.innerWidth <= 768) openMobileMenu(titleButton);
+            else expandSidebar(titleButton);
+        });
         bindReaderEvents(main);
 
         window.experimentalReader = {
@@ -62,6 +70,7 @@
             <div class="exp-reader-status" aria-live="polite">
                 <div class="exp-reader-status-line">
                     <span class="exp-reader-part"></span>
+                    <button type="button" class="exp-reader-topic" aria-controls="sidebar"></button>
                     <span class="exp-reader-count"></span>
                 </div>
                 <div class="exp-reader-progress" role="progressbar" aria-label="Прогресс по подразделам текущего раздела" aria-valuemin="1">
@@ -114,8 +123,8 @@
         select.addEventListener('change', () => {
             const topic = document.getElementById(select.value);
             if (!topic) return;
-            if (location.hash !== '#' + topic.id) location.hash = topic.id;
-            else if (state.active) goToId(topic.id);
+            if (state.active) goToId(topic.id, { source: 'course' });
+            else if (location.hash !== '#' + topic.id) location.hash = topic.id;
             else topic.scrollIntoView();
         });
         label.append(select);
@@ -138,18 +147,22 @@
                 const button = event.target.closest('[data-reader-action]');
                 if (!button || button.disabled) return;
                 const delta = button.dataset.readerAction === 'next' ? 1 : -1;
-                goToIndex(state.index + delta, { source: 'controls' });
+                goToIndex(adjacentIndex(delta), { source: 'controls' });
             });
         });
 
         window.addEventListener('experimental-mode-changed', syncExperimentalReader);
-        window.addEventListener('hashchange', () => {
+        window.addEventListener('popstate', restoreLocation);
+        window.addEventListener('almanion:note-filter-changed', event => {
             if (!state.active) return;
-            goToId(decodeURIComponent(window.location.hash.slice(1)), {
-                animate: false,
-                scroll: true,
-                updateHash: false
-            });
+            const explicit = event.detail?.userChange;
+            if (explicit) state.cancelPull();
+            if (!hasContent(state.topics[state.index]) && (explicit || !new URLSearchParams(location.search).has('find'))) {
+                const next = adjacentIndex(1);
+                const nearest = next < 0 ? adjacentIndex(-1) : next;
+                if (nearest >= 0) { goToIndex(nearest, { animate: false }); return; }
+            }
+            updateReaderUi();
         });
 
         document.addEventListener('keydown', event => {
@@ -159,10 +172,10 @@
 
             if (event.key === 'ArrowRight') {
                 event.preventDefault();
-                goToIndex(state.index + 1, { source: 'keyboard', rapid: event.repeat });
+                goToIndex(adjacentIndex(1), { source: 'keyboard', rapid: event.repeat });
             } else if (event.key === 'ArrowLeft') {
                 event.preventDefault();
-                goToIndex(state.index - 1, { source: 'keyboard', rapid: event.repeat });
+                goToIndex(adjacentIndex(-1), { source: 'keyboard', rapid: event.repeat });
             }
         });
 
@@ -202,7 +215,7 @@
             hide();
             const page = document.scrollingElement;
             origin = Math.min(page.scrollTop, page.scrollHeight - page.clientHeight);
-            title.textContent = getTopicTitle(state.topics[state.index + 1]);
+            title.textContent = getTopicTitle(state.topics[adjacentIndex(1)]);
             topic = state.topics[state.index];
             preview.hidden = false;
             main.classList.add('reader-pulling');
@@ -254,7 +267,7 @@
         }
 
         function canPull() {
-            return state.active && state.index + 1 < state.topics.length
+            return state.active && adjacentIndex(1) >= 0
                 && (window.visualViewport?.scale || 1) <= 1.01 && !window.getSelection()?.toString()
                 && !document.body.classList.contains('sidebar-open')
                 && !document.querySelector('dialog[open], .note-filter[open], .auth-overlay:not(.hidden), .settings-modal:not(.hidden), .lightbox-overlay.open');
@@ -273,7 +286,7 @@
                 preview.draw(distance / threshold);
                 return false;
             }
-            return goToIndex(state.index + 1, { source: 'pull' });
+            return goToIndex(adjacentIndex(1), { source: 'pull' });
         }
 
         function reset() {
@@ -380,6 +393,8 @@
 
     function activateReader() {
         state.active = true;
+        state.restoreScroll = history.scrollRestoration;
+        history.scrollRestoration = 'manual';
         state.toolbar.hidden = false;
         state.footer.hidden = false;
         document.body.classList.add('exp-reader-active');
@@ -392,7 +407,8 @@
         prepareTopic(state.topics[state.index]);
         updateReaderUi();
 
-        if (hashIndex >= 0) goToId(hashId, { animate: false, updateHash: false });
+        if (history.state?.readerPlace) restoreLocation();
+        else if (hashIndex >= 0) goToId(hashId, { animate: false, updateHash: false });
     }
 
     function deactivateReader() {
@@ -401,6 +417,7 @@
         cancelSwipe();
         state.cancelPull();
         state.active = false;
+        history.scrollRestoration = state.restoreScroll;
         state.toolbar.hidden = true;
         state.footer.hidden = true;
         document.body.classList.remove(
@@ -433,12 +450,7 @@
         if (index < 0) return false;
         const settings = { scroll: true, updateHash: true, ...(options || {}) };
         const nested = target !== state.topics[index];
-        if (!goToIndex(index, { ...settings, scroll: nested ? false : settings.scroll, updateHash: nested ? false : settings.updateHash })) return false;
-        if (nested && settings.updateHash) {
-            const url = new URL(window.location.href);
-            url.hash = id;
-            window.history.replaceState(window.history.state, '', url);
-        }
+        if (!goToIndex(index, { ...settings, targetId: id, scroll: !nested && settings.scroll })) return false;
         if (nested && settings.scroll) {
             const offset = state.controls.getBoundingClientRect().height + 16;
             window.scrollTo({ top: Math.max(0, target.getBoundingClientRect().top + window.scrollY - offset), behavior: 'auto' });
@@ -471,9 +483,9 @@
             ...(options || {})
         };
 
+        if (settings.updateHash) writeLocation(settings.targetId || state.topics[nextIndex].id, settings);
         if (nextIndex === state.index) {
             if (settings.scroll) scrollToReader();
-            if (settings.updateHash) updateLocationHash();
             updateReaderUi();
             return true;
         }
@@ -493,7 +505,6 @@
         applyTopicVisibility(previousIndex);
         prepareTopic(state.topics[nextIndex], settings.animate && step && !rapid ? entrance : null);
         updateReaderUi();
-        if (settings.updateHash) updateLocationHash();
         if (readerScrollTop !== null) scrollToReader(readerScrollTop);
         return true;
     }
@@ -573,39 +584,56 @@
         }));
 
         // Warm only the adjacent topic; keep the initial page render lazy.
-        const next = state.topics[state.index + 1];
+        const next = state.topics[adjacentIndex(1)];
         if (!next || !window.AlmanionMath) return;
         const warm = () => window.AlmanionMath?.render(next);
         if (window.requestIdleCallback) window.requestIdleCallback(warm, { timeout: 1200 });
         else window.setTimeout(warm, 160);
     }
 
+    function hasContent(topic) {
+        return !topic.hasAttribute('data-note-filter-empty');
+    }
+
+    function adjacentIndex(direction) {
+        for (let i = state.index + direction; i >= 0 && i < state.topics.length; i += direction) {
+            if (hasContent(state.topics[i])) return i;
+        }
+        return -1;
+    }
+
     function updateReaderUi() {
         const current = state.topics[state.index];
         if (state.courseSelect) state.courseSelect.selectedIndex = state.sections.indexOf(current.parentElement);
         const part = getPartTitle(current);
-        const sectionTopics = state.topics.filter(topic => topic.parentElement === current.parentElement);
+        const sectionTopics = state.topics.filter(topic => topic.parentElement === current.parentElement && hasContent(topic));
         const currentNumber = sectionTopics.indexOf(current) + 1;
         const total = sectionTopics.length;
-        const percent = `${(currentNumber / total) * 100}%`;
-        const atEnd = state.index === state.topics.length - 1;
+        const percent = total ? `${(currentNumber / total) * 100}%` : '0%';
+        const previous = adjacentIndex(-1), next = adjacentIndex(1);
+        const atEnd = next < 0;
 
-        document.body.classList.toggle('exp-reader-at-start', state.index === 0);
+        document.body.classList.toggle('exp-reader-at-start', previous < 0);
         document.body.classList.toggle('exp-reader-at-end', atEnd);
 
         state.toolbar.querySelector('.exp-reader-part').textContent = part;
+        const topicButton = state.toolbar.querySelector('.exp-reader-topic');
+        topicButton.textContent = getTopicTitle(current);
+        topicButton.title = 'Открыть оглавление · ' + topicButton.textContent;
+        topicButton.setAttribute('aria-label', topicButton.title);
         state.toolbar.querySelector('.exp-reader-count').textContent = `${currentNumber} / ${total}`;
 
         const progress = state.toolbar.querySelector('.exp-reader-progress');
+        progress.hidden = !total || !currentNumber;
         progress.setAttribute('aria-valuemax', String(total));
         progress.setAttribute('aria-valuenow', String(currentNumber));
         progress.setAttribute('aria-valuetext', `Подраздел ${currentNumber} из ${total}`);
         progress.querySelector('span').style.width = percent;
 
-        updateControlState(state.toolbar, 'prev', state.index === 0);
+        updateControlState(state.toolbar, 'prev', previous < 0);
         updateControlState(state.toolbar, 'next', atEnd);
-        updateFooterButton('prev', state.index - 1, 'Начало конспекта');
-        updateFooterButton('next', state.index + 1, 'Конец конспекта');
+        updateFooterButton('prev', previous, 'Начало конспекта');
+        updateFooterButton('next', next, 'Конец конспекта');
         syncSidebarLink(current.id);
     }
 
@@ -652,14 +680,41 @@
             nextLink.setAttribute('aria-current', 'location');
         }
         state.activeSidebarLink = nextLink;
+        if (nextLink && window.innerWidth > 1050 && typeof revealCurrentNav === 'function') revealCurrentNav(nextLink.closest('.sidebar'));
     }
 
-    function updateLocationHash() {
-        const topic = state.topics[state.index];
-        if (!topic || window.location.hash === `#${topic.id}`) return;
-        const url = new URL(window.location.href);
-        url.hash = topic.id;
-        window.history.replaceState(window.history.state, '', url);
+    // Each explicit choice owns a history entry. Ordinary page turns update that entry.
+    const positions = new Map();
+    function writeLocation(id, options) {
+        const url = new URL(location.href);
+        url.hash = id;
+        if (location.protocol !== 'file:') {
+            if (options.find) url.searchParams.set('find', options.find);
+            else url.searchParams.delete('find');
+        }
+        if (url.href === location.href) return;
+        const explicit = ['sidebar', 'search', 'course'].includes(options.source);
+        if (explicit) {
+            const place = { id: state.topics[state.index].id, y: scrollY, key: history.state?.readerPlace?.key };
+            history.replaceState({ ...history.state, readerPlace: place }, '');
+        }
+        const place = { id, key: explicit || !history.state?.readerPlace?.key ? performance.timeOrigin + performance.now() : history.state.readerPlace.key };
+        positions.delete(place.key);
+        history[explicit ? 'pushState' : 'replaceState']({ ...history.state, readerPlace: place }, '', url);
+    }
+
+    window.addEventListener('scroll', () => {
+        const key = history.state?.readerPlace?.key;
+        if (state.active && key && !state.controls.parentNode.classList.contains('reader-pulling')) positions.set(key, scrollY);
+    }, { passive: true });
+
+    function restoreLocation() {
+        if (!state.active) return;
+        const place = history.state?.readerPlace;
+        const id = place?.id || decodeURIComponent(location.hash.slice(1)) || state.topics[0].id;
+        const y = positions.get(place?.key) ?? place?.y;
+        goToId(id, { animate: false, scroll: !Number.isFinite(y), updateHash: false });
+        if (Number.isFinite(y)) window.scrollTo({ top: y, behavior: 'instant' });
     }
 
     function getReaderScrollTop() {
@@ -741,7 +796,7 @@
         if (!isLongEnough || !isHorizontal) return;
 
         const delta = swipe.deltaX < 0 ? 1 : -1;
-        goToIndex(state.index + delta, { source: 'swipe' });
+        goToIndex(adjacentIndex(delta), { source: 'swipe' });
     }
 
     function cancelSwipe() {

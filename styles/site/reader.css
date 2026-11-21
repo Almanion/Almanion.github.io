@@ -4,6 +4,7 @@
 @import url("20-layout-content.css?v=20261121-2");
 
 /* Reading controls shared by the classic and paginated views. */
+.exp-reader-topic { display: none; }
 .reader-course-switch, .stress-alphabet {
     display: flex;
     align-items: center;

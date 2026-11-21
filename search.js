@@ -285,8 +285,8 @@
         const beginsWithTitle = entry.normalizedText.startsWith(entry.normalizedTitle);
         const body = beginsWithTitle ? entry.text.slice(entry.title.length).trimStart() : entry.text;
         const lower = beginsWithTitle ? entry.normalizedText.slice(entry.normalizedTitle.length).trimStart() : entry.normalizedText;
-        let position = -1;
-        tokens.forEach(token => {
+        let position = lower.indexOf(tokens.join(' '));
+        if (position < 0) tokens.forEach(token => {
             const found = lower.indexOf(token);
             if (found >= 0 && (position < 0 || found < position)) position = found;
         });
@@ -300,17 +300,15 @@
         return String(value || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
     }
 
-    function highlight(value, tokens) {
-        if (!tokens.length) return escapeHtml(value);
-        const pattern = tokens
-            .slice()
-            .sort((a, b) => b.length - a.length)
-            .map(token => [...token].map(ch => {
+    function tokenPattern(token) {
+        return [...token].map(ch => {
                 if (ch === 'е') return '[её]';
                 if (/\d/.test(ch)) return '[' + ch + '₀₁₂₃₄₅₆₇₈₉'[ch] + '⁰¹²³⁴⁵⁶⁷⁸⁹'[ch] + ']';
                 return ch;
-            }).join(''))
-            .join('|');
+        }).join('');
+    }
+    function highlight(value, tokens) {
+        const pattern = tokens.slice().sort((a, b) => b.length - a.length).map(tokenPattern).join('|');
         if (!pattern) return escapeHtml(value);
         return value.split(new RegExp(`(${pattern})`, 'giu')).map((part, index) =>
             index % 2 ? '<mark class="search-result-term">' + escapeHtml(part) + '</mark>' : escapeHtml(part)).join('');
@@ -328,7 +326,7 @@
         state.count.textContent = total > state.results.length
             ? `Первые ${state.results.length} из ${total}` : `${total} ${resultWord(total)}`;
         state.list.innerHTML = state.results.map((entry, index) => `
-            <a href="${encodeURIComponent(entry.page)}#${encodeURIComponent(entry.id)}" class="search-result-item" role="option" tabindex="-1" id="siteSearchOption${index}" aria-selected="false" data-search-index="${index}">
+            <a href="${escapeHtml(resultUrl(entry))}" class="search-result-item" role="option" tabindex="-1" id="siteSearchOption${index}" aria-selected="false" data-search-index="${index}">
                 <span class="search-result-meta">
                     <strong>${highlight(entry.title, tokens)}</strong>
                     <small>${escapeHtml(entry.subject)}</small>
@@ -419,13 +417,105 @@
         });
     }
 
-    function pulseTarget(id) {
-        const target = document.getElementById(id);
-        if (!target) return;
-        target.classList.remove('search-target-pulse');
-        void target.offsetWidth;
-        target.classList.add('search-target-pulse');
-        window.setTimeout(() => target.classList.remove('search-target-pulse'), 1200);
+    function resultUrl(entry) {
+        const url = new URL(entry.page, location.href);
+        url.searchParams.set('find', state.query);
+        url.hash = entry.id;
+        return url.href;
+    }
+
+    // Keep ranges in the original DOM so emphasis, formulas and buttons retain their behavior.
+    function findPassage(root, query) {
+        const tokens = tokensFor(query).map(tokenPattern);
+        if (!tokens.length) return null;
+        const phrase = new RegExp(tokens.join('[\\s\\p{P}]+'), 'iu');
+        const terms = tokens.map(token => new RegExp(token, 'iu'));
+        const groups = new Map();
+        const walker = document.createTreeWalker(root, NodeFilter.SHOW_ELEMENT | NodeFilter.SHOW_TEXT, node => {
+            if (node.nodeType === Node.TEXT_NODE) return NodeFilter.FILTER_ACCEPT;
+            if (node.matches('button,script,style,svg,template,.katex-html,.note-filter-empty,[data-print-exclude]')) return NodeFilter.FILTER_REJECT;
+            return NodeFilter.FILTER_SKIP;
+        });
+        for (let node; (node = walker.nextNode());) {
+            const math = node.parentElement.closest('.katex');
+            if (math && !node.parentElement.closest('annotation')) continue;
+            const el = node.parentElement.closest('p,li,td,th,h2,h3,h4,h5,figcaption,summary,div,section,article');
+            if (!el || !root.contains(el)) continue;
+            if (!groups.has(el)) groups.set(el, { text: '', runs: [] });
+            const group = groups.get(el);
+            group.runs.push({ node, math, start: group.text.length });
+            group.text += math ? plainText(node.data) : node.data;
+        }
+        let best = null, bestScore = 0;
+        for (const group of groups.values()) {
+            const full = phrase.exec(group.text);
+            const matches = full ? [full] : terms.map(term => term.exec(group.text)).filter(Boolean);
+            const score = full ? terms.length + 1 : matches.length;
+            if (score <= bestScore) continue;
+            const match = matches[0], end = match.index + match[0].length;
+            const first = group.runs.findLast(run => run.start <= match.index);
+            const last = group.runs.findLast(run => run.start < end);
+            const range = document.createRange();
+            if (first.math) range.setStartBefore(first.math);
+            else range.setStart(first.node, match.index - first.start);
+            if (last.math) range.setEndAfter(last.math);
+            else range.setEnd(last.node, end - last.start);
+            best = { range, el: first.math || first.node.parentElement };
+            bestScore = score;
+            if (full) break;
+        }
+        return best;
+    }
+
+    let releaseHighlight = () => {};
+    function landOn(id, query, incoming = false) {
+        const root = document.getElementById(id);
+        if (!root) return;
+        const options = { source: 'search', scroll: false, updateHash: !incoming, find: query };
+        if (!window.experimentalReader?.goToId(id, options) && !incoming) {
+            const url = new URL(location.href);
+            url.hash = id;
+            if (location.protocol !== 'file:') url.searchParams.set('find', query);
+            if (url.href !== location.href) history.pushState(null, '', url);
+        }
+        releaseHighlight();
+        const match = findPassage(root, query);
+        const target = match?.el || root;
+        for (let el = target; el; el = el.parentElement) if (el.matches('details')) el.open = true;
+        window.AlmanionNoteFilter?.revealMatch(target);
+        const block = target.closest('p,li,td,th,[data-note-block],.accent-word-card,h3,h4') || target;
+        const highlights = window.CSS?.highlights;
+        if (match && highlights) highlights.set('note-search-match', new Highlight(match.range));
+        block.classList.add('search-target-pulse');
+        let frame = 0;
+        function align() {
+            frame = 0;
+            if (!target.getClientRects().length) return;
+            const controls = document.querySelector('.note-reader-controls');
+            const offset = (controls?.offsetHeight || 0) + (parseFloat(controls && getComputedStyle(controls).top) || 0) + 20;
+            const rect = match?.range.getClientRects()[0] || target.getBoundingClientRect();
+            if (Math.abs(rect.top - offset) > 2) window.scrollTo({ top: scrollY + rect.top - offset, behavior: 'instant' });
+        }
+        // Images and rendered formulas above a deep match can change the topic height after landing.
+        function schedule() { if (!frame) frame = requestAnimationFrame(align); }
+        const observer = new ResizeObserver(schedule);
+        observer.observe(root);
+        const stop = new AbortController();
+        const timer = setTimeout(clear, 3000);
+        function clear() {
+            clearTimeout(timer);
+            stop.abort();
+            observer.disconnect();
+            cancelAnimationFrame(frame);
+            block.classList.remove('search-target-pulse');
+            highlights?.delete('note-search-match');
+        }
+        for (const event of ['wheel', 'touchstart', 'pointerdown', 'keydown', 'popstate', 'almanion:topic-visible']) {
+            window.addEventListener(event, clear, { capture: true, passive: true, signal: stop.signal });
+        }
+        document.fonts?.ready.then(() => { if (!stop.signal.aborted) schedule(); });
+        releaseHighlight = clear;
+        schedule();
     }
 
     function openResult(result) {
@@ -433,27 +523,12 @@
         const currentPage = pagePath(location.pathname);
         close();
         if (result.page !== currentPage) {
-            try {
-                sessionStorage.setItem('almanion_search_target', JSON.stringify({
-                    page: result.page, id: result.id, at: Date.now()
-                }));
-            } catch (_) {}
-            location.href = `${result.page}#${encodeURIComponent(result.id)}`;
+            location.href = resultUrl(result);
             return;
         }
 
-        if (window.experimentalReader?.isActive?.() && window.experimentalReader.goToId(result.id, { source: 'search' })) {
-            pulseTarget(result.id);
-            closeMobileMenuIfAvailable();
-            return;
-        }
-
-        const target = document.getElementById(result.id);
-        if (!target) return;
         closeMobileMenuIfAvailable();
-        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        history.replaceState(history.state, '', `#${encodeURIComponent(result.id)}`);
-        pulseTarget(result.id);
+        landOn(result.id, state.query);
     }
 
     function closeMobileMenuIfAvailable() {
@@ -466,11 +541,9 @@
     }
 
     function restoreTarget() {
-        let pending = null;
-        try { pending = JSON.parse(sessionStorage.getItem('almanion_search_target') || 'null'); } catch (_) {}
-        if (!pending || pending.page !== pagePath(location.pathname) || Date.now() - pending.at > 30000) return;
-        try { sessionStorage.removeItem('almanion_search_target'); } catch (_) {}
-        window.setTimeout(() => pulseTarget(pending.id), 280);
+        const url = new URL(location.href);
+        const query = url.searchParams.get('find');
+        if (query && url.hash) landOn(decodeURIComponent(url.hash.slice(1)), query, true);
     }
 
     function init() {

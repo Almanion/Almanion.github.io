@@ -50,6 +50,8 @@
     "newyear.js",
     "note-runtime.js",
     "note-filter.js",
+    "note-image-viewer.js",
+    "reader-measure.js",
     "note-editor.js",
     "offline-library.js",
     "offline-library.json",

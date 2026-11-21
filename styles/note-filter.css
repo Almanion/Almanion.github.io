@@ -259,10 +259,60 @@ body[data-note-subject]:has(.note-filter[open]) .scroll-to-top { visibility: hid
     .note-filter-actions button { min-height: max(40px, calc(44px / var(--note-scale, 1))); }
 }
 /* Higher specificity than theme, reader and print visibility rules. */
-html body .main-content [data-note-filter-hidden] { display: none !important; }
+html body .main-content [data-note-filter-hidden]:not([data-search-reveal]),
+html body .main-content [data-search-reveal] > .note-filter-empty { display: none !important; }
 html body .main-content [data-note-filter-shell] { display: contents !important; }
 html body .main-content [data-note-filter-shell]::before,
 html body .main-content [data-note-filter-shell]::after { display: none !important; }
 @media print {
     .note-filter, .note-filter-empty, .note-reader-controls { display: none !important; }
+}
+
+.tablet-reader-layout .sidebar > .nav-menu {
+    flex: 1 1 auto;
+    min-height: 0;
+    height: auto;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+}
+.tablet-reader-layout .nav-group.open > .nav-submenu { max-height: none; }
+@media (min-width: 769px) and (max-width: 1050px), (min-width: 769px) and (pointer: coarse) {
+    .exp-reader-status-line .exp-reader-part { display: none; }
+    .exp-reader-topic {
+        display: block;
+        min-width: 0;
+        padding: 4px 0;
+        border: 0;
+        background: transparent;
+        color: var(--text-primary);
+        font-family: inherit;
+        font-size: .85rem;
+        font-weight: 600;
+        line-height: 1.25;
+        text-align: start;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        cursor: pointer;
+    }
+}
+::highlight(note-search-match) { background-color: #ffdf85; color: #251b03; }
+@media screen and (min-width: 1051px) {
+    .main-content .topic :where(p, li, blockquote):not(:has(table, figure, img, svg, pre, .katex-display, .formula-display)):not(:where(table *, figure *)) {
+        max-inline-size: min(80ch, var(--prose-width, 80ch));
+    }
+    body:not(.matcenter-page) .main-content .topic > :is(p, ul, ol, blockquote):has(table, figure, img, svg, pre, .katex-display, .formula-display) {
+        width: 100%;
+        max-inline-size: none;
+    }
+}
+
+@media screen and (max-width: 768px), screen and (pointer: coarse) {
+    .copyable-block { --note-action-space: 44px; }
+    .copyable-block:has(> .bookmark-btn, > .personal-note-btn) { --note-action-space: 88px; }
+    .copyable-block:has(> .bookmark-btn):has(> .personal-note-btn) { --note-action-space: 132px; }
+    .copyable-block > :is(.chem-block-title, .block-title, h4, h5, h6):first-child {
+        max-inline-size: calc(100% - var(--note-action-space));
+        overflow-wrap: anywhere;
+    }
 }

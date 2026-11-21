@@ -53,7 +53,7 @@ test('home searches across subjects on demand, restores focus and opens the exac
     await expect(result).toBeVisible();
     expect(indices).toHaveLength(1);
     await result.click();
-    await expect(page).toHaveURL(url => url.pathname.endsWith(target.split('#')[0]) && url.hash === '#' + target.split('#')[1]);
+    await expect(page).toHaveURL(target);
 });
 
 test('broad searches reveal additional matches without another download', async ({ page }) => {

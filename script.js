@@ -292,7 +292,7 @@ function initNavigation() {
     // Клик по ссылке навигации
     navLinks.forEach(link => {
         link.addEventListener('click', (e) => {
-            e.preventDefault();
+            if (e.ctrlKey || e.metaKey || e.shiftKey || e.altKey) return;
             
             navLinks.forEach(l => l.classList.remove('active'));
             link.classList.add('active');
@@ -306,19 +306,9 @@ function initNavigation() {
                 if (window.experimentalReader
                     && window.experimentalReader.isActive()
                     && window.experimentalReader.goToId(targetId, { source: 'sidebar' })) {
+                    e.preventDefault();
                     return;
                 }
-
-                const stickyHeader = document.querySelector('.topic-title');
-                const headerHeight = stickyHeader ? stickyHeader.offsetHeight + 8 : 20;
-                const offset = window.innerWidth <= 768 ? headerHeight : 20;
-                const elementPosition = targetElement.getBoundingClientRect().top;
-                const offsetPosition = elementPosition + window.pageYOffset - offset;
-                
-                window.scrollTo({
-                    top: offsetPosition,
-                    behavior: 'smooth'
-                });
 
                 targetElement.classList.add('nav-highlight');
                 setTimeout(() => targetElement.classList.remove('nav-highlight'), 1500);
@@ -330,6 +320,7 @@ function initNavigation() {
     let currentSection = '';
     
     function setActiveLink(sectionId) {
+        if (window.experimentalReader?.isActive()) return;
         if (currentSection === sectionId) return;
         currentSection = sectionId;
         
@@ -687,6 +678,26 @@ function openMobileMenu(opener) {
     syncSidebarVisibility(sidebar);
     const first = [...sidebar.querySelectorAll('#closeSidebar, button, a[href], input')].find(el => !el.disabled && el.getClientRects().length);
     first?.focus({ preventScroll: true });
+    if (!sidebar.classList.contains('exp-search-on')) revealCurrentNav(sidebar);
+}
+
+function revealCurrentNav(sidebar, focusLink = false) {
+    if (!sidebar || sidebar.inert) return;
+    const link = sidebar.querySelector('.nav-link[aria-current="location"], .nav-link.active');
+    if (!link) return;
+    for (let group = link.closest('.nav-group'); group; group = group.parentElement.closest('.nav-group')) {
+        group.classList.add('open');
+        group.querySelector(':scope > .nav-group-toggle')?.setAttribute('aria-expanded', 'true');
+    }
+    const menu = link.closest('.nav-menu');
+    const scroller = menu && menu.clientHeight < menu.scrollHeight ? menu : sidebar;
+    const rect = link.getBoundingClientRect();
+    const offset = rect.top - scroller.getBoundingClientRect().top;
+    const head = scroller === sidebar ? sidebar.querySelector('.sidebar-header')?.offsetHeight || 0 : 0;
+    if (offset < head + 24 || offset + rect.height > scroller.clientHeight - 24) {
+        scroller.scrollTop += offset - head - (scroller.clientHeight - head - rect.height) / 2;
+    }
+    if (focusLink) link.focus({ preventScroll: true });
 }
 
 function closeMobileMenu(restoreFocus = true) {
@@ -721,7 +732,7 @@ function initBottomSheetSwipe() {
 
     sidebar.addEventListener('touchstart', (e) => {
         if (window.innerWidth > 768 || !sidebar.classList.contains('open')) return;
-        if (sidebar.scrollTop > 5) return;
+        if (sidebar.scrollTop > 5 || e.target.closest('.nav-menu')?.scrollTop > 5) return;
         startY = e.touches[0].clientY;
         currentY = startY;
         tracking = true;
@@ -923,7 +934,7 @@ function collapseSidebar() {
     document.querySelector('.sidebar-expand-btn')?.focus({ preventScroll: true });
 }
 
-function expandSidebar() {
+function expandSidebar(opener) {
     const sidebar = document.getElementById('sidebar');
     if (!sidebar) return;
 
@@ -932,6 +943,7 @@ function expandSidebar() {
     if (!usesTabletDrawer()) _safeSet('sidebarCollapsed', 'false');
     syncSidebarVisibility(sidebar);
     sidebar.querySelector('.sidebar-collapse-btn')?.focus({ preventScroll: true });
+    revealCurrentNav(sidebar, !!opener);
 }
 
 function toggleSidebar() {
@@ -1383,130 +1395,33 @@ function initExpBottomNav() {
 }
 document.addEventListener('DOMContentLoaded', initExpBottomNav);
 
-// ============================================
-// Лайтбокс картинок: тап по картинке → полноэкранный просмотр
-// с пинч-зумом, двойным тапом, панорамированием; закрытие свайпом/фоном/крестиком/Esc.
-// ============================================
+// Load the shared image viewer on first use.
 (function () {
-    var ov, imgEl, scale = 1, tx = 0, ty = 0, lastTouchAt = 0;
-
-    function apply() { imgEl.style.transform = 'translate(' + tx + 'px,' + ty + 'px) scale(' + scale + ')'; }
-    function reset() { scale = 1; tx = 0; ty = 0; if (imgEl) { imgEl.style.transition = ''; apply(); } }
-
-    function build() {
-        ov = document.createElement('div');
-        ov.id = 'lightboxOverlay';
-        ov.className = 'lightbox-overlay';
-        ov.innerHTML =
-            '<button class="lightbox-close" type="button" aria-label="Закрыть"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="6" y1="6" x2="18" y2="18"/><line x1="6" y1="18" x2="18" y2="6"/></svg></button>' +
-            '<img class="lightbox-img" alt="" draggable="false">';
-        document.body.appendChild(ov);
-        imgEl = ov.querySelector('.lightbox-img');
-
-        ov.querySelector('.lightbox-close').addEventListener('click', close);
-        ov.addEventListener('click', function (e) { if (e.target === ov) close(); });
-
-        // Двойной клик (десктоп) — зум к точке
-        imgEl.addEventListener('dblclick', function (e) { if (Date.now() - lastTouchAt >= 500) toggleZoom(e.clientX, e.clientY); });
-        // Колесо мыши — зум
-        ov.addEventListener('wheel', function (e) {
-            e.preventDefault();
-            scale = Math.min(5, Math.max(1, scale * (e.deltaY < 0 ? 1.15 : 0.87)));
-            if (scale <= 1.02) reset(); else apply();
-        }, { passive: false });
-
-        wireTouch();
-    }
-
-    function toggleZoom(cx, cy) {
-        imgEl.style.transition = 'transform 0.2s ease';
-        if (scale > 1) { reset(); imgEl.style.transition = 'transform 0.2s ease'; }
-        else {
-            scale = 2.5;
-            var r = imgEl.getBoundingClientRect();
-            tx = (r.left + r.width / 2 - cx) * (scale - 1);
-            ty = (r.top + r.height / 2 - cy) * (scale - 1);
-            apply();
-        }
-        setTimeout(function () { if (imgEl) imgEl.style.transition = ''; }, 220);
-    }
-
-    function wireTouch() {
-        var startDist = 0, startScale = 1, sx = 0, sy = 0, px = 0, py = 0, mode = '', lastTap = 0;
-        function d2(t) { return Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY); }
-
-        imgEl.addEventListener('touchstart', function (e) {
-            lastTouchAt = Date.now();
-            imgEl.style.transition = '';
-            if (e.touches.length === 2) { mode = 'pinch'; startDist = d2(e.touches); startScale = scale; return; }
-            var now = lastTouchAt;
-            if (now - lastTap < 300) { mode = ''; lastTap = 0; toggleZoom(e.touches[0].clientX, e.touches[0].clientY); return; }
-            lastTap = now;
-            mode = scale > 1 ? 'pan' : 'swipe';
-            sx = e.touches[0].clientX; sy = e.touches[0].clientY; px = tx; py = ty;
-        }, { passive: true });
-
-        imgEl.addEventListener('touchmove', function (e) {
-            if (mode === 'pinch' && e.touches.length === 2) {
-                e.preventDefault();
-                scale = Math.min(5, Math.max(1, startScale * d2(e.touches) / startDist));
-                apply();
-            } else if (mode === 'pan' && e.touches.length === 1) {
-                e.preventDefault();
-                tx = px + (e.touches[0].clientX - sx);
-                ty = py + (e.touches[0].clientY - sy);
-                apply();
-            } else if (mode === 'swipe' && e.touches.length === 1) {
-                var dy = e.touches[0].clientY - sy;
-                if (dy > 0) { e.preventDefault(); imgEl.style.transform = 'translateY(' + dy + 'px)'; ov.style.background = 'rgba(0,0,0,' + Math.max(0, 0.92 - dy / 500) + ')'; }
-            }
-        }, { passive: false });
-
-        imgEl.addEventListener('touchend', function (e) {
-            if (mode === 'swipe') {
-                var dy = (e.changedTouches[0] ? e.changedTouches[0].clientY : sy) - sy;
-                ov.style.transition = 'background 0.2s ease';
-                ov.style.background = '';
-                if (dy > 90) { close(); }
-                else { imgEl.style.transition = 'transform 0.2s ease'; apply(); }
-                setTimeout(function () { if (ov) ov.style.transition = ''; if (imgEl) imgEl.style.transition = ''; }, 220);
-            }
-            if (scale <= 1.02) reset();
-            mode = '';
+    const diagrams = 'figure svg[viewBox][role="img"], .chem-note-table svg[viewBox], .kc-table-answer svg[role="img"]';
+    const selector = 'img, ' + diagrams;
+    let loading;
+    function open(event) {
+        const source = event.target.closest?.(selector);
+        if (!source || !source.closest('.main-content, .kc-definition, .bm-card-content')) return;
+        if (event.type === 'keydown' && (source.localName !== 'svg' || !['Enter', ' '].includes(event.key))) return;
+        event.preventDefault();
+        event.stopPropagation();
+        if (window.AlmanionImageViewer) return window.AlmanionImageViewer.open(source);
+        if (!loading) loading = new Promise((resolve, reject) => {
+            const script = document.createElement('script');
+            script.src = 'note-image-viewer.js?v=1';
+            script.onload = resolve;
+            script.onerror = () => { script.remove(); loading = null; reject(); };
+            document.head.append(script);
         });
+        loading.then(() => window.AlmanionImageViewer.open(source), () => window.AlmanionToast?.show('Не удалось открыть иллюстрацию. Попробуйте ещё раз.'));
     }
-
-    function open(src, alt) {
-        if (!ov) build();
-        imgEl.src = src;
-        imgEl.alt = alt || '';
-        reset();
-        document.body.classList.add('lightbox-open');
-        ov.classList.add('open');
-    }
-    function close() {
-        if (!ov) return;
-        ov.classList.remove('open');
-        ov.style.background = '';
-        document.body.classList.remove('lightbox-open');
-    }
-
-    // Перехватываем клик по картинке в контенте/карточках (в фазе захвата —
-    // чтобы не сработал клик по карточке закладки/проверки).
-    document.addEventListener('click', function (e) {
-        var img = e.target.closest && e.target.closest('img');
-        if (!img || (img.closest('#lightboxOverlay'))) return;
-        if (!img.closest('.main-content, .kc-definition, .bm-card-content')) return;
-        var src = img.currentSrc || img.getAttribute('src');
-        if (!src) return;
-        e.preventDefault();
-        e.stopPropagation();
-        open(src, img.getAttribute('alt'));
-    }, true);
-
-    document.addEventListener('keydown', function (e) {
-        if (e.key === 'Escape' && ov && ov.classList.contains('open')) close();
+    document.querySelectorAll(diagrams).forEach(svg => {
+        svg.setAttribute('tabindex', '0');
+        svg.setAttribute('aria-haspopup', 'dialog');
     });
+    document.addEventListener('click', open, true);
+    document.addEventListener('keydown', open, true);
 })();
 
 // ============================================

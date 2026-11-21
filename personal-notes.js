@@ -208,6 +208,8 @@
         if (nav && !document.querySelector('#personalNotesButton')) {
             const button = document.createElement('button'); button.type = 'button'; button.id = 'personalNotesButton'; button.className = 'reader-tool-menu-button'; button.innerHTML = icon + '<span>' + t.title + '</span>'; button.onclick = () => open();
             nav.matches('.nav-menu') ? nav.before(button) : nav.append(button);
+            button.setAttribute('aria-label', t.title);
+            button.querySelector('span').textContent = document.documentElement.lang === 'en' ? 'Notes' : 'Пометки';
         }
         buttons();
         window.addEventListener('almanion-block-actions-ready', event => buttons(event.detail?.root));

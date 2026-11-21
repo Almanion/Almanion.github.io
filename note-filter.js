@@ -6,6 +6,16 @@
         try { localStorage.removeItem('note-block-filter:' + location.pathname); } catch (_) {}
         return;
     }
+    const desktop = matchMedia('(min-width: 1051px)');
+    function loadReadingMeasure() {
+        if (!desktop.matches) return;
+        desktop.removeEventListener('change', loadReadingMeasure);
+        const script = document.createElement('script');
+        script.src = 'reader-measure.js?v=1';
+        document.head.append(script);
+    }
+    desktop.addEventListener('change', loadReadingMeasure);
+    loadReadingMeasure();
     function init() {
     if (window.AlmanionNoteFilter) return;
     const main = document.querySelector('.main-content');
@@ -46,14 +56,25 @@
     if (controls) controls.appendChild(panel);
     else main.insertBefore(panel, first);
 
-    function apply() {
+    function hasOtherContent(topic) {
+        const excluded = selector + ',h1,h2,h3,h4,h5,h6,.part-title-row,button,script,style,[data-print-exclude],[data-note-filter-hidden]';
+        const walker = document.createTreeWalker(topic, NodeFilter.SHOW_ELEMENT | NodeFilter.SHOW_TEXT, node => {
+            if (node.nodeType === Node.TEXT_NODE) return node.data.trim() ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_SKIP;
+            if (node.matches(excluded)) return NodeFilter.FILTER_REJECT;
+            return node.matches('img,svg,table') ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_SKIP;
+        });
+        return !!walker.nextNode();
+    }
+    function apply(userChange = false) {
         const inputs = Array.from(panel.querySelectorAll('input'));
         if (selected !== null && inputs.every(input => selected.has(input.value))) selected = null;
         main.querySelectorAll('[data-note-filter-hidden],[data-note-filter-shell]').forEach(el => {
             el.removeAttribute('data-note-filter-hidden');
             el.removeAttribute('data-note-filter-shell');
         });
+        main.querySelectorAll('[data-note-filter-empty]').forEach(el => el.removeAttribute('data-note-filter-empty'));
         main.querySelectorAll('.note-filter-empty').forEach(el => el.remove());
+        clearSearchReveal();
         if (selected !== null) {
             function visit(el, inherited, headingContext) {
                 if (el.matches('.note-filter-empty')) return false;
@@ -88,7 +109,8 @@
                 (topics.length ? Array.from(topics) : [section]).forEach(topic => {
                     const found = Array.from(topic.querySelectorAll(selector)).some(el =>
                         !el.closest('[data-note-filter-hidden]') && !el.hasAttribute('data-note-filter-shell'));
-                    if (!found && !selected.has('text')) {
+                    if (!found && !(selected.has('text') && hasOtherContent(topic))) {
+                        topic.setAttribute('data-note-filter-empty', '');
                         topic.removeAttribute('data-note-filter-hidden');
                         const empty = document.createElement('p');
                         empty.className = 'note-filter-empty';
@@ -108,7 +130,7 @@
         selection.setAttribute('aria-label', count.getAttribute('aria-label'));
         panel.dataset.active = String(selected !== null);
         panel.querySelector('.note-filter-reset').textContent = selected === null ? (english ? 'Hide all' : 'Убрать всё') : (english ? 'Show all' : 'Показать всё');
-        window.dispatchEvent(new CustomEvent('almanion:note-filter-changed'));
+        window.dispatchEvent(new CustomEvent('almanion:note-filter-changed', { detail: { userChange } }));
     }
     function renderOptions() {
         const available = types.filter(type => main.querySelector(type[3]));
@@ -136,7 +158,7 @@
     }
     function save() {
         try { localStorage.setItem(key, JSON.stringify(selected === null ? null : Array.from(selected))); } catch (_) {}
-        apply();
+        apply(true);
     }
     panel.addEventListener('change', () => {
         selected = new Set(Array.from(panel.querySelectorAll('input:checked'), input => input.value));
@@ -200,7 +222,17 @@
         clearTimeout(timer);
         timer = setTimeout(() => { renderOptions(); apply(); }, 80);
     }).observe(main, { childList: true, subtree: true });
-    window.AlmanionNoteFilter = { reset: () => { selected = null; save(); }, active: () => selected !== null, refresh: apply };
+    function clearSearchReveal() {
+        main.querySelectorAll('[data-search-reveal]').forEach(el => el.removeAttribute('data-search-reveal'));
+    }
+    function revealMatch(el) {
+        clearSearchReveal();
+        for (let parent = el; parent && parent !== main; parent = parent.parentElement) {
+            if (parent.hasAttribute('data-note-filter-hidden') || parent.hasAttribute('data-note-filter-empty')) parent.setAttribute('data-search-reveal', '');
+        }
+    }
+    window.addEventListener('almanion:topic-visible', clearSearchReveal);
+    window.AlmanionNoteFilter = { reset: () => { selected = null; save(); }, active: () => selected !== null, refresh: apply, revealMatch };
     }
     init();
     // English notes arrive only after the protected content has loaded.

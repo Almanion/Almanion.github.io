@@ -71,7 +71,8 @@ body[data-note-subject="chemistry-10"] .chem-note-figure {
 }
 body[data-note-subject="chemistry-10"] .chem-note-figure svg {
     display: block;
-    max-width: none;
+    max-width: 100%;
+    cursor: zoom-in;
     height: auto;
     margin-inline: auto;
 }

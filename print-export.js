@@ -367,7 +367,9 @@
             target.disabled = busy;
             target.classList.toggle('is-preparing', busy);
             const label = target.querySelector('.print-export-label');
-            if (label) label.textContent = busy ? text('Подготовка страниц…', 'Preparing pages…') : text('Скачать PDF', 'Download PDF');
+            if (label) label.textContent = target.closest('.print-export-menu-slot')
+                ? (busy ? 'PDF…' : 'PDF')
+                : (busy ? text('Подготовка страниц…', 'Preparing pages…') : text('Скачать PDF', 'Download PDF'));
         });
         const download = document.getElementById('printExportDownload');
         if (download) {
@@ -572,12 +574,12 @@
         if (!document.querySelector('.main-content')) return;
         if (!document.querySelector('link[href^="styles/note-filter.css"]')) {
             const style = document.createElement('link');
-            style.rel = 'stylesheet'; style.href = 'styles/note-filter.css?v=20261113-5';
+            style.rel = 'stylesheet'; style.href = 'styles/note-filter.css?v=20261121-4';
             document.head.appendChild(style);
         }
         if (!document.querySelector('script[src^="note-filter.js"]')) {
             const script = document.createElement('script');
-            script.src = 'note-filter.js?v=20261121-1'; document.head.appendChild(script);
+            script.src = 'note-filter.js?v=20261121-4'; document.head.appendChild(script);
         }
         collectCatalogue();
         createLauncher();
