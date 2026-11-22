@@ -70,6 +70,7 @@ for (const width of [320, 390, 430, 768, 1024, 1440]) {
         await expect(page.locator('#kcSelectOverlay')).toBeVisible();
         await page.locator('#kcConfigure').click();
         await page.locator('#kcTypesHeading').click();
+        await page.locator('#kcTopicOptions > summary').click();
         await page.locator('.kc-topic-group summary').filter({ hasText: 'Молекулярная физика' }).click();
         await page.waitForTimeout(350);
         const layout = await page.locator('#kcSelectModal').evaluate(modal => {
@@ -83,6 +84,7 @@ for (const width of [320, 390, 430, 768, 1024, 1440]) {
         expect(layout.bodyOverflow).toBeGreaterThan(0);
         for (const style of layout.labelStyles) { expect(style.whitespace).toBe('normal'); expect(style.overflow).toBeLessThan(2); }
         await page.screenshot({ path: info.outputPath('study-top.png') });
+        await page.locator('#kcSizeOptions > summary').click();
         await page.locator('.kc-select-scroll').evaluate(el => el.scrollTop = el.scrollHeight);
         await expect(page.locator('[data-limit="all"]')).toBeInViewport();
         await expect(page.locator('#kcStart')).toBeInViewport();
