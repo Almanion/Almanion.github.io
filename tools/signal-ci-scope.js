@@ -80,7 +80,7 @@ function isReaderFile(file) {
     || /^contests(?:-core)?\.js$/.test(file)
     || /^styles\/(?:duty|contests|reader-tools|note-filter|print|site\/20-layout-content)\.css$/.test(file)
     || /^tools\/build-(?:notes|offline)\.js$/.test(file)
-    || /^(?:e2e|tests)\/(?:reader-tools|site-improvements|network-resilience|duty-extra|russian-ege|experiment-notebook|offline-catalogue|contests)\.(?:spec|test)\.js$/.test(file)
+    || /^(?:e2e|tests)\/(?:reader-tools|site-improvements|network-resilience|duty-extra|russian-ege|experiment-notebook|image-viewer|offline-catalogue|contests)\.(?:spec|test)\.js$/.test(file)
     || file === "matcenter/20-auth.js";
 }
 const routing = new Set([".github/workflows/pages.yml", "tools/signal-ci-scope.js", "tests/signal-ci-scope.test.js", "tools/run-tests.js"]);

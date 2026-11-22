@@ -11,7 +11,7 @@ async function openRegnault(page,touch=false) {
         return route.abort();
     });
     await page.goto('/physics-10.html#izmerenie-teploemkosti-gaza');
-    if(await page.locator('#sidebar.open').count())await page.locator('#closeSidebar').click();
+    if(await page.locator('#sidebar.open').count())await page.keyboard.press('Escape');
     const image=page.locator('[data-note-block="thermo-regnault-picture"] img');
     await image.scrollIntoViewIfNeeded();
     await expect.poll(()=>image.evaluate(img=>img.complete&&img.naturalWidth>0)).toBe(true);

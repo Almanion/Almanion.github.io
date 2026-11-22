@@ -588,6 +588,7 @@ function syncSidebarVisibility(sidebar) {
     const open = sidebar.classList.contains('open');
     sidebar.inert = document.body.classList.contains('matcenter-auth-open') || (mobile ? !open : sidebar.classList.contains('collapsed'));
     document.querySelectorAll('#menuToggle, #expBottomNav [aria-controls="sidebar"]').forEach(button => button.setAttribute('aria-expanded', String(open)));
+    document.getElementById('menuToggle')?.setAttribute('aria-label', open ? 'Закрыть меню' : 'Открыть меню');
 }
 
 function initMobileMenu() {
@@ -596,15 +597,15 @@ function initMobileMenu() {
     if (window.__mobileMenuInit) return;
 
     const menuToggle = document.getElementById('menuToggle');
-    const closeSidebar = document.getElementById('closeSidebar');
     const sidebar = document.getElementById('sidebar');
 
     // На страницах без сайдбара (index.html, the-secret-game.html) — тихо выходим.
     // Не warning'уем — это нормальное состояние.
-    if (!menuToggle || !closeSidebar || !sidebar) {
+    if (!menuToggle || !sidebar) {
         return;
     }
     window.__mobileMenuInit = true;
+    sidebar.querySelector('#closeSidebar')?.remove();
     
     // Создаём оверлей, если его ещё нет
     let overlay = document.querySelector('.sidebar-overlay');
@@ -626,16 +627,9 @@ function initMobileMenu() {
         closeMobileMenu(false);
         if (focusInside && sidebar.inert) (event.matches ? mobileMenuButton() : document.querySelector('.sidebar-expand-btn'))?.focus({ preventScroll: true });
     });
-    menuToggle.addEventListener('click', () => openMobileMenu(menuToggle));
-    
-    closeSidebar.addEventListener('click', () => {
-        closeMobileMenu();
-    });
-    
-    // Поддержка touchend для надёжного закрытия на мобильных
-    closeSidebar.addEventListener('touchend', (e) => {
-        e.preventDefault();
-        closeMobileMenu();
+    menuToggle.addEventListener('click', () => {
+        if (sidebar.classList.contains('open')) closeMobileMenu();
+        else openMobileMenu(menuToggle);
     });
     
     // Закрытие при клике/тапе на оверлей
@@ -676,7 +670,7 @@ function openMobileMenu(opener) {
         document.body.classList.add('sidebar-open');
     }
     syncSidebarVisibility(sidebar);
-    const first = [...sidebar.querySelectorAll('#closeSidebar, button, a[href], input')].find(el => !el.disabled && el.getClientRects().length);
+    const first = [...sidebar.querySelectorAll('button, a[href], input')].find(el => !el.disabled && el.getClientRects().length);
     first?.focus({ preventScroll: true });
     if (!sidebar.classList.contains('exp-search-on')) revealCurrentNav(sidebar);
 }
@@ -856,13 +850,7 @@ function initSidebarCollapse() {
         if (headerButtons) {
             headerButtons.insertBefore(collapseBtn, headerButtons.firstChild);
         } else {
-            // Вставляем перед кнопкой закрытия
-            const closeBtn = sidebarHeader.querySelector('.close-sidebar');
-            if (closeBtn) {
-                sidebarHeader.insertBefore(collapseBtn, closeBtn);
-            } else {
-                sidebarHeader.appendChild(collapseBtn);
-            }
+            sidebarHeader.appendChild(collapseBtn);
         }
     }
     

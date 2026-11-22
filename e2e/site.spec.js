@@ -222,7 +222,7 @@ test('bookmarks stay usable offline and behave as a responsive library', async f
     await expectNoHorizontalOverflow(page);
 });
 
-test('mobile note menu opens and closes without page overflow', async function ({ page }) {
+test('the mobile Menu button toggles the drawer without a separate close icon', async function ({ page }) {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto('/physics.html', { waitUntil: 'domcontentloaded' });
 
@@ -232,8 +232,12 @@ test('mobile note menu opens and closes without page overflow', async function (
     await mobileMenuButton.click();
     await expect(page.locator('#sidebar')).toHaveClass(/open/);
     await expect(page.locator('#sidebar')).toBeVisible();
-    await page.locator('#closeSidebar').click();
+    await expect(page.locator('#closeSidebar')).toHaveCount(0);
+    await expect(mobileMenuButton).toHaveAttribute('aria-expanded', 'true');
+    await mobileMenuButton.click();
     await expect(page.locator('#sidebar')).not.toHaveClass(/open/);
+    await expect(mobileMenuButton).toHaveAttribute('aria-expanded', 'false');
+    await expect(mobileMenuButton).toBeFocused();
     await expectNoHorizontalOverflow(page);
 });
 
