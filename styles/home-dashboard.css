@@ -241,8 +241,27 @@ body.home-page .home-quick-customize {
 }
 body.home-page .home-quick-customize svg { width: 16px; height: 16px; }
 body.home-page .subjects-grid { margin: 0; min-width: 0; }
+/* Cards and the shortcut picker share the same ink in each theme. */
+body.home-page [data-subject] { --subject-color: var(--subject-light, var(--accent-color)); }
+body.home-page:is(.exp-dark, .dark-theme, .midnight-theme) [data-subject] {
+    --subject-color: var(--subject-dark, var(--accent-color));
+}
+body.home-page.experimental.exp-graphite [data-subject] { --subject-color: var(--exp-text-dim); }
+
+body.home-page :is([data-subject="physics"], [data-subject="physics-exam"]) { --subject-light: #245ea9; --subject-dark: #85baff; }
+body.home-page [data-subject="chemistry"]   { --subject-light: #117047; --subject-dark: #78d6a2; }
+body.home-page [data-subject="math"]        { --subject-light: #a53c29; --subject-dark: #ffa58e; }
+body.home-page [data-subject="geometry"]    { --subject-light: #146973; --subject-dark: #78d4da; }
+body.home-page [data-subject="russian"]     { --subject-light: #a32e53; --subject-dark: #ff9cb9; }
+body.home-page [data-subject="literature"]  { --subject-light: #805022; --subject-dark: #e6b988; }
+body.home-page [data-subject="english"]     { --subject-light: #6843a2; --subject-dark: #c4a7f2; }
+body.home-page [data-subject="geography"]   { --subject-light: #4b6931; --subject-dark: #afd68c; }
+body.home-page [data-subject="matcenter"]   { --subject-light: #404c93; --subject-dark: #a9b7fa; }
+body.home-page [data-subject="likbez"]      { --subject-light: #825a0d; --subject-dark: #edc46d; }
+body.home-page [data-subject="duty"]        { --subject-light: #4b6d6b; --subject-dark: #a0c8c4; }
+body.home-page [data-subject="tour"]        { --subject-light: #586644; --subject-dark: #bdcba3; }
+
 body.home-page .subject-card {
-    --subject-color: var(--accent-color);
     display: flex;
     position: relative;
     min-width: 0;
@@ -266,18 +285,6 @@ body.home-page .subject-card::before {
     color: var(--subject-color);
     opacity: 0;
 }
-body.home-page .subject-card[data-subject="physics"] { --subject-color: #4777a0; }
-body.home-page .subject-card[data-subject="physics-exam"] { --subject-color: #69668f; }
-body.home-page .subject-card[data-subject="chemistry"] { --subject-color: #427a67; }
-body.home-page .subject-card[data-subject="math"] { --subject-color: #9b6928; }
-body.home-page .subject-card[data-subject="geometry"] { --subject-color: #68609a; }
-body.home-page .subject-card[data-subject="likbez"] { --subject-color: #735d7e; }
-body.home-page .subject-card[data-subject="literature"] { --subject-color: #935f50; }
-body.home-page .subject-card[data-subject="russian"] { --subject-color: #a45262; }
-body.home-page .subject-card[data-subject="matcenter"] { --subject-color: #58668e; }
-body.home-page .subject-card[data-subject="english"] { --subject-color: #4f6f82; }
-body.home-page .subject-card[data-subject="duty"] { --subject-color: #4f7774; }
-body.home-page .subject-card[data-subject="tour"] { --subject-color: #667052; }
 body.home-page .card-header { display: grid; place-items: center; padding: 0; border: 0; }
 body.home-page .subject-icon {
     display: grid;
@@ -537,7 +544,6 @@ body.home-quick-dialog-open {
 }
 
 .home-quick-option {
-    --quick-option-color: var(--accent-color);
     width: 100%;
     min-height: 62px;
     display: grid;
@@ -557,8 +563,8 @@ body.home-quick-dialog-open {
 }
 
 .home-quick-option.is-selected {
-    border-color: color-mix(in srgb, var(--quick-option-color) 58%, var(--border-color));
-    background: color-mix(in srgb, var(--quick-option-color) 8%, var(--bg-secondary));
+    border-color: color-mix(in srgb, var(--subject-color) 58%, var(--border-color));
+    background: color-mix(in srgb, var(--subject-color) 8%, var(--bg-secondary));
 }
 
 .home-quick-option.is-limit {
@@ -571,8 +577,8 @@ body.home-quick-dialog-open {
     display: grid;
     place-items: center;
     border-radius: 11px;
-    color: var(--quick-option-color);
-    background: color-mix(in srgb, var(--quick-option-color) 9%, var(--bg-primary));
+    color: var(--subject-color);
+    background: color-mix(in srgb, var(--subject-color) 9%, var(--bg-primary));
 }
 
 .home-quick-option-icon svg {
@@ -619,22 +625,9 @@ body.home-quick-dialog-open {
 
 .home-quick-option.is-selected .home-quick-option-order {
     border-color: transparent;
-    color: #fff;
-    background: var(--quick-option-color);
+    color: var(--bg-secondary);
+    background: var(--subject-color);
 }
-
-.home-quick-option[data-subject="physics"] { --quick-option-color: #4777a0; }
-.home-quick-option[data-subject="chemistry"] { --quick-option-color: #427a67; }
-.home-quick-option[data-subject="literature"] { --quick-option-color: #935f50; }
-.home-quick-option[data-subject="russian"] { --quick-option-color: #a45262; }
-.home-quick-option[data-subject="math"] { --quick-option-color: #9b6928; }
-.home-quick-option[data-subject="geometry"] { --quick-option-color: #68609a; }
-.home-quick-option[data-subject="physics-exam"] { --quick-option-color: #69668f; }
-.home-quick-option[data-subject="matcenter"] { --quick-option-color: #58668e; }
-.home-quick-option[data-subject="likbez"] { --quick-option-color: #735d7e; }
-.home-quick-option[data-subject="english"] { --quick-option-color: #4f6f82; }
-.home-quick-option[data-subject="duty"] { --quick-option-color: #4f7774; }
-.home-quick-option[data-subject="tour"] { --quick-option-color: #667052; }
 
 .home-quick-dialog-footer {
     display: flex;

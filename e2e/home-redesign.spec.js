@@ -95,6 +95,42 @@ for (const width of [320, 390, 768, 820, 1024, 1440]) {
     });
 }
 
+test('subject symbols stay legible against their own tiles in each palette', async ({ page }) => {
+    await page.goto('/');
+    await page.waitForFunction(() => window.AlmanionSettings?.ready);
+    for (const [mode, theme] of [['prism', 'light'], ['prism', 'dark'], ['graphite', 'dark']]) {
+        await page.evaluate(([expMode, expTheme]) => {
+            window.AlmanionSettings.update({ experimental: true, expMode, expTheme, animationLevel: 'off' });
+        }, [mode, theme]);
+        const icons = await page.locator('.subject-card .subject-icon').evaluateAll(tiles => {
+            const canvas = document.createElement('canvas');
+            canvas.width = canvas.height = 1;
+            const ctx = canvas.getContext('2d', { willReadFrequently: true });
+            function luminance(cssColor) {
+                ctx.fillStyle = cssColor;
+                ctx.fillRect(0, 0, 1, 1);
+                const channels = Array.from(ctx.getImageData(0, 0, 1, 1).data, byte => byte / 255)
+                    .map(c => c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4);
+                return channels[0] * 0.2126 + channels[1] * 0.7152 + channels[2] * 0.0722;
+            }
+            return tiles.map(tile => {
+                const svg = tile.querySelector('svg');
+                const ink = getComputedStyle(svg).color;
+                const a = luminance(ink);
+                const b = luminance(getComputedStyle(tile).backgroundColor);
+                return { subject: tile.closest('[data-subject]').dataset.subject, ink,
+                    glyph: svg.querySelector('use')?.getAttribute('href'),
+                    contrast: (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05) };
+            });
+        });
+        for (const icon of icons) expect(icon.contrast, `${mode}/${theme}: ${icon.subject}`).toBeGreaterThanOrEqual(3);
+        const physics = icons.find(icon => icon.subject === 'physics');
+        const ticket = icons.find(icon => icon.subject === 'physics-exam');
+        expect(ticket.ink).toBe(physics.ink);
+        expect(ticket.glyph).not.toBe(physics.glyph);
+    }
+});
+
 test('five personalized shortcuts can be edited, saved and restored without hiding services', async ({ page }) => {
     await page.setViewportSize({ width: 320, height: 740 });
     await page.goto('/');
