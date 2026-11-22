@@ -12,7 +12,9 @@ const client = read('home-dashboard.js');
 const editor = read('home-quick-editor.js');
 const shell = JSON.parse(read(path.join('performance', 'sw-shell.json'))).assets;
 
-assert.match(page, /styles\/home-dashboard\.css\?v=20261018-1/, 'dashboard layout changes must invalidate the previous stylesheet');
+const dashboardStyle = page.match(/href="styles\/home-dashboard\.css\?v=(\d{8})-\d+"/);
+assert.ok(dashboardStyle && dashboardStyle[1] >= '20261122',
+    'the source homepage must request the subject palette stylesheet or a newer version');
 assert.match(page, /home-dashboard\.js\?v=[\w-]+/, 'personal dashboard controller must be versioned');
 assert.doesNotMatch(page, /<script[^>]+src="home-dashboard\.js/, 'personalization must load during idle time, not block first paint');
 assert.match(page, /class="extra-section home-quick-section"[^>]*aria-labelledby="homeQuickTitle"/);
