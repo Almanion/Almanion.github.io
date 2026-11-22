@@ -1,7 +1,7 @@
 (function () {
     'use strict';
 
-    var ASSET_VERSION = '20261122-2';
+    var ASSET_VERSION = '20261123-1';
     var iconSelector = 'link[rel~="icon"][type="image/svg+xml"]';
 
     function readSettings() {

@@ -9,7 +9,8 @@
   const canvas = $('gameCanvas'), drawer = $('flightDrawer'), modal = $('modal');
   const coarse = () => matchMedia('(pointer:coarse)').matches;
   const narrow = () => !matchMedia('(min-width:520px) and (max-height:480px) and (orientation:landscape)').matches && matchMedia('(max-width:699px), (max-width:999px) and (orientation:portrait)').matches;
-  const mobile = () => matchMedia('(max-width:699px), (max-width:999px) and (orientation:portrait), (max-width:999px) and (max-height:480px)').matches;
+  const mobileLayout = matchMedia('(max-width:699px), (max-width:999px) and (orientation:portrait), (max-width:999px) and (max-height:480px)');
+  const mobile = () => mobileLayout.matches;
   const aiming = () => A.screen === 'play' && !A.state && !A.transitioning;
   const flying = () => A.screen === 'play' && A.state?.status === 'flying';
   const controlsBlocked = () => modal.open || drawer.open || A.transitioning;
@@ -18,6 +19,29 @@
   let lastHeight = innerHeight, lastWidth = innerWidth, sheetState = null, modalFocus = null, lastInput = null;
   let lastLevel = null, hintTimer, lastFlightKey = '', initializedLive = false, touchHintSeen = false;
   const screenMode = () => !A.state ? 'aiming' : A.state.status === 'flying' ? 'running' : 'review';
+
+  // Keep one time control and its forecast when the pilot changes orientation.
+  const timing=$('launchTiming');
+  const timingAnchor=()=>$(mobile()?'flightStatus':'launchButton');
+  let timingFocus=null;
+  timing.addEventListener('focusout',event=>{
+    // The old sidebar can become invisible before the media-query callback.
+    if(!event.relatedTarget&&!timing.hidden&&timing.parentNode!==timingAnchor().parentNode)timingFocus=event.target;
+  });
+  function placeLaunchTiming(){
+    const anchor=timingAnchor();
+    if(timing.nextElementSibling===anchor)return;
+    const active=document.activeElement;
+    const focus=timing.contains(active)?active:active===document.body?timingFocus:null;
+    anchor.before(timing);
+    timingFocus=null;
+    if(focus&&!timing.hidden){
+      const target=focus.offsetWidth&&!focus.disabled?focus:$('launchDelayRange');
+      target.focus({preventScroll:true});
+    }
+  }
+  mobileLayout.addEventListener('change',placeLaunchTiming);
+  placeLaunchTiming();
 
   function setText(node, text) {
     if (node && node.textContent !== text) node.textContent = text;
@@ -64,11 +88,14 @@
   }
   function onLevel() {
     closeSheet(false); clearPointers(); stopHold(); lastMode = ''; initializedLive = false;
+    portraitProjection=O.FlightView.portrait();
     delete document.body.dataset.resultView;
     $('resultScreen').hidden = true;
     $('resultAnalysisBar').hidden = true;
+    $('reviewEvent').hidden = true;
+    $('reviewPin').hidden = true;
     placeTimeline();
-    $('flightPlan').open = false;
+    A.goalHighlight = null;
     selectCockpitTab('course');
     $('aimFeedback').hidden = true;
     $('flightReview').hidden = true;
@@ -76,7 +103,9 @@
     if (lastLevel !== A.currentId) mapMode = 'aim';
     lastLevel = A.currentId;
     sync(); schedule();
-    if(coarse()&&mapMode==='aim'&&!touchHintSeen){
+    if(A.level().launchTiming){
+      clearTimeout(hintTimer);$('mapGestureHint').hidden=true;
+    }else if(coarse()&&mapMode==='aim'&&!touchHintSeen){
       touchHintSeen = true;
       setText($('mapGestureHint'),'Касание — курс и скорость. Два пальца — обзор.');
       $('mapGestureHint').hidden=false;clearTimeout(hintTimer);hintTimer=setTimeout(()=>$('mapGestureHint').hidden=true,6000);
@@ -120,23 +149,25 @@
     }
     if($('mobileFine'))setText($('mobileFine'),A.profile.settings.fineAim?'✓ Точно':'Точно');
     const text = !A.state ? 'Старт' : flying() ? (A.paused ? 'Продолжить' : 'Пауза') : 'Повторить';
-    setText($('launchButton'), text);
+    const delayed=mode==='aiming'&&l.launchDelay>0;
+    setText($('launchButton'), delayed?'Старт +'+$('launchDelayValue').textContent:text);
     setText($('mobileLaunch'), narrow() && editing() ? 'Готово ✓' : text);
     setText($('stagePill'), (A.profile.difficulty==='pro'?'ПРО · ':'')+(A.assisted ? 'ТРЕНИРОВКА · БЕЗ НАГРАД' : !A.state ? 'ГОТОВНОСТЬ' : flying() ? A.paused ? 'ПАУЗА' : 'ПОЛЁТ' : 'ЗАПИСЬ РЕЙСА'));
     $('stagePill').hidden = !A.assisted && (mode === 'aiming' || flying() && !A.paused);
     $('liveFlightPanel').hidden = mode === 'aiming';
     if (mode !== 'aiming' && s) {
+      const guide=A.flightGuide(s);
       if (!initializedLive) initLive();
       setText($('liveState'), mode === 'review' ? 'Запись' : A.paused ? 'Пауза' : 'Полёт');
       setText($('liveVelocity'), P.dockVelocity(s, A.level()).speed.toFixed(0) + ' ед./с');
       setText($('liveDock'), l.rules?.maxDockSpeed ? `При стыковке — до ${l.rules.maxDockSpeed} ед./с` : 'Радиус стыковки: ' + P.captureRadius(A.level(), A.stats()).toFixed(1));
-      setText($('liveCargo'), O.Routes.collected(A.level(), s) + ' / ' + O.Routes.cargoIds(A.level(), s).length);
-      setText($('liveOrbits'), (s.flybyIndex || 0) + ' / ' + (l.flybys?.length || 0));
-      setText($('livePortals'), (s.portalIndex || 0) + ' / ' + (l.portalOrder?.length || 0));
+      setText($('liveCargo'), guide.carried + ' / ' + guide.plan.cargo.length);
+      setText($('liveOrbits'), guide.count.flyby + ' / ' + guide.plan.flybys.length);
+      setText($('livePortals'), guide.count.portal + ' / ' + guide.plan.portals.length);
       $('liveOrbitRow').hidden = !l.flybys?.length;
       $('livePortalRow').hidden = !l.portalOrder?.length;
       $('liveDropRow').hidden = !l.stops?.length;
-      setText($('liveDrops'), (s.dropIndex || 0) + ' / ' + (l.stops?.length || 0));
+      setText($('liveDrops'), guide.count.stop + ' / ' + guide.plan.stops.length);
       const lost = s.cargoBodies?.filter(c => c.phase === 'lost').length || 0;
       setText($('liveWarning'), lost ? `Потеряно контейнеров: ${lost}` : '');
     }
@@ -250,9 +281,6 @@
     const r = drawer.getBoundingClientRect();
     if (event.clientX < r.left || event.clientX > r.right || event.clientY < r.top || event.clientY > r.bottom) closeSheet();
   });
-  $('flightPlan').querySelector('summary').addEventListener('click', event => {
-    event.preventDefault(); openSheet('route', event.currentTarget);
-  });
   function beforeModal() {
     if (!modal.open) modalFocus = document.activeElement;
     closeSheet(false); clearPointers(); stopHold();
@@ -277,7 +305,6 @@
       <button data-action="ui:route"><span class="menu-symbol">⌁</span>План маршрута</button>
       <button data-action="ui:map-menu"><span class="menu-symbol">✥</span>Настройки карты</button>
       <button data-action="medal-help"><span class="menu-symbol">✧</span>Условия медалей</button>
-      <button data-action="contract-info"><span class="menu-symbol">▤</span>Задание</button>
       <button data-action="hint"><span class="menu-symbol">?</span>Подсказка</button>
       <button data-action="previous-level" ${prev ? '' : 'disabled'}><span>‹</span>Предыдущий</button>
       <button data-action="following-level" ${next ? '' : 'disabled'}>Следующий<span>›</span></button>
@@ -436,14 +463,60 @@
     return O.FlightView.toWorld(x,y,A.camera,metrics());
   }
   function worldToScreen(x,y){return O.FlightView.toScreen(x,y,A.camera,metrics());}
+  function placeReviewPin(m=metrics()){
+    const pin=$('reviewPin'),event=O.Review.active?.data.event;
+    if(!event||document.body.dataset.resultView!=='analysis'){pin.hidden=true;return;}
+    const {r}=m,point=O.FlightView.toScreen(event.x,event.y,A.camera,m);
+    const x=point.x-r.left,y=point.y-r.top;
+    pin.hidden=x<=0||y<=0||x>=r.width||y>=r.height;
+    if(!pin.hidden){pin.style.left=x+'px';pin.style.top=y+'px';}
+  }
+  function focusReviewBounds(left,top,right,bottom){
+    A.camera={zoom:Math.min(2.35,1200/(right-left+100),700/(bottom-top+100)),
+      cx:(left+right)/2,cy:(top+bottom)/2};
+    // The result summary hides the map. Size the newly visible stage before
+    // clamping the camera against its viewport, especially in portrait.
+    layout();
+    sync();
+  }
+  function focusReviewEvent(event){
+    const target=event.target||{x:event.x,y:event.y,r:0};
+    focusReviewBounds(Math.min(event.x,target.x-target.r),Math.min(event.y,target.y-target.r),
+      Math.max(event.x,target.x+target.r),Math.max(event.y,target.y+target.r));
+  }
+  function locateGoal(){
+    const guide=A.flightGuide(),points=guide.targets.map(item=>item.point);
+    if(!points.length)return;
+    A.goalHighlight={goal:guide.next,until:performance.now()+1300};
+    const m=metrics(),{r}=m;
+    const outside=points.some(point=>{
+      const {x,y}=O.FlightView.toScreen(point.x,point.y,A.camera,m);
+      const margin=Math.min(48,point.r*m.fit*A.camera.zoom+16);
+      return x<r.left+margin||x>r.right-margin||y<r.top+margin||y>r.bottom-margin;
+    });
+    if(!outside)return;
+    focusReviewBounds(Math.min(...points.map(p=>p.x-p.r)),Math.min(...points.map(p=>p.y-p.r)),
+      Math.max(...points.map(p=>p.x+p.r)),Math.max(...points.map(p=>p.y+p.r)));
+  }
+  function fitReviewTracks(current,previous){
+    const points=current.concat(previous);
+    if(!points.length){resetCamera();return;}
+    let left=Infinity,top=Infinity,right=-Infinity,bottom=-Infinity;
+    for(const point of points){
+      left=Math.min(left,point.x);top=Math.min(top,point.y);
+      right=Math.max(right,point.x);bottom=Math.max(bottom,point.y);
+    }
+    focusReviewBounds(left,top,right,bottom);
+  }
   function clampCamera() {
-    const c = A.camera, {r,fit,rotated} = metrics();
+    const c = A.camera, m=metrics(), {r,fit,rotated}=m;
     c.zoom = P.clamp(c.zoom, 1, 4);
     const hw = Math.min(600, (rotated?r.height:r.width) / (2 * fit * c.zoom));
     const hh = Math.min(350, (rotated?r.width:r.height) / (2 * fit * c.zoom));
     const edge = Math.max(28, 64 / c.zoom);
     c.cx = P.clamp(c.cx, hw - edge, 1200 - hw + edge);
     c.cy = P.clamp(c.cy, hh - edge, 700 - hh + edge);
+    placeReviewPin(m);
   }
   function zoom(factor, x, y) {
     const {r} = metrics(); x ??= r.left + r.width / 2; y ??= r.top + r.height / 2;
@@ -451,7 +524,7 @@
     const after = worldPoint(x,y); A.camera.cx += before.x - after.x; A.camera.cy += before.y - after.y;
     clampCamera(); sync();
   }
-  function resetCamera() { A.camera = {zoom:1,cx:600,cy:350}; sync(); }
+  function resetCamera() { A.camera = {zoom:1,cx:600,cy:350}; placeReviewPin(); sync(); }
   function panBy(dx,dy){const {r}=metrics(),x=r.left+r.width/2,y=r.top+r.height/2,a=worldPoint(x,y),b=worldPoint(x+dx*r.width*.22,y+dy*r.height*.22);A.camera.cx+=b.x-a.x;A.camera.cy+=b.y-a.y;clampCamera();sync();}
   function clearPointers() {
     for (const id of pointers.keys()) { try { if (canvas.hasPointerCapture(id)) canvas.releasePointerCapture(id); } catch (_) {} }
@@ -562,7 +635,7 @@
   }
   const custom={
     'ui:cockpit-tab':b=>selectCockpitTab(b.dataset.tab),
-    'ui:menu':menu,'ui:mode':toggleDifficulty,'ui:save-settings':()=>O.V8.settings('save'),'ui:route':b=>openSheet('route',b),
+    'ui:menu':menu,'ui:mode':toggleDifficulty,'ui:save-settings':()=>O.V8.settings('save'),'ui:route':b=>openSheet('route',b),'ui:locate-goal':locateGoal,
     'ui:memory':b=>openSheet('memory',b),'ui:readout':b=>openSheet(screenMode()==='review'?'review':'memory',b),'ui:close-sheet':()=>closeSheet(),
     'ui:map-mode':b=>switchMap(b.dataset.mode),'ui:map-aim-close':()=>{A.closeModal();switchMap('aim');},'ui:map-pan-close':()=>{A.closeModal();switchMap('pan');},
     'ui:zoom-in':()=>zoom(1.25),'ui:zoom-out':()=>zoom(.8),
@@ -574,7 +647,7 @@
     'ui:retry-confirm':retryNow,'ui:limit-speed':useLaunchLimit
   };
   Object.assign(A.actions,custom);
-  A.actions.help=()=>A.openModal('Один запуск. Точный маршрут.', '<p>Выбери угол и скорость, затем нажми <b>«Запуск»</b>. Дальше капсулу ведёт притяжение планет.</p><div class="info-box"><b>Строка маршрута над картой</b> открывает порядок облётов, порталов, доставок и условия медалей. На телефоне числа курса внизу открывают точный пульт; после рейса там же — подробный разбор.</div><p><b>Курс / Обзор</b> переключают действие на карте. Масштаб — кнопками, колесом или двумя пальцами. Угол принимает точку и запятую; кнопки + / − можно удерживать.</p><p>Запиши удачные параметры в <b>A/B</b>. После рейса можно перемотать запись и сравнить с предыдущей попыткой. Повтор бесплатный.</p><div class="modal-actions"><button class="button quiet" data-action="ui:shortcuts">Клавиши и жесты</button><button class="button primary" data-action="close">Понятно</button></div>');
+  A.actions.help=()=>A.openModal('Один запуск. Точный маршрут.', '<p>Выбери угол и скорость, затем нажми <b>«Старт»</b>. Дальше капсулу ведёт притяжение планет.</p><div class="info-box"><b>Нажми название цели</b>, чтобы показать её на карте. В <b>«Плане»</b> видны этапы рейса, условия стыковки и медали. На телефоне числа курса внизу открывают точный пульт.</div><p><b>Курс / Обзор</b> переключают действие на карте. Масштаб меняется кнопками, колесом или двумя пальцами. Угол принимает точку и запятую. Кнопки + / − можно удерживать.</p><p>Запиши удачные параметры в <b>A/B</b>. После рейса можно перемотать запись и сравнить с предыдущей попыткой. Повтор бесплатный.</p><div class="modal-actions"><button class="button quiet" data-action="ui:shortcuts">Клавиши и жесты</button><button class="button primary" data-action="close">Понятно</button></div>');
   A.actions.retry=requestRetry;
   const originalLaunch=A.actions.launch;
   let keyboardCommitUntil = 0;
@@ -601,6 +674,7 @@
     if(controlsBlocked()||A.screen!=='play'||event.defaultPrevented)return;
     if(event.target.matches('input,textarea,select,[contenteditable=true]'))return;
     const k=event.key.toLowerCase();
+    if(event.target.closest('#launchTiming')&&k.startsWith('arrow'))return;
     if(event.target.closest('button,summary') && (k===' '||k==='enter'))return;
     if(document.body.dataset.resultView==='summary'&&[' ','arrowleft','arrowright','arrowup','arrowdown'].includes(k))return;
     if(![' ','r','к','g','п','escape','arrowleft','arrowright','arrowup','arrowdown'].includes(k))return;
@@ -621,9 +695,7 @@
   const oldSettings=O.V8.settings;
   O.V8.settings=function(tab){oldSettings(tab);};
   O.UI9={layout,sync,onPage,onLevel,onResult,beforeModal,afterModal,modalClosed,openSheet,closeSheet,
-    numberValue,commitInput,zoom,resetCamera,clampCamera,clearPointers,switchMap,worldToScreen,worldPoint};
-  // Native button names follow function; details remain available without redundant labels.
-  document.querySelector('.hero-meta').lastElementChild.textContent='Офлайн';
+    numberValue,commitInput,zoom,resetCamera,focusReviewEvent,fitReviewTracks,clampCamera,clearPointers,switchMap,worldToScreen,worldPoint};
   $('flightDrawer').addEventListener('close',()=>{if(!drawer.open&&sheetState)closeSheet();});
   schedule();sync();
 })(typeof globalThis!=='undefined'?globalThis:window);

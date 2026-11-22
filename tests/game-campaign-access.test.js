@@ -8,7 +8,7 @@ const measured=ids=>{const p=G.fresh();for(const id of ids)p.records[id]=proof(i
 
 assert.deepEqual(C.order.filter(id=>G.unlocked(G.fresh(),id)),[4,8]);
 assert.equal(C.number(4),1);assert.equal(C.number(8),5);
-for(const id of [...C.retired,-1,88,NaN,null,'4']){
+for(const id of [...C.retired,-1,92,NaN,null,'4']){
  assert.equal(C.isActive(id),false);assert.equal(G.unlocked(G.fresh(),id),false);assert.equal(C.current(historical,id),false);
  assert.equal(C.adjacent(id,1),-1);
 }
@@ -49,7 +49,7 @@ while(C.count(explorer)<C.order.length){
  const options=C.order.filter(id=>G.unlocked(explorer,id)&&!C.current(explorer,id));assert.ok(options.length,'no campaign dead end');
  const id=options.at(-1);explorer.records[id]=proof(id);assert.ok(++explored<=C.order.length);
 }
-assert.equal(explored,84);
+assert.equal(explored,88);
 
 function oldCurrent(p,id){const l=O.LEVELS[id],r=p.records[id];return !!(r?.medals&1)&&(!(l.routeRevision>8)||(r.routeVersion===l.routeRevision&&!!(r.currentMedals&1)));}
 function oldAccess(p,id){const i=C.legacyOrder.indexOf(id),r=p.records[id];return i===0||!!(r?.medals&1)||r?.attempts>0||p.campaignAccess.includes(id)||i>0&&oldCurrent(p,C.legacyOrder[i-1]);}

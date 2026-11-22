@@ -32,7 +32,11 @@
     A.currentId=available(A.profile.lastLevel)?A.profile.lastLevel:O.Progress.nextLevel(A.profile);
     if(saved.version!==1)return saved;
     for(const [key,value]of Object.entries(saved.aims||{})){
-      if(/^\d+$/.test(key)&&validId(+key)&&value&&Number.isFinite(value.angle)&&Number.isFinite(value.speed))A.aims[key]={angle:O.Physics.clamp(value.angle,-180,180),speed:Math.round(O.Physics.clamp(value.speed,60,O.Progress.stats(A.profile).maxSpeed))};
+      if(!/^\d+$/.test(key)||!validId(+key)||!Number.isFinite(value?.angle)||!Number.isFinite(value?.speed))continue;
+      const delay=O.Physics.launchDelay(O.LEVELS[+key],value.launchDelay);
+      A.aims[+key]={angle:O.Physics.clamp(value.angle,-180,180),
+        speed:Math.round(O.Physics.clamp(value.speed,60,O.Progress.stats(A.profile).maxSpeed)),
+        ...(delay!==undefined?{launchDelay:delay}:{})};
     }
     A.currentId=available(saved.currentId)?saved.currentId:available(A.profile.lastLevel)?A.profile.lastLevel:O.Progress.nextLevel(A.profile);
     if([.5,1,2,4,10,50].includes(saved.timeScale))A.timeScale=saved.timeScale;
@@ -103,7 +107,12 @@
     if(same(A.profile,current)){knownSave=current;return;}
     // Visiting another contract changes lastLevel alone; that preference must
     // never interrupt a flight or be mistaken for a currency/purchase conflict.
-    if(same(A.profile,current,true)){A.profile.lastLevel=decode(current).lastLevel;knownSave=current;return;}
+    if(same(A.profile,current,true)){
+      A.profile.lastLevel=decode(current).lastLevel;knownSave=current;
+      if(A.screen==='home')A.updateProfileUI();
+      if(A.screen==='campaign')A.renderCampaign();
+      return;
+    }
     const idle=!A.state&&!A.transitioning&&!doc.getElementById('modal')?.open&&!doc.getElementById('flightDrawer')?.open;
     if(!localConflict&&idle&&same(A.profile,knownSave)){
       try{A.profile=decode(current);knownSave=current;A.storageOK=true;refreshPage();return;}catch{}
@@ -169,7 +178,7 @@
     if(action==='nav'||action==='force-nav')return Object.hasOwn(paths,node.dataset.page)?url(node.dataset.page,node.dataset.page==='play'?recent():undefined):null;
     if(action==='mission'||action==='confirm-travel')return available(+node.dataset.id)?url('play',+node.dataset.id):null;
     if(action==='return-flight')return url('play',recent());
-    if(action==='continue')return O.Campaign.count(A.profile)===O.Campaign.order.length?url('campaign'):url('play',O.Progress.nextLevel(A.profile));
+    if(action==='continue')return url('play',A.homeContract().id);
     if(['next','previous-level','following-level'].includes(action)){
       const id=O.Campaign.adjacent(A.currentId,action==='previous-level'?-1:1);
       return available(id)?url('play',id):action==='next'?url('campaign'):null;

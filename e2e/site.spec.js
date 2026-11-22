@@ -34,7 +34,7 @@ test('home page switches grades without losing its layout', async function ({ pa
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.goto('/', { waitUntil: 'domcontentloaded' });
 
-    await expect(page.locator('.home-header h1')).toContainText('Almanion');
+    await expect(page.getByRole('heading', { level: 1, name: 'Almanion' })).toBeVisible();
     await expect(page.locator('.home-quick-section')).toBeVisible();
     await expect(page.locator('#homeQuickGrid .home-quick-card[href="russian-ege.html"]')).toBeVisible();
     await expect(page.locator('#homeQuickGrid .home-quick-card[href="duty-10-1.html"]')).toBeVisible();

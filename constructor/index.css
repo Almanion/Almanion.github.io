@@ -139,13 +139,9 @@ button:disabled { cursor: not-allowed; opacity: .48; }
     border-bottom: 1px solid var(--builder-line);
     backdrop-filter: blur(16px);
 }
-.builder-brand { min-width: 176px; display: inline-flex; align-items: center; gap: 11px; color: var(--builder-text); text-decoration: none; }
-.builder-brand-mark { width: 38px; height: 38px; display: grid; place-items: center; color: var(--builder-accent); background: var(--builder-accent-soft); border-radius: 11px; }
-.builder-brand-mark svg, .builder-button svg, .builder-icon-button svg { fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
-.builder-brand-mark svg { width: 19px; height: 19px; }
-.builder-brand-copy { display: grid; line-height: 1.1; }
-.builder-brand-copy strong { font-size: .96rem; font-weight: 710; letter-spacing: -.025em; }
-.builder-brand-copy small { margin-top: 4px; color: var(--builder-muted); font-size: .67rem; font-weight: 560; letter-spacing: .04em; }
+.builder-brand { display: inline-grid; gap: 2px; color: var(--builder-text); text-decoration: none; }
+.builder-brand strong { font-size: .78rem; font-weight: 600; }
+.builder-button svg, .builder-icon-button svg { fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 
 .builder-subject-control { display: grid; grid-template-columns: auto minmax(170px, 230px); align-items: center; gap: 9px; }
 .builder-subject-control > span,
@@ -442,7 +438,6 @@ kbd { min-width: 22px; display: inline-grid; place-items: center; padding: 2px 5
     :root { --builder-topbar: 122px; }
     .builder-topbar { align-content: center; flex-wrap: wrap; gap: 8px 12px; padding: 9px 14px; }
     .builder-brand { min-width: 0; }
-    .builder-brand-copy small { display: none; }
     .builder-subject-control { grid-template-columns: minmax(150px, 220px); margin-left: auto; }
     .builder-subject-control > span, .builder-save-state #saveStateText { display: none; }
     .builder-save-state { order: 3; margin: 0; }
@@ -475,8 +470,6 @@ kbd { min-width: 22px; display: inline-grid; place-items: center; padding: 2px 5
     :root { --builder-topbar: 148px; }
     .builder-topbar { display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-rows: 40px 38px 38px; gap: 7px 10px; }
     .builder-brand { grid-column: 1 / -1; grid-row: 1; }
-    .builder-brand-mark { width: 34px; height: 34px; }
-    .builder-brand-copy strong { font-size: .87rem; }
     .builder-subject-control { width: 100%; max-width: none; grid-column: 1 / -1; grid-row: 2; grid-template-columns: minmax(0, 1fr); margin-left: 0; }
     .builder-subject-control select { width: 100%; min-height: 36px; font-size: .74rem; }
     .builder-save-state { grid-column: 1; grid-row: 3; justify-self: start; }

@@ -2,8 +2,10 @@
 
 const fs = require('node:fs');
 const path = require('node:path');
-const { execFileSync } = require('node:child_process');
 const crypto = require('node:crypto');
+const CleanCSS = require('clean-css');
+const { minify_sync } = require('terser');
+const { bundle: bundlePortable } = require('../game-source/orbital-courier/tools/build.cjs');
 
 const root = path.resolve(__dirname, '..');
 const source = path.join(root, 'game-source', 'orbital-courier');
@@ -22,13 +24,15 @@ function assetVersion(file) { return crypto.createHash('sha256').update(fs.readF
 
 // The portable document is deliberately independent of the online page adapter.
 function bundle() {
-    let html = sourceHTML();
-    html = html.replace(/<link\b[^>]*>/g, tag => {
-        const match = tag.match(/href="(src\/[^"]+)"/);
-        return !match || !tag.includes('stylesheet') ? tag : '<style>\n' + fs.readFileSync(path.join(source, match[1]), 'utf8') + '\n</style>';
+    return bundlePortable(script => minify_sync(script, {
+        compress: false,
+        mangle: false,
+        format: { comments: 'some', quote_style: 3, inline_script: true }
+    }).code, style => {
+        const result = new CleanCSS({ level: 0, rebase: false }).minify(style);
+        if (result.errors.length) throw new Error(result.errors.join('\n'));
+        return result.styles;
     });
-    return html.replace(/<script src="(src\/[^"]+)"><\/script>/g,
-        (_, file) => '<script>\n' + fs.readFileSync(path.join(source, file), 'utf8') + '\n</script>');
 }
 
 function onlinePage(page) {
@@ -39,6 +43,7 @@ function onlinePage(page) {
         .replace(/<title>[\s\S]*?<\/title>/, '<title>' + definition.title + ' — Орбитальный курьер ' + releaseVersion() + '</title>')
         .replace(/<body\b([^>]*)>/, '<body$1 data-game-navigation="pages" data-game-entry="' + page + '" data-game-base="' + prefix + '" data-page="' + page + '">')
         .replace(/\b(href|src)="(src\/([^"]+))"/g, (_, attribute, file, name) => attribute + '="' + prefix + 'assets/' + name + '?v=' + assetVersion(file) + '"')
+        .replace('src="../../images/almanion-wordmark.svg"', 'src="' + prefix + '../../images/almanion-wordmark.svg"')
         .replace('href="../../index.html"', 'href="' + prefix + '../../index.html"');
     // The compatible hidden screens still have one canonical markup owner.
     html = html.replace(/<section\b[^>]*\bclass="[^"]*\bscreen\b[^"]*"[^>]*>/g, tag => {
@@ -52,12 +57,11 @@ function onlinePage(page) {
         return !pages[destination] ? '<button' + attributes + '>' + content + '</button>' :
             '<a' + attributes + ' href="' + prefix + pages[destination].directory + '">' + content + '</a>';
     });
-    const eclipseLink = '<a class="eclipse-entry" href="' + prefix + 'eclipse/"><span class="eclipse-icon" aria-hidden="true"></span><span><strong>Затмение</strong><em>ОПЕРАЦИИ И ЭКСПЕДИЦИИ</em><small>Разломы пространства · буксировка · скрытность</small></span><span>Играть ↗</span></a>';
+    const eclipseLink = '<a class="eclipse-entry" href="' + prefix + 'eclipse/"><span class="eclipse-icon" aria-hidden="true"></span><span><strong>Затмение</strong><small>Операции и экспедиции</small></span><span aria-hidden="true">↗</span></a>';
     html = html.replace('</head>', '<link rel="stylesheet" href="' + prefix + 'assets/eclipse-entry.css?v=' + assetVersion('eclipse/entry.css') + '"></head>')
-        .replace('<div class="hero-meta">', eclipseLink + '<div class="hero-meta">')
-        .replace('<section class="campaign-access"', eclipseLink + '<section class="campaign-access"');
-    return html.replace(/(<a href="(?:\.\/)?(?:\.\.\/)+index\.html">Almanion ↗<\/a>)/,
-        '$1<a class="home-download" href="' + prefix + 'offline.html" download="Orbital Courier.html">Скачать игру ↓</a>');
+        .replaceAll('<!-- eclipse-entry -->', eclipseLink);
+    return html.replace('<!-- offline-download -->',
+        '<a class="home-download" href="' + prefix + 'offline.html" download="Orbital Courier.html">Скачать игру ↓</a>');
 }
 
 function onlineFiles() {
@@ -77,9 +81,9 @@ function onlineFiles() {
 }
 
 function build() {
-    execFileSync(process.execPath, [path.join(source, 'tools', 'build.cjs')], { cwd: source, stdio: 'inherit' });
     const files = onlineFiles();
-    files['offline.html'] = fs.readFileSync(path.join(source, 'Orbital Courier.html'), 'utf8');
+    files['offline.html'] = bundle();
+    fs.writeFileSync(path.join(source, 'Orbital Courier.html'), files['offline.html'], 'utf8');
     for (const file of ['LICENSE.txt', 'Инструкция.html', 'Экономика.html']) files[file] = fs.readFileSync(path.join(source, file), 'utf8');
     for (const [file, content] of Object.entries(files)) {
         const destination = path.join(target, file);

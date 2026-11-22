@@ -9,6 +9,7 @@
   const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
   const rad = deg => deg * Math.PI / 180;
   const deg = value => value * 180 / Math.PI;
+  const orbitRate = m => (m.direction === -1 ? -1 : 1) * Math.PI * 2 / m.period;
 
   // Prescribed elliptical orbit, in world coordinates. Period is in simulated
   // seconds; phase and tilt are radians. This is NOT a self-consistent N-body
@@ -16,7 +17,7 @@
   function bodyAt(body, time = 0) {
     const m = body.motion;
     if (!m) return body;
-    const w = (m.direction === -1 ? -1 : 1) * Math.PI * 2 / m.period;
+    const w = orbitRate(m);
     const a = (m.phase || 0) + w * time, tilt = m.tilt || 0;
     const ca = Math.cos(a), sa = Math.sin(a), ct = Math.cos(tilt), st = Math.sin(tilt);
     const ox = m.rx * ca, oy = m.ry * sa;
@@ -94,22 +95,58 @@
     }
     return '';
   }
-  function prepareLevel(level, mode = 'normal', coordinates) {
+  function launchDelay(level, value = level.launchDelay) {
+    if (!level.launchTiming) return undefined;
+    return Math.round(clamp(Number.isFinite(value) ? value : 0, 0, level.launchTiming.max) * 10) / 10;
+  }
+  function forecastDuration(level, scannerSeconds) {
+    return level.launchTiming ? level.timeLimit : Math.max(scannerSeconds, level.placement?.preview || 0);
+  }
+  // Station schedules use sector time. The flight clock starts at launch.
+  const stationTime = (level, elapsed) => elapsed + (level.launchDelay || 0);
+  const noReceptionWindows = Object.freeze([]);
+  function receptionWindows(level) {
+    const rules = level.rules;
+    return rules?.windows ?? (rules?.window ? [rules.window] : noReceptionWindows);
+  }
+  function receptionAt(level, elapsed) {
+    const windows = receptionWindows(level), time = stationTime(level, elapsed);
+    // Locate the current or next window. A gap belongs to neither window.
+    const index = windows.findIndex(([, closes]) => time <= closes);
+    const open = !windows.length || (index >= 0 && time >= windows[index][0]);
+    return { windows, time, index, open };
+  }
+  function narrowWindow([opens, closes]) {
+    const mid = (opens + closes) / 2;
+    const half = (closes - opens) * 0.36;
+    return [mid - half, mid + half];
+  }
+  function prepareLevel(level, mode = 'normal', coordinates, delay) {
     const r = { ...(level.rules || {}) };
     if (mode === 'pro') {
       r.captureCap = Math.min(r.captureCap || 25, r.proCaptureCap || (level.expert ? 9 : 12));
       r.minCargo = Math.max(r.minCargo || 0, level.expert ? 2 : 1);
-      if (r.window) {
-        const mid = (r.window[0] + r.window[1]) / 2;
-        const half = (r.window[1] - r.window[0]) * 0.36;
-        r.window = [mid - half, mid + half];
-      }
+      if (r.window) r.window = narrowWindow(r.window);
+      if (r.windows) r.windows = r.windows.map(narrowWindow);
     }
     const layout = level.placement ? planetLayout(level,coordinates) : null;
-    return { ...level, mode, rules: r,
+    const prepared = { ...level, mode, rules: r,
       ...(layout?{layout,planets:level.planets.map((p,i)=>({...p,...layout.find(q=>q.planet===i)}))}:{}),
       branches: level.branches?.map(b=>({...b,gates:(b.gates||[]).map(g=>({...g,r:g.r*(mode==='pro'?(level.rules?.proGateScale||.92):1)}))})),
       gates: (level.gates || []).map(g => ({ ...g, r: g.r * (mode === 'pro' ? (level.rules?.proGateScale || 0.82) : 1) })) };
+    if (level.launchTiming) {
+      // Set the orbital clock at launch without advancing the flight or recording.
+      prepared.launchDelay = launchDelay(level, delay);
+      const offset = prepared.launchDelay - (level.launchDelay || 0);
+      const shift = body => body.motion
+        ? bodyAt({ ...body, motion: { ...body.motion, phase: (body.motion.phase || 0) + orbitRate(body.motion) * offset } })
+        : body;
+      prepared.target = shift(prepared.target);
+      prepared.planets = prepared.planets.map(shift);
+      if (prepared.rocks) prepared.rocks = prepared.rocks.map(shift);
+      if (prepared.stops) prepared.stops = prepared.stops.map(shift);
+    }
+    return prepared;
   }
 
   function createState(level, angle, speed, stats = {}) {
@@ -274,7 +311,7 @@
     if (R.collected(level,s) < Math.max(r.minCargo||0,level.minCargo||0)) return 'manifest';
     if (r.maxLaunchSpeed && s.launchSpeed > r.maxLaunchSpeed) return 'fuel';
     if (r.maxDockSpeed && dockVelocity(s, level).speed > r.maxDockSpeed + 1e-7) return 'overspeed';
-    if (r.window && (s.t < r.window[0] || s.t > r.window[1])) return 'window';
+    if (!receptionAt(level, s.t).open) return 'window';
     return null;
   }
 
@@ -367,7 +404,29 @@
     }
     return (s.vx * s.vx + s.vy * s.vy) / 2 + potential;
   }
+  function stationForecast(level, flight) {
+    const {state, points} = flight;
+    const radius = captureRadius(level, state.stats);
+    // A real contact is found by the swept collision check between sampled points.
+    const contact = state.status === 'won' || state.dockSpeed !== undefined;
+    let ship = state, station = bodyAt(level.target, state.t);
+    let distance = Math.hypot(ship.x - station.x, ship.y - station.y);
+    if (!contact) for (const point of points) {
+      const at = bodyAt(level.target, point.t);
+      const distanceToStation = Math.hypot(point.x - at.x, point.y - at.y);
+      if (distanceToStation < distance) {
+        ship = point;
+        station = at;
+        distance = distanceToStation;
+      }
+    }
+    const orbitArc = (from, to) => Array.from({length:33}, (_,i) => bodyAt(level.target, from + (to - from) * i / 32));
+    const arc = orbitArc(0, ship.t);
+    const epoch = stationTime(level, 0);
+    const receptionArcs = receptionWindows(level).map(([opens, closes]) => orbitArc(opens - epoch, closes - epoch));
+    return {ship, station, arc, receptionArcs, radius, contact, gap:Math.max(0, distance - radius)};
+  }
   O.Physics = { WORLD, DT, SHIP_RADIUS, clamp, rad, deg, acceleration, integrate,
-    bodyAt, movingCircle, obstacleHit, obstructed, dockVelocity, terminalEvents, segmentCircle, createState, step, simulate, energy, prepareLevel, planetLayout, layoutProblem, captureRadius, advanceCargo, advanceFlybys, dockingReason, teleport };
+    bodyAt, movingCircle, obstacleHit, obstructed, dockVelocity, terminalEvents, segmentCircle, createState, step, simulate, energy, prepareLevel, launchDelay, forecastDuration, stationTime, receptionWindows, receptionAt, stationForecast, planetLayout, layoutProblem, captureRadius, advanceCargo, advanceFlybys, dockingReason, teleport };
   if (typeof module !== 'undefined' && module.exports) module.exports = O.Physics;
 })(typeof globalThis !== 'undefined' ? globalThis : window);

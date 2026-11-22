@@ -57,84 +57,11 @@ body:not([data-page=play]):not([data-page=home]) .screen{padding-top:0}
 .section-total{color:#d6dae3;font-family:var(--sans);font-weight:500;font-size:28px;letter-spacing:-.04em}
 .section-total small{color:var(--dim);font-size:16px}.section-total>span{font-family:var(--sans);font-size:11px;letter-spacing:0;color:var(--muted)}
 
-/* The home is a cover, with one strong typographic gesture and a subdued sky. */
-body[data-page=home]{--home-pad:clamp(24px,5vw,88px);background:#131315}
-body[data-page=home] .topbar{padding-inline:var(--home-pad);border:0}
-#home{min-height:calc(100svh - 72px)}
-#home .home-shade{background:linear-gradient(90deg,#131315ad,transparent 76%),linear-gradient(0deg,#131315e6,transparent 42%)}
-#home .hero-copy{width:66%;padding-top:34px}
-#home .hero-copy>.eyebrow{font:500 10px var(--sans);letter-spacing:.2em;color:#b8bcc4}
-#home h1{font:500 clamp(58px,5.8vw,88px)/1.08 var(--sans);letter-spacing:-.06em;margin:24px 0 22px;color:#f2f1e7}
-#home h1 em{color:#bfc3cb}
-#home .hero-text{font-size:15px;line-height:1.8;color:#bbbfc7;max-width:420px;margin-bottom:28px}
-#home .hero-actions{gap:10px}
-#home .hero-actions .button{min-height:52px;padding:14px 22px;border-radius:12px;font:600 13px var(--sans);box-shadow:none;transform:none}
-#home .hero-actions .primary{background:var(--action);color:var(--action-ink);border:1px solid var(--action)}
-#home .hero-actions .quiet{background:#13131550;border-color:#ffffff26;color:#d6dae3}
-#home .hero-actions .button:hover{transform:none;box-shadow:none;background:#eef3fd;color:var(--action-ink)}
-#home .hero-meta{font:11px var(--sans);color:#9da0a6;gap:16px}
-#home .hero-meta span+span:before{margin-right:16px;color:#6a6c70}
-#home .home-bottom{gap:48px;border-top-color:#ffffff1c;padding-top:26px}
-#home .home-stat .eyebrow{font:500 10px var(--sans);letter-spacing:.13em;color:#9b9ea4}
-#home .home-stat strong{font:500 32px/1.4 var(--sans);color:#dfe4ed;letter-spacing:-.04em}
-#home .home-stat strong small{font-size:13px;color:#909399}
-#home .home-stat>span:last-child{font-size:12px;color:#abaeb5}
-#home .rank-card .progress{background:#ffffff14;max-width:290px}
-#home .rank-card .progress i{background:#b4b8bf}
-#home .home-cloud{font-family:var(--sans);font-size:11px;color:#9b9ea4}
-#home .home-cloud a,#home .home-motion{color:#aeb2b9;font-size:11px}
-#home .cloud-entry{background:transparent;color:#c9cdd5;border-color:#ffffff1c;font-size:11px}
-
-/* Dispatch: navigation acts as an index, the actual routes get the imagery. */
-.campaign-access{background:#212224;border:1px solid #b8bcc422;border-radius:14px;padding:18px 22px;margin-bottom:22px;color:var(--text)}
-.campaign-access strong{font-size:15px;font-weight:600;letter-spacing:-.01em}
-.campaign-access p{font-size:13px;color:#b5b9c0;max-width:76ch;line-height:1.65;margin-top:5px}
-.campaign-access .button{font-size:12px}
-.campaign-toolbar{margin-bottom:14px;gap:20px}
+/* Shared search fields and filter states. */
 .contract-search{background:transparent;border-color:var(--line);border-radius:10px;color:var(--mint)}
 .contract-search input{font-size:14px;min-height:46px;color:var(--text);background:transparent}
 .contract-filters button,.achievement-categories button,.award-filters button,.cosmetic-tabs button{font-family:var(--sans);color:var(--muted);background:transparent;border-color:transparent;border-radius:8px;font-weight:500}
 .contract-filters button.active,.contract-filters button[aria-pressed=true],.achievement-categories button.active,.award-filters button.active,.cosmetic-tabs button.active{background:#dce0e90c;border-color:#caced633;color:#e3e8f1}
-.difficulty-tabs{gap:0;border-bottom:1px solid var(--stroke);margin:12px 0 24px}
-.difficulty-tabs button{background:none;border:0;border-radius:0;padding:10px 16px 13px;gap:4px;position:relative;color:#aaadb4;font-size:13px}
-.difficulty-tabs button small{color:#94979d;font-size:9px;letter-spacing:.06em}
-.difficulty-tabs button[aria-pressed=true]{background:transparent;border:0;box-shadow:inset 0 -2px #c1c5cd;color:#ebf0fa}
-.sector-rail{background:transparent;border:0;border-right:1px solid var(--stroke);border-radius:0;padding-right:16px}
-.sector-rail-heading{border-color:var(--stroke)}
-.sector-choice{color:#a1a4ab;border-radius:8px;font-family:var(--sans)}
-.sector-choice.active{background:#dce0e90b;border-color:transparent;color:#e5eaf3}
-.sector-choice .sector-index{color:#bec2ca;font-size:10px}
-.sector-choice .sector-name{font-size:12px;font-weight:500}
-.sector-choice small{color:#8d9096;font-size:10px}
-.sector-track{background:#ffffff0e}.sector-track>i{background:#b4b8bf}
-.sector-overview{background:#1c1d1f;border:1px solid var(--stroke);padding:20px 24px;border-radius:14px;box-shadow:none}
-.sector-overview:after{opacity:.25}
-.sector-overview h3{font-size:24px;font-weight:500;letter-spacing:-.035em;color:var(--text)}
-.sector-overview p{font-size:12px;color:var(--muted);line-height:1.65}
-.sector-orbit-mark{color:#bec2ca;opacity:.65}
-.sector-progress strong{color:#ccd0d8;font-family:var(--sans);font-size:28px;font-weight:500}
-.sector-progress span{color:var(--muted)}
-.sector-mobile-select button{background:var(--surface);border-color:var(--line);color:#b7c5d8;border-radius:10px}
-#missionGrid{gap:20px}
-.contract-card,.mission-card{background:#1c1d1f;border:1px solid var(--stroke);border-radius:14px;box-shadow:none;transition:border-color .2s,background-color .2s;transform:none}
-.contract-card.current{border-color:#acb0b766;box-shadow:none}
-.contract-card:hover,.mission-card:hover{transform:none;border-color:#c6cad280;background:#232426;box-shadow:none}
-.contract-card.locked{opacity:1;background:#18181a;border-color:#ffffff0b}
-.contract-card.locked .contract-preview{filter:saturate(.35);opacity:.65}
-.contract-card .contract-preview canvas{filter:saturate(.85)}
-.mission-number{background:#141416df;border:1px solid #ffffff20;color:#e5eaf3;font:11px var(--mono);border-radius:6px}
-.contract-state{color:#d2d6df;background:#1a1b1ddd;font:500 9px var(--sans);letter-spacing:.04em;border-radius:5px}
-.locked .contract-state{color:#b2b6bd;background:#191a1cd9}
-.preview-launch{background:#e1e6ef;color:#222325;box-shadow:none}
-.mission-content{border-top:1px solid var(--stroke);padding:18px 20px}
-.contract-tags{gap:7px}
-.contract-tags>span{background:none;border:0;padding:0;color:#acb0b7;font:10px var(--sans)}
-.contract-tags>span+span:before{content:"·";margin-right:7px;color:#6f7176}
-.mission-content h4{font-size:19px;line-height:1.4;font-weight:550;color:var(--text);letter-spacing:-.025em;margin-top:10px}
-.mission-meta{font-size:12px;color:#c3c7cf}
-.contract-card .mission-status,.contract-card.locked .mission-status{font:12px/1.6 var(--sans);color:#afb3ba;min-height:3.2em}
-.contract-group-heading{color:#b5b9c0;font:500 11px var(--sans);letter-spacing:.04em}
-.contract-access-kind{color:#b5b9c0}
 .contract-empty{background:var(--surface-soft);border-color:var(--stroke);color:var(--muted)}
 
 /* Awards: an index of accomplishments, with thin dividers and measured type. */
@@ -179,10 +106,6 @@ body[data-page=play] main{padding:10px 18px 12px;max-width:1920px}
 #play .medal-archive{color:#afb3ba;font:10px var(--sans)}
 #play .medal-detail{font-size:10px;color:#c8ccd4}
 #play .medal-track{opacity:.55}
-#play .flight-plan{background:#1f2022;border-color:var(--stroke);border-radius:10px}
-#play .flight-plan summary strong{color:#d9dde6;font:500 12px/1.4 var(--sans)}
-#play .flight-plan summary small{color:#95989e;font-family:var(--sans)}
-.plan-marker,.plan-chevron{color:#b5b9c0}
 #play .map-mode{background:transparent;border-color:var(--stroke);border-radius:9px}
 #play .map-mode button{color:#b1b5bc;font-family:var(--sans)}
 #play .map-mode button[aria-pressed=true]{background:#cbcfd712;color:#dbdfe8}
@@ -318,40 +241,14 @@ dialog::backdrop{background:#080909bd;backdrop-filter:blur(7px)}
  .page-heading p{font-size:13px}
  .section-total{font-size:25px}
  .section-total>span{font-size:10px}
- .campaign-access{padding:16px;border-radius:12px;margin-bottom:20px;gap:12px}
- .campaign-access strong{font-size:15px}
- .campaign-access p{font-size:13px}
- .campaign-access .button{font-size:12px}
- .difficulty-tabs{margin-bottom:18px}
- .difficulty-tabs button{min-width:106px;font-size:12px;padding:9px 12px 12px}
- .sector-overview{padding:18px;border-radius:12px}
- .sector-overview h3{font-size:21px}
- .sector-overview p{font-size:12px}
- .mission-content{padding:16px 18px}
- .mission-content h4{font-size:20px;line-height:1.4}
- .contract-card .mission-status{font-size:12px}
  .achievement-grid{grid-template-columns:1fr}
  .achievement-card{padding:18px}
  .achievement-card h3{font-size:16px}
  .achievement-focus{padding:16px}
- #home .hero-copy{width:100%;padding-top:38px}
- #home h1{font-size:clamp(46px,10.8vw,72px);line-height:1.09;letter-spacing:-.055em;margin:22px 0}
- #home .hero-copy>.eyebrow{font-size:9px;letter-spacing:.13em}
- #home .hero-text{font-size:13px;line-height:1.8;max-width:315px}
- #home .hero-actions .button{font-size:12px;min-height:48px;padding:12px 17px}
- #home .hero-meta{font-size:10px;gap:12px}
- #home .hero-meta span+span:before{margin-right:12px}
- #home .home-bottom{gap:22px 16px}
- #home .home-stat .eyebrow{font-size:9px;letter-spacing:.06em}
- #home .home-stat strong{font-size:28px}
- #home .home-stat>span:last-child{font-size:11px}
- #home .home-cloud a,#home .home-motion{font-size:10px}
  body[data-page=play] main{padding:calc(env(safe-area-inset-top) + 4px) max(8px,env(safe-area-inset-right)) calc(env(safe-area-inset-bottom) + 6px) max(8px,env(safe-area-inset-left))}
  #play .flight-heading h2{font-size:15px;line-height:1.2;font-weight:600}
  #play .flight-heading .eyebrow{font-size:8px;letter-spacing:.04em}
  #play .flight-back,#play .flight-menu{background:#212224;border-radius:12px;border-color:#ffffff10}
- #play .flight-plan{background:#232426;border:0;border-radius:11px}
- #play .flight-plan summary strong{font-size:11px}
  #play .map-viewport{border-radius:14px;border-color:#b7bbc233}
  #play .map-mode,#play .map-icon,#play .map-fit{background:#232426;border-color:transparent;border-radius:10px}
  #play .map-mode button{font-size:11px}
@@ -371,30 +268,10 @@ dialog::backdrop{background:#080909bd;backdrop-filter:blur(7px)}
 @media(max-width:360px){
  body:not([data-page=play]):not([data-page=home]) main{padding-inline:16px}
  .topbar,body[data-page=home] .topbar{padding-inline:16px}
- #home h1{font-size:42px}
- #home .hero-copy{padding-top:24px}
- #home .hero-actions .button{font-size:11px;padding-inline:14px}
  #play .flight-heading h2{font-size:14px}
  #play .completion h2{font-size:24px}
  .completion-medal h4{font-size:12px}
  .completion-medal-heading>span{font-size:10px}
-}
-/* The catalogue starts with routes sooner on phones; per-card access reasons
-   stay visible, while the longer introduction remains on larger screens. */
-@media(max-width:699px) and (orientation:portrait){
- #campaign .campaign-access{flex-direction:row;align-items:center;padding:14px 16px;gap:12px;margin-bottom:16px}
- #campaign .campaign-access>div{flex:1;min-width:0}
- #campaign .campaign-access strong{font-size:13px;line-height:1.5}
- #campaign .campaign-access p{display:none}
- #campaign .campaign-access .button{flex:0 0 154px;width:auto;max-width:154px;min-height:44px;padding:8px 9px;font-size:11px;line-height:1.5;white-space:nowrap}
- #campaign .campaign-toolbar{gap:10px;margin-bottom:12px}
- #campaign .difficulty-tabs{margin:8px 0 16px}
- #campaign .difficulty-tabs button{min-height:44px;min-width:104px;justify-content:center;padding:8px 12px 12px}
- #campaign .difficulty-tabs button small{display:none}
- #campaign .sector-overview{padding:14px 16px;margin-bottom:16px}
- #campaign .sector-overview p{display:none}
- #campaign .sector-overview h3{font-size:20px;margin-top:5px}
- #campaign .contract-group-heading{margin:6px 0}
 }
 @media(max-height:700px) and (min-width:1000px){
  #cockpit{gap:10px}
@@ -408,7 +285,6 @@ dialog::backdrop{background:#080909bd;backdrop-filter:blur(7px)}
  #play .flight-heading h2{font-size:15px}
  #play .completion h2{font-size:25px}
  .completion-actions .button{font-size:12px}
- #home h1{font-size:50px}
 }
 body.high-contrast{--text:#fff;--ink:#fff;--muted:#d5d9e2;--line:#83868b;--stroke:#d1d5de55}
 body.high-contrast .medal-condition,body.high-contrast .medal-detail,body.high-contrast .telemetry span{color:#e6ebf4}

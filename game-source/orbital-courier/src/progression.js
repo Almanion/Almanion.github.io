@@ -261,7 +261,13 @@
     if (raw.courses && typeof raw.courses === 'object') for (const [key, value] of Object.entries(raw.courses)) {
       if (!/^(0|[1-9]\d*):(normal|pro)$/.test(key) || +key.split(':')[0] >= count() || !Array.isArray(value)) continue;
       const l=levels()[+key.split(':')[0]];
-      p.courses[key] = value.slice(0,2).map(v => v && Number.isFinite(v.angle) && Number.isFinite(v.speed) && v.angle >= -180 && v.angle <= 180 && v.speed >= 60 && v.speed <= 1000 ? {angle:Math.round(v.angle*10)/10,speed:Math.round(v.speed),...(l.placement&&Array.isArray(v.layout)?{layout:cleanLayout(l,v.layout)}:{})} : null);
+      p.courses[key] = value.slice(0,2).map(v => {
+        if (!v || !Number.isFinite(v.angle) || v.angle < -180 || v.angle > 180 ||
+          !Number.isFinite(v.speed) || v.speed < 60 || v.speed > 1000) return null;
+        return {angle:Math.round(v.angle*10)/10,speed:Math.round(v.speed),
+          ...(l.placement&&Array.isArray(v.layout)?{layout:cleanLayout(l,v.layout)}:{}),
+          ...(l.launchTiming?{launchDelay:layoutPhysics().launchDelay(l,v.launchDelay)}:{})};
+      });
     }
     for(const l of levels().filter(l=>l.placement))for(const mode of ['normal','pro']){const key=l.id+':'+mode;if(Array.isArray(raw.layouts?.[key])){const q=cleanLayout(l,raw.layouts[key]);if(!layoutPhysics().layoutProblem(l,q))p.layouts[key]=q;}}
     p.settings.volume=Number.isFinite(raw.settings?.volume)?Math.max(0,Math.min(1,raw.settings.volume)):.6;

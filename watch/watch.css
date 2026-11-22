@@ -13,8 +13,9 @@ a { color:var(--accent); text-decoration:none; }
 .watch-header { text-align:center; margin:0 0 14px; }
 .watch-header button { width:48px; height:48px; padding:0; font-size:32px; margin-bottom:8px; }
 .watch-header p { margin:0 auto; max-width:85%; font-size:17px; font-weight:750; overflow-wrap:anywhere; }
-.watch-header svg { display:none; margin-inline-end:5px; vertical-align:-2px; color:var(--accent); }
-#watchBack[hidden] ~ :is(svg, p) { display:inline-block; }
+.watch-header .almanion-wordmark { display: none; }
+#watchBack[hidden] ~ .almanion-wordmark { display: inline-block; }
+#watchBack[hidden] ~ p { margin-top: 4px; }
 #watchMain { width:100%; max-width:420px; margin:auto; }
 .watch-link { display:flex; flex-direction:column; justify-content:center; align-items:center; width:100%; gap:3px; text-align:center; padding:12px 10px; margin-bottom:9px; font-size:16px; font-weight:650; overflow-wrap:anywhere; }
 .watch-link small { font-size:12px; font-weight:400; color:var(--muted); }

@@ -6,6 +6,7 @@ for(const width of [390,1366])test('five campaign tiers, route order and archive
  await page.setViewportSize({width,height:844});const errors=[];page.on('pageerror',e=>errors.push(e.message));
  await page.evaluate(profile=>{const A=Orbital.App;A.profile=Orbital.Progress.sanitize(profile);A.profile.settings.reducedMotion=true;A.go('campaign');},historical);
  await expect(page.locator('#difficultyTabs button')).toHaveCount(5);await expect(page.locator('#campaignTotal')).toContainText('72');
+ await page.getByRole('button',{name:'Поиск и фильтры'}).click();
  await page.locator('[data-action=campaign-tier][data-tier="4"]').click();
  if(width<700)await page.locator('#sectorSelect').selectOption('19');else await page.locator('#sectorTabs [data-sector="19"]').click();
  await expect(page.locator('.mission-card')).toHaveCount(4);await expect(page.locator('#sectorOverview')).toContainText('Предел навигации');
@@ -21,7 +22,7 @@ for(const width of [390,1366])test('five campaign tiers, route order and archive
  await page.locator('#resultNext').click();await expect.poll(()=>page.evaluate(()=>Orbital.App.currentId)).toBe(18);
  await expect(page.locator('body')).toHaveAttribute('data-flight','aiming');
  await expect(page.locator('#resultScreen')).not.toBeVisible();
- await page.evaluate(()=>{const A=Orbital.App,id=Orbital.Campaign.order.at(-1),l=Orbital.LEVELS[id];A.profile.campaignAccess.push(id);A.loadLevel(id);if(l.solution.layout)A.setLayout(l.solution.layout);A.state=Orbital.Physics.simulate(A.level(),l.solution.angle,l.solution.speed).state;A.finish();});
+ await page.evaluate(()=>{const A=Orbital.App,id=Orbital.Campaign.order.at(-1),l=Orbital.LEVELS[id],q=l.solution;A.profile.campaignAccess.push(id);A.loadLevel(id);if(q.layout)A.setLayout(q.layout);if(q.launchDelay!==undefined)A.setLaunchDelay(q.launchDelay);A.state=Orbital.Physics.simulate(A.level(),q.angle,q.speed).state;A.finish();});
  await expect(page.locator('#resultNext')).toContainText('Все маршруты');
  await page.locator('#resultNext').click();await expect(page.locator('#campaign')).toBeVisible();
  await expect(page.locator('#resultScreen')).not.toBeVisible();

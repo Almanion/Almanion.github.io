@@ -13,7 +13,7 @@ async function finish(page,{id=4,training=false,failed=false}={}){
  await expect.poll(()=>page.evaluate(()=>Orbital.App.transitioning)).toBe(false);
  await page.evaluate(({id,training,failed})=>{
   const O=Orbital,A=O.App,P=O.Physics;A.profile.upgrades.engine=3;A.loadLevel(id);A.assisted=training;
-  const q=failed?{angle:180,speed:60}:A.level().solution;if(q.layout)A.setLayout(q.layout);const l=A.level();A.setAim(q.angle,q.speed);A.launch();
+  const q=failed?{angle:180,speed:60}:A.level().solution;if(q.layout)A.setLayout(q.layout);if(q.launchDelay!==undefined)A.setLaunchDelay(q.launchDelay);const l=A.level();A.setAim(q.angle,q.speed);A.launch();
   let ticks=0;
   while(A.state.status==='flying'){
    const before=A.state;A.state=P.step(before,l);O.Review.observe(before,A.state,l);
@@ -74,7 +74,7 @@ for(const [width,height]of [[320,568],[390,844],[430,932],[568,320],[844,390],[7
    expect(geometry.worldHeight/geometry.viewportHeight).toBeGreaterThan(.84);
    for(const control of geometry.controls){expect(control.w,control.id).toBeGreaterThanOrEqual(44);expect(control.h,control.id).toBeGreaterThanOrEqual(44);expect(control.reachable,control.id).toBe(true);}
    await page.screenshot({path:info.outputPath('aiming.png')});
-   await page.locator('#flightPlan summary').tap();await expect(page.locator('#flightDrawer .medal-card')).toHaveCount(3);
+   await page.locator('#flightPlanOpen').tap();await expect(page.locator('#flightDrawer .medal-card')).toHaveCount(3);
    await page.locator('#flightDrawer .sheet-footer button').tap();
    await page.locator('#mobileLaunch').tap();await page.locator('#mobileLaunch').tap();
    expect(await page.evaluate(()=>Orbital.App.paused)).toBe(true);
@@ -246,10 +246,22 @@ test('portrait projection, camera anchor, orientation change and cancelled aim',
  try{
   await page.evaluate(()=>Orbital.App.setAim(0,155));
   const start=await page.evaluate(()=>{const s=Orbital.App.level().start;return Orbital.UI9.worldToScreen(s.x,s.y);});
-  await page.touchscreen.tap(start.x,start.y-65);expect(await page.evaluate(()=>Orbital.App.angle)).toBe(0);
-  const cdp=await context.newCDPSession(page),touch=(type,points)=>cdp.send('Input.dispatchTouchEvent',{type,touchPoints:points});
+  await page.touchscreen.tap(start.x,start.y-65);
   const prior=await page.evaluate(()=>[Orbital.App.angle,Orbital.App.speed]);
-  await touch('touchStart',[{id:0,x:start.x-45,y:start.y-50}]);await touch('touchMove',[{id:0,x:start.x-60,y:start.y-70}]);await touch('touchCancel',[]);
+  // A browser may report touch coordinates in whole CSS pixels.
+  expect(Math.abs(prior[0])).toBeLessThanOrEqual(1);
+  if(browser.browserType().name()==='chromium'){
+   const cdp=await context.newCDPSession(page),touch=(type,points)=>cdp.send('Input.dispatchTouchEvent',{type,touchPoints:points});
+   await touch('touchStart',[{id:0,x:start.x-45,y:start.y-50}]);
+   await touch('touchMove',[{id:0,x:start.x-60,y:start.y-70}]);
+   await touch('touchCancel',[]);
+  }else{
+   const canvas=page.locator('#gameCanvas'),pointer={pointerId:1,pointerType:'touch',button:0,isPrimary:true,bubbles:true};
+   await canvas.dispatchEvent('pointerdown',{...pointer,buttons:1,clientX:start.x-45,clientY:start.y-50});
+   await canvas.dispatchEvent('pointermove',{...pointer,buttons:1,clientX:start.x-60,clientY:start.y-70});
+   expect(await page.evaluate(()=>[Orbital.App.angle,Orbital.App.speed])).not.toEqual(prior);
+   await canvas.dispatchEvent('pointercancel',pointer);
+  }
   expect(await page.evaluate(()=>[Orbital.App.angle,Orbital.App.speed])).toEqual(prior);
   const delta=await page.evaluate(()=>{const U=Orbital.UI9,m=document.querySelector('#gameCanvas').getBoundingClientRect(),x=m.x+m.width/2,y=m.y+m.height/2;const a=U.worldPoint(x,y);U.zoom(2,x,y);const b=U.worldPoint(x,y);return Math.hypot(a.x-b.x,a.y-b.y);});expect(delta).toBeLessThan(.001);
   await page.setViewportSize({width:844,height:390});await page.waitForTimeout(100);

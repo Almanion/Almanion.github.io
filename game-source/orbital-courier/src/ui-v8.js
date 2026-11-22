@@ -3,23 +3,96 @@
 function layout(){pending=false;O.UI9?.layout();}
 function schedule(){if(!pending){pending=true;requestAnimationFrame(layout);}}new ResizeObserver(schedule).observe($('mapViewport'));root.addEventListener('resize',schedule);root.visualViewport?.addEventListener('resize',schedule);
 function restoreSaveWarning(){const warning=$('saveWarning');if(warning?.closest('#resultScreen'))document.querySelector('main').before(warning);}
-function collapse(){document.querySelector('.flight-panel').classList.remove('nav-expanded');}function onPage(page){if(page!=='play'){restoreSaveWarning();document.querySelector('main').style.height='';document.body.removeAttribute('data-flight');collapse();}else schedule();}function onLevel(){restoreSaveWarning();O.Review.clearView();$('flightReview').hidden=true;cache='';collapse();$('flightPlan').open=false;sync();updateRoute();schedule();}
-function sync(){O.UI9?.sync();}
-function updateRoute(force=false){const raw=A.level(),s=A.displayState(),l=R.view(raw,s,A.branchView),legs=l.flybys||[],index=s?.flybyIndex||0,ps=l.portalOrder||[],pi=s?.portalIndex||0,key=l.id+':'+l.activeBranch+':'+A.profile.difficulty;
-if(force||cache!==key){cache=key;$('routePanel').hidden=!legs.length;$('routeSteps').innerHTML=legs.map((f,i)=>`<li data-leg="${i}"><span class="route-number">${i+1}</span><div><b>${esc(l.planets[f.planet].name)} ${f.direction>0?'↻':'↺'}</b><small class="route-value">${f.degrees}°</small></div></li>`).join('');let proof=G.record(A.profile,l.id).routes||[];$('branchPicker').innerHTML=raw.branches?.length?raw.branches.map(b=>`<button class="branch-card ${b.id===l.activeBranch?'active':''}" data-action="v8:branch" data-branch="${b.id}"><strong>${b.id} · ${b.name} ${proof.includes(b.id)?'✓':''}</strong><small>${b.flybys.map(f=>`${l.planets[f.planet].name} ${f.direction>0?'↻':'↺'}`).join(' → ')}</small><small>${b.portalOrder.join(' → ')} · три контейнера</small></button>`).join('')+'<p class="branch-guide">Одна общая карта. Карточка меняет только подсветку, не физику. Ветвь фиксируется первым фактическим переходом. Слоты A/B в пульте — память чисел, а не выбор ветви.</p>':'';}
-const st=l.stops?.[s?.dropIndex||0],ready=st&&index>=(st.afterFlybys||0)&&pi>=(st.afterPortals||0),leg=legs[index];let next='Финальная доставка на станцию';if(s?.status==='won')next='Маршрут завершён';else if(ready)next=`Адрес ${st.id} · ${st.name}`;else if(pi<ps.length&&(!leg||pi<index))next=`Переход ${ps[pi]} · скорость сохраняется`;else if(leg)next=`${l.activeBranch?l.activeBranch+' · ':''}${l.planets[leg.planet].name} ${leg.direction>0?'↻':'↺'} · ${Math.min(leg.degrees,Math.floor(P.deg(s?.flybyAngle||0)))}° / ${leg.degrees}°`;else if((s?.gateIndex||0)<(l.gates?.length||0))next=`Кольцо ${(s?.gateIndex||0)+1} / ${l.gates.length}`;
-else {
-  const required=Math.max(l.rules?.minCargo||0,l.minCargo||0);
-  const collected=R.collected(raw,s,A.branchView);
-  if(collected<required)next=`Собери обязательный груз · ${collected} / ${required}`;
+function collapse(){document.querySelector('.flight-panel').classList.remove('nav-expanded');}
+function onPage(page){if(page!=='play'){restoreSaveWarning();document.querySelector('main').style.height='';document.body.removeAttribute('data-flight');collapse();}else schedule();}
+function onLevel(){
+  restoreSaveWarning();O.Review.clearView();$('flightReview').hidden=true;
+  cache=null;collapse();sync();updateRoute();schedule();
 }
-$('activeStep').textContent=next;$('planCounter').textContent=legs.length?index+'/'+legs.length:'';$('routeStatus').textContent=index+' / '+legs.length+' облётов';for(let el of $('routeSteps').children){let i=+el.dataset.leg;el.classList.toggle('done',i<index);el.classList.toggle('active',i===index);el.querySelector('.route-value').textContent=i<index?'✓ Пройден':i===index?`${Math.min(legs[i].degrees,Math.floor(P.deg(s?.flybyAngle||0)))}° / ${legs[i].degrees}°`:legs[i].degrees+'°';}
-$('portalProgress').hidden=!ps.length;$('portalProgress').innerHTML=ps.map((id,i)=>`<span class="${i<pi?'done':''}">${i<pi?'✓':'◎'} ${id}</span>`).join('')+'<button class="text-button" data-action="portal-help">Правила переходов</button>';$('stopProgress').innerHTML=(l.stops||[]).map((d,i)=>`<span class="stop-chip ${i<(s?.dropIndex||0)?'done':''}">${i<(s?.dropIndex||0)?'✓':'▣'} ${d.id} · ${esc(d.name)}</span>`).join('');}
+function sync(){O.UI9?.sync();}
+const T=O.FlightObjectives;
+const factSymbols={
+  branch:'<path d="M5 16V4m0 9c6 0 9-2 9-7m-3 1 3-3 3 3"/>',
+  placement:'<circle cx="10" cy="10" r="4"/><path d="M2 10h2m12 0h2M10 2v2m0 12v2"/>',
+  gate:'<circle cx="10" cy="10" r="7"/><circle cx="10" cy="10" r="2"/>',
+  flyby:'<circle cx="10" cy="10" r="3"/><path d="M16.5 8a7 7 0 1 0 0 5m-3-5h3.5V4.5"/>',
+  portal:'<ellipse cx="8" cy="10" rx="4" ry="7"/><path d="M8 10h9m-3-3 3 3-3 3"/>',
+  stop:'<path d="M4 17V3m0 1h11l-2.5 3L15 10H4"/>',
+  cargo:'<path d="m3 6 7-4 7 4v8l-7 4-7-4Zm0 0 7 4 7-4m-7 4v8"/>',
+  launch:'<path d="m4 15 3-6 9-5-5 9-7 2Zm3-6 4 4M3 17l3-1"/>',
+  approach:'<path d="M2 10h10m-4-4 4 4-4 4m7-10h2v12h-2"/>',
+  window:'<path d="M3 4v12m14-12v12M3 10h14m-11-3-3 3 3 3m8-6 3 3-3 3"/>',
+  radius:'<circle cx="10" cy="10" r="7"/><path d="m10 10 5-5m-3 0h3v3"/>',
+  time:'<circle cx="10" cy="11" r="6.5"/><path d="M8 2h4m-2 0v2m0 3v4l2 1"/>'
+};
+function renderConditions(plan){
+  const facts=T.conditions(plan,A.displayState()?.stats||A.stats());
+  $('strictRules').innerHTML=facts.map(({kind,label,detail})=>
+    `<li data-rule="${kind}" title="${esc(detail)}"><svg aria-hidden="true" viewBox="0 0 20 20">${factSymbols[kind]}</svg><span>${esc(label)}</span></li>`
+  ).join('');
+}
+function goalBadge(goal){
+  return `<span class="goal-badge" aria-hidden="true" data-kind="${goal.kind}" data-mark="${esc(goal.mark)}"></span>`;
+}
+function setGoalBadge(node,goal){
+  node.hidden=!goal;
+  if(!goal)return;
+  if(node.dataset.kind!==goal.kind)node.dataset.kind=goal.kind;
+  if(node.dataset.mark!==goal.mark)node.dataset.mark=goal.mark;
+}
+function goalLabel(guide){
+  if(!guide.next)return 'Маршрут завершён';
+  return guide.next.kind==='freight'?'Груз · '+T.freightLabel(guide):guide.next.label;
+}
+function setText(node,value){if(node.textContent!==value)node.textContent=value;}
+function updateRoute(force=false,guide=A.flightGuide()){
+  const {plan,next}=guide,active=plan.route.activeBranch;
+  if(force||cache!==plan){
+    cache=plan;
+    renderConditions(plan);
+    $('routeBrief').textContent=plan.route.brief;
+    $('routeSteps').innerHTML=plan.steps.map(goal=>`<li data-goal="${goal.key}">
+      ${goalBadge(goal)}<span class="route-step-label">${esc(goal.label)}</span><small class="route-value"></small></li>`).join('');
+    const proof=G.record(A.profile,plan.route.id).routes||[];
+    const branches=plan.route.branches||[];
+    $('branchPicker').innerHTML=branches.map(branch=>`<button type="button" class="branch-card${branch.id===active?' active':''}"
+      data-action="v8:branch" data-branch="${branch.id}" aria-pressed="${branch.id===active}">
+      <strong>${branch.id} · ${esc(branch.name)}${proof.includes(branch.id)?' ✓':''}</strong></button>`).join('')+
+      (branches.length?'<p class="branch-guide">Выбери ветвь для просмотра. Во время рейса ветвь фиксируется при первом переходе.</p>':'');
+    $('routeHelp').hidden=!plan.flybys.length;
+    $('portalHelp').hidden=!plan.portals.length;
+  }
+  for(const b of $('branchPicker').querySelectorAll('button'))b.disabled=!!A.state;
+  const label=goalLabel(guide),button=$('flightGoal');
+  setGoalBadge($('activeStepMark'),next);
+  setText($('activeStep'),label);
+  const name=guide.targets.length?'Показать на карте · '+label:label;
+  if(button.getAttribute('aria-label')!==name)button.setAttribute('aria-label',name);
+  button.disabled=!guide.targets.length;
+  for(const [i,el] of [...$('routeSteps').children].entries()){
+    const goal=plan.steps[i],done=T.completed(goal,guide),current=goal===next;
+    el.classList.toggle('done',done);
+    el.classList.toggle('active',current);
+    if(current)el.setAttribute('aria-current','step');else el.removeAttribute('aria-current');
+    const detail=done?'✓ Выполнено':goal.kind==='freight'?T.freightLabel(guide):
+      goal.kind==='flyby'?(current?Math.min(guide.degrees,goal.degrees)+'° / ':'')+goal.degrees+'°':'';
+    setText(el.querySelector('.route-value'),detail);
+  }
+}
+function selectBranch(button){
+  if(A.state)return;
+  A.branchView=button.dataset.branch;
+  A.updateObjectives();
+  updateRoute(true);
+  $('branchPicker').querySelector('[aria-pressed=true]')?.focus({preventScroll:true});
+}
 function medalHelp(){let l=A.level();A.openModal('Три цели контракта',O.Medals.describe(l,A.state,A.speed,G.viewRecord(A.profile,l.id),A.assisted,A.stats()).map(d=>`<div class="info-box"><strong>${d.title}</strong><p>${d.condition}</p><small>${d.detail}. ${d.archive?'Архивная медаль сохранена, новое условие ещё не подтверждено.':d.earned?'Актуальная медаль получена.':'Новая цель.'}</small></div>`).join('')+'<p>Медаль исследователя накапливает прохождения обеих ветвей. Остальные цели проверяются в одном успешном рейсе. Тренировки не дают наград.</p><div class="modal-actions"><button class="button primary" data-action="close">Понятно</button></div>');}
 function resultView(view){
   if(!A.state||A.state.status==='flying')return;
   const wasAnalysis=document.body.dataset.resultView==='analysis';
   document.body.dataset.resultView=view;
+  $('reviewEvent').hidden=view!=='analysis'||!O.Review.active?.data.event;
+  if(view!=='analysis')$('reviewPin').hidden=true;
   if(view==='analysis')restoreSaveWarning();else $('resultScreen').querySelector('.completion-scroll')?.prepend($('saveWarning'));
   $('resultAnalysisBar').hidden=view!=='analysis';
   sync();schedule();
@@ -33,8 +106,12 @@ function failureDetails(report){
 }
 function retryButton(state,level,{summary=false,training=false}={}) {
   const limited=state.reason==='fuel', won=state.status==='won' && !training;
+  const changeTime=level.launchTiming&&(state.reason==='window'||
+    !level.flybys?.length&&!P.receptionWindows(level).length&&(state.reason==='boundary'||state.reason==='timeout'));
+  const approach=level.launchTiming&&state.reason==='overspeed';
   const label=limited ? `Снизить до ${Math.floor(level.rules.maxLaunchSpeed)} ед./с` :
-    training ? 'Без подсказки ↗' : won ? 'Ещё раз ↺' : 'Изменить курс';
+    training ? 'Без подсказки ↗' : won ? 'Ещё раз ↺' : approach ? 'Уточнить стыковку' :
+      changeTime ? 'Изменить время старта' : 'Изменить курс';
   return `<button class="button ${won?'quiet':'primary'}" ${summary?'id="resultRetry"':''} data-action="${limited?'ui:limit-speed':'retry'}">${label}</button>`;
 }
 function failedSummary(level,state,report,medalList,cargo){
@@ -47,42 +124,114 @@ function failedSummary(level,state,report,medalList,cargo){
     <div class="completion-detail-facts"><span>Угол запуска <b>${esc(state.launchAngle.toLocaleString('ru-RU'))}°</b></span><span>Скорость запуска <b>${state.launchSpeed} ед./с</b></span><span>Груз на борту <b>${cargo}</b></span></div>
     ${medalList}<button class="text-button" data-action="hint">Подсказка по маршруту</button></div></details>`;
 }
+const timeStamp=t=>t.toLocaleString('ru-RU',{minimumFractionDigits:2,maximumFractionDigits:2})+' с';
 function seekRecording(t){
   O.Review.selectTime(t);
-  const recorded = O.Review.active.data.frames[O.Review.active.index].t;
-  const stamp = recorded.toLocaleString('ru-RU',{minimumFractionDigits:2,maximumFractionDigits:2})+' с';
+  const state=O.Review.currentFrame(),event=O.Review.active.data.event;
+  const stamp=timeStamp(state.t);
   $('reviewStamp').textContent = stamp;
   $('reviewRange').setAttribute('aria-valuetext',stamp);
+  const atEvent=state.t===event?.t;
+  $('reviewPin').classList.toggle('at-event',atEvent);
+  const guide=A.flightGuide(state),note=$('reviewEventNote');
+  const showEvent=event&&(atEvent||state.status!=='flying');
+  note.hidden=!showEvent&&state.status!=='flying';
+  note.classList.toggle('at-event',!!showEvent);
+  setGoalBadge($('reviewStepMark'),showEvent?event.goal:guide.next);
+  setText($('reviewStepLabel'),showEvent?event.caption+(event.target?' · '+timeStamp(event.t):''):goalLabel(guide));
+  updateRoute(false,guide);
+}
+function jumpToEvent(focusRange=false){
+  const event=O.Review.active?.data.event;
+  if(!event)return;
+  $('reviewRange').value=event.t;
+  seekRecording(event.t);
+  O.UI9?.focusReviewEvent(event);
+  if(focusRange)$('reviewRange').focus({preventScroll:true});
+}
+function openReview(){
+  resultView('analysis');
+  jumpToEvent();
+}
+function compareAttempts(button){
+  if(!O.Review.prior())return;
+  O.Review.setCompare();
+  const enabled=O.Review.active.compare;
+  button.setAttribute('aria-pressed',String(enabled));
+  $('reviewComparison').hidden=!enabled;
+  if(enabled){
+    const {trail,ghost}=O.Review.renderModel();
+    O.UI9?.fitReviewTracks(trail,ghost);
+  }
+}
+function reviewComparison(current,previous){
+  if(!previous)return '';
+  const delta=new Intl.NumberFormat('ru-RU',{signDisplay:'exceptZero',maximumFractionDigits:1});
+  const course=flight=>`${flight.angle.toLocaleString('ru-RU')}° · ${flight.speed} ед./с${flight.level.launchTiming?' · старт +'+launchTime(flight.level.launchDelay):''}`;
+  const attempt=(label,flight)=>{
+    const {windows,index}=P.receptionAt(flight.level,flight.final.t);
+    return windows.length>1&&flight.final.status==='won'?label+' · '+T.receptionLabel(index):label;
+  };
+  const angle=((current.angle-previous.angle+540)%360)-180;
+  const differentLayout=JSON.stringify(current.level.layout)!==JSON.stringify(previous.level.layout);
+  return `<div id="reviewComparison" class="review-comparison" hidden aria-label="Параметры попыток">
+    <div class="review-attempt current"><span>${attempt('Текущая',current)}</span><b>${course(current)}</b></div>
+    <div class="review-attempt previous"><span>${attempt('Предыдущая',previous)}</span><b>${course(previous)}</b></div>
+    <div class="review-change"><span>Изменение</span><b>${delta.format(angle)}° · ${delta.format(current.speed-previous.speed)} ед./с${current.level.launchTiming?' · старт '+delta.format(current.level.launchDelay-previous.level.launchDelay)+' с':''}</b></div>
+    ${differentLayout?'<p class="review-layout-note">Расстановка планет в этих попытках различается.</p>':''}
+  </div>`;
+}
+const launchTime=t=>t.toFixed(1).replace('.',',')+' с';
+function renderReview(s){
+  const {data}=O.Review.active,previous=O.Review.prior();
+  setGoalBadge($('reviewPin').firstElementChild,data.event?.goal||{kind:'error',mark:'!'});
+  $('reviewPin').setAttribute('aria-label',data.event?.goal?'Метка ошибки · '+data.event.goal.label:'Метка ошибки на карте');
+  $('flightReview').innerHTML=`<div class="review-controls">
+    <div id="reviewTimelineHome"><div class="review-timeline" id="reviewTimeline"><span class="review-stamp" id="reviewStamp"></span>
+      <input id="reviewRange" type="range" min="0" max="${s.t}" step="any" value="${s.t}" aria-label="Время уже выполненного рейса">
+    </div></div>
+    <button data-action="v8:compare" aria-pressed="false" ${previous?'aria-controls="reviewComparison"':'disabled title="Появится после второго рейса"'}>Сравнить</button>
+    <button data-action="v8:report">${s.status==='won'?'Награды':'Причина'}</button>
+  </div>
+  <p class="review-event-note" id="reviewEventNote" hidden><span class="goal-badge" id="reviewStepMark" aria-hidden="true"></span><span id="reviewStepLabel"></span></p>
+  ${reviewComparison(data,previous)}`;
+  seekRecording(s.t);
+  $('reviewRange').addEventListener('input',e=>seekRecording(+e.target.value));
 }
 function showReport(){
   if(A.lastResult)return A.showWin(A.lastResult);
   const flight=O.Review.active?.data;if(!flight)return;
   const report=O.Review.failureReport(flight.level,flight.final,flight.resets);
-  A.openModal(esc(report.title), `<div class="failure-report">${failureDetails(report)}</div>
+  const goal=flight.event?.goal;
+  const sign=goal?`<p class="review-event-note at-event">${goalBadge(goal)}<span>${esc(goal.label)}</span></p>`:'';
+  A.openModal(esc(report.title), `<div class="failure-report">${sign}${failureDetails(report)}</div>
     <div class="modal-actions failure-actions"><button class="button quiet" data-action="v8:review-event">Показать на записи</button>${retryButton(flight.final,flight.level)}</div>`, 'РАЗБОР РЕЙСА');
 }
 function showResult(result){
   const s=A.state,l=A.level(),won=s.status==='won',training=!!result?.training,delivered=won&&!training;
+  const reception=P.receptionAt(l,s.t);
+  const slot=won&&reception.windows.length>1?`${T.receptionLabel(reception.index)} · ${timeStamp(reception.time)}`:'';
+  const approach=won&&l.launchTiming&&l.rules.maxDockSpeed?`Сближение ${s.dockSpeed.toLocaleString('ru-RU',{maximumFractionDigits:1})} ед./с`:'';
   const q=result?.quality,rank=G.rank(A.profile),next=O.Campaign.adjacent(A.currentId,1);
   const medals=O.Medals.describe(l,s,s.launchSpeed,G.viewRecord(A.profile,l.id),training,A.stats());
   const failure=won?null:O.Review.failureReport(l,s,O.Review.active.data.resets);
-  const diagnosis=won?O.Review.diagnosis(l,s):failure.title+' · '+failure.event,cargo=`${R.collected(l,s)} / ${R.cargoIds(l,s).length}`;
+  const cargo=`${R.collected(l,s)} / ${R.cargoIds(l,s).length}`;
   const title=training?'Тренировка завершена':'Посылка на месте.';
   const subtitle=training?'Повтори маршрут самостоятельно, чтобы получить награды.':A.storageOK?'Доставка подтверждена. Результат и награды сохранены.':'Доставка подтверждена. Запись не удалась — скачай копию прогресса.';
   const medalCount=medals.filter(m=>m.state==='won').length;
   const payment=delivered?(result.first?'Первая доставка по этому контракту.':result.totalCredits?'Доплата за улучшение результата.':'Результат уже оплачен. Новая доплата — за улучшение рекорда.'):'Тренировка не начисляет награды.';
   const medalList=`<div class="completion-medals">${medals.map((m,i)=>`<article class="completion-medal" data-state="${m.state}"><span class="completion-medal-icon" aria-hidden="true">${O.MedalArt.svg(O.Medals.rules(l)[i].type)}</span><div><div class="completion-medal-heading"><h4>${esc(m.title)}</h4><span>${training?'Без зачёта':m.state==='won'?(result.newMask&m.bit?'Новая':'✓ Выполнено'):m.earned?'Есть ранее':'Не получена'}</span></div><p>${esc(m.condition)}</p><small>${esc(m.detail)}</small></div></article>`).join('')}</div>`;
   const career=`<div class="completion-career"><span>ТВОЙ РАНГ</span><strong>${esc(rank.name)}</strong><div class="completion-rank-track"><i style="width:${rank.next?P.clamp((A.profile.xp-rank.xp)/(rank.next.xp-rank.xp)*100,0,100):100}%"></i></div><small>${rank.next?`${money(Math.max(0,rank.next.xp-A.profile.xp))} XP до ранга «${esc(rank.next.name)}»`:'Достигнут высший ранг'}</small></div>`;
-  collapse();restoreSaveWarning();$('flightPlan').open=false;$('flightReview').hidden=false;
+  collapse();restoreSaveWarning();$('flightReview').hidden=false;
   $('resultScreen').hidden=false;$('resultScreen').dataset.outcome=training?'training':won?'won':'failed';
   const content=failure?failedSummary(l,s,failure,medalList,cargo):`
     <header class="completion-hero">
       <div class="completion-copy"><div class="completion-kicker"><span class="completion-signal" aria-hidden="true"></span>${training?'УЧЕБНЫЙ РЕЙС':'ДОСТАВКА ПОДТВЕРЖДЕНА'}<span class="completion-mode">${s.mode==='pro'?'PRO ×1,7':'ОБЫЧНЫЙ РЕЙС'}</span></div>
       <h2 id="resultTitle" tabindex="-1">${title}</h2><p>${esc(subtitle)}</p>
-      <div class="completion-route"><span>КОНТРАКТ ${String(O.Campaign.number(l.id)).padStart(2,'0')}</span><strong>${esc(l.name)}</strong></div></div>
+      <div class="completion-route"><span>КОНТРАКТ ${String(O.Campaign.number(l.id)).padStart(2,'0')}</span><strong>${esc(l.name)}</strong>${slot?`<span class="completion-window">${slot}</span>`:''}${approach?`<span class="completion-approach">${approach}</span>`:''}</div></div>
       <div class="completion-visual">${O.DockingPreview.markup()}<div class="completion-seal" aria-label="Оценка ${q.grade}, ${q.score} из 100"><div class="completion-seal-orbit" aria-hidden="true"></div><span>КАЧЕСТВО РЕЙСА</span><strong>${q.grade}</strong><b>${q.score}<small> / 100</small></b></div></div>
     </header>
-    <div class="completion-facts" aria-label="Параметры завершённого рейса"><div><span>Время</span><strong>${s.t.toFixed(2)} <small>с</small></strong></div><div><span>Груз</span><strong>${cargo} <small>конт.</small></strong></div><div><span>Стартовый угол</span><strong>${s.launchAngle.toFixed(1)}<small>°</small></strong></div><div><span>Стартовая скорость</span><strong>${s.launchSpeed} <small>ед./с</small></strong></div></div>
+    <div class="completion-facts" aria-label="Параметры завершённого рейса"><div><span>Время</span><strong>${s.t.toFixed(2)} <small>с</small></strong>${l.launchTiming?`<span class="completion-delay">Старт +${launchTime(l.launchDelay)}</span>`:''}</div><div><span>Груз</span><strong>${cargo} <small>конт.</small></strong></div><div><span>Стартовый угол</span><strong>${s.launchAngle.toFixed(1)}<small>°</small></strong></div><div><span>Стартовая скорость</span><strong>${s.launchSpeed} <small>ед./с</small></strong></div></div>
     <div class="completion-grid"><div class="completion-main">
       <section class="completion-goals" aria-labelledby="resultGoalsTitle"><div class="completion-section-title"><h3 id="resultGoalsTitle">${training?'Цели маршрута':'Медали рейса'}</h3><span>${training?'Без зачёта':`${medalCount} из ${medals.length}`}</span></div>
       ${medalList}</section>
@@ -96,11 +245,9 @@ function showResult(result){
       ${delivered?`<div class="completion-credits"><span>Кредиты</span><strong>+${money(result.totalCredits)} <small>◈</small></strong></div><div class="completion-resources"><div><span>Данные</span><strong>+${result.data} <small>⬡</small></strong></div><div><span>Опыт</span><strong>+${result.totalXP} <small>XP</small></strong></div></div><p class="completion-payment">${esc(payment)}</p>`:`<div class="completion-no-loss"><strong>Без наград</strong><p>${esc(payment)}</p></div>`}
     </aside></div>
     ${delivered?`<div class="completion-next-note"><span>${next<0?'ЭКСПЕДИЦИЯ ПРОДОЛЖАЕТСЯ':'СЛЕДУЮЩИЙ КОНТРАКТ'}</span><strong>${next<0?'Выбери маршрут или улучши прежний рекорд':esc(L[next].name)}</strong></div>`:''}`;
-  $('resultScreen').innerHTML=`<div class="completion-scroll">${content}</div><footer class="completion-actions"><button class="button quiet" id="resultReview" data-action="v8:analysis">${failure?'Запись полёта':'Разбор полёта'} <span>↗</span></button>${next>=0||!delivered?`<button class="button quiet" id="resultContracts" data-action="nav" data-page="campaign">К контрактам</button>`:''}<button class="cloud-header result-cloud" data-action="cloud-result" aria-label="Прогресс и аккаунт"><span aria-hidden="true">☁</span><span class="cloud-label">На устройстве</span></button><div class="completion-actions-main">${retryButton(s,l,{summary:true,training})}${delivered?`<button class="button primary" id="resultNext" data-action="next" aria-label="${next<0?'Все маршруты':'Следующий контракт: '+esc(L[next].name)}">${next<0?'Все маршруты':'Дальше'} <span>→</span></button>`:''}</div></footer>`;
-  $('flightReview').innerHTML=`<div class="review-title"><strong>Запись рейса</strong><span>${s.launchAngle.toFixed(1)}° / ${s.launchSpeed} ед./с</span></div><p class="review-summary">${esc(diagnosis)}</p><div class="review-controls"><div id="reviewTimelineHome"><div class="review-timeline" id="reviewTimeline"><span class="review-stamp" id="reviewStamp"></span><input id="reviewRange" type="range" min="0" max="${s.t}" step="any" value="${s.t}" aria-label="Время уже выполненного рейса"></div></div><button data-action="v8:compare" aria-pressed="false" ${O.Review.prior()?'':'disabled'}>Сравнить попытки</button><button data-action="v8:report">${won?'Подробности наград':'Причина неудачи'}</button></div><p id="reviewComparison" class="review-comparison">${O.Review.prior()?'Сравни траекторию с предыдущей попыткой.':'После следующего запуска здесь можно сравнить две попытки.'}</p>`;
-  seekRecording(s.t);
-  $('reviewRange').addEventListener('input',e=>seekRecording(+e.target.value));
-  $('resultAnalysisBar').querySelector('div span').textContent=training?'Тренировка · награды не начисляются':delivered?(A.storageOK?'Доставка подтверждена · награды сохранены':'Доставка подтверждена · скачай копию прогресса'):failure.title;
+  $('resultScreen').innerHTML=`<div class="completion-scroll">${content}</div><footer class="completion-actions"><button class="button quiet" id="resultReview" data-action="v8:analysis">${failure?'Ошибка на карте':'Разбор полёта'} <span>↗</span></button>${next>=0||!delivered?`<button class="button quiet" id="resultContracts" data-action="nav" data-page="campaign">К контрактам</button>`:''}<button class="cloud-header result-cloud" data-action="cloud-result" aria-label="Прогресс и аккаунт"><span aria-hidden="true">☁</span><span class="cloud-label">На устройстве</span></button><div class="completion-actions-main">${retryButton(s,l,{summary:true,training})}${delivered?`<button class="button primary" id="resultNext" data-action="next" aria-label="${next<0?'Все маршруты':'Следующий контракт: '+esc(L[next].name)}">${next<0?'Все маршруты':'Дальше'} <span>→</span></button>`:''}</div></footer>`;
+  renderReview(s);
+  $('resultAnalysisBar').querySelector('div span').textContent=l.name;
   resultView('summary');O.UI9?.onResult();O.Cloud?.refresh();
   O.DockingPreview.mount($('resultScreen'),{level:l,state:s,trail:O.Review.active?.data.points||A.trail,stats:A.stats(),color:G.SKINS.find(skin=>skin.id===A.profile.skin)?.color,trailStyle:A.profile.trail,shipModel:A.profile.model,appearance:O.Fleet.appearance(A.profile)});
 }
@@ -138,11 +285,14 @@ function settings(t=tab){
 function resetConfirm(){A.openModal('Удалить прогресс?','<p>Экспортированные копии останутся целыми. Для подтверждения введи <b>СБРОС</b>.</p><input id="resetWord" class="reset-word" autocomplete="off"><div class="modal-actions"><button class="button quiet" data-action="close">Отмена</button><button class="button danger" id="resetFinal" data-action="reset" disabled>Удалить профиль</button></div>');$('resetWord').addEventListener('input',e=>$('resetFinal').disabled=e.target.value.trim()!=='СБРОС');}
 function economy(){A.openModal('Экономика '+O.Campaign.order.length+' контрактов','<p>Каждый контракт хранит один денежный рекорд: обе ветви и ПРО делят максимум. Повтор приносит только рост стоимости результата. Ошибки бесплатны.</p><p>Пять ступеней требуют 2 / 8 / 20 / 40 / 64 завершённых контракта и 0 / 2 / 5 / 9 / 14 данных.</p><p>Цена — округлённое вверх до 5 значение B × t<sup>1,88</sup> × (1 + 0,025N) × (1 − скидка). Исследования дают до 8% скидки. Покупки и возвраты записываются по фактическим чекам.</p><p>Высшие ступени предполагают специализацию, а не выкуп всех модулей. За достижения — только опыт.</p><div class="modal-actions"><button class="button primary" data-action="close">Понятно</button></div>');}
 function zoom(f){const c=A.camera;c.zoom=P.clamp(c.zoom*f,1,4);const edge=Math.max(28,64/c.zoom);c.cx=P.clamp(c.cx,600/c.zoom-edge,1200-600/c.zoom+edge);c.cy=P.clamp(c.cy,350/c.zoom-edge,700-350/c.zoom+edge);}
-const actions={'v8:analysis':()=>resultView('analysis'),'v8:summary':()=>resultView('summary'),'v8:panel':()=>document.querySelector('.flight-panel').classList.toggle('nav-expanded'),'v8:branch':b=>{if(A.state)return A.toast('Ветвь определяется фактическим полётом.');A.branchView=b.dataset.branch;cache='';A.updateObjectives();updateRoute();},'v8:award-category':b=>{category=b.dataset.category;renderAwards();},'v8:award-filter':b=>{filter=b.dataset.filter;renderAwards();},'v8:settings-tab':b=>settings(b.dataset.tab),'v8:reset-confirm':resetConfirm,'v8:zoom-in':()=>zoom(1.25),'v8:zoom-out':()=>zoom(.8),'v8:zoom-reset':()=>{A.camera={zoom:1,cx:600,cy:350};},'v8:fullscreen':async()=>{try{if(document.fullscreenElement)await document.exitFullscreen();else await document.documentElement.requestFullscreen();schedule();}catch{A.toast('Браузер не разрешил полноэкранный режим.');}},'v8:report':showReport,'v8:review-event':()=>{
-  const flight=O.Review.active?.data;if(!flight)return;
-  A.closeModal();if(document.body.dataset.resultView!=='analysis')resultView('analysis');
-  $('reviewRange').value=flight.final.t;seekRecording(flight.final.t);$('reviewRange').focus();
-},'v8:compare':b=>{if(!O.Review.prior())return;O.Review.setCompare();b.setAttribute('aria-pressed',String(O.Review.active.compare));const prev=O.Review.prior(),now=O.Review.active.data;$('reviewComparison').textContent=O.Review.active.compare?`Пунктир — предыдущий (${prev.angle}° / ${prev.speed}), голубая линия — текущий (${now.angle}° / ${now.speed}). Δ угла ${(now.angle-prev.angle).toFixed(1)}°, Δ скорости ${now.speed-prev.speed}.${JSON.stringify(prev.level?.layout)!==JSON.stringify(now.level?.layout)?' Планеты в предыдущей попытке стояли иначе.':''}`:'Сравнение скрыто.';}};
+const actions={'v8:analysis':openReview,'v8:summary':()=>resultView('summary'),'v8:panel':()=>document.querySelector('.flight-panel').classList.toggle('nav-expanded'),'v8:branch':selectBranch,'v8:award-category':b=>{category=b.dataset.category;renderAwards();},'v8:award-filter':b=>{filter=b.dataset.filter;renderAwards();},'v8:settings-tab':b=>settings(b.dataset.tab),'v8:reset-confirm':resetConfirm,'v8:zoom-in':()=>zoom(1.25),'v8:zoom-out':()=>zoom(.8),'v8:zoom-reset':()=>{A.camera={zoom:1,cx:600,cy:350};},'v8:fullscreen':async()=>{try{if(document.fullscreenElement)await document.exitFullscreen();else await document.documentElement.requestFullscreen();schedule();}catch{A.toast('Браузер не разрешил полноэкранный режим.');}},'v8:report':showReport,
+  'v8:review-event':()=>{
+    A.closeModal();
+    if(document.body.dataset.resultView!=='analysis')resultView('analysis');
+    jumpToEvent(true);
+  },
+  'v8:compare':compareAttempts
+};
 document.addEventListener('click',e=>{let b=e.target.closest('[data-action]');if(b&&!b.disabled)actions[b.dataset.action]?.(b);});$('objectivesList').addEventListener('click',medalHelp);$('objectivesList').addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();medalHelp();}});$('awardSearch').addEventListener('input',e=>{query=e.target.value.trim().toLowerCase();renderAwards();});document.addEventListener('change',e=>{if(e.target.id==='shopLevelSelect'){A.shopLevel=+e.target.value;A.renderHangar();}if(e.target.id==='shopModeSelect'){A.shopMode=e.target.value;A.renderHangar();}});
 document.addEventListener('click',e=>{const b=e.target.closest('[data-action]');if(b?.dataset.action==='personal:clear'){query='';filter='all';category='all';$('awardSearch').value='';renderAwards();$('awardSearch').focus();}if(b?.matches('.settings-tabs button,.achievement-categories button')){const selector=b.dataset.tab?'#settings-'+b.dataset.tab:'[data-action="v8:award-category"][data-category="'+b.dataset.category+'"]';requestAnimationFrame(()=>document.querySelector(selector)?.focus({preventScroll:true}));}});
 document.addEventListener('keydown',e=>{if(!e.target.matches('.settings-tabs [role=tab]')||!['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Home','End'].includes(e.key))return;e.preventDefault();e.stopPropagation();const keys=['flight','display','control','save'],i=keys.indexOf(e.target.dataset.tab),n=e.key==='Home'?0:e.key==='End'?3:(i+(['ArrowLeft','ArrowUp'].includes(e.key)?3:1))%4;settings(keys[n]);$('settings-'+keys[n]).focus();});

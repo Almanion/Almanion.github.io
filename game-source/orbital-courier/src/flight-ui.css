@@ -12,17 +12,66 @@ body[data-page=play][data-difficulty=pro] #mapViewport{border-color:#a48abd66}bo
  body[data-result-view=summary] #play .flight-heading{height:44px;flex-basis:44px;grid-template-rows:44px}body[data-result-view=summary] #flightModeSwitch{display:none}body[data-result-view=summary][data-difficulty=pro] #flightTitle:before{content:'ПРО · ';color:#cdb1f1}
  #modal.preferences-modal .preferences-layout .settings-tabs{grid-template-columns:repeat(4,minmax(0,1fr))}#modal.preferences-modal .preferences-layout .settings-tabs button{display:flex;flex-direction:column;gap:3px;font-size:11px;padding:7px 2px}#modal.preferences-modal .preferences-layout .settings-tabs button>span{font-size:16px;height:20px}.mode-option{padding:12px 10px}.mode-option-title{flex-wrap:wrap}.mode-option-title small{font-size:8px}.mode-facts>span{font-size:10px}.mode-facts b{font-size:12px}.mode-payout{font-size:25px}.mode-payout small{font-size:9px;line-height:1.5}.mode-explanation{font-size:11px!important}.playback-choices{grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}#modal.preferences-modal .preferences-layout .settings-section{min-height:0}.preferences-footer{bottom:-22px;padding-bottom:8px}.mode-modal .mode-facts>span{flex-direction:column}
 }
-@media(min-width:520px) and (max-width:999px) and (max-height:480px) and (orientation:landscape){#play .flight-title-group{flex:1!important}#play .flight-heading{display:flex;flex-wrap:nowrap;height:44px}.flight-mode-choice button{padding:0 9px;font-size:11px}.flight-mode-choice small{font-size:10px}.mode-info{width:30px;min-width:30px}.flight-mode-switch{gap:0}#play .flight-settings{width:40px;min-width:40px}#play .flight-plan{position:relative;inset:auto;width:100%;background:#1c1e22;flex:0 0 38px;height:38px;min-height:38px}#play .flight-plan>summary{height:38px;min-height:38px}#play .flight-plan .plan-marker{display:block}#play .flight-actions{margin-left:0}}
+@media(min-width:520px) and (max-width:999px) and (max-height:480px) and (orientation:landscape){#play .flight-title-group{flex:1!important}#play .flight-heading{display:flex;flex-wrap:nowrap;height:44px}.flight-mode-choice button{padding:0 9px;font-size:11px}.flight-mode-choice small{font-size:10px}.mode-info{width:30px;min-width:30px}.flight-mode-switch{gap:0}#play .flight-settings{width:40px;min-width:40px}#play .flight-actions{margin-left:0}}
 .mode-comparison.compact .mode-facts{display:none}.mode-comparison.compact .mode-payout{margin:12px 0 1px}.mode-comparison.compact .mode-payout small{font-size:10px}.mode-facts>span{flex-direction:row;justify-content:space-between;align-items:center;gap:8px;font-size:11px}.mode-info{min-width:44px;width:44px;background:#b3c5e907;border:1px solid #8292ad33}.preferences-footer{bottom:0;padding:14px 0 8px;background:#1b1d22}.flight-mode-choice{padding:2px}.flight-mode-choice button{min-height:40px}
 body[data-page=play][data-difficulty=pro] #play .launch-button{background:#d6c5f1;color:#30233f;border-color:#e0d0fa}
 @media(max-width:999px) and (orientation:portrait),(max-width:699px){#play .flight-heading{grid-template-rows:44px 46px;height:96px;flex-basis:96px}.flight-mode-choice{padding:0}.flight-mode-choice button{min-height:44px}.preferences-footer{bottom:0}.mode-facts>span{font-size:10px}.mode-modal .mode-facts>span{flex-direction:row}.mode-info{width:44px;min-width:44px}}
 @media(min-width:520px) and (max-width:999px) and (max-height:480px) and (orientation:landscape){#play .flight-heading{height:44px;flex-basis:44px}.flight-mode-choice button{min-height:40px}.flight-mode-choice{padding:0}.mode-info{width:30px;min-width:30px}}
-@media(min-width:520px) and (max-width:999px) and (max-height:480px) and (orientation:landscape){#play .flight-mode-choice button{min-height:44px}.mode-info{width:44px;min-width:44px}#play .flight-settings{width:44px;min-width:44px;height:44px}#play .flight-plan,#play .flight-plan>summary{height:44px;min-height:44px;flex-basis:44px}}
-@media(max-width:699px) and (max-height:660px) and (orientation:portrait){#play .flight-left{position:relative}#play .flight-plan{position:absolute;top:8px;right:8px;left:auto;bottom:auto;width:46px;height:46px;min-height:46px;z-index:3;border:1px solid #8b9bb74d;background:#23262cee}#play .flight-plan>summary{width:44px;min-width:44px;min-height:44px;justify-content:center;padding:0}#play .flight-plan summary>div,#play .flight-plan .plan-chevron,#play #planCounter{display:none}#play .flight-plan .plan-marker{display:block;font-size:20px}}
+@media(min-width:520px) and (max-width:999px) and (max-height:480px) and (orientation:landscape){#play .flight-mode-choice button{min-height:44px}.mode-info{width:44px;min-width:44px}#play .flight-settings{width:44px;min-width:44px;height:44px}}
 
 /* Keep the campaign flight focused on the map and launch controls. */
 #play>.medal-deck{display:none}
-#play .flight-plan summary small,#play .flight-mode-choice small,#play .map-extra{display:none}
+.brief-label { margin: 0; color: #a6afbb; font: 550 12px/1.3 var(--sans); }
+.mission-facts { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 15px; margin: 0; padding: 0; list-style: none; }
+.mission-facts li { display: inline-flex; align-items: center; gap: 5px; color: #d8e2e4; font: 500 13px/1.45 var(--sans); font-variant-numeric: tabular-nums; }
+.mission-facts svg { flex: none; width: 17px; height: 17px; fill: none; stroke: #9fcbbd; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+.medal-target { display: none; }
+.sheet-content .mission-facts { margin: 8px 0 18px; }
+.sheet-content .mission-medals>.brief-label { margin-bottom: 8px; }
+@media (min-width:1000px), (min-width:700px) and (min-height:481px) and (orientation:landscape) {
+  #play>.mission-briefing {
+    display: grid;
+    grid-template-columns: minmax(0,1fr) auto;
+    align-items: center;
+    gap: 14px;
+    flex: none;
+    padding: 3px 8px;
+    border-block: 1px solid var(--stroke);
+    background: none;
+  }
+  body[data-page=play][data-result-view=analysis] #play>.mission-briefing { display: grid; }
+  #play .mission-conditions, #play .mission-medals { display: flex; align-items: center; gap: 12px; min-width: 0; }
+  #play .mission-briefing .brief-label { flex: none; }
+  #play .mission-medals { gap: 6px; padding-left: 14px; border-left: 1px solid var(--stroke); }
+  #play .mission-medals .medal-cards { display: flex; align-items: center; gap: 4px; height: auto; }
+  #play .mission-medals .medal-card {
+    display: inline-flex; align-items: center; gap: 5px; flex: none;
+    height: 36px; padding: 0 6px; border: 0; border-radius: 6px; background: none;
+  }
+  #play .mission-medals .medal-card:hover, #play .mission-medals .medal-card:focus-visible { background: #aebecb14; }
+  #play .mission-medals .medal-symbol { flex: 0 0 23px; height: 26px; width: 23px; }
+  #play .mission-medals .medal-copy { display: none; }
+  #play .medal-target { display: inline; color: #e0e4ed; font: 500 12px/1.35 var(--sans); font-variant-numeric: tabular-nums; }
+  body[data-flight=aiming] #play .flight-left { grid-template-rows: 44px minmax(58px,1fr); }
+  body[data-flight=aiming] #play .panel-actions { display: grid; grid-template-columns: minmax(0,1fr) auto; align-items: center; gap: 6px; }
+  #play .panel-actions .launch-timing { grid-column: 1 / -1; }
+  body[data-flight=aiming] #play .launch-secondary { display: flex; align-items: center; gap: 4px; }
+  body[data-flight=aiming] #play .launch-secondary button { width: auto; padding-inline: 8px; white-space: nowrap; }
+  #play #dockSchedule { display: none; }
+  #play .mission-facts li[data-rule=window] { color: #c4eedf; }
+  #play .mission-facts li[data-rule=window]+li[data-rule=window] { color: #e1c9f5; }
+  #play .mission-facts li[data-rule=window]+li[data-rule=window] svg { color: inherit; stroke: currentColor; stroke-dasharray: 3 1; }
+}
+@media (min-width:700px) and (max-width:999px) and (min-height:481px) and (orientation:landscape) {
+  #play>.mission-briefing { grid-template-columns: minmax(0,1fr); gap: 0; }
+  #play .mission-conditions, #play .mission-medals { display: grid; grid-template-columns: 80px minmax(0,1fr); gap: 4px; }
+  #play .mission-medals { padding: 0; border: 0; }
+  #play .mission-medals .medal-card { height: 30px; }
+  #play .map-controls, #play .map-tools { gap: 3px; }
+  #play .map-mode button { min-width: 44px; padding-inline: 5px; }
+  #play .map-fit { min-width: 60px; padding-inline: 4px; }
+}
+#play .flight-mode-choice small,#play .map-extra{display:none}
 #play .mobile-options small{display:none}
 body[data-page=play][data-flight=aiming] #play .telemetry{display:none}
 #play .launch-secondary #speedButton{display:flex;align-items:center;justify-content:center;width:100%;min-width:44px;min-height:44px;height:44px;margin:0;padding:7px 8px;font:500 12px var(--sans);border:1px solid #ffffff20;border-radius:8px;background:none;color:#c2cad7}
@@ -30,11 +79,9 @@ body[data-page=play][data-flight=aiming] #play .telemetry{display:none}
 #play .flight-live-state,#play .flight-metrics>div:first-child{display:none}
 #play .memory-intro{margin-top:0}
 #play .memory-intro strong{margin-top:0}
-#play .flight-plan .plan-chevron{font-size:12px}
 @media(min-width:1000px){
- #play .flight-title-group .eyebrow,#play .flight-plan .plan-marker{display:none}
+ #play .flight-title-group .eyebrow{display:none}
  #play .flight-heading h2{font-size:19px}
- #play .flight-plan>summary{padding-inline:12px}
  #play .cockpit{gap:10px}
  #play .panel-actions{padding-top:12px}
  #play .precision-row{margin-top:6px}
@@ -79,4 +126,230 @@ body[data-page=play][data-flight=aiming] #play .telemetry{display:none}
  #play .failure-copy h2{font-size:24px;margin:3px 0}
  .failure-facts{margin-top:7px}.failure-facts>div{padding-block:5px}
  .failure-copy .failure-advice{margin-top:8px;font-size:13px}
+}
+
+#play .flight-plan {
+  display: flex;
+  align-items: center;
+  position: relative;
+  inset: auto;
+  flex: 0 0 44px;
+  width: 100%;
+  min-height: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: 10px;
+  background: #202226;
+  box-shadow: inset 0 0 0 1px #a5b3c221;
+}
+.flight-goal,.flight-plan-open {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: #e1e7ef;
+  font-size: 13px;
+}
+.flight-goal { flex: 1; min-width: 44px; padding: 0 11px; gap: 8px; text-align: left; }
+.flight-goal strong { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
+.flight-goal:disabled { cursor: default; }
+.flight-goal:not(:disabled):hover,.flight-plan-open:hover { background: #b8ecd914; }
+.flight-goal .goal-locate { margin-left: auto; color: #b8ecd9; font-size: 17px; }
+.flight-goal:disabled .goal-locate { visibility: hidden; }
+.flight-plan-open { min-width: 56px; justify-content: center; padding-inline: 9px; border-inline-start: 1px solid #a5b3c22a; color: var(--muted); }
+.goal-badge {
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  min-width: 21px;
+  height: 21px;
+  padding: 0 4px;
+  border: 1.35px solid currentColor;
+  border-radius: 7px;
+  background: #121a22;
+  color: #b8ecd9;
+  font: 700 11px/1 var(--mono);
+}
+.goal-badge::before { content: attr(data-mark); }
+.goal-badge[data-kind=gate] { border-radius: 50%; }
+.goal-badge[data-kind=cargo],.goal-badge[data-kind=freight] { border-radius: 4px; }
+.goal-badge[hidden] { display: none; }
+
+.sheet-content .route-brief { margin: 0 0 12px; color: var(--muted); font-size: 13px; }
+.sheet-content .route-steps { grid-template-columns: minmax(0,1fr); gap: 5px; }
+.sheet-content .route-steps li { min-height: 39px; padding: 7px 9px; border-color: #a5b3c22a; background: #1e252b; }
+.sheet-content .route-steps li.active { border-color: #b8ecd982; background: #23342f; }
+.route-step-label { flex: 1; min-width: 0; }
+.sheet-content .route-steps li small { flex: none; max-width: 42%; margin: 0; color: #bdc8d4; text-align: right; }
+.route-steps li:not(.active) .goal-badge { color: #a5b3c2; }
+.route-steps li.done .goal-badge { color: #8fb3a6; }
+.route-help-links { display: flex; flex-wrap: wrap; gap: 6px 14px; }
+.route-help-links button { min-height: 44px; padding: 0 4px; text-align: left; }
+.route-help-links button[hidden] { display: none; }
+
+#play .review-pin .goal-badge { width: auto; min-width: 25px; height: 25px; font-size: 12px; }
+#play .review-pin .goal-badge[data-kind=error] { border-radius: 50%; }
+#play .review-pin .goal-badge[data-kind=gate] { border-radius: 50%; }
+#play .review-pin .goal-badge[data-kind=cargo] { border-radius: 4px; }
+.review-event-note { display: flex; align-items: center; gap: 7px; color: #c6d3df; }
+.review-event-note[hidden] { display: none; }
+.review-event-note.at-event,.review-event-note.at-event .goal-badge { color: #ffd0ad; }
+@media (max-width: 699px) {
+  .flight-goal { padding-inline: 8px; font-size: 12px; }
+  .flight-plan-open { font-size: 12px; }
+}
+
+#play .launch-timing {
+  order: 2;
+  display: grid;
+  grid-template-columns: auto minmax(92px, 350px) minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  min-height: 46px;
+  padding: 0 12px;
+  border: 1px solid var(--stroke);
+  border-radius: 12px;
+  background: #1b2027;
+  font-size: 13px;
+}
+#play .launch-timing[hidden] { display: none; }
+.launch-timing label { display: flex; align-items: baseline; gap: 6px; color: #c0c8d2; white-space: nowrap; }
+.launch-timing label b { min-width: 5ch; color: #edf7f4; font: 600 13px var(--mono); }
+.timing-adjust, .timing-outcome, .timing-prediction { display: contents; }
+.timing-clock, .timing-label-full, .timing-maximum, .timing-caption, .timing-adjust button, #launchDelayReset { display: none; }
+#play .panel-actions .launch-timing:not([hidden]) {
+  order: 0; grid-template-columns: minmax(0,1fr); gap: 1px;
+  min-height: 0; padding: 0 0 8px; border: 0; border-bottom: 1px solid var(--stroke);
+  border-radius: 0; background: none;
+}
+.panel-actions .launch-timing label { align-items: center; gap: 6px; color: #e4ebe9; font: 600 14px/1.4 var(--sans); }
+.panel-actions .timing-label-short { display: none; }
+.panel-actions .timing-clock { display: block; flex: none; width: 19px; height: 19px; color: #a8ddca; }
+.panel-actions .timing-label-full, .panel-actions .timing-maximum { display: inline; }
+.panel-actions #launchDelayValue { min-width: auto; margin-left: auto; font: 600 14px var(--mono); }
+.panel-actions .timing-maximum { color: #a6afb9; font-size: 11px; font-weight: 400; }
+.panel-actions .timing-adjust { display: grid; grid-template-columns: 44px minmax(0,1fr) 44px; align-items: center; gap: 5px; }
+.panel-actions .timing-adjust button {
+  display: grid; place-items: center; width: 44px; height: 44px; padding: 0; border: 0;
+  border-radius: 8px; background: transparent; color: #d5e3dd; font: 22px var(--sans);
+}
+.panel-actions .timing-outcome { display: flex; gap: 6px; min-height: 34px; align-items: center; justify-content: space-between; }
+.panel-actions .timing-prediction { display: flex; align-items: baseline; flex-wrap: wrap; gap: 0 6px; }
+.panel-actions .timing-caption { display: inline; color: #aab5bd; font: 11px var(--sans); }
+.panel-actions #launchForecast { font: 500 12px/1.4 var(--sans); font-variant-numeric: tabular-nums; }
+.panel-actions #launchDelayReset { display: inline-block; min-width: 44px; min-height: 28px; padding: 0 5px; border: 0; border-radius: 5px; background: transparent; color: #b0d6c9; font: 500 12px var(--sans); }
+.panel-actions .launch-timing button:enabled:hover { background: #b8ecd916; }
+.panel-actions .launch-timing button:disabled { opacity: .48; }
+@media (min-width:700px) and (max-height:820px) {
+  #play .flight-panel:has(.launch-timing:not([hidden])) .panel-scroll { padding-block: 5px; }
+  #play .flight-panel:has(.launch-timing:not([hidden])) #cockpit { gap: 3px; }
+  #play .flight-panel:has(.launch-timing:not([hidden])) #cockpit .control { padding-block: 2px 0; }
+  #play .flight-panel:has(.launch-timing:not([hidden])) .number-wrap { height: 46px; min-height: 46px; }
+  #play .flight-panel:has(.launch-timing:not([hidden])) .precision-row { margin-top: 3px; }
+  #play .flight-panel:has(.launch-timing:not([hidden])) .precision-button { min-height: 44px; }
+}
+#launchDelayRange {
+  appearance: none;
+  width: 100%;
+  min-width: 0;
+  height: 44px;
+  margin: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  touch-action: none;
+  --range-fill: 0%;
+}
+#launchDelayRange::-webkit-slider-runnable-track {
+  height: 4px;
+  border-radius: 4px;
+  background: linear-gradient(90deg, #9edcc9 var(--range-fill), #53606a var(--range-fill));
+}
+#launchDelayRange::-webkit-slider-thumb {
+  appearance: none;
+  width: 22px;
+  height: 22px;
+  margin-top: -9px;
+  border: 2px solid #18232b;
+  border-radius: 50%;
+  background: #c1ede0;
+}
+#launchDelayRange::-moz-range-track { height: 4px; border-radius: 4px; background: #53606a; }
+#launchDelayRange::-moz-range-progress { height: 4px; background: #9edcc9; }
+#launchDelayRange::-moz-range-thumb { width: 18px; height: 18px; border: 2px solid #18232b; border-radius: 50%; background: #c1ede0; }
+#launchForecast { margin: 0; color: #ffdaad; font: 12px/1.25 var(--mono); font-variant-numeric: tabular-nums; }
+#launchForecast[data-contact=true] { color: #b6ece0; }
+#play .dock-schedule {
+  position: absolute;
+  inset: 9px 9px auto auto;
+  z-index: 1;
+  margin: 0;
+  padding: 5px 8px;
+  border: 1px solid #80bea653;
+  border-radius: 7px;
+  background: #13231fed;
+  color: #c4eedf;
+  font: 11px/1.25 var(--sans);
+  font-variant-numeric: tabular-nums;
+  pointer-events: none;
+}
+.dock-schedule::before {
+  content: '';
+  display: inline-block;
+  width: 12px;
+  margin-inline-end: 6px;
+  border-top: 2px solid #9be3cb;
+  vertical-align: .24em;
+}
+#play .dock-schedule[data-windows="2"]:not([hidden]) {
+  display: grid;
+  gap: 3px;
+  border-color: #647380;
+  background: #151c24f0;
+}
+.dock-schedule[data-windows="2"]::before { content: none; }
+.dock-schedule.dock-speed-limit::before { content: none; }
+.dock-slot { color: #c4eedf; white-space: nowrap; }
+.dock-slot::before {
+  content: '';
+  display: inline-block;
+  width: 12px;
+  margin-inline-end: 6px;
+  border-top: 2px solid #9be3cb;
+  vertical-align: .24em;
+}
+.dock-slot[data-slot="1"] { color: #e7d6fa; }
+.dock-slot[data-slot="1"]::before { border-top: 2px dashed #dbc1fb; }
+.completion-route>.completion-window,.completion-route>.completion-approach { color: #b6ece0; letter-spacing: 0; }
+.completion-facts .completion-delay { margin: 4px 0 0; }
+@media (max-width: 999px) and (max-height: 700px) {
+  #play .dock-schedule[data-windows="2"] { inset-inline: 9px auto; }
+}
+@media (max-width: 999px) and (min-height: 701px) and (orientation: portrait) {
+  #play .dock-schedule[data-windows="2"] { inset-block: auto 9px; }
+}
+@media (max-width: 359px) and (min-height: 701px) and (orientation: portrait) {
+  #play .dock-schedule[data-windows="2"] { padding-inline: 5px; font-size: 10px; }
+  .dock-slot::before { width: 8px; margin-inline-end: 4px; }
+}
+@media (max-width: 699px) {
+  #play .launch-timing { grid-template-columns: auto minmax(0, 1fr); gap: 0 10px; padding: 0 10px 7px; }
+  #launchForecast { grid-column: 1/-1; }
+}
+@media (min-width:520px) and (max-width:999px) and (min-height:320px) and (max-height:480px) and (orientation:landscape) {
+  #play .flight-left:has(.launch-timing:not([hidden])) { position: relative; overflow: visible; }
+  #play .launch-timing {
+    position: absolute;
+    top: 0;
+    left: calc(100% + 10px);
+    width: 170px;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 0 8px;
+    padding: 0 8px 5px;
+  }
+  .launch-timing label { display: block; font-size: 11px; }
+  .launch-timing label b { display: block; font-size: 12px; }
+  #launchForecast { grid-column: 1/-1; font-size: 11px; }
 }
