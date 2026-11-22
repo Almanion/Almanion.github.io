@@ -1,5 +1,6 @@
 'use strict';
 const { test, expect } = require('@playwright/test');
+const { expectBlockActionTouchTargets } = require('./helpers/block-action-targets.cjs');
 test.use({ serviceWorkers: 'block' });
 test.beforeEach(async ({ page }) => {
     await page.route('**/*', route => new URL(route.request().url()).hostname === '127.0.0.1' ? route.continue() : route.abort());
@@ -145,11 +146,11 @@ test('small-screen filters scroll internally at 125% scale and native selection 
     const options = page.locator('.note-filter-options');
     expect(await options.evaluate(el => getComputedStyle(el).overflowY)).toBe('auto');
     expect(await options.evaluate(el => el.scrollHeight > el.clientHeight)).toBe(true);
-    const block = page.locator('.copyable-block').first();
+    await page.locator('.note-filter-done').click();
+    const block = page.locator('.topic.exp-reader-current .copyable-block').first();
     expect(await block.evaluate(el => getComputedStyle(el).userSelect)).toBe('text');
-    const buttons = await block.locator(':scope > button').evaluateAll(nodes => nodes.map(el => { const r = el.getBoundingClientRect(); return { width: r.width, height: r.height, left: r.left, right: r.right }; }));
-    for (const button of buttons) { expect(button.width).toBeGreaterThanOrEqual(44); expect(button.height).toBeGreaterThanOrEqual(44); }
-    const ordered = buttons.sort((a,b) => a.left-b.left);
-    for (let i=1;i<ordered.length;i++) expect(ordered[i].left).toBeGreaterThanOrEqual(ordered[i-1].right - 1);
+    const buttons = block.locator(':scope > :is(.copy-block-btn, .bookmark-btn, .personal-note-btn)');
+    await expect(buttons).toHaveCount(3);
+    await expectBlockActionTouchTargets(buttons);
     await context.close();
 });

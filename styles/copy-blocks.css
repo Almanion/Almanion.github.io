@@ -84,7 +84,7 @@ html body .main-content .copyable-block > :is(.copy-block-btn, .personal-note-bt
     min-height: 0;
     padding: 0;
     margin: var(--block-action-hit-padding);
-    border: 0;
+    border: 0 solid transparent;
     border-radius: 5px;
     background: transparent;
     color: var(--block-action-ink);

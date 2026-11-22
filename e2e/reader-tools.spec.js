@@ -1,4 +1,5 @@
 const { test, expect } = require('@playwright/test');
+const { expectBlockActionTouchTargets } = require('./helpers/block-action-targets.cjs');
 
 async function blockExternal(page) {
     await page.route('**/*', route => new URL(route.request().url()).hostname === '127.0.0.1' ? route.continue() : route.abort());
@@ -76,31 +77,22 @@ test.describe('properties block actions', () => {
         await expect(block.locator(':scope > .copy-block-btn')).toHaveCount(1);
         const buttons = block.locator(':scope > :is(.copy-block-btn, .bookmark-btn, .personal-note-btn)');
         await expect(buttons).toHaveCount(3);
-        await buttons.first().evaluate(el => el.scrollIntoView({ block: 'center', inline: 'nearest' }));
+        await expectBlockActionTouchTargets(buttons);
         const rects = await buttons.evaluateAll(nodes => nodes.map(el => {
-            const r = el.getBoundingClientRect(), button = getComputedStyle(el);
+            const button = getComputedStyle(el);
             const svg = el.querySelector('svg'), icon = svg.getBoundingClientRect(), style = getComputedStyle(svg);
-            const scale = r.width / parseFloat(button.width), cx = r.left + r.width / 2, cy = r.top + r.height / 2;
-            // All four corners, 1 CSS px inside the 44px target, must hit this button.
-            const hit = [-21, 21].every(dx => [-21, 21].every(dy => {
-                const target = document.elementFromPoint(cx + dx * scale, cy + dy * scale);
-                return target === el || el.contains(target);
-            }));
             return { width: button.width, height: button.height, radius: button.borderRadius,
-                left: cx - 22 * scale, right: cx + 22 * scale, hit,
                 iconWidth: parseFloat(style.width), iconHeight: parseFloat(style.height),
                 centerY: icon.top + icon.height / 2, stroke: style.strokeWidth, cap: style.strokeLinecap, join: style.strokeLinejoin };
         }));
         for (const r of rects) {
             expect(r.width).toBe('22px'); expect(r.height).toBe('22px'); expect(r.radius).toBe('5px');
-            expect(r.iconWidth).toBe(16); expect(r.iconHeight).toBe(16); expect(r.hit).toBe(true);
+            expect(r.iconWidth).toBe(16); expect(r.iconHeight).toBe(16);
             expect(r.iconWidth).toBeCloseTo(rects[0].iconWidth, 1);
             expect(r.iconHeight).toBeCloseTo(rects[0].iconHeight, 1);
             expect(r.centerY).toBeCloseTo(rects[0].centerY, 1);
             expect(r.stroke).toBe('1.8px'); expect(r.cap).toBe('round'); expect(r.join).toBe('round');
         }
-        rects.sort((a, b) => a.left - b.left);
-        for (let i = 1; i < rects.length; i++) expect(rects[i].left).toBeGreaterThanOrEqual(rects[i - 1].right - 1);
         await block.locator(':scope > .copy-block-btn').click();
         await expect(block.locator(':scope > .copy-block-btn')).toHaveClass(/is-copied/);
         expect(await block.locator(':scope > .copy-block-btn svg').evaluate(el => getComputedStyle(el).strokeWidth)).toBe('1.8px');

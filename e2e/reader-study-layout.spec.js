@@ -138,16 +138,29 @@ async function scrollToBottom(page, offset = 0) {
 
 test('the wheel reveals the next title, waits for another scroll and ignores momentum', async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 });
+    await page.clock.install();
     await page.goto('/physics-10.html#izoprotsessy-gazovye-zakony');
     const current = page.locator('article.exp-reader-current');
     const preview = page.locator('.reader-pull-preview');
     const nextTitle = await page.locator('.exp-reader-footer-next strong').innerText();
+    await page.evaluate(() => document.fonts.ready);
+    // Keep native wheel events in the same gesture even when trace capture delays input.
+    await page.clock.pauseAt(new Date(Date.now() + 2000));
     await scrollToBottom(page, 45);
     await page.mouse.move(850, 845);
-    for (let step = 0; step < 3; step++) await page.mouse.wheel(0, 120);
+    await page.mouse.wheel(0, 120);
+    await expect.poll(() => page.evaluate(() => {
+        const root = document.scrollingElement;
+        return root.scrollHeight - root.scrollTop - root.clientHeight;
+    })).toBeLessThanOrEqual(4);
+    for (let step = 0; step < 2; step++) {
+        await page.clock.runFor(16);
+        await page.mouse.wheel(0, 120);
+    }
     await expect(preview).toBeHidden();
     await expect(current).toHaveAttribute('id', 'izoprotsessy-gazovye-zakony');
 
+    await page.clock.resume();
     await scrollToBottom(page);
     await page.waitForTimeout(300); // A new wheel gesture, after the scroll that reached the bottom.
     await page.mouse.wheel(0, 120);
