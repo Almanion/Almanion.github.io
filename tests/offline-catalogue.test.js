@@ -15,6 +15,11 @@ if (process.env.ALMANION_TEST_SITE) {
     assert.deepEqual(packs.map(pack => pack.id), available.map(s => s.id));
     const page = fs.readFileSync(path.join(site, russian.page), 'utf8');
     const pack = packs.find(s => s.id === russian.id);
+    const literature = packs.find(s => s.id === 'literature-10');
+    const activity = '/literature/oblomov/';
+    assert.ok(literature.files.some(file => file.url === activity + 'index.html'));
+    assert.equal(literature.files.filter(file => file.url.startsWith(activity + 'audio/')).length, 36);
+    assert.ok(packs.every(other => other === literature || other.files.every(file => !file.url.startsWith(activity))));
     assert.equal(pack.files.some(file => file.source.includes('/vendor/katex/')), !page.includes('data-no-math'));
 }
 

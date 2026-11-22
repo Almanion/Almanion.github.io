@@ -40,6 +40,21 @@ assert.match(layout, /\.nav-link:hover/,
 assert.match(layout, /\.remark-box::before\s*\{[\s\S]*content:\s*['"]Замечание['"][\s\S]*color:\s*var\(--warning-color\)/);
 
 const svgProblems = [];
+// A fixed-size SVG wrapper can inherit its coordinates from a referenced symbol.
+function boundedSpriteUse(source, match) {
+    const after = source.slice(match.index + match[0].length, match.index + match[0].length + 160);
+    const use = /^\s*<use\s+(?:xlink:)?href=["']#([\w-]+)(\$\{\w+\})?["']\s*(?:\/>|>\s*<\/use>)\s*<\/svg>/i.exec(after);
+    if (!use) return false;
+    const symbols = [...source.matchAll(/<symbol\b[^>]*>/gi)].map(([tag]) => ({
+        id: tag.match(/\bid=["']([^"']+)["']/i)?.[1] || '',
+        sized: /\bviewBox=["'][^"']+["']/i.test(tag)
+    })).filter(symbol => use[2] ? symbol.id.startsWith(use[1]) : symbol.id === use[1]);
+    if (!symbols.length || !symbols.every(symbol => symbol.sized)) return false;
+    const classes = (match[0].match(/\bclass=["']([^"']+)["']/i)?.[1] || '').split(/\s+/);
+    return [...source.matchAll(/(?:^|})\s*\.([\w-]+)\s*\{([^{}]+)\}/gm)].some(([, name, rule]) =>
+        classes.includes(name) && /\bwidth:\s*[\d.]+(?:px|em|rem)\b/.test(rule) && /\bheight:\s*[\d.]+(?:px|em|rem)\b/.test(rule));
+}
+
 function inspectInlineSvg(directory) {
     fs.readdirSync(directory, { withFileTypes: true }).forEach(entry => {
         if (['.git', '_site', 'artifacts', 'node_modules', 'tests', 'vendor'].includes(entry.name)) return;
@@ -54,13 +69,13 @@ function inspectInlineSvg(directory) {
             const tag = match[0];
             const hiddenSprite = /width\s*=\s*["']0["']/.test(tag)
                 && /height\s*=\s*["']0["']/.test(tag);
-            if (!/viewBox\s*=/i.test(tag) && !hiddenSprite) {
+            if (!/viewBox\s*=/i.test(tag) && !hiddenSprite && !boundedSpriteUse(source, match)) {
                 svgProblems.push(path.relative(root, file) + ': ' + tag.slice(0, 100));
             }
         }
     });
 }
 inspectInlineSvg(root);
-assert.deepEqual(svgProblems, [], 'every visible inline SVG needs a viewBox for reliable scaling');
+assert.deepEqual(svgProblems, [], 'visible SVGs need their own viewBox or a bounded symbol reference');
 
 console.log('settings, cursor response and SVG sizing: all tests passed');

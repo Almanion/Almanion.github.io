@@ -48,6 +48,14 @@ function build({ root, site }) {
             }
         }
         add('/' + subject.page, subject.page);
+        if (subject.offlineDirectory) {
+            const directory = path.join(site, subject.offlineDirectory);
+            for (const entry of fs.readdirSync(directory, { recursive: true })) {
+                if (!fs.statSync(path.join(directory, entry)).isFile()) continue;
+                const relative = path.posix.join(subject.offlineDirectory, entry.replace(/\\/g, '/'));
+                add('/' + relative, relative);
+            }
+        }
         OPTIONAL.forEach(file => add('/' + file, file));
         if (/\bexperiment-box\b/.test(fs.readFileSync(path.join(site, subject.page), 'utf8'))) add('/experiment-notebook.js', 'experiment-notebook.js');
         ['index.html', 'offline.html', 'content/subjects.json', 'search-index.json', 'definition-index.json', 'selection-definitions.js', 'styles/selection-definitions.css', 'manifest.json'].forEach(file => add('/' + file, file));

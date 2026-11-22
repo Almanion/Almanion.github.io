@@ -99,6 +99,7 @@
     "games": [".html", ".txt", ".css", ".js", ".json", ".webp"],
     "geography": [".html"],
     "images": [".svg", ".png", ".jpg", ".jpeg", ".webp", ".avif", ".gif"],
+    "literature": [".html", ".mp3", ".webp", ".woff2"],
     "matcenter": [".js", ".json"],
     "presentation": [".html"],
     "styles": [".css"],

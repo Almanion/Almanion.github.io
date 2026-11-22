@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "sourceFormat": "html-fragment-v1",
+  "id": "byuro-nahodok-oblomova",
+  "subject": "literature-10",
+  "title": "Бюро находок Обломова",
+  "navHtml": "<li><a class=\"nav-link\" href=\"#byuro-nahodok-oblomova\">Бюро находок Обломова</a></li>",
+  "contentHtml": "<section class=\"content-section\">\n    <article id=\"byuro-nahodok-oblomova\" class=\"topic\">\n        <h3 class=\"topic-title\">Бюро находок Обломова</h3>\n        <div class=\"literature-entry\">\n            <p>Угадайте по подсказкам 12 вещей из романа И. А. Гончарова «Обломов». Игра для трёх команд.</p>\n            <a class=\"literature-play\" href=\"literature/oblomov/index.html\" target=\"_blank\" rel=\"noopener\" aria-label=\"Открыть игру в новой вкладке\">Открыть игру <span aria-hidden=\"true\">↗</span></a>\n        </div>\n    </article>\n</section>"
+}

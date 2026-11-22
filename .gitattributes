@@ -11,6 +11,9 @@
 presentation/index.html text eol=lf
 project-docs/almanion-defense/Almanion.html text eol=lf
 
+# Preserve the original activity, including the embedded font license text.
+literature/oblomov/index.html text eol=lf whitespace=-blank-at-eol
+
 # Signal Frontier source and public copy use the same bytes.
 /game-source/signal-frontier/** text eol=lf
 /games/signal-frontier/** text eol=lf
