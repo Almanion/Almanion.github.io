@@ -12,7 +12,7 @@
       content="Предел сигнала — тактическая операция на заброшенном кольце."
     />
     <title>Предел сигнала · Almanion</title>
-    <link rel="stylesheet" href="style.css?v=0.39.0" />
+    <link id="signal-style" rel="stylesheet" href="style.css?v=0.39.0" />
     <script src="terrain.js?v=0.39.0" defer></script>
     <script src="districts.js?v=0.39.0" defer></script>
     <script src="east.js?v=0.39.0" defer></script>
@@ -62,7 +62,7 @@
       </header>
       <div class="home-content">
         <h1 id="home-title">Предел <span>сигнала</span></h1>
-        <div class="home-actions">
+        <div id="home-actions" class="home-actions">
           <button id="continue" class="mission-action primary" hidden>
             <span class="mission-copy"><strong>Продолжить</strong><small id="continue-detail"></small></span>
             <span class="mission-arrow" aria-hidden="true">→</span>
@@ -88,6 +88,7 @@
           <button data-open="help">Управление</button>
           <button data-open="account">Аккаунт</button>
         </nav>
+        <p id="operation-loading" role="status" hidden></p>
       </div>
     </main>
     <div id="hud" hidden>

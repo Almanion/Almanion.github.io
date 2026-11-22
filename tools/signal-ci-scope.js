@@ -11,6 +11,7 @@ const presentation = new Set([
   "account-ui.js",
   "index.html",
   "style.css",
+  "console.css",
   "view.js",
   "babylon-view.js",
   "renderer-loader.js",

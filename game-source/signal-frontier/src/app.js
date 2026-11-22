@@ -264,7 +264,56 @@
     if(mode==="menu"&&view.preloadTerrain)
       view.preloadTerrain(E.map(saved?.status==="playing"?saved:{campaign:{id:defaultProfile}}).id);
   }
-  function begin(resume = false, profile = defaultProfile) {
+  let consoleStyles, consoleReady = false, launching = false;
+  function loadConsoleStyles() {
+    if (consoleStyles) return consoleStyles;
+    const base = new URL($("signal-style").href), url = new URL("console.css", base);
+    url.search = base.search;
+    const link = document.createElement("link");
+    link.id = "signal-console-style";
+    link.rel = "stylesheet";
+    link.href = url.href;
+    consoleStyles = new Promise((resolve, reject) => {
+      const cleanup = () => {
+        clearTimeout(timer);
+        link.onload = link.onerror = null;
+      };
+      const fail = () => {
+        cleanup();
+        link.remove();
+        consoleStyles = null;
+        reject(Error("Командная панель не загрузилась. Повтори запуск."));
+      };
+      const timer = setTimeout(fail, 15000);
+      link.onerror = fail;
+      link.onload = () => {
+        cleanup();
+        consoleReady = true;
+        resolve();
+      };
+      document.head.append(link);
+    });
+    return consoleStyles;
+  }
+  async function begin(resume = false, profile = defaultProfile) {
+    if (launching || storageConflict) return false;
+    if (!consoleReady) {
+      launching = true;
+      const status = $("operation-loading");
+      status.textContent = "Готовим командную панель…";
+      status.hidden = false;
+      sound.start();
+      try {
+        await loadConsoleStyles();
+      } catch (error) {
+        status.textContent = error.message;
+        return false;
+      } finally {
+        launching = false;
+      }
+      status.hidden = true;
+      if (storageConflict) return false;
+    }
     minimap.reset();
     if (!resume) {
       controlGroups.clear();
@@ -293,6 +342,7 @@
     sound.start();
     setMode(resume ? "playing" : "tactical");
     save();
+    return true;
   }
   function toggleTactical() {
     if (!["playing", "tactical"].includes(mode)) return;
@@ -1333,8 +1383,11 @@
     applySave: loadOperation,
     back: closeDialog,
   });
-  $("storage-load").onclick = () => {
+  $("storage-load").onclick = async (event) => {
+    const button = event.currentTarget;
+    button.disabled = true;
     try {
+      if (!consoleReady) await loadConsoleStyles();
       const raw = localStorage.getItem(KEY),
         data = JSON.parse(raw);
       if (!E.restore(data.save))
@@ -1348,6 +1401,8 @@
       closeDialog();
     } catch (e) {
       $("storage-message").textContent = e.message;
+    } finally {
+      button.disabled = false;
     }
   };
   $("storage-keep").onclick = () => {
@@ -1641,6 +1696,8 @@
       );
       buy(post ? "salvage" : "outpost", button.dataset.site);
     };
+  for (const type of ["pointerenter", "pointerdown", "focusin"])
+    $("home-actions").addEventListener(type, () => { loadConsoleStyles().catch(() => {}); });
   $("start").onclick = () => begin(false, "frontier-9");
   $("continue").onclick = () => begin(true);
   $("new-game").onclick = $("start").onclick;
@@ -2547,8 +2604,7 @@
   if (graphicsReturn) {
     history.replaceState(history.state, "", location.pathname + location.search);
     if (graphicsReturn[1] !== "menu" && saved?.status === "playing") {
-      begin(true);
-      if (graphicsReturn[1] === "tactical") setMode("tactical");
+      if (await begin(true) && graphicsReturn[1] === "tactical") setMode("tactical");
     }
     openDialog("settings", mode === "menu" ? $("home").querySelector('[data-open="settings"]') : $("menu-button"));
   }

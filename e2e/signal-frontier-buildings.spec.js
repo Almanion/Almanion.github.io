@@ -1,11 +1,9 @@
 const { test, expect, chromium, webkit } = require("@playwright/test");
-const rawStyles = require("node:fs").readFileSync(
-  require("node:path").join(
-    __dirname,
-    "../game-source/signal-frontier/src/style.css",
-  ),
-  "utf8",
-);
+const rawStyles = ["style.css", "console.css"].map((file) =>
+  require("node:fs").readFileSync(
+    require("node:path").join(__dirname, "../game-source/signal-frontier/src", file),
+    "utf8",
+  )).join("\n");
 const E = require("../game-source/signal-frontier/src/engine");
 function fixture(profile = "frontier-4") {
   const s = E.make(profile);
@@ -157,14 +155,14 @@ for (const browserType of [chromium, webkit])
                 );
               });
             const before = capture(),
-              link = document.querySelector('link[rel="stylesheet"]');
+              links = document.querySelectorAll("#signal-style, #signal-console-style");
             const style = document.createElement("style");
             style.textContent = raw;
             document.head.append(style);
-            link.disabled = true;
+            for (const link of links) link.disabled = true;
             const after = capture();
             style.remove();
-            link.disabled = false;
+            for (const link of links) link.disabled = false;
             return nodes.flatMap((el, i) =>
               before[i] === after[i] ? [] : [el.id || el.className],
             );

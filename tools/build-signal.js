@@ -7,6 +7,7 @@ const esbuild = require("esbuild");
 const files = [
   "index.html",
   "style.css",
+  "console.css",
   "terrain.js",
   "districts.js",
   "east.js",
@@ -67,7 +68,7 @@ function render(root = path.resolve(__dirname, "..")) {
           mangle: false,
           format: { comments: false },
         }).code + "\n";
-    else if (file === "style.css") {
+    else if (file.endsWith(".css")) {
       // Level 1 removes redundant syntax without reordering the cascade.
       const result = new CleanCSS({
         level: { 1: { optimizeBackground: false } },

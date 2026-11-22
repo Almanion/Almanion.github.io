@@ -79,6 +79,34 @@ test.describe("touch start screen", () => {
   });
 });
 
+test("starting an operation waits for the console stylesheet and can retry", async ({ page }) => {
+  let stopFirstRequest;
+  const held = new Promise((resolve) => { stopFirstRequest = resolve; });
+  let requests = 0;
+  await page.route("**/console.css*", async (route) => {
+    if (++requests === 1) {
+      await held;
+      await route.abort();
+    } else await route.continue();
+  });
+  await page.goto(route);
+  await expect(page.locator("#signal-console-style")).toHaveCount(0);
+  const start = page.locator("#start"), status = page.locator("#operation-loading");
+  try {
+    await start.click();
+    await expect(status).toContainText("Готовим командную панель");
+    expect(await mode(page)).toBe("menu");
+  } finally {
+    stopFirstRequest();
+  }
+  await expect(status).toContainText("Повтори запуск");
+  await expect(page.locator("#hud")).toBeHidden();
+  await start.click();
+  await expect(page.locator("#develop-barracks")).toBeVisible();
+  expect(await mode(page)).toBe("tactical");
+  expect(requests).toBe(2);
+});
+
 test("system tabs stay in place, restore focus and return to the same tactical panel", async ({ page }) => {
   await page.goto(route);
   const opener = page.locator('#home [data-open="settings"]');
