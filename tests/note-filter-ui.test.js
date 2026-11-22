@@ -18,8 +18,13 @@ assert.match(css, /\.note-filter-actions\s*\{[^}]*flex-shrink:\s*0/s, 'footer ac
 assert.match(css, /input:focus-visible/);
 assert.doesNotMatch(css, /:has\(\.note-filter\[open\]\)[^{}]*\.note-reader-controls/, 'opening must not resize the reading bar');
 assert.match(css, /:has\(\.note-filter\[open\]\) \.scroll-to-top\s*\{[^}]*visibility: hidden/, 'floating navigation must not cover popover actions');
-for (const file of ['note-runtime.js', 'print-export.js']) {
-    assert.ok(read(file).includes('note-filter.js?v=20261121-4'));
-    assert.ok(read(file).includes('styles/note-filter.css?v=20261121-4'));
+const runtime = read('note-runtime.js');
+const printExport = read('print-export.js');
+for (const asset of ['note-filter.js', 'styles/note-filter.css']) {
+    const versioned = runtime.match(/'([^']+\?v=\d{8}-\d+)'/g)
+        .map(value => value.slice(1, -1))
+        .find(value => value.startsWith(asset + '?'));
+    assert.ok(versioned, asset + ' must be versioned in the reader');
+    assert.ok(printExport.includes(versioned), asset + ' must use the same version in print');
 }
 console.log('block picker interface: all tests passed');

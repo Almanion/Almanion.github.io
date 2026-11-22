@@ -8,6 +8,7 @@ const { execFileSync } = require('child_process');
 const NotesBuilder = require('./build-notes.js');
 const SearchIndex = require('../performance/build-search-index.js');
 const DefinitionIndex = require('../performance/build-definition-index.js');
+const { readerScripts, compileReaderScript } = require('../performance/reader-scripts.js');
 const ServiceWorker = require('../performance/build-service-worker.js');
 const OfflineLibrary = require('./build-offline.js');
 const HomeStyles = require('./build-home-styles.js');
@@ -207,6 +208,10 @@ function build(options) {
         const normalized = normalizePublicText(file, content);
         if (normalized !== content) fs.writeFileSync(absolute, normalized);
     }
+    for (const file of readerScripts) {
+        const asset = path.join(output, file);
+        fs.writeFileSync(asset, compileReaderScript(fs.readFileSync(asset, 'utf8')));
+    }
     // Invalidate only the changed reading utilities. Existing service workers
     // may still hold earlier query-versioned copies during a deployment.
     const transitionStyle = fs.readFileSync(path.join(output, 'styles/page-transitions.css'), 'utf8');
@@ -242,7 +247,7 @@ function build(options) {
             .replace(/((?:src|href)=["'](?:(?:script|note-runtime|print-export)\.js|styles\/(?:copy-blocks|chemistry-10-notes|print)\.css))(?:\?[^"']*)?(["'])/g, '$1?v=20261121-4$2')
             .replace(/(src=["']experimental-reader\.js)(?:\?[^"']*)?(["'])/g, '$1?v=20261122-1$2')
             .replace(/(src=["']home-motion\.js)(?:\?[^"']*)?(["'])/g, '$1?v=20261122-2$2')
-            .replace(/(src=["'](?:note-runtime|script|english-ui)\.js)(?:\?[^"']*)?(["'])/g, '$1?v=20261122-3$2');
+            .replace(/(src=["'](?:note-runtime|script|english-ui|print-export)\.js)(?:\?[^"']*)?(["'])/g, '$1?v=20261122-3$2');
         let published = updated;
         // The browser decides whether to take a navigation snapshot before
         // deferred scripts run. Make the opt-in available with the first bytes of HTML.

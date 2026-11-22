@@ -41,7 +41,7 @@ const featuresCss = fs.readFileSync(path.join(root, 'styles', 'site', 'features.
 assert.match(runtime, /featureStyles:\s*'styles\/site\/features\.css\?v=20261121-1'/, 'feature layer must be cache-busted');
 assert.match(runtime, /bookmarksStyles:\s*'styles\/bookmarks\.css\?v=20260920-2'/, 'bookmarks must have a cache-busted deferred style layer');
 assert.match(runtime, /bookmarks:\s*loadBookmarks/, 'bookmarks must be independently available when account services are offline');
-assert.match(runtime, /knowledge:\s*function \(\) \{ return loadStyle\('featureStyles'\)\.then\(function \(\) \{ return loadScript\('knowledge'\); \}\); \}/, 'knowledge check must wait for its modal foundation');
+assert.match(runtime, /knowledge:\s*function \(\) \{\s*return Promise\.all\(\[loadStyle\('featureStyles'\), loadStyle\('knowledgeStyles'\)\]\)\.then\(\(\) => loadScript\('knowledge'\)\)/, 'study must wait for both the shared modal styles and its own styles');
 assert.match(featuresCss, /\.auth-overlay\.hidden\s*\{\s*display:\s*none\s*!important;/, 'closed deferred dialogs must stay outside note-page layout');
 assert.match(featuresCss, /\.auth-overlay\s*\{[\s\S]*?position:\s*fixed;/, 'deferred dialogs must open as overlays');
 

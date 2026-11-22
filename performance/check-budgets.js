@@ -3,6 +3,7 @@
 const fs = require('fs');
 const path = require('path');
 const childProcess = require('child_process');
+const { readerScripts, compileReaderScript } = require('./reader-scripts.js');
 
 function publishedBytes(file) {
     const bytes = fs.readFileSync(file);
@@ -71,7 +72,7 @@ function cssImports(source) {
     return imports;
 }
 
-function inspectRoute(root, page) {
+function inspectRoute(root, page, sizeOf = relative => publishedBytes(path.join(root, relative))) {
     const pagePath = path.join(root, page);
     const source = fs.readFileSync(pagePath, 'utf8');
     const assets = htmlAssets(source);
@@ -83,7 +84,7 @@ function inspectRoute(root, page) {
         const resolved = resolveLocalReference(root, page, reference);
         if (!resolved) return;
         if (!fs.existsSync(resolved.absolute)) missing.push(resolved.relative);
-        else scripts.set(resolved.relative, publishedBytes(resolved.absolute));
+        else scripts.set(resolved.relative, sizeOf(resolved.relative));
     });
 
     function visitStyle(from, reference) {
@@ -94,7 +95,7 @@ function inspectRoute(root, page) {
             return;
         }
         const content = fs.readFileSync(resolved.absolute, 'utf8');
-        styles.set(resolved.relative, publishedBytes(resolved.absolute));
+        styles.set(resolved.relative, sizeOf(resolved.relative));
         cssImports(content).forEach(function (child) { visitStyle(resolved.relative, child); });
     }
     assets.styles.forEach(function (reference) { visitStyle(page, reference); });
@@ -134,11 +135,25 @@ function countPrecacheEntries(source) {
     return (match[1].match(/^\s*['"]\//gm) || []).length;
 }
 
-function check(rootDir) {
+function check(rootDir, builtSite) {
     const root = path.resolve(rootDir || path.join(__dirname, '..'));
     const budgets = JSON.parse(fs.readFileSync(path.join(root, 'performance', 'budgets.json'), 'utf8'));
     const errors = [];
     const largest = {};
+    const sizes = new Map();
+
+    function sizeOf(relative) {
+        if (sizes.has(relative)) return sizes.get(relative);
+        const source = path.join(root, relative);
+        // Keep checking source files that the build copies as-is, and measure
+        // the actual deployable bytes for the reader's compiled scripts.
+        let bytes;
+        if (!readerScripts.has(relative)) bytes = publishedBytes(source);
+        else if (builtSite) bytes = fs.statSync(path.join(builtSite, relative)).size;
+        else bytes = Buffer.byteLength(compileReaderScript(fs.readFileSync(source, 'utf8')));
+        sizes.set(relative, bytes);
+        return bytes;
+    }
 
     trackedFiles(root).forEach(relativePath => {
         const extension = path.extname(relativePath).toLowerCase();
@@ -151,7 +166,7 @@ function check(rootDir) {
         if (!limit) return;
         const absolutePath = path.join(root, relativePath);
         if (!fs.existsSync(absolutePath) || !fs.statSync(absolutePath).isFile()) return;
-        const bytes = publishedBytes(absolutePath);
+        const bytes = sizeOf(normalizedPath);
         if (!largest[extension] || bytes > largest[extension].bytes) {
             largest[extension] = { path: normalizedPath, bytes };
         }
@@ -175,7 +190,7 @@ function check(rootDir) {
     }
 
     const routes = Object.keys(budgets.routes || {}).map(function (page) {
-        const route = inspectRoute(root, page);
+        const route = inspectRoute(root, page, sizeOf);
         checkRouteBudget(route, budgets.routes[page], errors);
         return route;
     });

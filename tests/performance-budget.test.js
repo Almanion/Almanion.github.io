@@ -2,7 +2,7 @@ const assert = require('assert');
 const path = require('path');
 const { check } = require('../performance/check-budgets');
 
-const result = check(path.join(__dirname, '..'));
+const result = check(path.join(__dirname, '..'), process.env.ALMANION_TEST_SITE);
 assert.deepStrictEqual(result.errors, [], result.errors.join('\n'));
 assert.ok(result.precacheEntries > 0, 'the service-worker shell must be measurable');
 assert.ok(result.searchSourceBytes > 0, 'the current search baseline must be measurable');
