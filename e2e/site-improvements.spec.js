@@ -11,7 +11,7 @@ test('study and export load on first intent; displayed formulas are study cards'
     expect(await page.evaluate(() => !!window.__kcFSRS || !!window.AlmanionPrintExport || !!window.AlmanionPdfDownload)).toBe(false);
     await page.locator('#knowledgeCheckBtn').click();
     await expect(page.locator('#kcSelectOverlay')).toBeVisible();
-    await page.getByRole('button', { name: 'Настроить', exact: true }).click();
+    await page.locator('#kcConfigure').click();
     const formulas = await page.evaluate(() => window.__kcFSRS.extractCards(Array.from(document.querySelectorAll('article.topic[id]')).map(node => node.id), ['formula']));
     expect(formulas.length).toBeGreaterThan(20);
     // Automatic extraction skips multiline derivations. An authored formula

@@ -1364,10 +1364,13 @@ function initExpBottomNav() {
         const hasKnowledgeCards = !!document.querySelector(
             '.definition-box, .formula-box, .derivation-box, .remark-box, .theorem-box, ' +
             '.lemma-box, .statement-box, .corollary-box, .properties-box, .proof-box, ' +
-            '.experiment-box, .example-box'
+            '.experiment-box, .example-box, .accent-word-card, article.topic table'
         );
         if (hasKnowledgeCards || document.getElementById('knowledgeCheckBtn')) {
-            items.push({ label: 'Учить', icon: ICONS.kc, act: function () { clickById('knowledgeCheckBtn'); } });
+            items.push({ label: 'Учить', icon: ICONS.kc, act: function (event) {
+                if (window.AlmanionNoteRuntime) window.AlmanionNoteRuntime.openLearning(event.currentTarget);
+                else clickById('knowledgeCheckBtn');
+            } });
         }
     }
     items.push({ label: 'Аккаунт', icon: ICONS.acc, act: function () { clickById('accountBtn'); } });
@@ -1381,6 +1384,7 @@ function initExpBottomNav() {
         b.type = 'button';
         b.className = 'exp-bn-item';
         b.setAttribute('aria-label', it.label);
+        if (it.label === 'Учить') b.setAttribute('aria-haspopup', 'dialog');
         if (it.act === toggleMenu || (it.act === openSearch && !isMatcenter)) {
             b.setAttribute('aria-controls', 'sidebar');
             b.setAttribute('aria-expanded', 'false');
@@ -1402,8 +1406,9 @@ document.addEventListener('DOMContentLoaded', initExpBottomNav);
     let loading;
     function open(event) {
         const source = event.target.closest?.(selector);
-        if (!source || !source.closest('.main-content, .kc-definition, .bm-card-content')) return;
-        if (event.type === 'keydown' && (source.localName !== 'svg' || !['Enter', ' '].includes(event.key))) return;
+        if (!source || !source.closest('.main-content, .kc-definition, .kc-prompt-media, .bm-card-content')) return;
+        if (event.type === 'keydown' && (!['Enter', ' '].includes(event.key) ||
+            (source.localName !== 'svg' && !source.closest('.kc-prompt-media')))) return;
         event.preventDefault();
         event.stopPropagation();
         if (window.AlmanionImageViewer) return window.AlmanionImageViewer.open(source);

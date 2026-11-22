@@ -268,6 +268,42 @@ html body .main-content [data-note-filter-shell]::after { display: none !importa
     .note-filter, .note-filter-empty, .note-reader-controls { display: none !important; }
 }
 
+.note-reader-learn { display: none; }
+@media screen and (769px <= width <= 1050px), screen and (769px <= width <= 1366px) and (pointer: coarse) {
+    body:not(.english-locked):has(.note-reader-learn) .sidebar #knowledgeCheckBtn { display: none; }
+    body:not(.english-locked) .note-reader-learn {
+        display: inline-flex;
+        min-height: max(36px, calc(44px / var(--note-scale, 1)));
+        align-items: center;
+        justify-content: center;
+        align-self: center;
+        gap: .42rem;
+        order: 1;
+        margin: .32rem .45rem;
+        padding: .35rem .65rem;
+        border: 1px solid var(--border-color);
+        border-radius: 9px;
+        color: var(--text-primary);
+        background: var(--bg-secondary);
+        font: inherit;
+        font-size: .875rem;
+        font-weight: 650;
+        cursor: pointer;
+    }
+    .note-reader-learn svg { width: 1rem; height: 1rem; flex-shrink: 0; color: var(--accent-color); }
+    .note-reader-learn:focus-visible { outline: 2px solid var(--accent-color); outline-offset: 2px; }
+    body.experimental.exp-reader-active .note-reader-controls:has(.note-reader-learn) {
+        grid-template-columns: minmax(0, 1fr) auto auto;
+    }
+    body:not(.exp-reader-active, .english-locked) .note-reader-controls:has(.note-reader-learn) {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: flex-end;
+    }
+    body:not(.exp-reader-active) .note-reader-controls .note-filter { flex: 1 1 auto; }
+}
+
 .tablet-reader-layout .sidebar > .nav-menu {
     flex: 1 1 auto;
     min-height: 0;

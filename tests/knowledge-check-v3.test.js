@@ -158,6 +158,7 @@ class FakeElement {
     matches(selector) {
         let simple = selector.trim();
         if (!simple) return false;
+        if (simple.includes(',')) return simple.split(',').some(value => this.matches(value));
         if (simple.includes('>')) simple = simple.split('>').pop().trim();
         if (simple.includes(' ')) simple = simple.split(/\s+/).pop();
         if (simple === '*') return true;
@@ -170,6 +171,20 @@ class FakeElement {
             return dataMatch[2] == null || String(this.attributes[attr]) === dataMatch[2];
         }
         return this.tagName === simple.toUpperCase();
+    }
+
+    closest(selector) {
+        for (let node = this; node; node = node.parentElement) {
+            if (node.matches(selector)) return node;
+        }
+        return null;
+    }
+
+    contains(target) {
+        for (let node = target; node; node = node.parentElement) {
+            if (node === this) return true;
+        }
+        return false;
     }
 
     querySelectorAll(selector) {

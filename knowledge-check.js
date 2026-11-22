@@ -445,8 +445,7 @@
                 : (isLikbezPage()
                     ? ['definition', 'theorem', 'lemma', 'statement', 'corollary']
                     : ['definition']),
-            subtitle: 'Повторение материалов прямо из конспекта',
-            empty: 'В выбранных разделах пока нет блоков выбранных типов.'
+            empty: 'В выбранных темах нет карточек этих типов.'
         };
     }
 
@@ -503,7 +502,9 @@
             CARD_TYPES.forEach(type => { counts[type.kind] = 0; });
             extractTopicCards(a.id).forEach(card => { counts[card.kind]++; });
             if (!Object.values(counts).some(Boolean)) return;
-            out.push({ id: a.id, name: t.textContent.trim(), counts: counts });
+            const section = a.closest('.content-section');
+            const group = section?.querySelector('.part-title')?.textContent.trim() || '';
+            out.push({ id: a.id, name: t.textContent.trim(), group, counts });
         });
         return out;
     }
@@ -619,6 +620,51 @@
             text: topicName + (index > 0 ? ' · ' + type.singular + ' ' + (index + 1) : ''),
             html: ''
         };
+    }
+
+    const PROMPT_CONTEXT_TYPES = new Set(['example', 'experiment', 'derivation', 'proof', 'formula']);
+    const PROMPT_CONTEXT_PARENT = '.example-box, .experiment-box';
+    const SETUP_PREFIX = /^(?:дано|условие|исходные данные|given)\s*[:—–]/i;
+
+    function promptContext(box, kind) {
+        if (!PROMPT_CONTEXT_TYPES.has(kind)) return null;
+        const parent = box.parentElement?.closest?.(PROMPT_CONTEXT_PARENT);
+        const example = box.matches?.(PROMPT_CONTEXT_PARENT) ? box : parent;
+        if (!example) return null;
+
+        const parts = [];
+        const setup = document.createElement('p');
+        for (const child of example.childNodes) {
+            if (child.nodeType === 3 && (setup.childNodes.length || SETUP_PREFIX.test(child.textContent.trim()))) {
+                setup.appendChild(child.cloneNode());
+                continue;
+            }
+            if (child.nodeType !== 1) continue;
+            if (setup.childNodes.length) {
+                if (child.matches('em, strong, code, span')) {
+                    setup.appendChild(child.cloneNode(true));
+                    continue;
+                }
+                parts.push(setup.outerHTML);
+                setup.textContent = '';
+            }
+            // The setup belongs before the solution. A sibling solution or its
+            // illustration can contain the very result this card asks for.
+            if (child.contains(box) || child.matches(CARD_SELECTOR)) break;
+            if (child.matches('[data-kc-ignore="true"]')) continue;
+            if (child.matches('img, figure:has(img), figure:has(svg[viewBox])')) {
+                const figure = child.cloneNode(true);
+                figure.removeAttribute('id');
+                figure.removeAttribute('data-note-filter-hidden');
+                figure.querySelectorAll('button, .personal-note-excerpt').forEach(el => el.remove());
+                parts.push(figure.outerHTML);
+            } else if (child.matches('p') && SETUP_PREFIX.test(child.textContent.trim())) {
+                parts.push('<p>' + tableCellHTML(child) + '</p>');
+            }
+        }
+        if (setup.childNodes.length) parts.push(setup.outerHTML);
+        const title = example === box ? '' : readableTerm(semanticStrong(example));
+        return title || parts.length ? { title, html: parts.join('') } : null;
     }
 
     function hashString(value) {
@@ -822,6 +868,7 @@
                     term: displayTerm,
                     termHTML: title.html || escapeHtml(displayTerm),
                     questionLead: type.kind === 'definition' ? '' : type.prompt,
+                    context: promptContext(box, type.kind),
                     backHTML: backHTML,
                     contentHash: hashString(normalizeTitle(box.textContent) + '|' + backHTML),
                     legacyIds: legacyCardIds(tid, type, box, i, typeBoxes.length, displayTerm, tname)
@@ -1029,6 +1076,13 @@
                 availableAt: Math.max(0, finite(item.availableAt, 0))
             })).filter(item => item.cardId)
         };
+        if (value.reviewPosition && value.reviewPosition.cardId === snapshot.queue[0]?.cardId) {
+            snapshot.reviewPosition = {
+                cardId: value.reviewPosition.cardId,
+                revealed: !!value.reviewPosition.revealed,
+                scrollTop: Math.max(0, finite(value.reviewPosition.scrollTop, 0))
+            };
+        }
         if (includeUndo) snapshot.undoStack = (Array.isArray(value.undoStack) ? value.undoStack : []).slice(-1).map(entry => cloneJSON(entry));
         return snapshot;
     }
@@ -1183,7 +1237,12 @@
 
     // ---------- Рендер математики ----------
     function renderMath(el) {
-        if (!el || typeof renderMathInElement === 'undefined') return;
+        if (!el) return;
+        if (window.AlmanionMath) {
+            window.AlmanionMath.render(el);
+            return;
+        }
+        if (typeof renderMathInElement === 'undefined') return;
         try {
             renderMathInElement(el, {
                 delimiters: [
@@ -1194,6 +1253,56 @@
                 throwOnError: false, trust: true
             });
         } catch (_) {}
+    }
+
+    function initMathScrolling(content) {
+        let frame = 0;
+        function update() {
+            frame = 0;
+            content.querySelectorAll('.katex').forEach(math => {
+                const display = math.parentElement.closest('.katex-display');
+                if (display || !math.getClientRects().length) return;
+                const line = math.closest('p, li, dd, figcaption, .kc-definition, .kc-question, .kc-prompt-media');
+                if (!line) return;
+                const style = getComputedStyle(line);
+                const available = line.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight);
+                const wide = Array.from(math.querySelectorAll('.base')).some(base => base.getBoundingClientRect().width > available + 1);
+                math.classList.toggle('kc-math-inline', wide);
+            });
+            content.querySelectorAll('.katex-display, .kc-math-inline, [data-kc-scrollable]').forEach(line => {
+                // Ignore hidden answers, then remeasure on their first render.
+                const mathLine = line.matches('.katex-display, .kc-math-inline');
+                if (mathLine && !line.clientWidth) return;
+                const scrollable = mathLine && line.scrollWidth > line.clientWidth + 1;
+                line.toggleAttribute('data-kc-scrollable', scrollable);
+                const hint = line.nextElementSibling?.classList.contains('kc-math-hint') ? line.nextElementSibling : null;
+                if (scrollable) {
+                    line.tabIndex = 0;
+                    line.setAttribute('role', 'region');
+                    if (!line.hasAttribute('aria-label')) line.setAttribute('aria-label', 'Формула с горизонтальной прокруткой');
+                    if (!hint) {
+                        const label = document.createElement('span');
+                        label.className = 'kc-math-hint';
+                        label.setAttribute('aria-hidden', 'true');
+                        label.textContent = 'Прокрутите формулу вбок';
+                        line.after(label);
+                    }
+                } else if (hint) {
+                    line.removeAttribute('tabindex');
+                    line.removeAttribute('role');
+                    line.removeAttribute('aria-label');
+                    hint.remove();
+                }
+            });
+        }
+        function measure() {
+            if (!frame) frame = requestAnimationFrame(update);
+        }
+        new MutationObserver(measure).observe(content, {
+            childList: true, subtree: true, attributes: true, attributeFilter: ['hidden', 'open']
+        });
+        if (window.ResizeObserver) new ResizeObserver(measure).observe(content);
+        document.fonts?.addEventListener('loadingdone', measure);
     }
 
     // ---------- Форматирование интервала ----------
@@ -1221,7 +1330,6 @@
     //  DOM: кнопка + модальные окна
     // ============================================
     function buildUI() {
-        const profile = studyProfile();
         // Убираем старую инлайн-разметку (если осталась на странице)
         ['topicSelectionOverlay', 'knowledgeCheckOverlay', 'newFeatureOverlay'].forEach(id => {
             const el = document.getElementById(id);
@@ -1240,7 +1348,7 @@
                 container.appendChild(btn);
             }
         }
-        if (btn) btn.addEventListener('click', openSelect);
+        if (btn && !btn.hasAttribute('data-learn-launcher')) btn.addEventListener('click', event => openSelect(event.currentTarget));
 
         // Оверлеи
         const select = document.createElement('div');
@@ -1250,43 +1358,56 @@
         select.innerHTML =
             '<div class="auth-modal kc-modal" id="kcSelectModal" role="dialog" aria-modal="true" aria-labelledby="kcSelectTitle" tabindex="-1">' +
                 '<button class="kc-close" id="kcSelectClose" aria-label="Закрыть">' + IC.close + '</button>' +
-                '<div class="kc-head"><span class="kc-head-icon">' + IC.brain + '</span>' +
-                    '<div class="kc-head-text"><h2 class="kc-title" id="kcSelectTitle">Учить</h2>' +
-                    '<p class="kc-subtitle">' + escapeHtml(profile.subtitle) + '</p></div></div>' +
+                '<div class="kc-head"><h2 class="kc-title" id="kcSelectTitle">Учить</h2></div>' +
                 '<div class="kc-select-scroll">' +
-                '<div class="kc-session-resume" id="kcSessionResume" hidden></div>' +
-                '<div class="kc-paragraph-choice" id="kcQuickChoice" hidden><strong id="kcQuickTopic"></strong>' +
-                    '<button type="button" class="kc-btn kc-btn-primary" id="kcQuickStart">Учить этот параграф</button>' +
-                    '<button type="button" class="kc-btn kc-btn-ghost" id="kcConfigure" aria-controls="kcCustomOptions" aria-expanded="false">Настроить</button></div>' +
+                '<div id="kcSelectChoices">' +
+                '<div id="kcQuickOptions">' +
+                    '<div class="kc-session-resume" id="kcSessionResume" hidden></div>' +
+                    '<div class="kc-paragraph-choice" id="kcQuickChoice" hidden><strong id="kcQuickTopic"></strong>' +
+                        '<button type="button" class="kc-btn kc-btn-primary" id="kcQuickStart"><span>Этот параграф</span><small id="kcQuickCount"></small></button></div>' +
+                '</div>' +
+                '<button type="button" class="kc-btn kc-btn-ghost kc-configure" id="kcConfigure" aria-controls="kcCustomOptions" aria-expanded="false">Выбрать темы</button>' +
                 '<div id="kcCustomOptions">' +
                 '<div class="kc-study-sections" id="kcStudySections" role="group" aria-label="Вид заданий" hidden>' +
                     '<button type="button" class="kc-size-option" data-section="blocks" aria-pressed="true">Блоки</button>' +
                     '<button type="button" class="kc-size-option" data-section="tables" aria-pressed="false">Таблицы</button>' +
                 '</div>' +
-                '<p class="kc-subtitle kc-table-intro" id="kcTableIntro" hidden>По названию вспомните остальные ячейки строки, затем откройте ответ и оцените себя.</p>' +
-                '<section class="kc-filter-section" aria-labelledby="kcTypesHeading">' +
-                    '<div class="kc-filter-heading-row"><h3 class="kc-filter-heading" id="kcTypesHeading">Что повторять</h3>' +
-                    '<p class="kc-filter-hint">Можно выбрать несколько типов</p></div>' +
+                '<details class="kc-filter-section kc-study-disclosure" id="kcTypeOptions">' +
+                    '<summary id="kcTypesHeading"><span>Типы карточек</span><small id="kcTypesSelected"></small></summary>' +
                     '<div class="kc-type-list" id="kcTypeList"></div>' +
-                '</section>' +
+                '</details>' +
                 '<section class="kc-filter-section" aria-labelledby="kcTopicsHeading">' +
-                    '<div class="kc-filter-heading-row"><h3 class="kc-filter-heading" id="kcTopicsHeading">Разделы</h3></div>' +
+                    '<div class="kc-filter-heading-row"><div><h3 class="kc-filter-heading" id="kcTopicsHeading">Темы</h3>' +
+                        '<small class="kc-selected-topics" id="kcTopicCount" aria-live="polite"></small></div>' +
+                        '<button type="button" class="kc-btn kc-btn-ghost" id="kcSelectAll">Снять выбор</button></div>' +
+                    '<label class="kc-topic-search">' +
+                        '<span class="kc-visually-hidden">Поиск тем</span>' +
+                        '<input type="search" id="kcTopicSearch" placeholder="Найти тему" autocomplete="off"></label>' +
                     '<div class="kc-deck-list" id="kcDeckList"></div>' +
+                    '<p class="kc-no-topics" id="kcNoTopics" role="status" hidden>Темы не найдены</p>' +
                 '</section>' +
                 '<div class="kc-session-options">' +
-                    '<fieldset class="kc-session-size"><legend class="kc-session-size-label">Размер текущей сессии</legend>' +
+                    '<fieldset class="kc-session-size"><legend class="kc-session-size-label">Карточек за занятие</legend>' +
                     '<div class="kc-size-list" id="kcSizeList">' +
                         '<button type="button" class="kc-size-option" data-limit="15" aria-pressed="false"><span class="kc-size-name">Короткая</span><span class="kc-size-meta">до 15 карточек</span></button>' +
                         '<button type="button" class="kc-size-option" data-limit="30" aria-pressed="false"><span class="kc-size-name">Обычная</span><span class="kc-size-meta">до 30 карточек</span></button>' +
                         '<button type="button" class="kc-size-option" data-limit="all" aria-pressed="true"><span class="kc-size-name">Все</span><span class="kc-size-meta">без ограничения</span></button>' +
                     '</div></fieldset>' +
                 '</div>' +
-                '<div class="kc-recommendation" id="kcRecommendation" aria-live="polite"></div>' +
                 '<div class="kc-session-notice kc-session-notice-error" id="kcSelectNotice" hidden aria-live="polite"></div>' +
                 '</div>' +
                 '</div>' +
+                '<section id="kcStartConfirmation" class="kc-start-confirmation" aria-labelledby="kcConfirmTitle" hidden>' +
+                    '<h3 id="kcConfirmTitle" tabindex="-1">Начать новое занятие?</h3>' +
+                    '<p>Текущее занятие завершится. Уже выставленные оценки учитываются при следующих повторениях.</p>' +
+                    '<div class="kc-actions">' +
+                        '<button type="button" class="kc-btn kc-btn-ghost" id="kcCancelStart">Отмена</button>' +
+                        '<button type="button" class="kc-btn kc-btn-primary" id="kcConfirmStart">Начать</button>' +
+                    '</div>' +
+                '</section>' +
+                '</div>' +
                 '<div class="kc-actions">' +
-                    '<button class="kc-btn kc-btn-ghost" id="kcSelectAll">Выбрать всё</button>' +
+                    '<div class="kc-selection-status" id="kcRecommendation" role="status" hidden></div>' +
                     '<button class="kc-btn kc-btn-primary" id="kcStart">' + IC.play + 'Учить<span class="kc-count-badge" id="kcStartCount">0</span></button>' +
                 '</div>' +
             '</div>';
@@ -1299,40 +1420,66 @@
         review.innerHTML =
             '<div class="auth-modal kc-modal kc-modal-game" id="kcReviewModal" role="dialog" aria-modal="true" aria-label="Сессия обучения" tabindex="-1">' +
                 '<div class="kc-game-bar">' +
-                    '<div class="kc-counts" id="kcCounts"></div>' +
+                    '<details class="kc-progress-summary kc-study-disclosure" id="kcProgressDetails">' +
+                        '<summary><span class="kc-progress-copy" id="kcProgressCopy"></span></summary>' +
+                        '<div class="kc-progress-panel">' +
+                            '<dl class="kc-progress-counts" id="kcCounts"></dl>' +
+                            '<p class="kc-progress-detail" id="kcProgressDetail"></p>' +
+                            '<details class="kc-grade-guide" id="kcGradeGuide" hidden><summary class="kc-grade-guide-title">Как выбрать оценку</summary>' +
+                                '<div class="kc-grade-guide-list">' +
+                                    '<div class="kc-grade-guide-item kc-grade-guide-again"><span><span class="kc-grade-guide-label">Снова</span><span> — не вспомнил.</span></span></div>' +
+                                    '<div class="kc-grade-guide-item kc-grade-guide-hard"><span><span class="kc-grade-guide-label">Трудно</span><span> — вспомнил с усилием.</span></span></div>' +
+                                    '<div class="kc-grade-guide-item kc-grade-guide-good"><span><span class="kc-grade-guide-label">Хорошо</span><span> — ответил без подсказки.</span></span></div>' +
+                                    '<div class="kc-grade-guide-item kc-grade-guide-easy"><span><span class="kc-grade-guide-label">Легко</span><span> — вспомнил сразу.</span></span></div>' +
+                                '</div></details>' +
+                        '</div>' +
+                    '</details>' +
                     '<div class="kc-game-actions">' +
                         '<button class="kc-icon-btn" id="kcUndoBtn" type="button" aria-label="Отменить последнюю оценку" title="Отменить последнюю оценку" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9 14 4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-2"/></svg></button>' +
                         '<button class="kc-pause-btn" id="kcPauseBtn" type="button" aria-label="Поставить сессию на паузу" title="Пауза"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9 5v14M15 5v14"/></svg></button>' +
                         '<button class="kc-close" id="kcReviewClose" aria-label="Закрыть">' + IC.close + '</button>' +
                     '</div>' +
                 '</div>' +
-                '<div class="kc-progress-summary"><span class="kc-progress-copy" id="kcProgressCopy"></span><span class="kc-progress-detail" id="kcProgressDetail"></span></div>' +
-                '<div class="kc-progress-track" aria-hidden="true"><div class="kc-progress-fill" id="kcProgressFill"></div></div>' +
+                '<div class="kc-progress-track" id="kcProgress" role="progressbar" aria-label="Прогресс занятия" aria-valuemin="0" aria-valuemax="100"><div class="kc-progress-fill" id="kcProgressFill"></div></div>' +
                 '<div class="kc-session-notice kc-session-notice-error" id="kcReviewNotice" hidden aria-live="polite"></div>' +
                 '<div class="kc-content" id="kcContent"></div>' +
-                '<details class="kc-grade-guide" id="kcGradeGuide" hidden><summary class="kc-grade-guide-title">Как выбрать оценку</summary>' +
-                    '<div class="kc-grade-guide-list">' +
-                        '<div class="kc-grade-guide-item kc-grade-guide-again"><span><span class="kc-grade-guide-label">Снова</span> — не вспомнил; нужно два уверенных ответа.</span></div>' +
-                        '<div class="kc-grade-guide-item kc-grade-guide-hard"><span><span class="kc-grade-guide-label">Трудно</span> — вспомнил с большим усилием; нужна ещё одна проверка.</span></div>' +
-                        '<div class="kc-grade-guide-item kc-grade-guide-good"><span><span class="kc-grade-guide-label">Хорошо</span> — ответил верно без подсказки.</span></div>' +
-                        '<div class="kc-grade-guide-item kc-grade-guide-easy"><span><span class="kc-grade-guide-label">Легко</span> — полный ответ возник сразу.</span></div>' +
-                    '</div></details>' +
-                '<div class="kc-grade-row" id="kcGrades" hidden></div>' +
+                '<div class="kc-review-actions">' +
+                    '<button type="button" class="kc-btn kc-btn-primary" id="kcFront" aria-controls="kcBack" hidden>' + IC.eye + '<span>Показать ответ</span></button>' +
+                    '<div class="kc-grade-row" id="kcGrades" role="group" aria-label="Оценить ответ" hidden></div>' +
+                '</div>' +
             '</div>';
         document.body.appendChild(review);
 
+        const returnButton = document.createElement('button');
+        returnButton.type = 'button';
+        returnButton.className = 'kc-return kc-btn kc-btn-primary';
+        returnButton.id = 'kcReturnToCard';
+        returnButton.textContent = 'Вернуться к карточке';
+        returnButton.dataset.printExclude = 'true';
+        returnButton.hidden = true;
+        returnButton.addEventListener('click', () => resumeSavedSession(returnButton));
+        document.body.appendChild(returnButton);
+
         // Закрытие
-        document.getElementById('kcSelectClose').addEventListener('click', () => hide('kcSelectOverlay'));
+        document.getElementById('kcSelectClose').addEventListener('click', closeSelect);
         document.getElementById('kcReviewClose').addEventListener('click', closeReview);
         document.getElementById('kcPauseBtn').addEventListener('click', pauseSession);
         document.getElementById('kcUndoBtn').addEventListener('click', undoLastGrade);
-        select.addEventListener('click', e => { if (e.target === select) hide('kcSelectOverlay'); });
+        select.addEventListener('click', e => { if (e.target === select) closeSelect(); });
         review.addEventListener('click', e => { if (e.target === review) closeReview(); });
+        review.addEventListener('click', event => {
+            const details = document.getElementById('kcProgressDetails');
+            if (details.open && !details.contains(event.target)) details.open = false;
+        });
 
+        document.getElementById('kcFront').addEventListener('click', () => reveal());
         document.getElementById('kcSelectAll').addEventListener('click', toggleSelectAll);
-        document.getElementById('kcStart').addEventListener('click', () => startSession(selected, selectedKinds, sessionLimit));
+        document.getElementById('kcTopicSearch').addEventListener('input', renderDeckList);
+        document.getElementById('kcStart').addEventListener('click', event => requestStart(selected, selectedKinds, sessionLimit, event.currentTarget));
+        document.getElementById('kcCancelStart').addEventListener('click', cancelStart);
+        document.getElementById('kcConfirmStart').addEventListener('click', confirmStart);
         document.getElementById('kcQuickStart').addEventListener('click', () => {
-            if (quickChoice) startSession(quickChoice.ids, quickChoice.kinds, 'all');
+            if (quickChoice) requestStart(quickChoice.ids, quickChoice.kinds, 'all', document.getElementById('kcQuickStart'));
         });
         document.getElementById('kcConfigure').addEventListener('click', () => {
             setCustomOptions(document.getElementById('kcCustomOptions').hidden);
@@ -1342,9 +1489,7 @@
                 if (studySection === button.dataset.section) return;
                 savePreferences();
                 studySection = button.dataset.section;
-                const saved = sectionPreferences[studySection] || {};
-                selected = Array.isArray(saved.topics) ? saved.topics.filter(id => sectionTopics().some(t => t.id === id)) : sectionTopics().map(t => t.id);
-                selectedKinds = studySection === 'tables' ? ['table'] : (Array.isArray(saved.kinds) ? saved.kinds.filter(k => k !== 'table') : studyProfile().defaultKinds.slice());
+                applySectionPreferences(sectionPreferences[studySection]);
                 renderStudySection();
                 renderTypeFilters();
                 renderDeckList();
@@ -1360,9 +1505,9 @@
             });
         });
 
-        initSwipe('kcSelectOverlay', 'kcSelectModal', () => hide('kcSelectOverlay'));
-        initSwipe('kcReviewOverlay', 'kcReviewModal', closeReview);
+        initSwipe('kcSelectOverlay', 'kcSelectModal', closeSelect);
         initDialogAccessibility(select, review);
+        initMathScrolling(document.getElementById('kcContent'));
     }
 
     function restoreDialogBackground() {
@@ -1388,11 +1533,13 @@
             if (overlay) overlay.setAttribute('aria-hidden', overlay === visible ? 'false' : 'true');
         });
         if (!visible) {
+            document.body.classList.remove('kc-dialog-open');
             if (lastDialogOpener && lastDialogOpener.isConnected && typeof lastDialogOpener.focus === 'function') {
                 lastDialogOpener.focus({ preventScroll: true });
             }
             return;
         }
+        document.body.classList.add('kc-dialog-open');
         Array.from(document.body.children).forEach(function (element) {
             if (element === visible || element.tagName === 'SCRIPT' || element.tagName === 'STYLE') return;
             dialogInerted.push({
@@ -1411,19 +1558,27 @@
         observer.observe(review, { attributes: true, attributeFilter: ['class'] });
         document.addEventListener('keydown', function (event) {
             const overlay = visibleDialogOverlay();
-            if (!overlay) return;
+            if (!overlay || event.defaultPrevented || document.body.classList.contains('lightbox-open')) return;
             if (event.key === 'Escape') {
                 event.preventDefault();
-                if (overlay.id === 'kcReviewOverlay') closeReview();
-                else hide('kcSelectOverlay');
+                if (pendingStart) cancelStart();
+                else if (overlay.id === 'kcSelectOverlay') closeSelect();
+                else if (document.getElementById('kcProgressDetails').open) {
+                    const progress = document.getElementById('kcProgressDetails');
+                    progress.open = false;
+                    progress.querySelector('summary').focus();
+                } else closeReview();
                 return;
             }
             if (event.key !== 'Tab') return;
             const modal = overlay.querySelector('[role="dialog"]');
             if (!modal) return;
             const focusable = Array.from(modal.querySelectorAll(
-                'button:not([disabled]), a[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
-            )).filter(function (element) { return element.offsetParent !== null; });
+                'button:not([disabled]), a[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), summary, [tabindex]:not([tabindex="-1"])'
+            )).filter(function (element) {
+                const closed = element.closest('details:not([open])');
+                return element.getClientRects().length && (!closed || closed.firstElementChild === element);
+            });
             if (!focusable.length) {
                 event.preventDefault();
                 modal.focus();
@@ -1441,9 +1596,9 @@
         });
     }
 
-    function hide(id) {
-        document.getElementById(id)?.classList.add('hidden');
-        if (lastDialogOpener && typeof lastDialogOpener.focus === 'function') lastDialogOpener.focus();
+    function closeSelect() {
+        pendingStart = null;
+        document.getElementById('kcSelectOverlay').classList.add('hidden');
     }
 
     // ============================================
@@ -1455,6 +1610,9 @@
     let studySection = 'blocks';
     let sectionPreferences = {};
     let quickChoice = null;
+    let pendingStart = null;
+    let resumeAvailable = false;
+    const expandedTopicGroups = new Map();
 
     function currentParagraphChoice() {
         const current = document.querySelector('.topic.exp-reader-current')
@@ -1470,10 +1628,13 @@
 
     function setCustomOptions(open) {
         document.getElementById('kcCustomOptions').hidden = !open;
+        document.getElementById('kcQuickOptions').hidden = open;
         document.querySelector('#kcSelectModal > .kc-actions').hidden = !open;
         const toggle = document.getElementById('kcConfigure');
+        toggle.hidden = !quickChoice && !resumeAvailable;
         toggle.setAttribute('aria-expanded', String(open));
-        toggle.textContent = open ? 'Свернуть настройки' : 'Настроить';
+        toggle.textContent = open ? 'Назад' : 'Выбрать темы';
+        document.querySelector('#kcSelectModal .kc-select-scroll').scrollTop = 0;
         if (open) {
             renderTypeFilters();
             renderDeckList();
@@ -1494,9 +1655,8 @@
             button.setAttribute('aria-pressed', String(active));
             button.classList.toggle('is-selected', active);
         });
-        document.getElementById('kcTypesHeading').closest('section').hidden = tables;
-        document.getElementById('kcTableIntro').hidden = !tables;
-        document.getElementById('kcTopicsHeading').textContent = tables ? 'Темы с таблицами' : 'Разделы';
+        document.getElementById('kcTypeOptions').hidden = tables;
+        document.getElementById('kcTopicsHeading').textContent = tables ? 'Темы с таблицами' : 'Темы';
         document.querySelectorAll('#kcSizeList [data-limit]').forEach(button => {
             if (button.dataset.limit !== 'all') button.querySelector('.kc-size-meta').textContent = 'до ' + button.dataset.limit + (tables ? ' строк' : ' карточек');
         });
@@ -1506,13 +1666,13 @@
         try {
             const value = JSON.parse(kcGet(PREFS_KEY) || '{}') || {};
             return {
-                topics: Array.isArray(value.topics) ? value.topics : [],
-                kinds: Array.isArray(value.kinds) ? value.kinds : [],
+                topics: Array.isArray(value.topics) ? value.topics : null,
+                kinds: Array.isArray(value.kinds) ? value.kinds : null,
                 section: value.section === 'tables' ? 'tables' : 'blocks',
                 sections: value.sections && typeof value.sections === 'object' ? value.sections : {},
                 limit: value.limit === 'all' ? 'all' : ([15, 30].includes(Number(value.limit)) ? Number(value.limit) : 'all')
             };
-        } catch (_) { return { topics: [], kinds: [], limit: 'all', section: 'blocks', sections: {} }; }
+        } catch (_) { return { topics: null, kinds: null, limit: 'all', section: 'blocks', sections: {} }; }
     }
 
     function savePreferences() {
@@ -1524,43 +1684,54 @@
         return extractCards(TOPICS.map(topic => topic.id));
     }
 
-    function availableKinds() {
+    function countKinds(topics) {
         const counts = Object.create(null);
         CARD_TYPES.forEach(type => { counts[type.kind] = 0; });
-        TOPICS.filter(topic => selected.includes(topic.id)).forEach(topic => {
+        topics.forEach(topic => {
             CARD_TYPES.forEach(type => { counts[type.kind] += Number(topic.counts[type.kind] || 0); });
         });
         return counts;
     }
 
-    function openSelect() {
+    function applySectionPreferences(saved) {
+        const topics = sectionTopics();
+        selected = Array.isArray(saved?.topics)
+            ? saved.topics.filter(id => topics.some(topic => topic.id === id))
+            : topics.map(topic => topic.id);
+        if (studySection === 'tables') {
+            selectedKinds = ['table'];
+            return;
+        }
+        const counts = countKinds(topics);
+        const available = CARD_TYPES.filter(type => type.kind !== 'table' && counts[type.kind] > 0).map(type => type.kind);
+        const preferred = Array.isArray(saved?.kinds) ? saved.kinds : studyProfile().defaultKinds;
+        selectedKinds = preferred.filter(kind => available.includes(kind));
+        if (preferred.length && !selectedKinds.length) selectedKinds = available;
+    }
+
+    function openSelect(opener) {
+        if (!uiInitialized) return false;
+        if (opener) lastDialogOpener = opener;
         cardCache = new Map();
         TOPICS = discoverTopics();
         if (!session) store = loadStore();
         const prefs = loadPreferences();
         sectionPreferences = prefs.sections;
         studySection = prefs.section === 'tables' && TOPICS.some(t => t.counts.table) ? 'tables' : 'blocks';
-        if (!selected.length) selected = prefs.topics;
-        selected = selected.filter(id => sectionTopics().some(topic => topic.id === id));
-        if (selected.length === 0) selected = sectionTopics().map(t => t.id);
-        if (!selectedKinds.length) selectedKinds = prefs.kinds;
+        applySectionPreferences(sectionPreferences[studySection] || (studySection === prefs.section ? prefs : null));
         sessionLimit = prefs.limit;
-        const kindCounts = availableKinds();
-        selectedKinds = selectedKinds.filter(kind => kind !== 'table' && CARD_TYPES.some(type => type.kind === kind) && kindCounts[kind] > 0);
-        if (studySection === 'tables') selectedKinds = ['table'];
-        if (selectedKinds.length === 0) {
-            selectedKinds = studyProfile().defaultKinds.filter(kind => kindCounts[kind] > 0);
-            if (!selectedKinds.length) selectedKinds = CARD_TYPES.filter(type => type.kind !== 'table' && kindCounts[type.kind] > 0).map(type => type.kind);
-        }
+        pendingStart = null;
+        document.getElementById('kcSelectChoices').hidden = false;
+        document.getElementById('kcStartConfirmation').hidden = true;
+        document.getElementById('kcSelectNotice').hidden = true;
+        document.getElementById('kcTopicSearch').value = '';
+        document.getElementById('kcTypeOptions').open = false;
         renderStudySection();
-        renderResumeBanner();
         quickChoice = currentParagraphChoice();
-        document.getElementById('kcQuickChoice').hidden = !quickChoice;
-        document.getElementById('kcQuickTopic').textContent = quickChoice?.name || '';
-        setCustomOptions(!quickChoice);
+        renderResumeBanner();
+        setCustomOptions(!quickChoice && !resumeAvailable);
         savePreferences();
         if (storeDirty) { saveStore(); storeDirty = false; }
-        lastDialogOpener = document.activeElement;
         document.getElementById('kcSelectOverlay').classList.remove('hidden');
         setTimeout(() => document.getElementById('kcSelectModal')?.focus(), 0);
     }
@@ -1568,19 +1739,22 @@
     function renderTypeFilters() {
         const list = document.getElementById('kcTypeList');
         if (!list) return;
-        const counts = availableKinds();
-        list.innerHTML = '';
+        const topics = sectionTopics();
+        const counts = countKinds(topics.filter(topic => selected.includes(topic.id)));
+        const available = countKinds(topics);
+        const active = CARD_TYPES.filter(type => selectedKinds.includes(type.kind));
+        document.getElementById('kcTypesSelected').textContent = active.length === 1 ? active[0].label :
+            active.length ? 'Выбрано ' + active.length : 'Выберите типы';
+        list.replaceChildren();
         CARD_TYPES.forEach(type => {
-            if (type.kind === 'table') return;
+            if (type.kind === 'table' || !available[type.kind]) return;
             const count = counts[type.kind] || 0;
-            if (!count) return;
             const button = document.createElement('button');
             button.type = 'button';
-            button.className = 'kc-type-chip' + (selectedKinds.includes(type.kind) ? ' is-selected' : '') + (!count ? ' is-unavailable' : '');
+            button.className = 'kc-type-chip' + (selectedKinds.includes(type.kind) ? ' is-selected' : '');
             button.dataset.kind = type.kind;
-            button.disabled = !count;
             button.setAttribute('aria-pressed', selectedKinds.includes(type.kind) ? 'true' : 'false');
-            button.innerHTML = '<span class="kc-type-icon" aria-hidden="true">' + (selectedKinds.includes(type.kind) ? IC.check : '·') + '</span>' +
+            button.innerHTML = '<span class="kc-type-icon" aria-hidden="true">' + (selectedKinds.includes(type.kind) ? IC.check : '') + '</span>' +
                 '<span class="kc-type-copy"><span class="kc-type-name">' + escapeHtml(type.label) + '</span></span>' +
                 '<span class="kc-type-count">' + count + '</span>';
             button.addEventListener('click', () => {
@@ -1589,6 +1763,7 @@
                 savePreferences();
                 renderTypeFilters();
                 renderDeckList();
+                list.querySelector('[data-kind="' + type.kind + '"]')?.focus({ preventScroll: true });
             });
             list.appendChild(button);
         });
@@ -1608,59 +1783,124 @@
         return raw ? restoreSession(raw, allPageCards()) : null;
     }
 
+    function itemCount(count, kinds) {
+        const unit = kinds.length === 1 && kinds[0] === 'table'
+            ? plural(count, 'строка', 'строки', 'строк')
+            : plural(count, 'карточка', 'карточки', 'карточек');
+        return count + ' ' + unit;
+    }
+
     function renderResumeBanner() {
         const host = document.getElementById('kcSessionResume');
-        if (!host) return;
         const saved = savedSession();
-        if (!saved) { host.hidden = true; host.innerHTML = ''; return; }
-        const remaining = saved.queue.length;
-        host.hidden = false;
-        host.innerHTML = '<div class="kc-session-resume-copy"><span class="kc-session-resume-title">Незавершённая сессия</span>' +
-            '<span class="kc-session-resume-meta">Осталось ' + remaining + ' ' + (saved.selectedKinds.length === 1 && saved.selectedKinds[0] === 'table' ? plural(remaining, 'строка', 'строки', 'строк') : plural(remaining, 'карточка', 'карточки', 'карточек')) + '</span></div>' +
-            '<div class="kc-session-resume-actions"><button type="button" class="kc-btn kc-btn-primary" id="kcResumeSession">Продолжить</button>' +
-            '<button type="button" class="kc-btn kc-btn-ghost" id="kcDiscardSession">Сбросить</button></div>';
-        document.getElementById('kcResumeSession').addEventListener('click', resumeSavedSession);
-        document.getElementById('kcDiscardSession').addEventListener('click', () => {
-            kcRemove(SESSION_KEY);
-            renderResumeBanner();
+        resumeAvailable = !!saved;
+        host.hidden = !saved;
+        host.replaceChildren();
+        if (saved) {
+            const topic = saved.selectedTopicIds.length === 1 ? TOPICS.find(t => t.id === saved.selectedTopicIds[0]) : null;
+            host.innerHTML =
+                '<strong>' + escapeHtml(topic?.name || 'Незавершённое занятие') + '</strong>' +
+                '<button type="button" class="kc-btn kc-btn-primary" id="kcResumeSession"><span>Продолжить</span>' +
+                    '<small>' + escapeHtml('Осталось ' + itemCount(saved.queue.length, saved.selectedKinds)) + '</small></button>' +
+                '<button type="button" class="kc-btn kc-btn-ghost" id="kcRestartSession">Начать заново</button>';
+            document.getElementById('kcResumeSession').addEventListener('click', () => resumeSavedSession());
+            document.getElementById('kcRestartSession').addEventListener('click', event =>
+                requestStart(saved.selectedTopicIds, saved.selectedKinds, saved.limit, event.currentTarget));
+        }
+
+        const sameParagraph = saved && quickChoice && saved.limit === 'all' &&
+            saved.selectedTopicIds.length === quickChoice.ids.length && saved.selectedTopicIds.every(id => quickChoice.ids.includes(id)) &&
+            saved.selectedKinds.length === quickChoice.kinds.length && saved.selectedKinds.every(kind => quickChoice.kinds.includes(kind));
+        document.getElementById('kcQuickChoice').hidden = !quickChoice || sameParagraph;
+        if (quickChoice && !sameParagraph) {
+            const plan = buildRecommendation(extractCards(quickChoice.ids, quickChoice.kinds), Date.now(), { limit: 'all' });
+            const quick = document.getElementById('kcQuickStart');
+            quick.classList.toggle('kc-btn-primary', !saved);
+            quick.classList.toggle('kc-btn-ghost', !!saved);
+            quick.disabled = !plan.queue.length;
+            document.getElementById('kcQuickTopic').textContent = quickChoice.name;
+            document.getElementById('kcQuickCount').textContent = itemCount(plan.queue.length, quickChoice.kinds);
+        }
+    }
+
+    function normalizeTopicQuery(value) {
+        return value.toLocaleLowerCase('ru-RU').replace(/ё/g, 'е').trim();
+    }
+
+    function matchingTopics() {
+        const query = normalizeTopicQuery(document.getElementById('kcTopicSearch').value);
+        const words = query.split(/\s+/).filter(Boolean);
+        return sectionTopics().filter(topic => {
+            const label = normalizeTopicQuery(topic.group + ' ' + topic.name);
+            return words.every(word => label.includes(word));
         });
     }
 
     function renderDeckList() {
         const list = document.getElementById('kcDeckList');
-        list.innerHTML = '';
-        let totalDue = 0, totalNew = 0;
-        sectionTopics().forEach(t => {
-            const { due, fresh } = topicCounts(t.id, selectedKinds);
-            totalDue += due; totalNew += fresh;
-            const card = document.createElement('button');
-            card.type = 'button';
-            card.className = 'kc-deck' + (selected.includes(t.id) ? ' selected' : '');
-            card.dataset.topic = t.id;
-            card.innerHTML =
-                '<span class="kc-deck-check">' + IC.check + '</span>' +
-                '<span class="kc-deck-name">' + escapeHtml(t.name) + '</span>' +
-                '<span class="kc-deck-counts">' +
-                    (due ? '<span class="kc-pill kc-pill-due" title="К повторению">' + due + '</span>' : '') +
-                    (fresh ? '<span class="kc-pill kc-pill-new" title="Новые">' + fresh + '</span>' : '') +
-                    (!due && !fresh ? '<span class="kc-pill kc-pill-done">' + IC.check + '</span>' : '') +
-                '</span>';
-            card.addEventListener('click', () => {
-                if (selected.includes(t.id)) selected = selected.filter(x => x !== t.id);
-                else selected.push(t.id);
-                savePreferences();
-                renderTypeFilters();
-                renderDeckList();
-            });
-            list.appendChild(card);
+        const focusedTopic = document.activeElement?.dataset.topic;
+        const topics = matchingTopics();
+        const searching = !!normalizeTopicQuery(document.getElementById('kcTopicSearch').value);
+        const groups = new Map();
+        topics.forEach(topic => {
+            const group = topic.group || 'Темы';
+            if (!groups.has(group)) groups.set(group, []);
+            groups.get(group).push(topic);
         });
+        list.replaceChildren();
+        groups.forEach((entries, name) => {
+            const details = document.createElement('details');
+            details.className = 'kc-topic-group kc-study-disclosure';
+            details.open = searching || (expandedTopicGroups.get(name) ?? entries.length <= 5);
+            const selectedCount = entries.filter(topic => selected.includes(topic.id)).length;
+            const heading = document.createElement('summary');
+            heading.innerHTML = '<span>' + escapeHtml(name) + '</span><small>' + selectedCount + ' / ' + entries.length + '</small>';
+            const cards = document.createElement('div');
+            cards.className = 'kc-topic-group-list';
+            entries.forEach(t => {
+                const checked = selected.includes(t.id);
+                const { due, fresh } = selectedKinds.length ? topicCounts(t.id, selectedKinds) : { due: 0, fresh: 0 };
+                const card = document.createElement('button');
+                card.type = 'button';
+                card.className = 'kc-deck' + (checked ? ' selected' : '');
+                card.dataset.topic = t.id;
+                card.setAttribute('aria-pressed', String(checked));
+                card.innerHTML =
+                    '<span class="kc-deck-check" aria-hidden="true">' + IC.check + '</span>' +
+                    '<span class="kc-deck-name">' + escapeHtml(t.name) + '</span>' +
+                    '<span class="kc-deck-counts">' +
+                        (due ? '<span class="kc-pill kc-pill-due" title="К повторению">' + due + '</span>' : '') +
+                        (fresh ? '<span class="kc-pill kc-pill-new" title="Новые">' + fresh + '</span>' : '') +
+                    '</span>';
+                card.addEventListener('click', () => {
+                    selected = checked ? selected.filter(id => id !== t.id) : selected.concat(t.id);
+                    savePreferences();
+                    renderTypeFilters();
+                    renderDeckList();
+                });
+                cards.append(card);
+            });
+            if (!searching) details.addEventListener('toggle', () => {
+                if (details.isConnected) expandedTopicGroups.set(name, details.open);
+            });
+            details.append(heading, cards);
+            list.append(details);
+        });
+        if (focusedTopic) list.querySelector('[data-topic="' + CSS.escape(focusedTopic) + '"]')?.focus({ preventScroll: true });
+        document.getElementById('kcNoTopics').hidden = topics.length > 0;
+        const selectedCount = selected.length;
+        document.getElementById('kcTopicCount').textContent = 'Выбрано ' + selectedCount + ' ' + plural(selectedCount, 'тема', 'темы', 'тем');
         updateStartBtn();
-        updateSelectAllLabel();
+        const selectAll = document.getElementById('kcSelectAll');
+        const allChecked = topics.every(topic => selected.includes(topic.id));
+        selectAll.disabled = !topics.length;
+        if (searching) selectAll.textContent = allChecked ? 'Снять найденные' : 'Выбрать найденные';
+        else selectAll.textContent = allChecked ? 'Снять выбор' : 'Выбрать всё';
     }
 
     function updateStartBtn() {
         const now = Date.now();
-        const selectedCards = extractCards(selected, selectedKinds);
+        const selectedCards = selectedKinds.length ? extractCards(selected, selectedKinds) : [];
         const plan = buildRecommendation(selectedCards, now, { limit: sessionLimit, kinds: selectedKinds });
         const count = plan.queue.length;
         const badge = document.getElementById('kcStartCount');
@@ -1668,36 +1908,23 @@
         badge.classList.toggle('is-empty', count === 0);
         const start = document.getElementById('kcStart');
         start.disabled = selected.length === 0 || selectedKinds.length === 0 || count === 0;
-        const recommendation = document.getElementById('kcRecommendation');
-        if (recommendation) {
-            if (selected.length === 0) {
-                recommendation.innerHTML = '<strong>Выберите темы</strong><span>Будут включены новые и назначенные к повторению задания.</span>';
-            } else if (selectedKinds.length === 0) {
-                recommendation.innerHTML = '<strong>Выберите типы карточек</strong><span>Например, только определения или формулы и выводы.</span>';
-            } else if (selectedCards.length === 0) {
-                recommendation.innerHTML = '<strong>Пока нечего проверять</strong><span>' +
-                    escapeHtml(studyProfile().empty) + '</span>';
-            } else if (count === 0) {
-                recommendation.innerHTML = '<strong>Всё усвоено</strong><span>Следующие повторения появятся по интервальному расписанию.</span>';
-            } else {
-                const parts = [];
-                if (plan.reviewCount) parts.push(plan.reviewCount + ' к повторению');
-                if (plan.newCount) parts.push(plan.newCount + ' ' + plural(plan.newCount, 'новая', 'новые', 'новых'));
-                if (plan.deferred) parts.push(plan.deferred + ' останутся на следующую сессию');
-                recommendation.innerHTML = '<strong>Рекомендовано: ' + count + ' ' + (studySection === 'tables' ? plural(count, 'строка', 'строки', 'строк') : plural(count, 'карточка', 'карточки', 'карточек')) + '</strong>' +
-                    '<span><span class="kc-visually-hidden">Состав: </span>' + parts.join(' · ') +
-                    '</span>';
-            }
-        }
-    }
-
-    function updateSelectAllLabel() {
-        const b = document.getElementById('kcSelectAll');
-        if (b) b.textContent = (selected.length === sectionTopics().length && selected.length) ? 'Снять всё' : 'Выбрать всё';
+        badge.setAttribute('aria-label', itemCount(count, selectedKinds));
+        const status = document.getElementById('kcRecommendation');
+        let message = '';
+        if (!selected.length) message = 'Выберите темы';
+        else if (!selectedKinds.length) message = 'Выберите типы карточек';
+        else if (!selectedCards.length) message = studyProfile().empty;
+        else if (!count) message = 'Пока нет карточек к повторению';
+        else if (plan.deferred) message = 'Ещё ' + plan.deferred + ' на следующее занятие';
+        status.textContent = message;
+        status.hidden = !message;
     }
 
     function toggleSelectAll() {
-        selected = (selected.length === sectionTopics().length) ? [] : sectionTopics().map(t => t.id);
+        const ids = matchingTopics().map(topic => topic.id);
+        selected = ids.every(id => selected.includes(id))
+            ? selected.filter(id => !ids.includes(id))
+            : Array.from(new Set(selected.concat(ids)));
         savePreferences();
         renderTypeFilters();
         renderDeckList();
@@ -1706,6 +1933,44 @@
     // ============================================
     //  Сессия повторения
     // ============================================
+    function requestStart(ids, kinds, limit, opener) {
+        const saved = savedSession();
+        if (!saved) {
+            startSession(ids, kinds, limit);
+            return;
+        }
+        const scroll = document.querySelector('#kcSelectModal .kc-select-scroll');
+        pendingStart = { ids: ids.slice(), kinds: kinds.slice(), limit, opener, scrollTop: scroll.scrollTop, since: saved.startedAt };
+        document.getElementById('kcSelectChoices').hidden = true;
+        document.getElementById('kcStartConfirmation').hidden = false;
+        document.querySelector('#kcSelectModal > .kc-actions').hidden = true;
+        scroll.scrollTop = 0;
+        document.getElementById('kcConfirmTitle').focus({ preventScroll: true });
+    }
+
+    function cancelStart() {
+        if (!pendingStart) return;
+        const { opener, scrollTop } = pendingStart;
+        pendingStart = null;
+        document.getElementById('kcStartConfirmation').hidden = true;
+        document.getElementById('kcSelectChoices').hidden = false;
+        document.querySelector('#kcSelectModal > .kc-actions').hidden = document.getElementById('kcCustomOptions').hidden;
+        document.querySelector('#kcSelectModal .kc-select-scroll').scrollTop = scrollTop;
+        opener?.focus({ preventScroll: true });
+    }
+
+    function confirmStart() {
+        if (!pendingStart) return;
+        const { ids, kinds, limit, since } = pendingStart;
+        const saved = savedSession();
+        cancelStart();
+        if (saved && saved.startedAt !== since) {
+            openSelect();
+            return;
+        }
+        startSession(ids, kinds, limit);
+    }
+
     function startSession(topicIds, kinds, limit) {
         if (!topicIds.length || !kinds.length) return;
         const now = Date.now();
@@ -1713,7 +1978,16 @@
         const plan = buildRecommendation(cards, now, { limit, kinds });
         const queue = plan.queue;
 
-        if (queue.length === 0) { showEmptyState(); document.getElementById('kcSelectOverlay').classList.add('hidden'); document.getElementById('kcReviewOverlay').classList.remove('hidden'); return; }
+        if (!queue.length) {
+            const notice = document.getElementById('kcSelectNotice');
+            notice.hidden = false;
+            notice.textContent = 'Пока нет карточек к повторению';
+            renderResumeBanner();
+            // A stale count can occur when another tab reviewed the deck.
+            // Keep the saved session and show the current selection.
+            setCustomOptions(true);
+            return;
+        }
 
         session = {
             queue: queue,
@@ -1740,20 +2014,38 @@
             undoStack: []
         };
         persistSession();
-        document.getElementById('kcSelectOverlay').classList.add('hidden');
-        document.getElementById('kcReviewOverlay').classList.remove('hidden');
-        setTimeout(() => document.getElementById('kcReviewModal')?.focus(), 0);
-        showCard();
+        openReview();
     }
 
-    function resumeSavedSession() {
+    function resumeSavedSession(sourceButton) {
         const restored = savedSession();
-        if (!restored) { renderResumeBanner(); return; }
+        if (!restored) {
+            if (sourceButton) {
+                sourceButton.hidden = true;
+                openSelect(lastDialogOpener);
+            } else {
+                renderResumeBanner();
+                setCustomOptions(!quickChoice);
+            }
+            return;
+        }
         session = restored;
+        openReview(restored.reviewPosition);
+    }
+
+    function openReview(position) {
+        document.getElementById('kcReturnToCard').hidden = true;
+        document.getElementById('kcReviewNotice').hidden = true;
         document.getElementById('kcSelectOverlay').classList.add('hidden');
         document.getElementById('kcReviewOverlay').classList.remove('hidden');
-        setTimeout(() => document.getElementById('kcReviewModal')?.focus(), 0);
-        showCard();
+        showCard(position);
+    }
+
+    function saveReviewPosition() {
+        const card = session?.queue[0]?.card;
+        if (!card) return;
+        session.reviewPosition = { cardId: card.id, revealed, scrollTop: document.getElementById('kcContent').scrollTop };
+        persistSession();
     }
 
     function persistSession() {
@@ -1761,32 +2053,24 @@
         return kcSet(SESSION_KEY, serializeSession(session)) !== false;
     }
 
-    function counts() {
-        const c = { 'new': 0, learn: 0, review: 0 };
-        session.queue.forEach(q => { c[q.type]++; });
-        return c;
-    }
-
     function renderCounts() {
-        const el = document.getElementById('kcCounts');
-        if (!el) return;
-        const c = counts();
-        el.innerHTML =
-            '<span class="kc-count kc-count-new" title="Новые">' + c['new'] + '</span>' +
-            '<span class="kc-count kc-count-learn" title="Изучаются">' + c.learn + '</span>' +
-            '<span class="kc-count kc-count-review" title="К повторению">' + c.review + '</span>';
-        const fill = document.getElementById('kcProgressFill');
-        if (fill) {
-            const mastered = Object.keys(session.mastered).length;
-            fill.style.width = (session.planned ? Math.round(mastered / session.planned * 100) : 100) + '%';
-        }
+        const counts = { new: 0, learn: 0, review: 0 };
+        session.queue.forEach(item => { counts[item.type]++; });
+        document.getElementById('kcCounts').innerHTML =
+            '<div><dt>Новые</dt><dd class="kc-count kc-count-new">' + counts.new + '</dd></div>' +
+            '<div><dt>Изучаются</dt><dd class="kc-count kc-count-learn">' + counts.learn + '</dd></div>' +
+            '<div><dt>К повторению</dt><dd class="kc-count kc-count-review">' + counts.review + '</dd></div>';
         const mastered = Object.keys(session.mastered).length;
+        const percent = session.planned ? Math.round(mastered / session.planned * 100) : 100;
+        const fill = document.getElementById('kcProgressFill');
+        fill.style.width = percent + '%';
+        document.getElementById('kcProgress').setAttribute('aria-valuenow', String(percent));
         const progressCopy = document.getElementById('kcProgressCopy');
         const progressDetail = document.getElementById('kcProgressDetail');
-        if (progressCopy) progressCopy.textContent = 'Закреплено ' + mastered + ' из ' + session.planned;
-        if (progressDetail) progressDetail.textContent = session.reviewed + ' ' + plural(session.reviewed, 'ответ', 'ответа', 'ответов') + ' · осталось ' + session.queue.length;
+        progressCopy.textContent = 'Закреплено ' + mastered + ' из ' + session.planned;
+        progressDetail.textContent = session.reviewed + ' ' + plural(session.reviewed, 'ответ', 'ответа', 'ответов') + ' · осталось ' + session.queue.length;
         const undo = document.getElementById('kcUndoBtn');
-        if (undo) undo.disabled = !session.undoStack || session.undoStack.length === 0;
+        undo.disabled = !session.undoStack?.length;
     }
 
     function clearWait() {
@@ -1802,7 +2086,18 @@
         return true;
     }
 
-    function showCard() {
+    function resetReviewActions() {
+        document.getElementById('kcFront').hidden = true;
+        document.getElementById('kcGrades').hidden = true;
+        document.getElementById('kcGrades').replaceChildren();
+        document.getElementById('kcProgressDetails').open = false;
+        const guide = document.getElementById('kcGradeGuide');
+        guide.hidden = true;
+        guide.open = false;
+    }
+
+    function showCard(position) {
+        resetReviewActions();
         if (!session || session.queue.length === 0) { showSummary(); return; }
         clearWait();
         if (!nextReadyCard()) { showWaitState(); return; }
@@ -1811,31 +2106,42 @@
         const def = item.card;
         renderCounts();
         const content = document.getElementById('kcContent');
+        const context = def.context;
+        const sourceLabel = def.kind === 'table' ? 'К строке в конспекте' : 'К блоку в конспекте';
         content.innerHTML =
             '<div class="kc-card-wrap">' +
                 '<div class="kc-card-context"><div class="kc-topic-label">' + escapeHtml(def.topicName) + '</div>' +
-                    (def.kindLabel ? '<span class="kc-kind-label kc-kind-' + escapeHtml(def.kind || 'definition') + '">' + escapeHtml(def.kindLabel) + '</span>' : '') +
+                    '<div class="kc-card-meta">' +
+                        (def.kindLabel ? '<span class="kc-kind-label kc-kind-' + escapeHtml(def.kind || 'definition') + '">' + escapeHtml(def.kindLabel) + '</span>' : '') +
+                        '<button type="button" class="kc-tool-btn kc-tool-source" id="kcGoToSource">' + sourceLabel + '</button>' +
+                    '</div>' +
                 '</div>' +
                 (def.tableTitle ? '<p class="kc-table-caption">' + escapeHtml(def.tableTitle) + '</p>' : '') +
-                '<button type="button" class="kc-flashcard" id="kcFront">' +
-                    (def.questionLead ? '<span class="kc-flashcard-prompt">' + escapeHtml(def.questionLead) + '</span>' : '') +
-                    '<span class="kc-flashcard-term">' + (def.termHTML || escapeHtml(def.term)) + '</span>' +
-                    '<span class="kc-flashcard-tap">' + IC.eye + '<span>показать ответ</span></span>' +
-                '</button>' +
-                '<div class="kc-definition" id="kcBack" hidden>' + def.backHTML + '</div>' +
-                '<div class="kc-card-tools"><button type="button" class="kc-tool-btn kc-tool-source" id="kcGoToSource"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M14 3h7v7"/><path d="m10 14 11-11"/><path d="M21 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5"/></svg>К блоку в конспекте</button></div>' +
+                '<div class="kc-question" id="kcQuestion">' +
+                    (def.questionLead ? '<p class="kc-question-lead">' + escapeHtml(def.questionLead) + '</p>' : '') +
+                    (context?.title && context.title !== def.term ? '<p class="kc-question-context">' + escapeHtml(context.title) + '</p>' : '') +
+                    '<h3 id="kcQuestionTitle" tabindex="-1">' + (def.termHTML || escapeHtml(def.term)) + '</h3>' +
+                '</div>' +
+                (context?.html ? '<details class="kc-prompt-context kc-study-disclosure" id="kcPromptContext" open>' +
+                    '<summary>Условие</summary><div class="kc-prompt-media">' + context.html + '</div></details>' : '') +
+                '<div class="kc-definition" id="kcBack" role="region" aria-label="Ответ" tabindex="-1" hidden>' + def.backHTML + '</div>' +
             '</div>';
-        // Кнопки оценок — закреплённый футер модалки (вне прокручиваемого контента),
-        // поэтому всегда видны даже на невысоких экранах; сбрасываем их под новую карточку.
-        const grades = document.getElementById('kcGrades');
-        if (grades) { grades.hidden = true; grades.innerHTML = ''; }
-        const guide = document.getElementById('kcGradeGuide');
-        if (guide) { guide.hidden = true; guide.open = false; }
-        const front = document.getElementById('kcFront');
-        if (def.kind === 'table') document.getElementById('kcGoToSource').lastChild.textContent = 'К строке в конспекте';
-        front.addEventListener('click', reveal);
-        document.getElementById('kcGoToSource')?.addEventListener('click', () => goToSource(def));
-        setTimeout(() => { renderMath(front); }, 30);
+        document.getElementById('kcFront').hidden = false;
+        content.querySelector('.kc-topic-label').title = def.topicName;
+        document.getElementById('kcGoToSource').addEventListener('click', () => goToSource(def));
+        content.querySelectorAll('.kc-prompt-media :is(img, svg[role="img"])').forEach(image => {
+            if (image.localName === 'img') image.loading = 'eager';
+            image.tabIndex = 0;
+            image.setAttribute('aria-haspopup', 'dialog');
+        });
+        renderMath(document.getElementById('kcQuestion'));
+        renderMath(document.getElementById('kcPromptContext'));
+        content.scrollTop = 0;
+        if (position?.cardId === def.id && position.revealed) reveal(position.scrollTop);
+        else {
+            if (position?.cardId === def.id) content.scrollTop = position.scrollTop;
+            document.getElementById('kcQuestionTitle').focus({ preventScroll: true });
+        }
     }
 
     function showWaitState() {
@@ -1843,10 +2149,6 @@
         renderCounts();
         const earliest = Math.min(...session.queue.map(item => finite(item.availableAt, Date.now())));
         const content = document.getElementById('kcContent');
-        const grades = document.getElementById('kcGrades');
-        const guide = document.getElementById('kcGradeGuide');
-        if (grades) grades.hidden = true;
-        if (guide) guide.hidden = true;
         content.innerHTML = '<div class="kc-state-screen"><span class="kc-state-icon">' + IC.brain + '</span>' +
             '<h3 class="kc-state-title">Небольшая пауза</h3><p class="kc-state-copy">Короткий интервал помогает проверить, действительно ли ответ закрепился.</p>' +
             '<div class="kc-wait-time" id="kcWaitTime"></div><div class="kc-wait-track"><div class="kc-wait-fill" id="kcWaitFill"></div></div>' +
@@ -1867,22 +2169,29 @@
             showCard();
         });
         document.getElementById('kcWaitPause').addEventListener('click', pauseSession);
+        content.scrollTop = 0;
+        document.getElementById('kcRepeatNow').focus({ preventScroll: true });
         update();
     }
 
-    function reveal() {
+    function reveal(scrollTop = 0) {
         if (revealed || !session) return;
         revealed = true;
         const back = document.getElementById('kcBack');
-        const front = document.getElementById('kcFront');
+        const question = document.getElementById('kcQuestion');
+        const context = document.getElementById('kcPromptContext');
         const grades = document.getElementById('kcGrades');
-        if (back) { back.hidden = false; back.classList.add('is-shown'); renderMath(back); }
-        if (front) front.classList.add('is-revealed');
-        const guide = document.getElementById('kcGradeGuide');
-        if (guide) guide.hidden = false;
+        const item = session.queue[0];
+        const title = back.querySelector(':scope > strong:first-child, :scope > :is(.derivation-content, .proof-content, .experiment-content) > strong:first-child');
+        question.classList.add('is-revealed');
+        if (title && readableTerm(title) === normalizeTitle(item.card.term)) question.hidden = true;
+        if (context) context.open = false;
+        back.hidden = false;
+        renderMath(back);
+        document.getElementById('kcFront').hidden = true;
+        document.getElementById('kcGradeGuide').hidden = false;
 
         // Превью интервалов для каждой оценки
-        const item = session.queue[0];
         const st = session.states[item.card.id] || store[item.card.id];
         const now = Date.now();
         const labels = [
@@ -1893,14 +2202,16 @@
         ];
         grades.innerHTML = labels.map(L => {
             const p = item.practiceOnly ? null : project(st, L.g, now);
-            return '<button class="kc-grade kc-grade-' + L.cls + '" data-g="' + L.g + '">' +
-                '<span class="kc-grade-iv">' + (p ? fmtInterval(p.intervalDays) : 'в сессии') + '</span>' +
-                '<span class="kc-grade-lbl">' + L.name + '</span></button>';
+            return '<button type="button" class="kc-grade kc-grade-' + L.cls + '" data-g="' + L.g + '">' +
+                '<span class="kc-grade-lbl">' + L.name + '</span>' +
+                '<span class="kc-grade-iv">' + escapeHtml(p ? fmtInterval(p.intervalDays) : 'в сессии') + '</span></button>';
         }).join('');
         grades.hidden = false;
         grades.querySelectorAll('.kc-grade').forEach(b => {
             b.addEventListener('click', () => grade(parseInt(b.dataset.g, 10)));
         });
+        back.focus({ preventScroll: true });
+        document.getElementById('kcContent').scrollTop = scrollTop;
     }
 
     function grade(G) {
@@ -1910,6 +2221,7 @@
         const transition = sessionTransition(session, item, G, now);
         if (!transition) return;
         session = transition.session;
+        delete session.reviewPosition;
         const persisted = persistState(item.card.id, transition.state);
         persistSession();
         const notice = document.getElementById('kcReviewNotice');
@@ -1925,6 +2237,7 @@
         const result = undoSession(session, allPageCards());
         if (!result) return;
         session = result.session;
+        delete session.reviewPosition;
         persistState(result.cardId, result.state);
         persistSession();
         showCard();
@@ -1932,16 +2245,18 @@
 
     function findSourceElement(card) {
         if (!card) return null;
+        const topic = document.getElementById(card.topicId);
         if (card.kind === 'table') {
-            const topic = document.getElementById(card.topicId);
             return Array.from(topic?.querySelectorAll('[data-kc-row-source]') || [])
                 .find(row => row.dataset.kcRowSource === card.sourceId) || topic;
+        }
+        if (topic && card.sourceId?.startsWith('math:')) {
+            return displayedFormulas(topic).find(formula => 'math:' + hashString(formula.key) === card.sourceId)?.node || topic;
         }
         if (card.sourceId) {
             const byId = document.getElementById(card.sourceId);
             if (byId) return byId;
         }
-        const topic = document.getElementById(card.topicId);
         const type = CARD_TYPES.find(entry => entry.kind === card.kind);
         if (!topic || !type) return topic;
         const boxes = Array.from(topic.querySelectorAll(type.selector));
@@ -1955,44 +2270,33 @@
     function goToSource(card) {
         const target = findSourceElement(card);
         if (!target) return;
-        persistSession();
+        saveReviewPosition();
         clearWait();
         document.getElementById('kcReviewOverlay').classList.add('hidden');
         if (window.experimentalReader?.isActive?.()) {
             window.experimentalReader.revealElement(target, { source: 'knowledge-check', animate: false, scroll: false, updateHash: true });
         }
-        if (typeof window.closeMobileMenu === 'function') window.closeMobileMenu();
+        window.AlmanionNoteFilter?.revealMatch(target);
+        if (typeof window.closeMobileMenu === 'function') window.closeMobileMenu(false);
         session = null;
-        setTimeout(() => {
-            target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        document.getElementById('kcReturnToCard').hidden = false;
+        requestAnimationFrame(() => {
+            if (!target.hasAttribute('tabindex')) {
+                target.tabIndex = -1;
+                target.addEventListener('blur', () => target.removeAttribute('tabindex'), { once: true });
+            }
+            target.focus({ preventScroll: true });
+            target.scrollIntoView({ behavior: 'auto', block: 'center' });
             target.classList.add('nav-highlight');
             setTimeout(() => target.classList.remove('nav-highlight'), 1500);
-        }, 80);
-    }
-
-    function showEmptyState() {
-        revealed = false;
-        const content = document.getElementById('kcContent');
-        const fill = document.getElementById('kcProgressFill');
-        if (fill) fill.style.width = '100%';
-        document.getElementById('kcCounts').innerHTML = '';
-        content.innerHTML =
-            '<div class="kc-final">' +
-                '<div class="kc-final-icon kc-final-icon-ok">' + IC.check + '</div>' +
-                '<h3 class="kc-final-title">Всё повторено</h3>' +
-                '<p class="kc-final-sub">Все выбранные задания уже усвоены. Расписание подскажет время следующего повторения.</p>' +
-                '<div class="kc-final-actions"><button class="kc-btn kc-btn-primary" id="kcEmptyDone">Готово</button></div>' +
-            '</div>';
-        document.getElementById('kcEmptyDone').addEventListener('click', closeReview);
+        });
     }
 
     function showSummary() {
         clearWait();
         revealed = false;
         const content = document.getElementById('kcContent');
-        const fill = document.getElementById('kcProgressFill');
-        if (fill) fill.style.width = '100%';
-        document.getElementById('kcCounts').innerHTML = '';
+        renderCounts();
         const reviewed = session ? session.reviewed : 0;
         const again = session ? session.again : 0;
         const unique = session ? Object.keys(session.cardStats).length : 0;
@@ -2025,6 +2329,8 @@
             session = null;
             openSelect();
         });
+        content.scrollTop = 0;
+        document.getElementById('kcDone').focus({ preventScroll: true });
     }
 
     function nextDueAcrossSelected() {
@@ -2040,7 +2346,7 @@
 
     function closeReview() {
         clearWait();
-        if (session && session.queue.length) persistSession();
+        if (session?.queue.length) saveReviewPosition();
         else kcRemove(SESSION_KEY);
         session = null;
         document.getElementById('kcReviewOverlay').classList.add('hidden');
@@ -2048,7 +2354,7 @@
 
     function pauseSession() {
         if (!session) return;
-        persistSession();
+        saveReviewPosition();
         clearWait();
         session = null;
         document.getElementById('kcReviewOverlay').classList.add('hidden');
@@ -2071,10 +2377,16 @@
         document.addEventListener('keydown', e => {
             const ov = document.getElementById('kcReviewOverlay');
             if (!ov || ov.classList.contains('hidden') || !session) return;
-            const tag = (e.target && e.target.tagName) || '';
-            if (tag === 'INPUT' || tag === 'TEXTAREA') return;
-            if (!revealed && (e.key === ' ' || e.key === 'Enter' || e.code === 'Space')) { e.preventDefault(); reveal(); }
-            else if (revealed && ['1', '2', '3', '4'].includes(e.key)) { e.preventDefault(); grade(parseInt(e.key, 10)); }
+            if (e.defaultPrevented || e.repeat || e.ctrlKey || e.metaKey || e.altKey || document.body.classList.contains('lightbox-open')) return;
+            if (e.target.closest?.('input, textarea, select, [contenteditable="true"]')) return;
+            if (!revealed && [' ', 'Enter'].includes(e.key)) {
+                if (document.getElementById('kcFront').hidden || e.target.closest?.('a, button, summary, [tabindex="0"]')) return;
+                e.preventDefault();
+                reveal();
+            } else if (revealed && ['1', '2', '3', '4'].includes(e.key)) {
+                e.preventDefault();
+                grade(Number(e.key));
+            }
         });
     }
 
@@ -2091,8 +2403,7 @@
             if (!m || m.scrollTop > 5) return;
             // Не перехватываем свайп, если внутренний прокручиваемый список не вверху —
             // иначе пролистывание списка случайно закрывает окно.
-            const sc = e.target.closest && e.target.closest('.kc-select-scroll, .kc-content');
-            if (sc && sc.scrollTop > 5) return;
+            if (!e.target.closest?.('.kc-head') || e.target.closest('button')) return;
             startY = currentY = e.touches[0].clientY; tracking = true; activated = false;
         }, { passive: true });
         overlay.addEventListener('touchmove', e => {
@@ -2175,6 +2486,8 @@
         studySection = 'blocks';
         sectionPreferences = {};
         sessionLimit = 'all';
+        pendingStart = null;
+        document.getElementById('kcReturnToCard')?.setAttribute('hidden', '');
         ['kcReviewOverlay', 'kcSelectOverlay'].forEach(function (id) {
             document.getElementById(id)?.classList.add('hidden');
         });
@@ -2196,6 +2509,7 @@
     // Хук для синхронизации аккаунта (account.js): применить уже объединённый
     // снимок сразу, в том числе если облако ответило во время открытой сессии.
     window.KC = window.KC || {};
+    window.KC.open = openSelect;
     window.KC.reload = function (key, snapshot) {
         if (key !== STORE_KEY) return;
         store = snapshot && typeof snapshot === 'object' && !Array.isArray(snapshot)

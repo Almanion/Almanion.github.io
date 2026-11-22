@@ -68,11 +68,13 @@ for (const width of [320, 390, 430, 768, 1024, 1440]) {
         await page.goto('/physics-10.html');
         await page.locator('#knowledgeCheckBtn').evaluate(el => el.click());
         await expect(page.locator('#kcSelectOverlay')).toBeVisible();
-        await page.getByRole('button', { name: 'Настроить', exact: true }).click();
+        await page.locator('#kcConfigure').click();
+        await page.locator('#kcTypesHeading').click();
+        await page.locator('.kc-topic-group summary').filter({ hasText: 'Молекулярная физика' }).click();
         await page.waitForTimeout(350);
         const layout = await page.locator('#kcSelectModal').evaluate(modal => {
             const body = modal.querySelector('.kc-select-scroll');
-            const actions = modal.querySelector('.kc-actions');
+            const actions = modal.querySelector(':scope > .kc-actions');
             return { bodyBottom: body.getBoundingClientRect().bottom, actionTop: actions.getBoundingClientRect().top,
                 bodyOverflow: body.scrollHeight - body.clientHeight,
                 labelStyles: [...modal.querySelectorAll('.kc-type-name')].map(el => ({ whitespace: getComputedStyle(el).whiteSpace, overflow: el.scrollWidth - el.clientWidth })) };
@@ -156,7 +158,7 @@ test('stress dictionary ignores obsolete generic block filters and retains searc
     await page.locator('#searchInput').fill('вероисповедание');
     await expect(page.locator('#searchResultsPanel')).toContainText('вероисповЕдание');
     await page.locator('#knowledgeCheckBtn').click();
-    await page.getByRole('button', { name: 'Настроить', exact: true }).click();
+    await page.locator('#kcConfigure').click();
     await expect(page.locator('#kcTypeList [data-kind="stress"]')).toBeEnabled();
 });
 

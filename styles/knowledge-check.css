@@ -1,0 +1,421 @@
+body.kc-dialog-open { overflow: hidden; }
+
+#kcReviewModal [hidden],
+.kc-return[hidden] { display: none !important; }
+
+#kcSelectModal,
+#kcReviewModal {
+    --kc-muted: var(--text-secondary);
+    --kc-rule: var(--border-color);
+    --kc-subtle: var(--bg-secondary);
+}
+
+.kc-modal :where(button, input, summary, [data-kc-scrollable]):focus-visible,
+.kc-return:focus-visible {
+    outline: 2px solid var(--accent-color);
+    outline-offset: 2px;
+}
+
+#kcSelectModal .kc-head {
+    min-block-size: 2rem;
+    margin-block-end: .95rem;
+    align-items: center;
+}
+
+#kcSelectModal .kc-close,
+#kcReviewModal .kc-game-actions > button {
+    inline-size: 44px;
+    block-size: 44px;
+}
+
+#kcSelectModal .kc-select-scroll { padding: 0 3px .6rem; }
+#kcQuickOptions { display: grid; gap: .85rem; }
+
+.kc-configure {
+    min-block-size: 44px;
+    margin-block: .7rem .25rem;
+    padding: .5rem .8rem;
+}
+
+.kc-configure[aria-expanded="true"] {
+    justify-self: start;
+    margin-block: 0 .8rem;
+}
+
+#kcSelectModal :is(.kc-session-resume, .kc-paragraph-choice) {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: .55rem;
+    margin: 0;
+    padding: .85rem;
+    border: 1px solid var(--kc-rule);
+    border-radius: 13px;
+    background: var(--kc-subtle);
+}
+
+#kcSelectModal :is(.kc-session-resume, .kc-paragraph-choice) > strong {
+    font-size: 1rem;
+    line-height: 1.35;
+    overflow-wrap: anywhere;
+}
+
+#kcSelectModal :is(#kcResumeSession, #kcQuickStart) {
+    justify-content: space-between;
+    flex-wrap: wrap;
+    min-height: 46px;
+    padding-inline: .75rem;
+    text-align: start;
+}
+
+#kcSelectModal :is(#kcResumeSession, #kcQuickStart) small {
+    font-size: .81rem;
+    font-weight: 600;
+    line-height: 1.25;
+}
+
+#kcRestartSession {
+    justify-content: start;
+    justify-self: start;
+    min-height: 44px;
+    padding-inline: .6rem;
+    border-color: transparent;
+    color: var(--kc-muted);
+}
+
+#kcSelectModal > .kc-actions {
+    display: grid;
+    gap: .5rem;
+}
+
+.kc-selection-status,
+.kc-no-topics,
+.kc-selected-topics {
+    color: var(--kc-muted);
+    font-size: .875rem;
+    line-height: 1.35;
+}
+
+#kcSelectModal .kc-filter-section { padding-block-start: 0; }
+#kcSelectModal section.kc-filter-section { border: 0; }
+#kcSelectModal .kc-filter-section,
+#kcSelectModal .kc-session-options { margin: 0; }
+#kcSelectModal .kc-filter-heading-row { margin-block: 0 .35rem; align-items: center; }
+#kcSelectModal .kc-filter-heading { margin: 0; font-size: .95rem; }
+
+#kcSelectAll {
+    min-height: 44px;
+    padding: .35rem .65rem;
+    font-size: .8125rem;
+}
+#kcSelectAll:disabled { opacity: .5; cursor: default; }
+
+.kc-topic-search { display: block; margin-block-end: .6rem; }
+.kc-topic-search input {
+    box-sizing: border-box;
+    inline-size: 100%;
+    min-block-size: 44px;
+    padding: .55rem .7rem;
+    border: 1px solid var(--kc-rule);
+    border-radius: 9px;
+    background: var(--kc-subtle);
+    color: var(--text-primary);
+    font: inherit;
+    font-size: 1rem;
+}
+.kc-topic-search input::placeholder { color: var(--kc-muted); }
+
+.kc-study-disclosure > summary {
+    display: flex;
+    align-items: center;
+    gap: .55rem;
+    min-block-size: 44px;
+    padding: .4rem .65rem;
+    box-sizing: border-box;
+    border-radius: 9px;
+    list-style: none;
+    color: var(--text-primary);
+    font-size: .875rem;
+    font-weight: 650;
+    cursor: pointer;
+}
+.kc-study-disclosure > summary::-webkit-details-marker { display: none; }
+.kc-study-disclosure > summary::after {
+    content: '';
+    flex-shrink: 0;
+    inline-size: .36rem;
+    block-size: .36rem;
+    border: solid var(--kc-muted);
+    border-width: 0 1.5px 1.5px 0;
+    margin-inline: auto .15rem;
+    transform: rotate(45deg);
+}
+.kc-study-disclosure[open] > summary::after { transform: rotate(225deg); }
+.kc-study-disclosure > summary small {
+    margin-inline-start: auto;
+    color: var(--kc-muted);
+    font-size: .79rem;
+    font-weight: 550;
+    font-variant-numeric: tabular-nums;
+}
+.kc-study-disclosure > summary:has(small)::after { margin-inline-start: .12rem; }
+
+.kc-topic-group,
+#kcTypeOptions {
+    border: 1px solid var(--kc-rule);
+    border-radius: 10px;
+    background: var(--kc-subtle);
+}
+
+.kc-topic-group-list,
+#kcTypeOptions .kc-type-list { padding: .3rem .5rem .55rem; }
+.kc-topic-group-list { display: grid; gap: .35rem; }
+
+#kcSelectModal .kc-deck {
+    box-sizing: border-box;
+    min-block-size: 44px;
+    inline-size: 100%;
+    padding: .45rem .6rem;
+}
+
+#kcSelectModal .kc-start-confirmation { display: grid; gap: .6rem; }
+#kcSelectModal .kc-start-confirmation :is(h3, p) { margin: 0; }
+.kc-start-confirmation p { color: var(--kc-muted); line-height: 1.5; }
+.kc-start-confirmation .kc-actions { justify-content: end; margin-block-start: .55rem; }
+
+#kcReviewModal {
+    padding: 1.15rem 1.35rem 1rem;
+    max-inline-size: 52rem;
+}
+
+#kcReviewModal .kc-game-bar {
+    position: relative;
+    flex: 0 0 auto;
+    gap: .45rem;
+    margin: 0 0 .3rem;
+    z-index: 2;
+}
+
+#kcReviewModal .kc-game-actions { gap: .26rem; }
+#kcReviewModal .kc-game-actions > button { flex-basis: 44px; border-radius: 9px; }
+
+#kcProgressDetails { flex: 1 1 auto; margin: 0; }
+#kcProgressDetails > summary {
+    inline-size: fit-content;
+    max-inline-size: 100%;
+    padding-inline: .3rem .5rem;
+    background: transparent;
+}
+#kcProgressDetails > summary .kc-progress-copy { font-size: .875rem; font-weight: 700; }
+
+.kc-progress-panel {
+    position: absolute;
+    inset: calc(100% + .3rem) auto auto 0;
+    z-index: 3;
+    box-sizing: border-box;
+    inline-size: min(20rem, 100%);
+    max-block-size: min(24rem, 65dvh);
+    overflow: auto;
+    padding: .85rem;
+    border: 1px solid var(--kc-rule);
+    border-radius: 12px;
+    background: var(--bg-primary);
+    box-shadow: var(--shadow-md);
+}
+
+.kc-progress-counts { display: grid; gap: .35rem; margin: 0; }
+.kc-progress-counts div { display: flex; align-items: center; justify-content: space-between; gap: .75rem; }
+.kc-progress-counts dt { color: var(--kc-muted); font-size: .875rem; }
+.kc-progress-counts dd { margin: 0; font-variant-numeric: tabular-nums; }
+.kc-progress-panel .kc-progress-detail { margin: .65rem 0 0; text-align: start; font-size: .8125rem; }
+.kc-progress-panel .kc-grade-guide { margin-top: .7rem; }
+
+#kcReviewModal > .kc-progress-track { flex: 0 0 3px; margin: 0; }
+#kcReviewModal .kc-content {
+    padding: .7rem .15rem .85rem;
+    overflow-anchor: none;
+    scroll-padding: .75rem 0;
+}
+
+#kcReviewModal .kc-card-wrap { gap: .65rem; min-inline-size: 0; }
+#kcReviewModal .kc-card-context {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    row-gap: 0;
+    text-align: start;
+}
+.kc-card-context .kc-topic-label {
+    flex: 1 1 11rem;
+    min-inline-size: 0;
+    margin: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: .8125rem;
+    font-weight: 600;
+    letter-spacing: normal;
+    text-transform: none;
+    text-align: start;
+}
+.kc-card-meta { display: flex; align-items: center; flex-wrap: wrap; gap: .35rem .6rem; max-inline-size: 100%; }
+#kcReviewModal .kc-tool-source {
+    min-block-size: 44px;
+    padding: .35rem .2rem;
+    border-color: transparent;
+    background: transparent;
+    color: var(--accent-color);
+    font-size: .8125rem;
+}
+
+.kc-question {
+    padding: clamp(.8rem, 3.25vw, 1.3rem);
+    border: 1px solid var(--kc-rule);
+    border-radius: 13px;
+    background: var(--kc-subtle);
+}
+.kc-question :is(p, h3) { margin: 0; overflow-wrap: anywhere; }
+.kc-question :is(.kc-question-lead, .kc-question-context) {
+    margin-block-end: .3rem;
+    color: var(--kc-muted);
+    font-size: .875rem;
+    line-height: 1.4;
+}
+#kcReviewModal #kcQuestionTitle {
+    font-size: clamp(1.15rem, 3.5vw, 1.5rem);
+    line-height: 1.32;
+}
+.kc-question.is-revealed {
+    padding: 0 .1rem;
+    border: 0;
+    background: transparent;
+}
+.kc-question.is-revealed :is(.kc-question-lead, .kc-question-context) { display: none; }
+#kcReviewModal .kc-question.is-revealed #kcQuestionTitle { font-size: 1rem; }
+
+.kc-prompt-context {
+    border: 1px solid var(--kc-rule);
+    border-radius: 10px;
+}
+.kc-prompt-media { padding: 0 .75rem .75rem; min-inline-size: 0; }
+.kc-prompt-media figure { margin: 0; }
+.kc-prompt-media figcaption { margin-block-start: .4rem; color: var(--kc-muted); font-size: .875rem; line-height: 1.4; }
+.kc-prompt-media :is(img, svg[role="img"]) {
+    display: block;
+    max-inline-size: 100%;
+    max-block-size: min(18rem, 46dvh);
+    block-size: auto;
+    margin-inline: auto;
+    object-fit: contain;
+    cursor: zoom-in;
+}
+
+#kcReviewModal .kc-definition {
+    min-inline-size: 0;
+    padding: 1rem;
+    margin: 0;
+    color: var(--text-primary);
+    line-height: 1.65;
+}
+#kcReviewModal .kc-definition :where(.proof-content, .derivation-content) { padding: 0; }
+#kcReviewModal .kc-definition:focus { outline: none; }
+#kcReviewModal .kc-definition figure { margin-inline: 0; }
+
+/* Keep the full TeX layout. Only the individual long line scrolls, starting
+   at its left edge. A short hint appears when the line exceeds its viewport. */
+#kcReviewModal :is(.katex-display, .kc-math-inline) {
+    display: block;
+    max-inline-size: 100%;
+    overflow-x: auto;
+    overflow-y: hidden;
+    overscroll-behavior-inline: contain;
+    padding-block: .25em;
+    scrollbar-width: thin;
+}
+#kcReviewModal .katex-display > .katex {
+    display: block;
+    inline-size: max-content;
+    min-inline-size: 100%;
+}
+#kcReviewModal .kc-math-inline > .katex-html {
+    display: inline-block;
+    inline-size: max-content;
+}
+.kc-math-hint {
+    display: block;
+    margin-block: -.15rem .35rem;
+    color: var(--kc-muted);
+    font-size: .8125rem;
+    line-height: 1.35;
+}
+
+.kc-review-actions {
+    flex: 0 0 auto;
+    padding-block-start: .5rem;
+    border-block-start: 1px solid var(--kc-rule);
+    background: var(--bg-primary);
+}
+.kc-review-actions:not(:has(> :not([hidden]))) { display: none; }
+#kcFront { inline-size: 100%; min-block-size: 48px; }
+#kcReviewModal #kcGrades {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: .375rem;
+    border: 0;
+    padding: 0;
+    margin: 0;
+}
+#kcReviewModal .kc-grade {
+    min-inline-size: 0;
+    min-block-size: 55px;
+    padding: .4rem .16rem;
+}
+#kcReviewModal .kc-grade-lbl { font-size: clamp(.75rem, 2.7vw, .9rem); }
+#kcReviewModal .kc-grade-iv { font-size: .75rem; }
+
+.kc-return {
+    position: fixed;
+    z-index: 61;
+    inset: auto auto calc(.85rem + env(safe-area-inset-bottom, 0px)) 50%;
+    transform: translateX(-50%);
+    max-inline-size: calc(100vw - 1.5rem);
+    box-shadow: var(--shadow-md);
+}
+body.experimental .kc-return { color: var(--exp-accent-contrast); }
+
+@media screen and (max-width: 768px) {
+    body.experimental .kc-return { bottom: calc(4.25rem + env(safe-area-inset-bottom, 0px)); }
+}
+
+@media screen and (max-width: 768px), screen and (max-height: 520px) and (pointer: coarse) {
+    #kcReviewOverlay { align-items: stretch; padding: 0; }
+    #kcReviewModal {
+        inline-size: 100%;
+        max-inline-size: none;
+        max-block-size: 100dvh;
+        block-size: 100%;
+        padding: max(.35rem, env(safe-area-inset-top, 0px)) max(.65rem, env(safe-area-inset-right, 0px))
+            calc(.45rem + env(safe-area-inset-bottom, 0px)) max(.65rem, env(safe-area-inset-left, 0px));
+        border: 0;
+        border-radius: 0;
+    }
+    #kcReviewModal .kc-content { scrollbar-gutter: auto; }
+    #kcReviewModal .kc-card-wrap { gap: .45rem; }
+    #kcReviewModal .kc-definition { padding: .72rem .65rem; }
+    #kcReviewModal .kc-card-context { gap: 0 .55rem; }
+    #kcReviewModal .kc-card-context .kc-topic-label { flex-basis: 100%; }
+}
+
+@media (max-width: 480px) {
+    #kcConfigure { inline-size: 100%; }
+    #kcConfigure[aria-expanded="true"] { inline-size: auto; }
+    #kcSelectModal #kcTypeOptions .kc-type-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    #kcSelectModal .kc-type-chip {
+        grid-template-columns: auto minmax(0, 1fr);
+        column-gap: .3rem;
+        min-inline-size: 0;
+    }
+    #kcSelectModal .kc-type-count { display: none; }
+}
+
+@media print { .kc-return { display: none !important; } }

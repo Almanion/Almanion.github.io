@@ -6,6 +6,7 @@
     const RESOURCE_TIMEOUT_MS = 12000;
     let accountAttempt = null;
     let accountServicesStarted = false;
+    let learningOpening = false;
     const versions = {
         experiments: 'experiment-notebook.js?v=20261014-1',
         featureStyles: 'styles/site/features.css?v=20261121-1',
@@ -15,13 +16,14 @@
         personalNotes: 'personal-notes.js?v=20261121-4',
         offline: 'offline-library.js?v=20261114',
         printStyles: 'styles/print.css?v=20261121-4',
-        filterStyles: 'styles/note-filter.css?v=20261121-4',
+        filterStyles: 'styles/note-filter.css?v=20261122-3',
         filter: 'note-filter.js?v=20261121-4',
         settings: 'settings.js?v=20261002-1',
         searchText: 'search-text.js?v=20261121-2',
         search: 'search.js?v=20261122-2',
         print: 'print-export.js?v=20261121-4',
-        knowledge: 'knowledge-check.js?v=20261121-2',
+        knowledge: 'knowledge-check.js?v=20261122-3',
+        knowledgeStyles: 'styles/knowledge-check.css?v=20261122-3',
         newyear: 'newyear.js?v=20261002-1',
         firebaseApp: 'https://www.gstatic.com/firebasejs/12.18.0/firebase-app-compat.js',
         firebaseDatabase: 'https://www.gstatic.com/firebasejs/12.18.0/firebase-database-compat.js',
@@ -150,7 +152,9 @@
         settings: loadSettings,
         search: loadSearch,
         print: function () { return loadStyle('printStyles').then(function () { return loadScript('print'); }); },
-        knowledge: function () { return loadStyle('featureStyles').then(function () { return loadScript('knowledge'); }); },
+        knowledge: function () {
+            return Promise.all([loadStyle('featureStyles'), loadStyle('knowledgeStyles')]).then(() => loadScript('knowledge'));
+        },
         bookmarks: loadBookmarks,
         offline: function () { return loadStyle('readerToolsStyles').then(function () { return loadScript('offline'); }); },
         account: loadAccount,
@@ -164,6 +168,23 @@
             console.warn('Almanion note runtime:', error);
             throw error;
         });
+    }
+
+    async function openLearning(opener) {
+        if (learningOpening) return;
+        learningOpening = true;
+        opener.setAttribute('aria-busy', 'true');
+        try {
+            await ensure('knowledge');
+            if (window.KC?.open(opener) === false) {
+                window.AlmanionToast?.show('В этом конспекте пока нет карточек.');
+            }
+        } catch (_) {
+            window.AlmanionToast?.show('Не удалось открыть «Учить». Повторите попытку.', { type: 'error' });
+        } finally {
+            opener.removeAttribute('aria-busy');
+            learningOpening = false;
+        }
     }
 
     function onIntent(selector, eventName, feature) {
@@ -244,6 +265,12 @@
             button.className = feature === 'print' ? 'print-export-button' : 'knowledge-check-btn';
             button.setAttribute('aria-haspopup', 'dialog');
             button.innerHTML = '<svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">' + icons[feature] + '</svg><span' + (feature === 'print' ? ' class="print-export-label"' : '') + '>' + label + '</span>';
+            if (feature === 'knowledge') {
+                button.dataset.learnLauncher = '';
+                button.addEventListener('click', () => openLearning(button));
+                container.appendChild(button);
+                return button;
+            }
             button.addEventListener('click', async function activate(event) {
                 // Load on first intent, then replay once on the real handler.
                 event.stopImmediatePropagation();
@@ -261,6 +288,18 @@
             container.appendChild(button);
         }
         launcher('knowledgeCheckBtn', 'knowledge', 'Учить', document.querySelector('.sidebar-actions'));
+        function addTabletLearn() {
+            const main = document.querySelector('.main-content');
+            if (!main?.querySelector('article.topic[id]')) return;
+            const host = main.querySelector('.note-reader-controls') || main.querySelector('.page-header');
+            const button = launcher('tabletLearnBtn', 'knowledge', 'Учить', host);
+            if (button) {
+                button.className = 'note-reader-learn';
+                button.dataset.printExclude = 'true';
+            }
+        }
+        filterReady.then(addTabletLearn);
+        window.addEventListener('almanion:content-ready', () => filterReady.then(addTabletLearn));
         document.addEventListener('keydown', event => {
             if (window.AlmanionPrintExport || !(event.ctrlKey || event.metaKey) || event.altKey || event.code !== 'KeyP') return;
             event.preventDefault();
@@ -320,7 +359,7 @@
         } catch (_) {}
     }
 
-    window.AlmanionNoteRuntime = Object.freeze({ ensure: ensure });
+    window.AlmanionNoteRuntime = Object.freeze({ ensure, openLearning });
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start, { once: true });
     else start();
 })();

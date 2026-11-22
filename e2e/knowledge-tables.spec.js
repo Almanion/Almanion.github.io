@@ -9,7 +9,7 @@ async function open(page){
     // Use the existing public launcher even when the sidebar is collapsed.
     await page.locator('#knowledgeCheckBtn').evaluate(e=>e.click());
     await expect(page.locator('#kcSelectOverlay')).toBeVisible();
-    await page.getByRole('button',{name:'Настроить',exact:true}).click();
+    await page.locator('#kcConfigure').click();
 }
 async function rows(page){return page.evaluate(()=>window.__kcFSRS.extractCards([...document.querySelectorAll('article.topic')].map(t=>t.id),['table']));}
 async function dark(page){
@@ -52,7 +52,6 @@ for(const width of [1366,390,320])test('separate table section and readable answ
     await page.addStyleTag({path:require.resolve('katex/dist/katex.min.css')});
     await expect(page.locator('#kcTypeList [data-kind="table"]')).toHaveCount(0);
     await page.locator('[data-section="tables"]').click();
-    await expect(page.locator('#kcTableIntro')).toBeVisible();
     await expect(page.locator('#kcTypeList')).toBeHidden();
     await expect(page.locator('#kcDeckList .kc-deck')).toHaveCount(5);
     await expect(page.locator('#kcStartCount')).toHaveText('35');
@@ -61,6 +60,7 @@ for(const width of [1366,390,320])test('separate table section and readable answ
     await page.locator('.kc-deck[data-topic="funktsionalnye-gruppy-i-klassy"]').click();
     await expect(page.locator('#kcStartCount')).toHaveText('8');
     await page.locator('[data-section="blocks"]').click();
+    await page.locator('#kcTypesHeading').click();
     await expect(page.locator('#kcTypeList')).toBeVisible();
     await page.locator('[data-section="tables"]').click();
     await expect(page.locator('#kcStartCount')).toHaveText('8');
@@ -87,7 +87,7 @@ test('row progress survives reload; paused table session resumes and links back 
     await expect(page.locator('[data-section="tables"]')).toHaveAttribute('aria-pressed','true');
     await page.locator('#kcResumeSession').click();
     await expect(page.locator('#kcProgressCopy')).toHaveText('Закреплено 1 из 35');
-    const term=await page.locator('.kc-flashcard-term').textContent();
+    const term=await page.locator('#kcQuestionTitle').textContent();
     await page.locator('#kcGoToSource').click();
     await expect(page.locator('#kcReviewOverlay')).toBeHidden();
     expect(await page.locator('article.topic:visible tr[data-kc-row-source]').allTextContents()).toEqual(expect.arrayContaining([expect.stringContaining(term)]));

@@ -132,6 +132,141 @@ test('the current paragraph starts a scoped session and preserves the custom dec
     await expect(page.locator('[data-limit="15"]')).toHaveAttribute('aria-pressed', 'true');
 });
 
+const cyclePage = '/physics-10.html#razbor-gazovykh-tsiklov';
+const cycleSource = '[data-kc-id="thermo-lesson-rectangle-cycle-calculation"]';
+
+test('tablet learning opens from the toolbar and topic search keeps the selection scoped', async ({ page }) => {
+    await page.setViewportSize({ width: 820, height: 1000 });
+    await page.goto(cyclePage);
+    const learn = page.locator('.note-reader-controls').getByRole('button', { name: 'Учить', exact: true });
+    await expect(learn).toBeInViewport();
+    await expect(page.locator('#sidebar')).toHaveJSProperty('inert', true);
+    await expect(page.locator('#knowledgeCheckBtn')).toBeHidden();
+    await learn.click();
+    await expect(page.locator('#kcQuickCount')).toHaveText('9 карточек');
+    await page.getByRole('button', { name: 'Выбрать темы' }).click();
+    await expect(page.locator('#kcQuickStart')).toBeHidden();
+    await expect(page.locator('#kcTypeOptions')).toHaveJSProperty('open', false);
+    expect(await page.locator('#kcDeckList .kc-topic-group').count()).toBeGreaterThan(1);
+    await page.locator('#kcSelectAll').click();
+    const search = page.getByRole('searchbox', { name: 'Поиск тем' });
+    await search.fill('неизвестная тема');
+    await expect(page.getByText('Темы не найдены')).toBeVisible();
+    await search.fill('теплота кпд циклов');
+    await expect(page.locator('#kcDeckList .kc-deck')).toHaveCount(1);
+    await page.locator('#kcSelectAll').click();
+    await expect(page.locator('#kcDeckList .kc-deck')).toHaveAttribute('aria-pressed', 'true');
+    await page.locator('#kcTypesHeading').click();
+    await page.locator('#kcTypeList [data-kind="derivation"]').click();
+    const count = Number(await page.locator('#kcStartCount').textContent());
+    expect(count).toBeGreaterThan(0);
+    await page.locator('#kcStart').click();
+    await expect(page.locator('#kcProgressCopy')).toHaveText('Закреплено 0 из ' + count);
+    await page.keyboard.press('Escape');
+    await expect(learn).toBeFocused();
+});
+
+test('starting again needs confirmation and cancelling preserves the saved answers and queue', async ({ page }) => {
+    await page.goto(cyclePage);
+    const launch = page.locator('#knowledgeCheckBtn');
+    const session = () => page.evaluate(() => JSON.parse(AlmanionKCStorage.get('kc_session_v3_' + location.pathname)));
+    await launch.click();
+    await page.locator('#kcQuickStart').click();
+    const firstId = (await session()).queue[0].cardId;
+    await page.locator('#kcFront').click();
+    await page.locator('#kcGrades [data-g="1"]').click();
+    await page.locator('#kcPauseBtn').click();
+    const saved = await session();
+    expect(saved.reviewed).toBe(1);
+    await expect(page.locator('#kcResumeSession')).toContainText('Осталось 9 карточек');
+    await expect(page.locator('#kcQuickStart')).toBeHidden();
+    await page.locator('#kcRestartSession').click();
+    await expect(page.locator('#kcStartConfirmation')).toBeVisible();
+    expect(await session()).toEqual(saved);
+    await page.keyboard.press('Escape');
+    await expect(page.locator('#kcRestartSession')).toBeFocused();
+    expect(await session()).toEqual(saved);
+    await page.reload();
+    await launch.click();
+    await page.locator('#kcResumeSession').click();
+    await expect(page.locator('#kcReviewOverlay')).toBeVisible();
+    expect((await session()).queue).toEqual(saved.queue);
+    await page.locator('#kcPauseBtn').click();
+    await page.locator('#kcRestartSession').click();
+    await page.locator('#kcConfirmStart').click();
+    await expect(page.locator('#kcReviewOverlay')).toBeVisible();
+    expect((await session()).reviewed).toBe(0);
+    const progress = await page.evaluate(() => JSON.parse(AlmanionKCStorage.get('kc_fsrs_' + location.pathname)));
+    expect(progress[firstId].reviewEvents).toHaveLength(1);
+});
+
+test('Enter opens the note source, then Return to card resumes the same question', async ({ page }) => {
+    await page.goto(cyclePage);
+    await page.locator('#knowledgeCheckBtn').click();
+    await page.locator('#kcQuickStart').click();
+    const question = page.locator('#kcQuestion');
+    await expect(question).toContainText('Прямоугольный цикл');
+    await expect(question).toContainText('Теплота на каждом участке и КПД');
+    await expect(page.locator('#kcPromptContext img')).toHaveJSProperty('complete', true);
+    await expect(page.locator('#kcBack')).toBeHidden();
+    await page.locator('#kcGoToSource').focus();
+    await page.keyboard.press('Enter');
+    await expect(page.locator('#kcReviewOverlay')).toBeHidden();
+    await expect(page.locator(cycleSource)).toBeFocused();
+    await expect(page.locator(cycleSource)).toBeInViewport();
+    await page.getByRole('button', { name: 'Вернуться к карточке' }).click();
+    await expect(question).toContainText('Прямоугольный цикл');
+    await expect(page.locator('#kcBack')).toBeHidden();
+    await page.keyboard.press('Space');
+    await expect(page.locator('#kcBack')).toBeVisible();
+    await expect(page.locator('#kcPromptContext')).toHaveJSProperty('open', false);
+});
+
+test.describe('touch study', () => {
+    test.use({ hasTouch: true, isMobile: true, viewport: { width: 320, height: 568 } });
+    test('a long answer scrolls under fixed ratings, and a wide equation pans independently', async ({ page }) => {
+        await page.emulateMedia({ colorScheme: 'dark', reducedMotion: 'reduce' });
+        await page.goto(cyclePage);
+        // A single TeX line deliberately wider than even a landscape handset.
+        await page.locator(cycleSource + ' .derivation-content').evaluate(block => {
+            const line = document.createElement('p');
+            line.textContent = '\\[\\overbrace{a_1+a_2+a_3+a_4+a_5+a_6+a_7+a_8+a_9+a_{10}+a_{11}+a_{12}+a_{13}+a_{14}+a_{15}}^{S}=0\\]';
+            block.append(line);
+        });
+        const launch = page.locator('#expBottomNav').getByRole('button', { name: 'Учить' });
+        await launch.tap();
+        await page.locator('#kcQuickStart').tap();
+        await expect(page.locator('#kcPromptContext img')).toBeVisible();
+        await page.locator('#kcFront').tap();
+        const content = page.locator('#kcContent');
+        const answer = page.locator('#kcBack');
+        const equation = answer.locator('[data-kc-scrollable]').last();
+        const ratings = page.locator('#kcGrades');
+        await expect(answer).toBeVisible();
+        await expect(page.locator('#kcQuestion')).toBeHidden();
+        await expect(answer.locator('.katex-error')).toHaveCount(0);
+        await expect(ratings.getByRole('button')).toHaveCount(4);
+        await expect(ratings).toBeInViewport({ ratio: 1 });
+        await expect(equation).toHaveAttribute('tabindex', '0');
+        await equation.scrollIntoViewIfNeeded();
+        const offset = await content.evaluate(node => node.scrollTop);
+        expect(offset).toBeGreaterThan(200);
+        expect(await equation.evaluate(node => {
+            node.scrollLeft = node.scrollWidth;
+            return node.scrollLeft;
+        })).toBeGreaterThan(200);
+        expect(await content.evaluate(node => node.scrollWidth - node.clientWidth)).toBeLessThanOrEqual(1);
+        await page.locator('#kcPauseBtn').tap();
+        await page.locator('#kcResumeSession').tap();
+        await expect(answer).toBeVisible();
+        await expect.poll(() => content.evaluate(node => node.scrollTop)).toBeGreaterThan(offset - 25);
+        await expect(ratings).toBeInViewport({ ratio: 1 });
+        await ratings.getByRole('button', { name: /Легко/ }).tap();
+        await expect(answer).toBeHidden();
+        await expect(content).toHaveJSProperty('scrollTop', 0);
+    });
+});
+
 test('course navigation follows published sections and browser history', async ({ page }) => {
     await page.goto('/likbez.html');
     const courses = page.getByRole('combobox', { name: 'Курс ликбеза' });
