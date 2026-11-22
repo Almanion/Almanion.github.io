@@ -52,7 +52,9 @@ for(const renderer of ["babylon","canvas"]){
   await capture(page);const errors=[];page.on("pageerror",e=>errors.push(e.message));
   let release;const gate=new Promise(r=>release=r),requests=[];
   await page.route("**/assets/terrain/*.webp*",async route=>{requests.push(route.request().url());await gate;await route.continue();});
-  await page.goto("/games/signal-frontier/?renderer="+renderer);await page.waitForFunction(()=>window.SignalGame);
+  // Terrain images can start before window.load and are held until the first screenshot.
+  await page.goto("/games/signal-frontier/?renderer="+renderer,{waitUntil:"domcontentloaded"});
+  await page.waitForFunction(()=>window.SignalGame);
   await page.locator("#start").click();await expect.poll(()=>page.evaluate(()=>SignalGame.mode())).toBe("tactical");
   await page.waitForFunction(()=>SignalGame.cameraSettled()&&!terrainTestView.memoryNeedsRefine);
   const initial=PNG.sync.read(await page.screenshot()),state=await page.evaluate(()=>SignalGame.snapshot());
