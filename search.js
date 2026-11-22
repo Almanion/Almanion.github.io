@@ -577,16 +577,15 @@
             } else if (event.key === 'Enter' && state.results.length) {
                 event.preventDefault();
                 openResult(state.results[Math.max(0, state.selected)]);
-            } else if (event.key === 'Escape') {
+            } else if (event.key === 'Escape' && !home) {
                 event.preventDefault();
                 state.input.value = '';
                 state.query = '';
                 close();
-                if (home) document.getElementById('homeSearchDialog').close();
-                else state.input.focus();
+                state.input.focus();
             }
         });
-        document.addEventListener('click', event => {
+        if (!home) document.addEventListener('click', event => {
             if (state.panel?.classList.contains('hidden')) return;
             if (event.target.closest('.search-box, .site-search-panel')) return;
             close();
@@ -594,7 +593,8 @@
         const main = document.querySelector('.main-content');
         if (main) new MutationObserver(() => { localCache = new WeakMap(); })
             .observe(main, { childList: true, characterData: true, subtree: true });
-        document.getElementById('homeSearchDialog')?.addEventListener('close', close);
+        const dialog = document.getElementById('homeSearchDialog');
+        dialog?.addEventListener('close', () => { if (!dialog.open) close(); });
         restoreTarget();
         // The first input event may precede this intent-loaded script.
         if (state.input.value.trim().length >= 2) run(state.input.value);

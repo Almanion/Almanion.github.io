@@ -21,6 +21,7 @@ main {
   padding: 42px 32px 72px;
 }
 .back {
+  gap: 7px;
   display: inline-flex;
   align-items: center;
   min-height: 44px;

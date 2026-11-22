@@ -12,6 +12,57 @@
     var initialEntranceTimer = 0;
     var currentGrade = '';
 
+    function initHomeSearch() {
+        const dialog = document.getElementById('homeSearchDialog');
+        if (!dialog) return;
+        const openButton = document.getElementById('homeSearchOpen');
+        const input = dialog.querySelector('input');
+        let pendingClose = null;
+
+        function dismiss(clearInput = false) {
+            if (!dialog.open || pendingClose) return;
+            function finish() {
+                if (pendingClose !== finish) return;
+                pendingClose = null;
+                if (clearInput) input.value = '';
+                dialog.close();
+                dialog.removeAttribute('data-closing');
+            }
+
+            // Keep the results, backdrop and native focus trap together until the fade ends.
+            pendingClose = finish;
+            dialog.setAttribute('data-closing', '');
+            const fade = dialog.getAnimations?.().find(animation => animation.transitionProperty === 'opacity');
+            if (fade) fade.finished.then(finish, finish);
+            else finish();
+        }
+
+        openButton.addEventListener('click', () => {
+            pendingClose = null;
+            dialog.removeAttribute('data-closing');
+            if (!dialog.open) dialog.showModal();
+            input.focus();
+            input.select();
+        });
+        document.getElementById('homeSearchClose').addEventListener('click', () => dismiss());
+        dialog.addEventListener('click', event => {
+            if (event.target !== dialog) return;
+            const rect = dialog.getBoundingClientRect();
+            if (event.clientX < rect.left || event.clientX > rect.right ||
+                event.clientY < rect.top || event.clientY > rect.bottom) dismiss();
+        });
+        function cancel(event) {
+            event.preventDefault();
+            dismiss(true);
+        }
+        dialog.addEventListener('cancel', cancel);
+        dialog.addEventListener('keydown', event => { if (event.key === 'Escape') cancel(event); });
+        dialog.addEventListener('close', () => {
+            if (!dialog.open) openButton.focus({ preventScroll: true });
+        });
+    }
+    initHomeSearch();
+
     // Keep visual, reading and keyboard order aligned at each breakpoint.
     // This runs before the account scripts, not after idle personalization.
     var mobileLayout = window.matchMedia('(max-width: 768px)');

@@ -15,7 +15,7 @@ const mobileStyles = fs.readFileSync(path.join(root, 'styles', 'mobile-overrides
 const shell = JSON.parse(fs.readFileSync(path.join(root, 'performance', 'sw-shell.json'), 'utf8')).assets;
 
 assert.match(page, /styles\/home-motion\.css\?v=20261121-1/, 'home motion stylesheet must be versioned');
-assert.match(page, /home-motion\.js\?v=20261121-1/, 'homepage motion changes must invalidate the previous controller');
+assert.match(page, /home-motion\.js\?v=20261122-2/, 'homepage motion changes must invalidate the previous controller');
 assert.doesNotMatch(page, /card\.style\.animationDelay/, 'cards must not inherit a global inline stagger');
 
 ['9', '10', '11', 'Archive'].forEach(grade => {

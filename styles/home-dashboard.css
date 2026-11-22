@@ -855,6 +855,34 @@ body.home-page .home-search-open { margin-inline-start: auto; }
     box-shadow: var(--shadow-lg);
 }
 .home-search-dialog::backdrop { background: rgb(9 12 25 / 42%); }
+@media screen and (prefers-reduced-motion: no-preference) {
+    :where(html:not([data-page-motion="off"])) .home-page:not(.animations-off) {
+        --search-rise: calc(-1.5 * var(--enter-distance));
+        --search-enter: var(--enter-duration);
+        --search-exit: min(140ms, var(--enter-duration));
+    }
+    .home-search-dialog[open] {
+        transition: opacity var(--search-enter, 0s) ease-out, translate var(--search-enter, 0s) var(--enter-ease);
+    }
+    .home-search-dialog[open]::backdrop { transition: opacity var(--search-enter, 0s) ease-out; }
+    .home-search-dialog[data-closing], .home-search-dialog[data-closing]::backdrop {
+        opacity: 0;
+        transition-duration: var(--search-exit, 0s);
+    }
+    .home-search-dialog[data-closing] { translate: 0 var(--search-rise, 0px); }
+    @starting-style {
+        .home-search-dialog[open] { opacity: 0; translate: 0 var(--search-rise, 0px); }
+        .home-search-dialog[open]::backdrop { opacity: 0; }
+    }
+}
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+    :where(html:not([data-page-motion="medium"], [data-page-motion="off"]) body.animations-max) .home-search-open svg {
+        transition: transform var(--enter-duration) var(--enter-ease);
+    }
+    :where(html:not([data-page-motion="medium"], [data-page-motion="off"]) body.animations-max) .home-search-open:is(:hover, :focus-visible) svg {
+        transform: translate(-1px, -1px) rotate(-8deg);
+    }
+}
 .home-search-dialog header { display: flex; align-items: center; justify-content: space-between; gap: .5rem; margin-bottom: .7rem; }
 .home-search-dialog header h2 { margin: 0; font-size: 1.15rem; }
 .home-search-dialog header button { font-size: 1.5rem; line-height: 1; }

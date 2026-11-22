@@ -238,10 +238,10 @@ function build(options) {
             .replace(/(src=["']print-export\.js)(?:\?[^"']*)?(["'])/g, '$1?v=20261113-5$2')
             .replace(/(src=["']note-runtime\.js)(?:\?[^"']*)?(["'])/g, '$1?v=20261114-2$2')
             .replace(/(src=["']account\.js)(?:\?[^"']*)?(["'])/g, '$1?v=20261117-contests$2')
-            .replace(/(src=["']home-motion\.js)(?:\?[^"']*)?(["'])/g, '$1?v=20261121-1$2')
             .replace(/(src=["'](?:script|note-runtime|print-export|russian-ege|duty\/view)\.js)(?:\?[^"']*)?(["'])/g, '$1?v=20261121-2$2')
             .replace(/((?:src|href)=["'](?:(?:script|note-runtime|print-export)\.js|styles\/(?:copy-blocks|chemistry-10-notes|print)\.css))(?:\?[^"']*)?(["'])/g, '$1?v=20261121-4$2')
-            .replace(/(src=["']experimental-reader\.js)(?:\?[^"']*)?(["'])/g, '$1?v=20261122-1$2');
+            .replace(/(src=["']experimental-reader\.js)(?:\?[^"']*)?(["'])/g, '$1?v=20261122-1$2')
+            .replace(/(src=["'](?:home-motion|note-runtime)\.js)(?:\?[^"']*)?(["'])/g, '$1?v=20261122-2$2');
         let published = updated;
         // The browser decides whether to take a navigation snapshot before
         // deferred scripts run. Make the opt-in available with the first bytes of HTML.

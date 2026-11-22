@@ -75,6 +75,41 @@ test('broad searches reveal additional matches without another download', async 
     expect(downloads).toBe(1);
 });
 
+test('homepage search keeps its results while closing and can be reopened mid-fade', async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'no-preference' });
+    await page.goto('/');
+    const dialog = page.locator('#homeSearchDialog');
+    const input = dialog.locator('input');
+    const open = page.locator('#homeSearchOpen');
+    await open.click();
+    await input.fill('давление');
+    await expect(dialog.getByRole('option').first()).toBeVisible();
+    await dialog.evaluate(element => Promise.all(element.getAnimations().map(effect => effect.finished)));
+
+    const stayedOpen = await dialog.evaluate(element => {
+        const height = element.offsetHeight;
+        document.getElementById('homeSearchClose').click();
+        const keptResults = element.matches(':modal[data-closing]') && element.offsetHeight === height;
+        document.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', ctrlKey: true, bubbles: true }));
+        return keptResults && !element.hasAttribute('data-closing');
+    });
+    expect(stayedOpen).toBe(true);
+    await expect(input).toBeFocused();
+    await expect(dialog.getByRole('option').first()).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(dialog).toBeHidden();
+    await expect(open).toBeFocused();
+    await expect(input).toHaveValue('');
+
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await page.keyboard.press('Control+k');
+    await expect(input).toBeFocused();
+    expect(await dialog.evaluate(element => {
+        document.getElementById('homeSearchClose').click();
+        return element.open;
+    })).toBe(false);
+});
+
 test('the current paragraph starts a scoped session and preserves the custom deck', async ({ page }) => {
     await page.goto('/physics-10.html');
     await page.locator('#knowledgeCheckBtn').click();

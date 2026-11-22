@@ -27,6 +27,7 @@
     "experimental-reader.js",
     "experiment-notebook.js",
     "favicon-theme.js",
+    "favicon.ico",
     "firebase-analytics.js",
     "firebase-config.js",
     "geometry-formulas.html",

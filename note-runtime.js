@@ -19,7 +19,7 @@
         filter: 'note-filter.js?v=20261121-4',
         settings: 'settings.js?v=20261002-1',
         searchText: 'search-text.js?v=20261121-2',
-        search: 'search.js?v=20261121-4',
+        search: 'search.js?v=20261122-2',
         print: 'print-export.js?v=20261121-4',
         knowledge: 'knowledge-check.js?v=20261121-2',
         newyear: 'newyear.js?v=20261002-1',
@@ -212,23 +212,12 @@
             ? function (callback, timeout) { requestIdleCallback(callback, { timeout: timeout }); }
             : function (callback, timeout) { setTimeout(callback, Math.min(timeout, 400)); };
         if (document.body.classList.contains('home-page')) {
-            const dialog = document.getElementById('homeSearchDialog');
-            const input = dialog?.querySelector('#searchInput');
+            const input = document.getElementById('searchInput');
             if (input) {
                 const load = () => ensure('search').catch(() => { input.placeholder = 'Поиск не загрузился. Повторите ввод'; });
-                document.getElementById('homeSearchOpen').addEventListener('click', () => {
-                    if (!dialog.open) dialog.showModal();
-                    input.focus();
-                    input.select();
-                    load();
-                });
+                input.addEventListener('focus', load);
                 input.addEventListener('input', () => { if (!window.AlmanionSearch) load(); });
-                document.getElementById('homeSearchClose').addEventListener('click', () => dialog.close());
-                dialog.addEventListener('close', () => document.getElementById('homeSearchOpen').focus({ preventScroll: true }));
-                dialog.addEventListener('click', event => {
-                    const rect = dialog.getBoundingClientRect();
-                    if (event.target === dialog && (event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom)) dialog.close();
-                });
+                if (document.activeElement === input) load();
             }
             schedule(function () {
                 ensure('account').then(function () { return loadScript('analytics'); }).catch(function () {});
