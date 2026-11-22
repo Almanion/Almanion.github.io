@@ -20,10 +20,11 @@
         filter: 'note-filter.js?v=20261121-4',
         settings: 'settings.js?v=20261002-1',
         searchText: 'search-text.js?v=20261121-2',
-        search: 'search.js?v=20261122-2',
+        search: 'search.js?v=20261122-4',
         print: 'print-export.js?v=20261121-4',
-        knowledge: 'knowledge-check.js?v=20261122-3',
-        knowledgeStyles: 'styles/knowledge-check.css?v=20261122-3',
+        knowledge: 'knowledge-check.js?v=20261122-4',
+        knowledgeStyles: 'styles/knowledge-check.css?v=20261122-4',
+        studyInk: 'study-ink.js?v=1',
         newyear: 'newyear.js?v=20261002-1',
         firebaseApp: 'https://www.gstatic.com/firebasejs/12.18.0/firebase-app-compat.js',
         firebaseDatabase: 'https://www.gstatic.com/firebasejs/12.18.0/firebase-database-compat.js',
@@ -32,7 +33,7 @@
         dataSync: 'data-sync.js?v=20260908-1',
         analytics: 'firebase-analytics.js?v=20261009-4',
         account: 'account.js?v=20261018-1',
-        bookmarks: 'bookmarks.js?v=20261018-1',
+        bookmarks: 'bookmarks.js?v=20261122-4',
         editor: 'note-editor.js?v=20261015-1'
     };
 
@@ -151,6 +152,7 @@
         experiments: function () { return loadScript('experiments'); },
         settings: loadSettings,
         search: loadSearch,
+        studyInk: () => loadScript('studyInk'),
         print: function () { return loadStyle('printStyles').then(function () { return loadScript('print'); }); },
         knowledge: function () {
             return Promise.all([loadStyle('featureStyles'), loadStyle('knowledgeStyles')]).then(() => loadScript('knowledge'));

@@ -672,7 +672,7 @@ function openMobileMenu(opener) {
     syncSidebarVisibility(sidebar);
     const first = [...sidebar.querySelectorAll('button, a[href], input')].find(el => !el.disabled && el.getClientRects().length);
     first?.focus({ preventScroll: true });
-    if (!sidebar.classList.contains('exp-search-on')) revealCurrentNav(sidebar);
+    revealCurrentNav(sidebar);
 }
 
 function revealCurrentNav(sidebar, focusLink = false) {
@@ -701,7 +701,6 @@ function closeMobileMenu(restoreFocus = true) {
     const wasOpen = sidebar?.classList.contains('open');
     if (sidebar) {
         sidebar.classList.remove('open');
-        sidebar.classList.remove('exp-search-on'); // сбрасываем «режим поиска» в меню
         sidebar.style.transform = '';
         syncSidebarVisibility(sidebar);
     }
@@ -958,10 +957,16 @@ document.addEventListener('keydown', (e) => {
             const homeSearch = document.getElementById('homeSearchOpen');
             if (homeSearch) { homeSearch.click(); return; }
             if (window.innerWidth > 768 && searchInput.closest('#sidebar.collapsed')) expandSidebar();
-            if (window.innerWidth <= 768 && searchInput.closest('#sidebar')) {
-                const searchButton = document.querySelector('#expBottomNav [aria-label="Поиск"]');
-                if (searchButton?.getClientRects().length) { searchButton.click(); return; }
-                openMobileMenu(mobileMenuButton());
+            if (window.innerWidth <= 768 && document.body.classList.contains('matcenter-page')) {
+                const mobileInput = document.getElementById('mobileSearchInput');
+                if (mobileInput?.getClientRects().length) {
+                    mobileInput.focus();
+                    mobileInput.select();
+                    return;
+                }
+            } else if (window.innerWidth <= 768 && searchInput.closest('#sidebar, .reader-search-dialog')) {
+                openReaderSearch(document.querySelector('#expBottomNav [aria-controls="readerSearchDialog"]'));
+                return;
             }
             searchInput.focus();
             searchInput.select();
@@ -1289,6 +1294,61 @@ console.log('   • [ - Свернуть/развернуть боковое м�
 // Нижняя навигация (нативный мобильный экспериментальный дизайн).
 // Видна только при body.experimental на телефоне (управляется CSS).
 // ============================================
+function openReaderSearch(opener) {
+    const input = document.getElementById('searchInput');
+    const box = input?.closest('.search-box');
+    if (!box) return;
+    if (box.closest('dialog[open]')) { input.focus(); return; }
+    const sidebar = box.closest('#sidebar');
+    if (!sidebar) return;
+    const trigger = opener?.getClientRects().length && !sidebar.contains(opener) ? opener : mobileMenuButton();
+    if (sidebar.classList.contains('open')) closeMobileMenu(false);
+    const place = document.createComment('reader search');
+    box.before(place);
+    const dialog = document.createElement('dialog');
+    dialog.id = 'readerSearchDialog';
+    dialog.className = 'reader-search-dialog';
+    dialog.setAttribute('aria-label', 'Поиск по конспекту');
+    const close = document.createElement('button');
+    close.type = 'button';
+    close.className = 'reader-search-dismiss';
+    close.textContent = 'Закрыть';
+    close.addEventListener('click', () => dialog.close());
+    dialog.append(box, close);
+    const results = document.getElementById('searchResultsPanel');
+    if (results) dialog.append(results);
+    document.body.append(dialog);
+    const viewport = window.visualViewport;
+    const size = () => dialog.style.setProperty('--search-viewport', (viewport?.height || innerHeight) + 'px');
+    const phone = matchMedia('(max-width: 768px)');
+    const resized = () => { if (!phone.matches && dialog.open) dialog.close(); };
+    size();
+    viewport?.addEventListener('resize', size);
+    phone.addEventListener('change', resized);
+    dialog.addEventListener('click', event => {
+        if (event.target === dialog && !box.contains(event.target)) {
+            const rect = dialog.getBoundingClientRect();
+            if (event.clientY < rect.top || event.clientY > rect.bottom || event.clientX < rect.left || event.clientX > rect.right) dialog.close();
+        }
+    });
+    dialog.addEventListener('close', () => {
+        viewport?.removeEventListener('resize', size);
+        phone.removeEventListener('change', resized);
+        const panel = dialog.querySelector('#searchResultsPanel');
+        window.AlmanionSearch?.close?.();
+        input.value = '';
+        place.replaceWith(box);
+        if (panel) box.after(panel);
+        dialog.remove();
+        if (trigger?.getAttribute('aria-controls') === dialog.id) trigger.setAttribute('aria-expanded', 'false');
+        if (trigger?.getClientRects().length) trigger.focus({ preventScroll: true });
+        else if (!sidebar.inert) input.focus({ preventScroll: true });
+    }, { once: true });
+    dialog.showModal();
+    if (trigger?.getAttribute('aria-controls') === dialog.id) trigger.setAttribute('aria-expanded', 'true');
+    input.focus({ preventScroll: true });
+}
+
 function initExpBottomNav() {
     if (document.getElementById('expBottomNav')) return;
     if (!document.getElementById('sidebar')) return; // только страницы с меню
@@ -1334,13 +1394,7 @@ function initExpBottomNav() {
                 return;
             }
         }
-        const sb = document.getElementById('sidebar');
-        if (sb) sb.classList.add('exp-search-on'); // временно показать строку поиска в меню
-        if (window.openMobileMenu) window.openMobileMenu(event.currentTarget);
-        setTimeout(function () {
-            const s = document.getElementById('searchInput');
-            if (s && sb?.classList.contains('open')) { s.scrollIntoView({ block: 'center' }); s.focus(); }
-        }, 90);
+        openReaderSearch(event.currentTarget);
     }
 
     const items = [
@@ -1373,7 +1427,12 @@ function initExpBottomNav() {
         b.className = 'exp-bn-item';
         b.setAttribute('aria-label', it.label);
         if (it.label === 'Учить') b.setAttribute('aria-haspopup', 'dialog');
-        if (it.act === toggleMenu || (it.act === openSearch && !isMatcenter)) {
+        if (it.act === openSearch && !isMatcenter) {
+            b.setAttribute('aria-haspopup', 'dialog');
+            b.setAttribute('aria-controls', 'readerSearchDialog');
+            b.setAttribute('aria-expanded', 'false');
+        }
+        if (it.act === toggleMenu) {
             b.setAttribute('aria-controls', 'sidebar');
             b.setAttribute('aria-expanded', 'false');
         }
@@ -1384,6 +1443,10 @@ function initExpBottomNav() {
         nav.appendChild(b);
     });
     document.body.appendChild(nav);
+    const input = document.querySelector('#sidebar #searchInput');
+    if (!isMatcenter && input) input.addEventListener('focus', () => {
+        if (window.innerWidth <= 768 && input.closest('#sidebar.open')) openReaderSearch();
+    });
 }
 document.addEventListener('DOMContentLoaded', initExpBottomNav);
 

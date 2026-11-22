@@ -220,7 +220,9 @@
             <button type="button" class="search-results-more" hidden>Показать ещё</button>`;
 
         const box = state.input.closest('.search-box');
-        (box?.parentElement || state.input.parentElement).insertBefore(panel, box?.nextSibling || state.input.nextSibling);
+        const readerDialog = box?.closest('.reader-search-dialog');
+        if (readerDialog) readerDialog.append(panel);
+        else (box?.parentElement || state.input.parentElement).insertBefore(panel, box?.nextSibling || state.input.nextSibling);
         state.panel = panel;
         state.list = panel.querySelector('.search-results-list');
         state.count = panel.querySelector('.site-search-count');
@@ -521,6 +523,7 @@
     function openResult(result) {
         if (!result) return;
         const currentPage = pagePath(location.pathname);
+        state.input.closest('.reader-search-dialog[open]')?.close();
         close();
         if (result.page !== currentPage) {
             location.href = resultUrl(result);
@@ -578,6 +581,7 @@
                 event.preventDefault();
                 openResult(state.results[Math.max(0, state.selected)]);
             } else if (event.key === 'Escape' && !home) {
+                if (state.input.closest('.reader-search-dialog')) return;
                 event.preventDefault();
                 state.input.value = '';
                 state.query = '';
@@ -600,5 +604,5 @@
         if (state.input.value.trim().length >= 2) run(state.input.value);
     }
 
-    window.AlmanionSearch = { init };
+    window.AlmanionSearch = { init, close };
 })();

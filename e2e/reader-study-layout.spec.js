@@ -117,6 +117,7 @@ test('the current paragraph starts a scoped session and preserves the custom dec
     await expect(page.locator('#kcQuickTopic')).toHaveText(await page.locator('article.exp-reader-current .topic-title').innerText());
     await expect(page.locator('#kcCustomOptions')).toBeHidden();
     await page.locator('#kcConfigure').click();
+    await page.locator('#kcSizeOptions > summary').click();
     await page.locator('[data-limit="15"]').click();
     await page.locator('#kcConfigure').click();
     await page.locator('#kcQuickStart').click();
@@ -148,6 +149,8 @@ test('tablet learning opens from the toolbar and topic search keeps the selectio
     await expect(page.locator('#kcQuickStart')).toBeHidden();
     await expect(page.locator('#kcTypeOptions')).toHaveJSProperty('open', false);
     expect(await page.locator('#kcDeckList .kc-topic-group').count()).toBeGreaterThan(1);
+    await expect(page.locator('#kcSelectChoices details[open]')).toHaveCount(0);
+    await page.locator('#kcTopicOptions > summary').click();
     await page.locator('#kcSelectAll').click();
     const search = page.getByRole('searchbox', { name: 'Поиск тем' });
     await search.fill('неизвестная тема');
@@ -224,6 +227,109 @@ test('Enter opens the note source, then Return to card resumes the same question
 
 test.describe('touch study', () => {
     test.use({ hasTouch: true, isMobile: true, viewport: { width: 320, height: 568 } });
+    test('bookmarks start on the dialog and only focus search when tapped', async ({ page }) => {
+        await page.goto('/physics-10.html');
+        const open = page.locator('#expBottomNav').getByRole('button', { name: 'Закладки' });
+        await open.tap();
+        await expect(page.locator('#bookmarksModal')).toBeFocused();
+        const input = page.locator('#bookmarksSearch');
+        await expect(input).not.toBeFocused();
+        await input.tap();
+        await expect(input).toBeFocused();
+        await page.keyboard.press('Escape');
+        await expect(page.locator('#bookmarksModal')).toBeHidden();
+    });
+
+    test('a finger draft can be compared, resumed, erased with a pen and undone', async ({ page, browserName }) => {
+        test.skip(browserName !== 'chromium', 'The hardware pen protocol is exercised in Chromium.');
+        await page.goto('/physics-10.html');
+        const learn = page.locator('#expBottomNav').getByRole('button', { name: 'Учить' });
+        await learn.tap();
+        await page.locator('#kcQuickStart').tap();
+        const sheet = page.locator('#kcSketch canvas');
+        const pad = page.locator('#kcSketch');
+        await expect(sheet).toBeVisible();
+        await pad.getByRole('button', { name: 'Коралловый' }).tap();
+        await sheet.scrollIntoViewIfNeeded();
+        const box = await sheet.boundingBox();
+        const center = { x: box.x + box.width / 2, y: box.y + box.height / 2 };
+        const client = await page.context().newCDPSession(page);
+        // Real browser touch and barrel button events exercise pointer capture and compositing.
+        await client.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ ...center, x: center.x - 25 }] });
+        await client.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ ...center, x: center.x + 25 }] });
+        await client.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+        const pixel = () => sheet.evaluate(el => [...el.getContext('2d').getImageData(el.width >> 1, el.height >> 1, 1, 1).data]);
+        const first = await pixel();
+        expect(first[3]).toBeGreaterThan(160);
+        expect(first[0]).toBeGreaterThan(first[1]);
+        for (const [type, button, buttons, offset, force] of [
+            ['mousePressed', 'right', 2, -10, 0], ['mousePressed', 'left', 3, -10, .6],
+            ['mouseMoved', 'none', 3, 10, .6], ['mouseReleased', 'left', 2, 10, 0], ['mouseReleased', 'right', 0, 10, 0]
+        ]) {
+            await client.send('Input.dispatchMouseEvent', { type, button, buttons, x: center.x, y: center.y + offset, pointerType: 'pen', force });
+        }
+        expect((await pixel())[3]).toBe(0);
+        await pad.getByRole('button', { name: 'Отменить штрих' }).tap();
+        expect(await pixel()).toEqual(first);
+        await pad.getByRole('button', { name: 'Вернуть штрих' }).tap();
+        expect((await pixel())[3]).toBe(0);
+        await pad.getByRole('button', { name: 'Отменить штрих' }).tap();
+        await page.setViewportSize({ width: 568, height: 320 });
+        await expect.poll(async () => (await pixel())[3]).toBeGreaterThan(160);
+        await page.setViewportSize({ width: 320, height: 568 });
+        await page.locator('#kcFront').tap();
+        await expect(sheet).toBeHidden();
+        await pad.getByRole('button', { name: 'Черновик' }).tap();
+        expect(await pixel()).toEqual(first);
+        await page.locator('#kcPauseBtn').tap();
+        await page.reload();
+        await learn.tap();
+        await page.locator('#kcResumeSession').tap();
+        await expect(page.locator('#kcBack')).toBeVisible();
+        await pad.getByRole('button', { name: 'Черновик' }).tap();
+        expect(await pixel()).toEqual(first);
+        await pad.getByRole('button', { name: 'Очистить черновик' }).tap();
+        expect((await pixel())[3]).toBe(0);
+        await pad.getByRole('button', { name: 'Отменить штрих' }).tap();
+        expect(await pixel()).toEqual(first);
+        await page.locator('#kcGrades [data-g="2"]').tap();
+        await page.locator('#kcRepeatNow').tap();
+        await expect(sheet).toBeVisible();
+        expect((await pixel())[3]).toBe(0);
+    });
+
+    test('timed confirmations honour the chosen interval and can be turned off during a wait', async ({ page }) => {
+        await page.clock.install();
+        await page.goto('/physics-10.html');
+        const learn = page.locator('#expBottomNav').getByRole('button', { name: 'Учить' });
+        await learn.tap();
+        await expect(page.locator('#kcPauseValue')).toHaveText('1 мин');
+        await page.locator('#kcPauseOptions > summary').tap();
+        await page.getByRole('button', { name: '15 с', exact: true }).tap();
+        await page.locator('#kcQuickStart').tap();
+        await page.locator('#kcFront').tap();
+        await page.locator('#kcGrades [data-g="1"]').tap();
+        await expect(page.locator('#kcWaitTime')).toBeVisible();
+        await expect(page.locator('#kcWaitTime')).toHaveText(/0:1[45]/);
+        await page.emulateMedia({ reducedMotion: 'reduce' });
+        await expect(page.locator('.kc-intermission .kc-bubble-a')).toHaveCSS('animation-name', 'none');
+        await page.clock.fastForward(16_000);
+        await expect(page.locator('#kcFront')).toBeVisible();
+        await page.locator('#kcFront').tap();
+        await page.locator('#kcGrades [data-g="2"]').tap();
+        await page.locator('#kcDisablePauses').tap();
+        await expect(page.locator('#kcFront')).toBeVisible();
+        await page.locator('#kcFront').tap();
+        await page.locator('#kcGrades [data-g="1"]').tap();
+        await expect(page.locator('#kcFront')).toBeVisible();
+        await expect(page.locator('#kcWaitTime')).toHaveCount(0);
+        await page.goto('/chemistry-10.html');
+        await learn.tap();
+        await expect(page.locator('#kcPauseValue')).toHaveText('Без пауз');
+        await page.locator('#kcPauseOptions > summary').tap();
+        await page.getByRole('button', { name: '1 мин', exact: true }).tap();
+        await expect(page.locator('#kcPauseValue')).toHaveText('1 мин');
+    });
     test('a long answer scrolls under fixed ratings, and a wide equation pans independently', async ({ page }) => {
         await page.emulateMedia({ colorScheme: 'dark', reducedMotion: 'reduce' });
         await page.goto(cyclePage);

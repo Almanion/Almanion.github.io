@@ -608,7 +608,7 @@
         overlay.className = 'auth-overlay bookmarks-overlay hidden';
         overlay.setAttribute('aria-hidden', 'true');
         overlay.innerHTML = [
-            '<section id="bookmarksModal" class="bookmarks-panel" role="dialog" aria-modal="true" aria-labelledby="bookmarksTitle">',
+            '<section id="bookmarksModal" class="bookmarks-panel" role="dialog" aria-modal="true" aria-labelledby="bookmarksTitle" tabindex="-1">',
             '  <div class="bookmarks-grabber" aria-hidden="true"></div>',
             '  <header class="bookmarks-header">',
             '    <div class="bookmarks-heading-icon">' + bookmarkSvg(false) + '</div>',
@@ -664,7 +664,6 @@
         const overlay = ensurePanel();
         if (panelOpen) {
             renderBookmarksList();
-            requestAnimationFrame(function () { overlay.querySelector('#bookmarksSearch').focus(); });
             return;
         }
         lastFocusedElement = document.activeElement;
@@ -676,7 +675,7 @@
         overlay.setAttribute('aria-hidden', 'false');
         document.getElementById('bookmarksBtn')?.setAttribute('aria-expanded', 'true');
         renderBookmarksList();
-        requestAnimationFrame(function () { overlay.querySelector('#bookmarksSearch').focus(); });
+        overlay.querySelector('#bookmarksModal').focus({ preventScroll: true });
     }
 
     function closeBookmarksPanel() {
@@ -705,7 +704,7 @@
         if (!focusable.length) return;
         const first = focusable[0];
         const last = focusable[focusable.length - 1];
-        if (event.shiftKey && document.activeElement === first) {
+        if (event.shiftKey && (document.activeElement === first || document.activeElement.id === 'bookmarksModal')) {
             event.preventDefault();
             last.focus();
         } else if (!event.shiftKey && document.activeElement === last) {

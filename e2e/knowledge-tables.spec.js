@@ -12,6 +12,14 @@ async function open(page){
     await page.locator('#kcConfigure').click();
 }
 async function rows(page){return page.evaluate(()=>window.__kcFSRS.extractCards([...document.querySelectorAll('article.topic')].map(t=>t.id),['table']));}
+async function chooseTableTopic(page, id) {
+    await page.locator('#kcTopicOptions > summary').click();
+    await page.locator('#kcSelectAll').click();
+    await expect(page.locator('#kcStart')).toBeDisabled();
+    const topic = page.locator('.kc-deck[data-topic="' + id + '"]');
+    await topic.locator('xpath=ancestor::details[1]/summary').click();
+    await topic.click();
+}
 async function dark(page){
     if(!await page.evaluate(()=>typeof applyExperimental==='function'))await page.addScriptTag({url:'/settings.js'});
     await page.evaluate(()=>{Object.assign(siteSettings,{experimental:true,expMode:'prism',expDark:true,expTheme:'dark'});applyExperimental();});
@@ -55,9 +63,7 @@ for(const width of [1366,390,320])test('separate table section and readable answ
     await expect(page.locator('#kcTypeList')).toBeHidden();
     await expect(page.locator('#kcDeckList .kc-deck')).toHaveCount(5);
     await expect(page.locator('#kcStartCount')).toHaveText('35');
-    await page.locator('#kcSelectAll').click();
-    await expect(page.locator('#kcStart')).toBeDisabled();
-    await page.locator('.kc-deck[data-topic="funktsionalnye-gruppy-i-klassy"]').click();
+    await chooseTableTopic(page, 'funktsionalnye-gruppy-i-klassy');
     await expect(page.locator('#kcStartCount')).toHaveText('8');
     await page.locator('[data-section="blocks"]').click();
     await page.locator('#kcTypesHeading').click();
@@ -103,8 +109,7 @@ test('merged, ignored, and layout tables are not presented as incomplete questio
 });
 test('table session can be undone and completed in dark mode',async({page})=>{
     await open(page);await dark(page);await page.locator('[data-section="tables"]').click();
-    await page.locator('#kcSelectAll').click();
-    await page.locator('.kc-deck[data-topic="valentnost-i-stepen-okisleniya"]').click();
+    await chooseTableTopic(page, 'valentnost-i-stepen-okisleniya');
     await expect(page.locator('#kcStartCount')).toHaveText('2');
     await page.screenshot({path:'playwright-report/table-selection-dark.png'});
     await page.locator('#kcStart').click();
@@ -121,8 +126,7 @@ test('table session can be undone and completed in dark mode',async({page})=>{
 });
 test('orbital diagrams in a table answer follow the dark theme',async({page})=>{
     await open(page);await dark(page);await page.locator('[data-section="tables"]').click();
-    await page.locator('#kcSelectAll').click();
-    await page.locator('.kc-deck[data-topic="tipy-gibridizatsii"]').click();
+    await chooseTableTopic(page, 'tipy-gibridizatsii');
     await page.locator('#kcStart').click();await page.locator('#kcFront').click();
     await expect(page.locator('#kcBack svg')).toHaveCount(2);
     const colors=await page.locator('#kcBack svg').first().evaluate(svg=>({paper:getComputedStyle(svg.querySelector('rect')).fill,ink:getComputedStyle(svg.querySelector('text')).fill}));

@@ -2803,6 +2803,10 @@ input:focus:not(:focus-visible) {
     height: 19px;
 }
 
+@media (min-width: 1025px) {
+    .sidebar .sidebar-header .home-icon { width: 1.15em; height: 1.15em; }
+}
+
 .sidebar .sidebar-header-buttons {
     display: flex;
     flex: 0 0 auto;
@@ -2907,8 +2911,46 @@ input:focus:not(:focus-visible) {
 @media (max-width: 768px) {
     .site-search-panel .search-result-meta { flex-direction: column; align-items: start; gap: 2px; }
     .site-search-panel .search-result-meta strong { white-space: normal; line-height: 1.35; font-size: .9rem; }
-    .sidebar.open.exp-search-on:has(.site-search-panel:not(.hidden)) .sidebar-header-buttons { display: none; }
-    .sidebar.open:has(.site-search-panel:not(.hidden)) > :is(.sidebar-actions, .print-export-menu-slot, .nav-menu, .sidebar-footer) { display: none; }
-    .sidebar.open:has(.site-search-panel:not(.hidden)) .site-search-panel { display: flex; flex-direction: column; min-height: 0; max-height: none; flex: 1 1 auto; }
-    .sidebar.open .site-search-panel .search-results-list { min-height: 0; max-height: none; overflow-y: auto; }
 }
+
+.reader-search-dialog {
+    position: fixed;
+    inset: max(.55rem, env(safe-area-inset-top)) 0 auto;
+    box-sizing: border-box;
+    width: min(38rem, calc(100% - 1rem));
+    max-height: calc(var(--search-viewport, 100dvh) - max(.55rem, env(safe-area-inset-top)) - .8rem);
+    margin: 0 auto;
+    padding: .45rem;
+    border: 1px solid var(--border-color);
+    border-radius: 15px;
+    color: var(--text-primary);
+    background: var(--bg-primary);
+    box-shadow: var(--shadow-lg);
+    overscroll-behavior: contain;
+}
+.reader-search-dialog[open] {
+    display: grid;
+    grid-template: auto minmax(0, 1fr) / minmax(0, 1fr) auto;
+    align-items: center;
+    gap: .3rem;
+}
+.reader-search-dialog::backdrop { background: rgb(12 15 26 / 48%); }
+body:has(.reader-search-dialog[open]) { overflow: hidden; }
+.reader-search-dialog .search-box { padding: 0; border: 0; background: transparent; }
+.reader-search-dialog .search-box input { height: 46px; padding-inline-start: 2.3rem; font-size: 16px; }
+.reader-search-dialog .search-box .sidebar-search-icon { left: .75rem; }
+.reader-search-dismiss {
+    min-height: 44px; padding: 0 .5rem; border: 0; border-radius: 9px;
+    background: transparent; color: var(--accent-color); font: inherit; font-size: .875rem; font-weight: 650;
+}
+.reader-search-dialog .site-search-panel {
+    display: flex; flex-direction: column; grid-column: 1 / -1;
+    min-height: 0; max-height: none; border: 0; box-shadow: none; background: transparent;
+}
+.reader-search-dialog .site-search-panel.hidden > :not(.site-search-scope),
+.reader-search-dialog .search-results-close { display: none; }
+.reader-search-dialog .site-search-scope { order: -1; flex: none; margin: .15rem 0 0; }
+.reader-search-dialog .site-search-scope button { min-height: 40px; }
+.reader-search-dialog .search-results-head { flex: none; padding: .3rem .55rem; }
+.reader-search-dialog .site-search-panel .search-results-list { min-height: 0; max-height: none; padding: 0; }
+.reader-search-dialog .search-results-more { flex: none; }

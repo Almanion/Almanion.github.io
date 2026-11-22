@@ -374,6 +374,38 @@
     const STORE_KEY = 'kc_fsrs_' + location.pathname;
     const SESSION_KEY = 'kc_session_v3_' + location.pathname;
     const PREFS_KEY = 'kc_preferences_v3_' + location.pathname;
+    const PAUSE_KEY = 'kc_preferences_v3_review_pause';
+    const PAUSE_OPTIONS = new Map([[0, 'Без пауз'], [15, '15 с'], [30, '30 с'], [60, '1 мин'], [120, '2 мин']]);
+    let pauseSeconds = readPause();
+
+    function readPause() {
+        const value = kcGet(PAUSE_KEY);
+        return value != null && value !== '' && PAUSE_OPTIONS.has(Number(value)) ? Number(value) : 60;
+    }
+
+    // Stored confirmation times include the original one-minute interval.
+    // Apply the reader's current preference to old sessions as well as new ones.
+    function confirmationTime(scheduled) {
+        return scheduled && pauseSeconds ? scheduled - MINUTE + pauseSeconds * 1000 : 0;
+    }
+
+    function readyAt(item) {
+        return item.practiceOnly ? confirmationTime(item.availableAt) : (item.availableAt || 0);
+    }
+
+    function setPause(seconds) {
+        pauseSeconds = seconds;
+        kcSet(PAUSE_KEY, String(seconds));
+        renderPauseOptions();
+    }
+
+    function renderPauseOptions() {
+        document.getElementById('kcPauseValue').textContent = PAUSE_OPTIONS.get(pauseSeconds);
+        document.getElementById('kcDisableManualPauses').hidden = pauseSeconds === 0;
+        document.querySelectorAll('#kcPauseOptions [data-seconds]').forEach(button => {
+            button.setAttribute('aria-pressed', String(Number(button.dataset.seconds) === pauseSeconds));
+        });
+    }
     const DEVICE_KEY = 'kc_device_id';
     const kcGlobalGet = scopedStorage ? scopedStorage.globalGet : kcGet;
     const kcGlobalSet = scopedStorage ? scopedStorage.globalSet : kcSet;
@@ -990,7 +1022,7 @@
             if (isNewState(state)) fresh.push(card);
             else {
                 const normalized = normalizeState(state);
-                const confirmationReady = normalized.pendingConfirmations > 0 && normalized.confirmationDue <= now;
+                const confirmationReady = normalized.pendingConfirmations > 0 && confirmationTime(normalized.confirmationDue) <= now;
                 if (confirmationReady || normalized.due <= now) {
                     due.push({
                         card: card,
@@ -1362,6 +1394,8 @@
                 '<div class="kc-select-scroll">' +
                 '<div id="kcSelectChoices">' +
                 '<div id="kcQuickOptions">' +
+                    '<div id="kcManualPause" hidden>' + pauseArtwork('kcManual') +
+                        '<button type="button" class="kc-turn-off-pauses" id="kcDisableManualPauses">Отключить паузы</button></div>' +
                     '<div class="kc-session-resume" id="kcSessionResume" hidden></div>' +
                     '<div class="kc-paragraph-choice" id="kcQuickChoice" hidden><strong id="kcQuickTopic"></strong>' +
                         '<button type="button" class="kc-btn kc-btn-primary" id="kcQuickStart"><span>Этот параграф</span><small id="kcQuickCount"></small></button></div>' +
@@ -1376,26 +1410,30 @@
                     '<summary id="kcTypesHeading"><span>Типы карточек</span><small id="kcTypesSelected"></small></summary>' +
                     '<div class="kc-type-list" id="kcTypeList"></div>' +
                 '</details>' +
-                '<section class="kc-filter-section" aria-labelledby="kcTopicsHeading">' +
-                    '<div class="kc-filter-heading-row"><div><h3 class="kc-filter-heading" id="kcTopicsHeading">Темы</h3>' +
-                        '<small class="kc-selected-topics" id="kcTopicCount" aria-live="polite"></small></div>' +
-                        '<button type="button" class="kc-btn kc-btn-ghost" id="kcSelectAll">Снять выбор</button></div>' +
+                '<details class="kc-filter-section kc-study-disclosure" id="kcTopicOptions">' +
+                    '<summary><span id="kcTopicsHeading">Темы</span><small id="kcTopicCount" aria-live="polite"></small></summary>' +
+                    '<div class="kc-disclosure-body"><div class="kc-topic-tools">' +
                     '<label class="kc-topic-search">' +
                         '<span class="kc-visually-hidden">Поиск тем</span>' +
                         '<input type="search" id="kcTopicSearch" placeholder="Найти тему" autocomplete="off"></label>' +
+                    '<button type="button" class="kc-btn kc-btn-ghost" id="kcSelectAll">Снять выбор</button></div>' +
                     '<div class="kc-deck-list" id="kcDeckList"></div>' +
                     '<p class="kc-no-topics" id="kcNoTopics" role="status" hidden>Темы не найдены</p>' +
-                '</section>' +
-                '<div class="kc-session-options">' +
-                    '<fieldset class="kc-session-size"><legend class="kc-session-size-label">Карточек за занятие</legend>' +
-                    '<div class="kc-size-list" id="kcSizeList">' +
+                    '</div></details>' +
+                '<details class="kc-filter-section kc-study-disclosure" id="kcSizeOptions">' +
+                    '<summary><span>Карточек за занятие</span><small id="kcSizeValue"></small></summary>' +
+                    '<div class="kc-disclosure-body kc-size-list" id="kcSizeList" role="group" aria-label="Карточек за занятие">' +
                         '<button type="button" class="kc-size-option" data-limit="15" aria-pressed="false"><span class="kc-size-name">Короткая</span><span class="kc-size-meta">до 15 карточек</span></button>' +
                         '<button type="button" class="kc-size-option" data-limit="30" aria-pressed="false"><span class="kc-size-name">Обычная</span><span class="kc-size-meta">до 30 карточек</span></button>' +
                         '<button type="button" class="kc-size-option" data-limit="all" aria-pressed="true"><span class="kc-size-name">Все</span><span class="kc-size-meta">без ограничения</span></button>' +
-                    '</div></fieldset>' +
-                '</div>' +
+                    '</div></details>' +
                 '<div class="kc-session-notice kc-session-notice-error" id="kcSelectNotice" hidden aria-live="polite"></div>' +
                 '</div>' +
+                '<details class="kc-filter-section kc-study-disclosure" id="kcPauseOptions">' +
+                    '<summary><span>Паузы повторения</span><small id="kcPauseValue"></small></summary>' +
+                    '<div class="kc-disclosure-body kc-pause-choices" role="group" aria-label="Время до повторения карточки">' +
+                        [...PAUSE_OPTIONS].map(([seconds, label]) => '<button class="kc-btn kc-btn-ghost" type="button" data-seconds="' + seconds + '">' + label + '</button>').join('') +
+                    '</div></details>' +
                 '</div>' +
                 '<section id="kcStartConfirmation" class="kc-start-confirmation" aria-labelledby="kcConfirmTitle" hidden>' +
                     '<h3 id="kcConfirmTitle" tabindex="-1">Начать новое занятие?</h3>' +
@@ -1473,6 +1511,16 @@
         });
 
         document.getElementById('kcFront').addEventListener('click', () => reveal());
+        document.getElementById('kcDisableManualPauses').addEventListener('click', () => {
+            setPause(0);
+            renderResumeBanner();
+            updateStartBtn();
+            document.getElementById('kcResumeSession')?.focus({ preventScroll: true });
+        });
+        document.getElementById('kcPauseOptions').addEventListener('click', event => {
+            const choice = event.target.closest('[data-seconds]');
+            if (choice) { setPause(Number(choice.dataset.seconds)); renderResumeBanner(); updateStartBtn(); }
+        });
         document.getElementById('kcSelectAll').addEventListener('click', toggleSelectAll);
         document.getElementById('kcTopicSearch').addEventListener('input', renderDeckList);
         document.getElementById('kcStart').addEventListener('click', event => requestStart(selected, selectedKinds, sessionLimit, event.currentTarget));
@@ -1508,6 +1556,11 @@
         initSwipe('kcSelectOverlay', 'kcSelectModal', closeSelect);
         initDialogAccessibility(select, review);
         initMathScrolling(document.getElementById('kcContent'));
+        const sketchScreen = matchMedia(SKETCH_SCREEN);
+        sketchScreen.addEventListener('change', () => {
+            if (sketchScreen.matches) attachSketch();
+            else releaseSketch();
+        });
     }
 
     function restoreDialogBackground() {
@@ -1709,7 +1762,7 @@
         if (preferred.length && !selectedKinds.length) selectedKinds = available;
     }
 
-    function openSelect(opener) {
+    function openSelect(opener, paused = false) {
         if (!uiInitialized) return false;
         if (opener) lastDialogOpener = opener;
         cardCache = new Map();
@@ -1725,10 +1778,14 @@
         document.getElementById('kcStartConfirmation').hidden = true;
         document.getElementById('kcSelectNotice').hidden = true;
         document.getElementById('kcTopicSearch').value = '';
-        document.getElementById('kcTypeOptions').open = false;
+        expandedTopicGroups.clear();
+        document.querySelectorAll('#kcSelectChoices details[open]').forEach(details => { details.open = false; });
+        pauseSeconds = readPause();
+        renderPauseOptions();
         renderStudySection();
         quickChoice = currentParagraphChoice();
         renderResumeBanner();
+        document.getElementById('kcManualPause').hidden = !paused || !resumeAvailable;
         setCustomOptions(!quickChoice && !resumeAvailable);
         savePreferences();
         if (storeDirty) { saveStore(); storeDirty = false; }
@@ -1770,6 +1827,7 @@
     }
 
     function renderSessionSize() {
+        document.getElementById('kcSizeValue').textContent = sessionLimit === 'all' ? 'Все' : String(sessionLimit);
         document.querySelectorAll('#kcSizeList .kc-size-option').forEach(button => {
             const value = button.dataset.limit === 'all' ? 'all' : Number(button.dataset.limit);
             const active = value === sessionLimit;
@@ -1851,7 +1909,7 @@
         groups.forEach((entries, name) => {
             const details = document.createElement('details');
             details.className = 'kc-topic-group kc-study-disclosure';
-            details.open = searching || (expandedTopicGroups.get(name) ?? entries.length <= 5);
+            details.open = searching || expandedTopicGroups.get(name) === true;
             const selectedCount = entries.filter(topic => selected.includes(topic.id)).length;
             const heading = document.createElement('summary');
             heading.innerHTML = '<span>' + escapeHtml(name) + '</span><small>' + selectedCount + ' / ' + entries.length + '</small>';
@@ -2080,13 +2138,14 @@
 
     function nextReadyCard() {
         const now = Date.now();
-        const index = session.queue.findIndex(item => !item.availableAt || item.availableAt <= now);
+        const index = session.queue.findIndex(item => readyAt(item) <= now);
         if (index < 0) return false;
         if (index > 0) session.queue.unshift(session.queue.splice(index, 1)[0]);
         return true;
     }
 
     function resetReviewActions() {
+        releaseSketch();
         document.getElementById('kcFront').hidden = true;
         document.getElementById('kcGrades').hidden = true;
         document.getElementById('kcGrades').replaceChildren();
@@ -2094,6 +2153,39 @@
         const guide = document.getElementById('kcGradeGuide');
         guide.hidden = true;
         guide.open = false;
+    }
+
+    const SKETCH_SCREEN = '(max-width: 768px), (max-width: 1180px) and (any-pointer: coarse)';
+    let sketch = null;
+
+    function releaseSketch(discard = false) {
+        sketch?.destroy(discard);
+        sketch = null;
+    }
+
+    async function attachSketch() {
+        const host = document.getElementById('kcSketch');
+        if (!host || !session || !matchMedia(SKETCH_SCREEN).matches) return;
+        const current = session;
+        const attempt = [current.startedAt, current.reviewed, current.queue[0].card.id].join('/');
+        try {
+            await window.AlmanionNoteRuntime.ensure('studyInk');
+        } catch {
+            if (host.isConnected && current === session && !revealed) {
+                const retry = document.createElement('button');
+                retry.type = 'button';
+                retry.className = 'kc-btn kc-btn-ghost';
+                retry.textContent = 'Загрузить черновик';
+                retry.onclick = attachSketch;
+                host.replaceChildren(retry);
+                host.hidden = false;
+            }
+            return;
+        }
+        if (sketch || !host.isConnected || current !== session || !matchMedia(SKETCH_SCREEN).matches) return;
+        host.hidden = false;
+        sketch = window.AlmanionStudyInk.mount(host, attempt, scopedStorage?.scope?.() || 'guest');
+        if (revealed) sketch?.answer();
     }
 
     function showCard(position) {
@@ -2125,7 +2217,9 @@
                 (context?.html ? '<details class="kc-prompt-context kc-study-disclosure" id="kcPromptContext" open>' +
                     '<summary>Условие</summary><div class="kc-prompt-media">' + context.html + '</div></details>' : '') +
                 '<div class="kc-definition" id="kcBack" role="region" aria-label="Ответ" tabindex="-1" hidden>' + def.backHTML + '</div>' +
+                '<div id="kcSketch" hidden></div>' +
             '</div>';
+        attachSketch();
         document.getElementById('kcFront').hidden = false;
         content.querySelector('.kc-topic-label').title = def.topicName;
         document.getElementById('kcGoToSource').addEventListener('click', () => goToSource(def));
@@ -2144,30 +2238,57 @@
         }
     }
 
+    function pauseArtwork(id) {
+        return `<div class="kc-pause-art" aria-hidden="true">
+            <svg viewBox="0 0 360 128" width="360" height="128" focusable="false">
+                <defs>
+                    <filter id="${id}Liquid" x="-15%" y="-45%" width="130%" height="190%" color-interpolation-filters="sRGB">
+                        <feGaussianBlur stdDeviation="5"/>
+                        <feColorMatrix type="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 19 -8"/>
+                    </filter>
+                    <linearGradient id="${id}Tint" x2="1" y2=".35">
+                        <stop stop-color="var(--accent-color)"/><stop offset="1" stop-color="var(--kc-bubble-end)"/>
+                    </linearGradient>
+                    <mask id="${id}Pool"><g fill="white" filter="url(#${id}Liquid)">
+                        <circle class="kc-bubble kc-bubble-a" cx="133" cy="65" r="25"/>
+                        <circle class="kc-bubble kc-bubble-b" cx="175" cy="58" r="13"/>
+                        <circle class="kc-bubble kc-bubble-c" cx="219" cy="64" r="22"/>
+                        <circle class="kc-bubble kc-bubble-d" cx="256" cy="66" r="8"/>
+                    </g></mask>
+                </defs>
+                <rect width="360" height="128" fill="url(#${id}Tint)" mask="url(#${id}Pool)"/>
+            </svg></div>`;
+    }
+
     function showWaitState() {
         revealed = false;
         renderCounts();
-        const earliest = Math.min(...session.queue.map(item => finite(item.availableAt, Date.now())));
+        const next = session.queue.reduce((first, item) => readyAt(item) < readyAt(first) ? item : first);
+        const earliest = readyAt(next);
         const content = document.getElementById('kcContent');
-        content.innerHTML = '<div class="kc-state-screen"><span class="kc-state-icon">' + IC.brain + '</span>' +
-            '<h3 class="kc-state-title">Небольшая пауза</h3><p class="kc-state-copy">Короткий интервал помогает проверить, действительно ли ответ закрепился.</p>' +
-            '<div class="kc-wait-time" id="kcWaitTime"></div><div class="kc-wait-track"><div class="kc-wait-fill" id="kcWaitFill"></div></div>' +
-            '<div class="kc-state-actions"><button type="button" class="kc-btn kc-btn-ghost" id="kcRepeatNow">Повторить сейчас</button>' +
-            '<button type="button" class="kc-btn kc-btn-primary" id="kcWaitPause">Продолжить позже</button></div></div>';
+        content.innerHTML = '<section class="kc-state-screen kc-intermission" aria-labelledby="kcWaitHeading">' +
+            pauseArtwork('kcWait') +
+            '<h3 class="kc-state-title" id="kcWaitHeading">До повторения</h3>' +
+            '<div class="kc-wait-time" id="kcWaitTime" role="timer"></div><div class="kc-wait-track"><div class="kc-wait-fill" id="kcWaitFill"></div></div>' +
+            '<div class="kc-state-actions"><button type="button" class="kc-btn kc-btn-primary" id="kcRepeatNow">Повторить сейчас</button>' +
+            '<button type="button" class="kc-btn kc-btn-ghost" id="kcWaitPause">Продолжить позже</button></div>' +
+            '<button type="button" class="kc-turn-off-pauses" id="kcDisablePauses">Отключить паузы</button></section>';
         const update = () => {
             const left = Math.max(0, earliest - Date.now());
             const label = document.getElementById('kcWaitTime');
             const bar = document.getElementById('kcWaitFill');
-            if (label) label.textContent = Math.ceil(left / 1000) + ' с';
-            if (bar) bar.style.width = Math.min(100, Math.max(0, 100 - left / MINUTE * 100)) + '%';
+            const seconds = Math.ceil(left / 1000);
+            if (label) label.textContent = Math.floor(seconds / 60) + ':' + String(seconds % 60).padStart(2, '0');
+            if (bar) bar.style.width = clamp(100 - left / (pauseSeconds * 10), 0, 100) + '%';
             if (left <= 0) { clearWait(); showCard(); }
             else waitTimer = setTimeout(update, 500);
         };
         document.getElementById('kcRepeatNow').addEventListener('click', () => {
-            session.queue.forEach(item => { if (item.availableAt === earliest) item.availableAt = 0; });
+            next.availableAt = 0;
             persistSession();
             showCard();
         });
+        document.getElementById('kcDisablePauses').addEventListener('click', () => { setPause(0); showCard(); });
         document.getElementById('kcWaitPause').addEventListener('click', pauseSession);
         content.scrollTop = 0;
         document.getElementById('kcRepeatNow').focus({ preventScroll: true });
@@ -2177,6 +2298,7 @@
     function reveal(scrollTop = 0) {
         if (revealed || !session) return;
         revealed = true;
+        sketch?.answer();
         const back = document.getElementById('kcBack');
         const question = document.getElementById('kcQuestion');
         const context = document.getElementById('kcPromptContext');
@@ -2220,6 +2342,7 @@
         const now = Date.now();
         const transition = sessionTransition(session, item, G, now);
         if (!transition) return;
+        releaseSketch(true);
         session = transition.session;
         delete session.reviewPosition;
         const persisted = persistState(item.card.id, transition.state);
@@ -2271,6 +2394,7 @@
         const target = findSourceElement(card);
         if (!target) return;
         saveReviewPosition();
+        releaseSketch();
         clearWait();
         document.getElementById('kcReviewOverlay').classList.add('hidden');
         if (window.experimentalReader?.isActive?.()) {
@@ -2338,13 +2462,14 @@
         let min = null;
         extractCards(session?.selectedTopicIds || selected, session?.selectedKinds || selectedKinds).forEach(c => {
             const st = normalizeState(stateForCard(c));
-            const due = st && st.pendingConfirmations > 0 ? st.confirmationDue : (st && st.due);
+            const due = st && st.pendingConfirmations > 0 ? confirmationTime(st.confirmationDue) : (st && st.due);
             if (st && due > now) min = (min == null) ? due : Math.min(min, due);
         });
         return min;
     }
 
     function closeReview() {
+        releaseSketch();
         clearWait();
         if (session?.queue.length) saveReviewPosition();
         else kcRemove(SESSION_KEY);
@@ -2354,11 +2479,12 @@
 
     function pauseSession() {
         if (!session) return;
+        releaseSketch();
         saveReviewPosition();
         clearWait();
         session = null;
         document.getElementById('kcReviewOverlay').classList.add('hidden');
-        openSelect();
+        openSelect(undefined, true);
     }
 
     function finishSession() {
@@ -2477,6 +2603,7 @@
     };
 
     function resetForStorageScope() {
+        releaseSketch();
         clearWait();
         session = null;
         revealed = false;
@@ -2486,6 +2613,7 @@
         studySection = 'blocks';
         sectionPreferences = {};
         sessionLimit = 'all';
+        pauseSeconds = readPause();
         pendingStart = null;
         document.getElementById('kcReturnToCard')?.setAttribute('hidden', '');
         ['kcReviewOverlay', 'kcSelectOverlay'].forEach(function (id) {
@@ -2500,6 +2628,11 @@
     window.addEventListener('almanion-kc-scope-changed', resetForStorageScope);
     window.addEventListener('almanion-kc-external-change', function (event) {
         const detail = event && event.detail || {};
+        if (detail.key === PAUSE_KEY) {
+            pauseSeconds = readPause();
+            if (uiInitialized) renderPauseOptions();
+            if (session && document.getElementById('kcWaitTime')) showCard();
+        }
         if (detail.key === STORE_KEY) {
             store = loadStore();
             cardCache = new Map();

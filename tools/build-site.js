@@ -247,7 +247,8 @@ function build(options) {
             .replace(/((?:src|href)=["'](?:(?:script|note-runtime|print-export)\.js|styles\/(?:copy-blocks|chemistry-10-notes|print)\.css))(?:\?[^"']*)?(["'])/g, '$1?v=20261121-4$2')
             .replace(/(src=["']experimental-reader\.js)(?:\?[^"']*)?(["'])/g, '$1?v=20261122-1$2')
             .replace(/(src=["']home-motion\.js)(?:\?[^"']*)?(["'])/g, '$1?v=20261122-2$2')
-            .replace(/(src=["'](?:note-runtime|script|english-ui|print-export)\.js)(?:\?[^"']*)?(["'])/g, '$1?v=20261122-3$2');
+            .replace(/(src=["']print-export\.js)(?:\?[^"']*)?(["'])/g, '$1?v=20261122-3$2')
+            .replace(/((?:src|href)=["'](?:(?:note-runtime|script|search|bookmarks|english-ui)\.js|styles\/site\/(?:reader|index)\.css))(?:\?[^"']*)?(["'])/g, '$1?v=20261122-4$2');
         let published = updated;
         // The browser decides whether to take a navigation snapshot before
         // deferred scripts run. Make the opt-in available with the first bytes of HTML.

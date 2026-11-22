@@ -63,6 +63,9 @@ test('mobile menu and search own keyboard focus only while open', async ({ page 
     await expect(sidebar).toHaveJSProperty('inert', true);
     const search = page.locator('#expBottomNav [aria-label="Поиск"]');
     await search.click();
+    await expect(page.locator('#readerSearchDialog')).toBeVisible();
+    await expect(sidebar).toHaveJSProperty('inert', true);
+    await expect(sidebar).not.toHaveClass(/\bopen\b/);
     await expect(page.locator('#searchInput')).toBeFocused();
     await page.keyboard.press('Escape');
     await expect(search).toBeFocused();

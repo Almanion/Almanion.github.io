@@ -37,7 +37,12 @@ body.home-page .home-header h1 {
     line-height: 1.15;
     letter-spacing: -0.04em;
 }
-body.home-page .home-header h1 svg { width: 32px; height: 32px; color: var(--accent-color); flex: 0 0 auto; }
+/* Allow for the whitespace around the mark so its apex meets the wordmark's A. */
+body.home-page .home-header h1 svg {
+    width: 1.05em; height: 1.05em;
+    width: 1.5cap; height: 1.5cap;
+    color: var(--accent-color); flex: 0 0 auto;
+}
 body.home-page .home-controls { display: flex; align-items: center; gap: 8px; min-height: 44px; }
 body.home-page .settings-button {
     position: static;
