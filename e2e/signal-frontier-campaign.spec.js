@@ -252,6 +252,7 @@ for (const [name, profile] of [
     async ({ page }) => {
       const highlands = ["frontier-7", "frontier-8"].includes(profile);
       const freeBuild = profile === "frontier-8";
+      const deferFieldPaint = highlands || (profile === "frontier-6" && name === "siege");
       test.setTimeout(highlands ? 2400000 : 1500000);
       await page.setViewportSize({ width: 1600, height: 1000 });
       if (highlands) {
@@ -259,7 +260,7 @@ for (const [name, profile] of [
         await page.clock.install({ time: epoch });
         await page.clock.pauseAt(epoch);
       } else await page.clock.install();
-      if (highlands)
+      if (deferFieldPaint)
         await page.addInitScript(() => {
           // Run every view/camera update and every fixed combat step. Rasterizing the
           // huge battlefield is covered by the real-render UI suite, not every idle
@@ -676,7 +677,7 @@ for (const [name, profile] of [
       expect(diagnostics.effects).toBeLessThanOrEqual(96);
       expect(diagnostics.scars).toBeLessThanOrEqual(40);
       expect(JSON.stringify(final).length).toBeLessThan(2000000);
-      if (highlands) {
+      if (deferFieldPaint) {
         await page.evaluate(() => {
           window.__signalQaPaint = true;
         });

@@ -64,11 +64,12 @@ test("desktop: tactical orders, movement, pause, resume and isolated save", asyn
   const snapshot = await page.evaluate(() => SignalGame.snapshot());
   await page.reload();
   await expect(page.locator("#continue")).toBeVisible();
-  // Capture the restored state in the click task, before animation resumes.
-  const restored = await page.evaluate(() => {
-    document.getElementById("continue").click();
-    return SignalGame.snapshot();
-  });
+  // Resume through the real control while the clock is stopped.
+  await page.clock.install();
+  await page.clock.pauseAt(await page.evaluate(() => Date.now() + 500));
+  await page.locator("#continue").click();
+  await expect(page.locator("#hud")).toBeVisible();
+  const restored = await page.evaluate(() => SignalGame.snapshot());
   expect(restored.t).toBe(snapshot.t);
   expect(
     await page.evaluate(() => localStorage.getItem("orbital-courier-save-v8")),

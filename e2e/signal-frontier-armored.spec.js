@@ -8,7 +8,7 @@ test.use({ launchOptions: { args: ["--enable-unsafe-swiftshader"] } });
 for (const [width, height, renderer] of [[1440,900,"babylon"],[390,844,"babylon"],[844,390,"babylon"],[320,568,"canvas"]]) {
   test(`armored reserve, foundry queue and reload at ${width}×${height} in ${renderer}`, async ({ browser }, info) => {
     test.setTimeout(90000);
-    const touch = width < 1000, alternate = renderer === "canvas" ? await webkit.launch() : null,
+    const touch = width < 1000, alternate = renderer === "canvas" ? await webkit.launch({ args: [] }) : null,
       context = await (alternate || browser).newContext({ viewport: { width, height }, isMobile: touch, hasTouch: touch });
     try {
       const s = foundryField(), [car] = train(s, "armored"), factory = E.living(s, "foundry");

@@ -7,7 +7,7 @@ test.use({ launchOptions: { args: ["--enable-unsafe-swiftshader"] } });
 for (const [w, h, renderer] of [[1440, 900, "babylon"], [390, 844, "babylon"], [844, 390, "babylon"], [320, 568, "canvas"]]) {
   test(`shield infantry orders, readable training cards and paused save at ${w}×${h} in ${renderer}`, async ({ browser }, info) => {
     test.setTimeout(90000);
-    const touch = w !== 1440, other = renderer === "canvas" ? await webkit.launch() : null,
+    const touch = w !== 1440, other = renderer === "canvas" ? await webkit.launch({ args: [] }) : null,
       context = await (other || browser).newContext({ viewport: { width: w, height: h }, isMobile: touch, hasTouch: touch });
     try {
       const page = await context.newPage(), errors = [], s = barracksField(), shield = graduate(s, "shield"),
@@ -77,6 +77,7 @@ for (const [w, h, renderer] of [[1440, 900, "babylon"], [390, 844, "babylon"], [
       expect(stored.t).toBe(paused.t);
       expect(stored.units.find(u => u.id === shield.id).guard).toEqual(paused.units.find(u => u.id === shield.id).guard);
       await page.reload(); await press(page.locator("#continue"));
+      await expect(page.locator("#hud")).toBeVisible();
       expect(await page.evaluate(id => SignalGame.snapshot().units.find(u => u.id === id).jobs.map(j => j.action), b.id))
         .toEqual(["shield", "shield", "shield"]);
       expect(errors).toEqual([]);

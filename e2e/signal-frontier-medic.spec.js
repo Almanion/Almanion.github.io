@@ -8,7 +8,7 @@ for (const [w, h, renderer, touch] of [
   [844, 390, "babylon", true], [320, 568, "canvas", true],
 ]) test(`field medic in combat and production ${w}×${h} ${renderer}`, async ({ browser }, info) => {
   test.setTimeout(90000);
-  const safari = renderer === "canvas" ? await webkit.launch() : null,
+  const safari = renderer === "canvas" ? await webkit.launch({ args: [] }) : null,
     context = await (safari || browser).newContext({ viewport: { width: w, height: h }, hasTouch: touch, isMobile: touch }),
     page = await context.newPage(), errors = [], s = barracksField(), medic = graduate(s),
     hero = E.hero(s), barracks = E.living(s, "barracks");
@@ -59,6 +59,7 @@ for (const [w, h, renderer, touch] of [
     expect(after.economy.alloy).toBe(before.economy.alloy - E.development.items(s).medic.cost);
     expect(after.units.find((u) => u.id === barracks.id).jobs).toHaveLength(3);
     await page.reload(); await press(page.locator("#continue"));
+    await expect(page.locator("#hud")).toBeVisible();
     expect((await snapshot()).units.find((u) => u.id === barracks.id).jobs.map((j) => j.action)).toEqual(["medic", "medic", "medic"]);
     expect(errors).toEqual([]);
   } finally { await context.close(); if (safari) await safari.close(); }

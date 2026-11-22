@@ -220,7 +220,8 @@ class ExpeditionPilot {
       this.stage >= 4 &&
       s.campaign.tier === 2 &&
       E.objective(s).id === "command";
-    const reserveCommand = s.campaign.id === "frontier-8" && savingForCommand;
+    const northernSiege = s.campaign.id === "frontier-6" && this.route === "siege";
+    const reserveCommand = savingForCommand && (s.campaign.id === "frontier-8" || northernSiege);
     // Free-construction replays can lose replacements faster than one remote
     // miner funds command research. Keep the objective affordable, and let
     // that purchase consume its own reserve instead of demanding it twice.
@@ -491,6 +492,13 @@ class ExpeditionPilot {
       order(1, dest);
       interact = false;
       buy("outpost", mapped ? "relay" : "north");
+    }
+    if (northernSiege && savingForCommand && extra && ore(extra)) {
+      // The north depot's guns cannot cover the entire distant mining route.
+      const mine = D.mineFor(s, extra);
+      dest = { x: mine.x - 50, y: mine.y - 20 };
+      order(1, dest);
+      interact = false;
     }
     // Recover the containers encountered on the infiltration route before waiting
     // for more ore; this pays for losses without inventing resources.

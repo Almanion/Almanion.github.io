@@ -7,7 +7,7 @@ test.use({ launchOptions: { args: ["--enable-unsafe-swiftshader"] } });
 for (const [w,h,renderer] of [[1440,900,"babylon"],[390,844,"babylon"],[844,390,"babylon"],[320,568,"canvas"]]) {
   test(`grenadier mark, saved shot and barracks orders at ${w}×${h} in ${renderer}`, async ({ browser }, info) => {
     test.setTimeout(90000);
-    const touch = w < 1000, other = renderer === "canvas" ? await webkit.launch() : null,
+    const touch = w < 1000, other = renderer === "canvas" ? await webkit.launch({ args: [] }) : null,
       context = await (other || browser).newContext({ viewport: { width: w, height: h }, isMobile: touch,
         hasTouch: touch, reducedMotion: "reduce" });
     try {

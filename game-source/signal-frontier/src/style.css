@@ -347,9 +347,9 @@ body[data-mode="menu"] :is(#field, .vignette) { visibility:hidden; }
   .home-links { margin-top:8px; }
 }
 @media (orientation:landscape) and (max-height:500px) {
-  .home { --home-gutter:clamp(16px,4vw,68px); --home-edge:8px; gap:5px; }
+  .home { --home-gutter:clamp(16px,4vw,68px); --home-edge:clamp(5px,1.55vh,8px); gap:5px; }
   .home-content { width:min(100%,clamp(336px,48vw,460px)); padding:0; }
-  .home h1 { font-size:clamp(33px,5.4vw,52px); margin-bottom:13px; }
+  .home h1 { font-size:clamp(33px,5.4vw,52px); margin-bottom:clamp(6px,2.7vh,13px); }
   .home h1 span { display:inline; }
   .home-actions, .mission-list { gap:5px; }
   .mission-action, #continue { min-height:48px; padding:6px 10px; }

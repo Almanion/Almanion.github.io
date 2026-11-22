@@ -1730,7 +1730,10 @@
   $("close-dialog").onclick = closeDialog;
   $("help-back").onclick = closeDialog;
   $("settings-back").onclick = closeDialog;
-  $("restart").onclick = () => begin(false, state.campaign?.id || "classic");
+  $("restart").onclick = () => {
+    const profile = state.campaign?.id;
+    return begin(false, ["frontier-9", "frontier-10"].includes(profile) ? profile : defaultProfile);
+  };
   $("retry").onclick = $("restart").onclick;
   $("to-home").onclick = home;
   $("result-home").onclick = home;

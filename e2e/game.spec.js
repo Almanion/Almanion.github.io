@@ -1,6 +1,7 @@
 'use strict';
 
 const { test, expect } = require('@playwright/test');
+const signalEngine = require('../game-source/signal-frontier/src/engine');
 const savedProfile = require('../game-source/orbital-courier/docs/completed-v8-profile.json');
 const gameURL = '/games/orbital-courier/offline.html';
 const saveKey = 'orbital-courier-save-v8';
@@ -21,7 +22,7 @@ test('home game button opens the catalogue and both games remain reachable', asy
     await page.locator('a[href="signal-frontier/"]').click();
     await expect(page).toHaveURL(/\/games\/signal-frontier\/$/);
     await expect(page.locator('#start')).toBeVisible();
-    expect(await page.evaluate(() => SignalGame.snapshot().version)).toBe(11);
+    expect(await page.evaluate(() => SignalGame.snapshot().version)).toBe(signalEngine.make('frontier-9').version);
     expect(await page.evaluate(() => SignalGame.snapshot().campaign.id)).toBe('frontier-9');
     await page.goBack();
     await page.locator('a[href="orbital-courier/"]').click();
