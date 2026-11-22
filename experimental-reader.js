@@ -220,22 +220,23 @@
             preview.hidden = false;
             main.classList.add('reader-pulling');
             main.classList.toggle('reader-pull-motion', document.documentElement.dataset.pageMotion !== 'off'
-                && !document.body.classList.contains('animations-off'));
+                && !matchMedia('(prefers-reduced-motion: reduce)').matches);
             // Start the reveal at the viewport edge even when the entire topic fits on a tablet.
             const inset = parseFloat(getComputedStyle(main).paddingBottom) || 0;
             const space = Math.max(0, page.clientHeight - inset - preview.getBoundingClientRect().top);
             preview.style.setProperty('--pull-space', space + 'px');
-            travel = Math.max(76, title.offsetHeight + 18);
+            travel = Math.max(96, title.offsetHeight + 18);
         }
 
-        function draw(progress) {
+        function draw(progress, wheel) {
             if (!topic || main.classList.contains('reader-pull-returning')) open();
             // Resistance increases as the pull approaches the threshold.
-            const distance = Math.round(travel * progress * (1.4 - 0.4 * progress));
+            const distance = Math.round(travel * progress * (1.7 - 0.7 * progress));
             preview.style.setProperty('--pull-distance', distance + 'px');
             preview.style.setProperty('--pull-progress', progress);
             topic.style.setProperty('--pull-stretch', 1 + 0.014 * progress);
-            window.scrollTo({ top: origin + distance, behavior: 'instant' });
+            const smooth = wheel && main.classList.contains('reader-pull-motion');
+            window.scrollTo({ top: origin + distance, behavior: smooth ? 'smooth' : 'instant' });
         }
 
         function release() {
@@ -245,13 +246,13 @@
             preview.style.setProperty('--pull-progress', '0');
             topic.style.removeProperty('--pull-stretch');
             // Collapsing the scroll range returns the page to its original position.
-            closeTimer = window.setTimeout(hide, 210);
+            closeTimer = window.setTimeout(hide, 300);
         }
         return { draw, release, hide };
     }
 
     function bindBottomPull(main) {
-        const threshold = 100;
+        const threshold = 250;
         const wheelPause = 240;
         const preview = createPullPreview(main);
         let touch = null;
@@ -281,9 +282,9 @@
             return true;
         }
 
-        function move(distance) {
+        function move(distance, wheel) {
             if (distance < threshold) {
-                preview.draw(distance / threshold);
+                preview.draw(distance / threshold, wheel);
                 return false;
             }
             return goToIndex(adjacentIndex(1), { source: 'pull' });
@@ -325,7 +326,7 @@
             if (!touch.pulling) {
                 if (up < 8) return;
                 // Even a single coalesced move must reveal the title before it can turn the page.
-                touch.offset = Math.max(0, up - (threshold - 20));
+                touch.offset = Math.max(0, up - threshold * 0.8);
             }
             if (!event.cancelable) return reset();
             event.preventDefault();
@@ -351,7 +352,7 @@
 
         main.addEventListener('wheel', event => {
             const now = performance.now();
-            if (now - lastWheel > wheelPause) wheelMode = atBottom() ? 'pull' : 'scroll';
+            if (now - lastWheel > wheelPause) wheelMode = wheelDistance || atBottom() ? 'pull' : 'scroll';
             lastWheel = now;
             const modified = event.ctrlKey || event.shiftKey || event.altKey || event.metaKey;
             if (modified || event.deltaY <= 0 || Math.abs(event.deltaX) > event.deltaY || !event.cancelable) {
@@ -371,16 +372,16 @@
             }
             event.preventDefault();
             const unit = event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? window.innerHeight : 1;
-            wheelDistance += Math.min(event.deltaY * unit, threshold / 2);
+            wheelDistance += Math.min(event.deltaY * unit, 50);
             window.clearTimeout(wheelTimer);
-            if (move(wheelDistance)) {
+            if (move(wheelDistance, true)) {
                 wheelMode = 'turned';
                 lastWheel = performance.now();
             } else {
                 wheelTimer = window.setTimeout(() => {
                     wheelDistance = 0;
                     preview.release();
-                }, 800);
+                }, 1200);
             }
         }, { passive: false });
     }
@@ -492,7 +493,7 @@
 
         const previousIndex = state.index;
         const direction = nextIndex > previousIndex ? 'next' : 'prev';
-        const entrance = settings.source === 'pull' ? 'scroll' : direction;
+        const entrance = settings.source === 'pull' ? 'pull' : direction;
         const now = performance.now();
         const rapid = !!settings.rapid
             || now - state.lastNavigationAt < 150;

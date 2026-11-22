@@ -136,8 +136,9 @@ async function scrollToBottom(page, offset = 0) {
     }, offset);
 }
 
-test('the wheel reveals the next title, waits for another scroll and ignores momentum', async ({ page }) => {
+test('the wheel eases into the next title and needs five steps after reaching the bottom', async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 });
+    await page.emulateMedia({ reducedMotion: 'no-preference' });
     await page.clock.install();
     await page.goto('/physics-10.html#izoprotsessy-gazovye-zakony');
     const current = page.locator('article.exp-reader-current');
@@ -160,17 +161,36 @@ test('the wheel reveals the next title, waits for another scroll and ignores mom
     await expect(preview).toBeHidden();
     await expect(current).toHaveAttribute('id', 'izoprotsessy-gazovye-zakony');
 
-    await page.clock.resume();
-    await scrollToBottom(page);
-    await page.waitForTimeout(300); // A new wheel gesture, after the scroll that reached the bottom.
+    const origin = await scrollToBottom(page);
+    await page.clock.runFor(300); // A new wheel gesture, after the scroll that reached the bottom.
+    await page.evaluate(() => {
+        const scroll = window.scrollTo.bind(window);
+        window.scrollTo = (...args) => {
+            window.readerPullScrollBehavior = args[0]?.behavior;
+            scroll(...args);
+        };
+        window.addEventListener('animationstart', event => {
+            if (event.target.dataset.noteEntrance === 'pull') {
+                window.readerPullDuration = getComputedStyle(event.target).animationDuration;
+            }
+        });
+    });
     await page.mouse.wheel(0, 120);
+    await expect.poll(() => page.evaluate(() => scrollY)).toBeGreaterThan(origin + 20);
+    expect(await page.evaluate(() => window.readerPullScrollBehavior)).toBe('smooth');
     await expect(preview).toBeVisible();
     await expect(preview).toHaveText(nextTitle);
     await expect(current).toHaveAttribute('id', 'izoprotsessy-gazovye-zakony');
-    await expect(preview).toBeHidden(); // An abandoned wheel preview settles back.
+    await page.clock.runFor(1510);
+    await expect(preview).toBeHidden();
+    expect(await page.evaluate(() => window.scrollY)).toBeCloseTo(origin, 0);
 
-    await page.mouse.wheel(0, 120);
+    for (let step = 0; step < 4; step++) {
+        await page.mouse.wheel(0, 120);
+        await page.clock.runFor(32);
+    }
     await expect(preview).toBeVisible();
+    await expect(current).toHaveAttribute('id', 'izoprotsessy-gazovye-zakony');
     await page.evaluate(() => {
         window.addEventListener('wheel', event => {
             // Deliver the momentum tail in the same burst even when CI is recording a heavy page.
@@ -182,6 +202,8 @@ test('the wheel reveals the next title, waits for another scroll and ignores mom
     await page.mouse.wheel(0, 120);
     await expect(current.locator('.topic-title')).toHaveText(nextTitle);
     expect(await page.evaluate(() => window.readerConsumedMomentum)).toBe(true);
+    await page.clock.resume();
+    await expect.poll(() => page.evaluate(() => window.readerPullDuration)).toBe('0.525s');
 });
 
 test('a short tablet topic reveals its successor from the bottom margin with reduced motion', async ({ page }) => {
@@ -198,6 +220,8 @@ test('a short tablet topic reveals its successor from the bottom margin with red
     })).toBeLessThanOrEqual(4);
     const origin = await scrollToBottom(page);
     const nextTitle = await page.locator('.exp-reader-footer-next strong').innerText();
+    await page.clock.install();
+    await page.clock.pauseAt(new Date(Date.now() + 2000));
     await page.mouse.move(410, 1130);
     await page.mouse.wheel(0, 65);
     await expect(preview).toHaveText(nextTitle);
@@ -207,7 +231,10 @@ test('a short tablet topic reveals its successor from the bottom margin with red
     await expect(preview.locator('strong')).toHaveCSS('transform', 'none');
     await expect(current).toHaveCSS('scale', 'none');
     expect(await page.evaluate(() => window.scrollY)).toBeGreaterThan(origin + 10);
-    await page.mouse.wheel(0, 80);
+    for (let step = 0; step < 4; step++) {
+        await page.clock.runFor(16);
+        await page.mouse.wheel(0, 80);
+    }
     await expect(current.locator('.topic-title')).toHaveText(nextTitle);
 });
 
@@ -245,15 +272,15 @@ test.describe('touch reader', () => {
         const title = preview.locator('strong');
         await expect(current).toHaveAttribute('id', ids[0]);
         await scrollToBottom(page, 65);
-        await pull(130);
+        await pull(285);
         await expect(current).toHaveAttribute('id', ids[0]);
         const origin = await scrollToBottom(page);
         const partial = await start();
-        await partial.move(30);
+        await partial.move(45);
         await expect(title).toHaveText(await page.locator('.exp-reader-footer-next strong').innerText());
         const small = await title.boundingBox();
-        await partial.move(80);
-        expect((await title.boundingBox()).width).toBeGreaterThan(small.width);
+        await partial.move(150);
+        await expect.poll(async () => (await title.boundingBox()).width).toBeGreaterThan(small.width);
         expect(await page.evaluate(() => window.scrollY)).toBeGreaterThan(origin + 30);
         await expect(current).toHaveAttribute('id', ids[0]);
         await partial.cancel();
@@ -261,17 +288,18 @@ test.describe('touch reader', () => {
         expect(Math.abs(await page.evaluate(() => window.scrollY) - origin)).toBeLessThan(3);
 
         const full = await start();
-        await full.move(32);
-        await full.move(78);
-        await expect(current).toHaveAttribute('id', ids[0]);
+        await full.move(48);
         await full.move(110);
+        await full.move(240);
+        await expect(current).toHaveAttribute('id', ids[0]);
+        await full.move(255);
         await expect(current).toHaveAttribute('id', ids[1]);
-        await full.move(145);
+        await full.move(315);
         await full.end();
         await expect(current).toHaveAttribute('id', ids[1]);
         await page.evaluate(last => window.experimentalReader.goToId(last), ids.at(-1));
         await scrollToBottom(page);
-        await pull(115);
+        await pull(280);
         await expect(preview).toBeHidden();
         await expect(current).toHaveAttribute('id', ids.at(-1));
     });

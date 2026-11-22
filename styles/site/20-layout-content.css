@@ -2563,16 +2563,17 @@ em {
     :root:not([data-page-motion="off"]) body:not(.animations-off) .topic > [data-note-entrance] {
         --enter-y: 0px;
         --enter-opacity: 0.91;
-        animation: almanion-element-in var(--enter-duration) var(--enter-ease) backwards;
+        animation: almanion-element-in calc(var(--enter-duration) * var(--enter-factor, 1)) var(--enter-ease) backwards;
         animation-delay: calc(var(--note-enter-order, 0) * var(--enter-stagger));
     }
 
     .topic > [data-note-entrance="next"] { --enter-x: var(--enter-distance); }
     .topic > [data-note-entrance="prev"] { --enter-x: calc(-1 * var(--enter-distance)); }
-    :root:not([data-page-motion="off"]) body:not(.animations-off) .topic > [data-note-entrance="scroll"] {
+    .topic > :is([data-note-entrance="scroll"], [data-note-entrance="pull"]) {
         --enter-y: var(--enter-distance);
         --enter-opacity: 0.94;
     }
+    [data-note-entrance="pull"] { --enter-factor: 2.5; }
 }
 
 /* РџРѕРґСЃРІРµС‚РєР° РїСЂРё РїРѕРёСЃРєРµ */

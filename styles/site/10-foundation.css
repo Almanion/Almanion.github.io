@@ -423,10 +423,8 @@ body.modal-open {
 
 /* Когда открыта модалка настроек — прячем плавающие кнопки (режим заучивания,
    стрелка вверх, FAB-кнопки), иначе они просвечивают поверх затемнения. */
-body.modal-open .study-mode-toggle,
-body.modal-open .scroll-to-top,
-body.modal-open .menu-toggle,
-body.modal-open .settings-button {
+body.modal-open :is(.study-mode-toggle, .scroll-to-top, .menu-toggle, .settings-button),
+.reader-pulling ~ .scroll-to-top {
     visibility: hidden !important;
 }
 

@@ -35,16 +35,22 @@ for (const origin of ['subject', 'home']) {
 
 test('filtered arrows, preview and keyboard skip empty paragraphs in both directions', async ({ page }) => {
     await page.addInitScript(() => localStorage.setItem('note-block-filter:/physics-10.html', '["experiment"]'));
+    await page.clock.install();
     await page.goto(physicsUrl('raspredelenie-molekul-po-skorostyam'));
     const next = page.locator('.exp-reader-footer-next');
     await expect(next).toContainText('Количество теплоты');
+    await page.clock.pauseAt(new Date(Date.now() + 2000));
     await page.evaluate(() => scrollTo({ top: document.scrollingElement.scrollHeight, behavior: 'instant' }));
     const box = await current(page).boundingBox();
     await page.mouse.move(box.x + 20, Math.min(500, (await page.viewportSize()).height - 140));
     await page.mouse.wheel(0, 60);
     await expect(page.locator('.reader-pull-preview')).toContainText('Количество теплоты');
-    await page.mouse.wheel(0, 100);
+    for (let step = 0; step < 4; step++) {
+        await page.clock.runFor(16);
+        await page.mouse.wheel(0, 100);
+    }
     await expect(current(page)).toHaveAttribute('id', 'kolichestvo-teploty-pervoe-nachalo');
+    await page.clock.resume();
     await page.keyboard.press('ArrowLeft');
     await expect(current(page)).toHaveAttribute('id', 'raspredelenie-molekul-po-skorostyam');
     await page.locator('.exp-reader-toolbar [data-reader-action="next"]').click();

@@ -85,9 +85,10 @@
     }
     .reader-pull-motion .reader-pull-preview strong {
         transform: translateY(calc(.65rem * (1 - var(--pull-progress, 0)))) scale(calc(.82 + .18 * var(--pull-progress, 0)));
+        transition: transform .12s;
     }
     .reader-pull-motion.reader-pull-returning :is(.exp-reader-current, .reader-pull-preview, .reader-pull-preview strong) {
-        transition: height 180ms ease-out, scale 180ms ease-out, transform 180ms ease-out, opacity 110ms ease-out;
+        transition: .28s ease-out;
     }
 }
 @media (max-width: 768px) {
