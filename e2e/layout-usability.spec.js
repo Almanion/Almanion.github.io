@@ -38,7 +38,8 @@ for (const width of [320, 390, 430, 768, 1024, 1440]) {
             expect(settingsBounds.y).toBeGreaterThanOrEqual(headerBounds.y);
             expect(settingsBounds.y + settingsBounds.height).toBeLessThanOrEqual(headerBounds.y + headerBounds.height);
             expect(Math.abs(layout.cardY[0] - layout.cardY[1])).toBeLessThan(2);
-            expect(layout.cardY[3]).toBeGreaterThan(layout.cardY[2]);
+            expect(layout.cardY[2]).toBeGreaterThan(layout.cardY[0]);
+            expect(Math.abs(layout.cardY[2] - layout.cardY[3])).toBeLessThan(2);
             await expect(page.locator('.home-additional-grid .home-game-link')).toBeVisible();
             expect(layout.dutyBottom).toBeLessThan(900);
             const duty = page.locator('#homeDutyCard');
