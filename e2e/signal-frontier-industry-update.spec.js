@@ -32,6 +32,7 @@ async function boot(page, s) {
   }, s);
   await page.goto("/games/signal-frontier/");
   await page.locator("#continue").click();
+  await page.locator("#hud").waitFor({ state: "visible" });
   await page.keyboard.press("Tab");
   await page.clock.runFor(150);
 }
@@ -161,6 +162,7 @@ for (const type of [chromium, webkit])
         expect(E.restore(built)).not.toBeNull();
         await page.reload();
         await page.locator("#continue").click();
+        await page.locator("#hud").waitFor({ state: "visible" });
         await page.keyboard.press("Tab");
         await page.clock.runFor(100);
         expect(await page.evaluate(() => SignalGame.snapshot())).toEqual(built);

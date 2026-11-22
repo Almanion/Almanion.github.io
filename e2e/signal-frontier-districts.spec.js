@@ -39,6 +39,7 @@ for (const [width, height, touch, engine] of [
         await page.goto("/games/signal-frontier/");
         await expect(page.locator(".edition")).toContainText(editionVersion);
         await page.locator("#start").click();
+        await page.locator("#hud").waitFor({ state: "visible" });
         const initial = await page.evaluate(() => SignalGame.snapshot());
         expect(initial.campaign.id).toBe("frontier-9");
         expect(initial.version).toBe(13);
@@ -73,6 +74,7 @@ for (const [width, height, touch, engine] of [
         expect(E.restore(current)).not.toBeNull();
         await page.reload();
         await page.locator("#continue").click();
+        await page.locator("#hud").waitFor({ state: "visible" });
         await page.keyboard.press("Tab");
         await page.clock.runFor(100);
         const loaded = await page.evaluate(() => SignalGame.snapshot());
@@ -93,6 +95,7 @@ test("district map has a complete diagnostic overview and ordinary play keeps th
 }, info) => {
   await page.goto("/games/signal-frontier/");
   await page.locator("#start").click();
+  await page.locator("#hud").waitFor({ state: "visible" });
   const data = await page.evaluate(() => {
     const E = SignalEngine,
       s = SignalGame.snapshot(),

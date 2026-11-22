@@ -65,6 +65,7 @@ test("right-click on the scout hero assigns follow in pause and persists through
   );
   await page.reload();
   await page.locator("#continue").click();
+  await page.locator("#hud").waitFor({ state: "visible" });
   await page.keyboard.press("Tab");
   expect(await page.evaluate(() => SignalGame.snapshot())).toEqual(ordered);
   await selectArmy(page);

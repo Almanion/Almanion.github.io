@@ -808,6 +808,7 @@ for (const [width, height] of [
       );
       await page.goto("/games/signal-frontier/");
       await page.locator("#continue").click();
+      await page.locator("#hud").waitFor({ state: "visible" });
       await page.keyboard.press("Tab");
       await page.clock.runFor(4000);
       const before = await page.evaluate(() => ({

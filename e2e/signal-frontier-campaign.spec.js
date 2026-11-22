@@ -53,6 +53,7 @@ test("development: real queued cost, cancellation, pause and reload", async ({
   expect(remaining).toBeLessThan(14);
   await page.reload();
   await page.locator("#continue").click();
+  await page.locator("#hud").waitFor({ state: "visible" });
   await page.keyboard.press("Tab");
   let restored = await page.evaluate(() => SignalGame.snapshot());
   expect(E.living(restored, "base").jobs[0].remaining).toBeCloseTo(
@@ -309,6 +310,7 @@ for (const [name, profile] of [
       await page.goto(route);
       await page.clock.pauseAt(await page.evaluate(() => Date.now() + 1000));
       await page.locator("#continue").click();
+      await page.locator("#hud").waitFor({ state: "visible" });
       await page.keyboard.press("Tab");
       // Only explicit clock steps advance combat; runner latency must not drive the pilot.
       await page.clock.pauseAt(await page.evaluate(() => Date.now() + 1000));
@@ -548,6 +550,7 @@ for (const [name, profile] of [
           const saved = await page.evaluate(() => SignalGame.snapshot());
           await page.reload();
           await page.locator("#continue").click();
+          await page.locator("#hud").waitFor({ state: "visible" });
           const restored = await page.evaluate(() => SignalGame.snapshot());
           expect(restored.t).toBe(saved.t);
           expect(restored.economy).toEqual(saved.economy);

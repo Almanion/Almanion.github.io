@@ -27,6 +27,7 @@ async function boot(page, s = scenario(), reduced = true) {
   await page.goto("/games/signal-frontier/");
   await page.clock.pauseAt(await page.evaluate(() => Date.now() + 1000));
   await page.locator("#continue").click();
+  await page.locator("#hud").waitFor({ state: "visible" });
   await page.keyboard.press("Tab");
   await page.clock.runFor(100);
   await selectGroup(page, 1);

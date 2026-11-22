@@ -47,6 +47,7 @@ for (const [profile, tankPoint, riflePoint] of [
       expect(await page.evaluate(() => SignalGame.snapshot())).toEqual(frozen);
       await page.reload();
       await page.locator("#continue").click();
+      await page.locator("#hud").waitFor({ state: "visible" });
       const resumed = await page.evaluate(() => SignalGame.snapshot());
       expect(resumed.units.find((u) => u.id === tank.id)).toEqual(
         frozen.units.find((u) => u.id === tank.id),

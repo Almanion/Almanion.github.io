@@ -42,6 +42,7 @@ async function fixture(page, s) {
   }, s);
   await page.goto(route);
   await page.locator("#continue").click();
+  await page.locator("#hud").waitFor({ state: "visible" });
   await page.keyboard.press("Tab");
 }
 for (const browserName of ["chromium", "webkit"])
@@ -244,6 +245,7 @@ test("a stale tab pauses and cannot replace the operation from another tab", asy
     await a.goto(route);
     await a.clock.pauseAt(await a.evaluate(() => Date.now() + 1000));
     await a.locator("#start").click();
+    await a.locator("#hud").waitFor({ state: "visible" });
     const b = await context.newPage();
     await b.goto(route);
     await a.locator("#dock-shop").click();
@@ -282,6 +284,7 @@ test("a stale tab pauses and cannot replace the operation from another tab", asy
     );
     expect(latest.economy.spent).toBe(120);
     await b.locator("#storage-load").click();
+    await expect(b.locator("#storage-content")).toBeHidden();
     expect((await b.evaluate(() => SignalGame.snapshot())).economy.spent).toBe(
       120,
     );

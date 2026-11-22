@@ -64,6 +64,7 @@ for (const type of [chromium, webkit])
           await page.locator("#menu-button").click();
           await page.reload();
           await page.locator("#continue").click();
+          await page.locator("#hud").waitFor({ state: "visible" });
           await page.keyboard.press("Tab");
           await page.clock.runFor(700);
           expect(
@@ -198,6 +199,7 @@ test("trusted phone joystick climbs a ramp continuously and stops on release", a
   await page.goto(route);
   await page.clock.pauseAt(await page.evaluate(() => Date.now() + 1000));
   await page.locator("#continue").click();
+  await page.locator("#hud").waitFor({ state: "visible" });
   const move = await page.locator("#move-stick").boundingBox(),
     cdp = await context.newCDPSession(page),
     x = move.x + move.width / 2,

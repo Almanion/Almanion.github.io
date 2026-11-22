@@ -41,6 +41,7 @@ async function boot(page, state) {
     }, state);
   await page.goto("/games/signal-frontier/");
   await page.locator(state ? "#continue" : "#start").click();
+  await page.locator("#hud").waitFor({ state: "visible" });
   if (state) await page.keyboard.press("Tab");
   await page.clock.runFor(150);
 }
@@ -386,6 +387,7 @@ test("Shift repeats buildings and a saved mixed group gives a shared follow orde
   ).toBe(true);
   await page.reload();
   await page.locator("#continue").click();
+  await page.locator("#hud").waitFor({ state: "visible" });
   await page.keyboard.press("Tab");
   await page.keyboard.press("Digit4");
   expect((await page.evaluate(() => SignalGame.selection())).ids).toEqual(

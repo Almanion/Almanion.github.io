@@ -105,6 +105,7 @@ for (const type of [chromium, webkit])
           await page.locator("#menu-button").click();
           await page.reload();
           await page.locator("#continue").click();
+          await page.locator("#hud").waitFor({ state: "visible" });
           const loaded = await page.evaluate(() => SignalGame.snapshot());
           expect(loaded.units.find((v) => v.id === u.id).combat).toEqual(
             u.combat,
@@ -239,6 +240,7 @@ test("a live missile renders, pauses and restores exactly at a 10 Hz render rate
   await page.locator("#menu-button").click();
   await page.reload();
   await page.locator("#continue").click();
+  await page.locator("#hud").waitFor({ state: "visible" });
   expect((await page.evaluate(() => SignalGame.snapshot())).bullets).toEqual(
     s.bullets,
   );

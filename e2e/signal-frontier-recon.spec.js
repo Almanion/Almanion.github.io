@@ -35,6 +35,7 @@ async function boot(page, s) {
   await page.goto(route);
   await page.clock.pauseAt(await page.evaluate(() => Date.now() + 1000));
   await page.locator("#continue").click();
+  await page.locator("#hud").waitFor({ state: "visible" });
   await page.keyboard.press("Tab");
   await page.clock.runFor(100);
 }
@@ -239,6 +240,7 @@ for (const type of [chromium, webkit]) {
           const saved = await page.evaluate(() => SignalGame.snapshot());
           await page.reload();
           await page.locator("#continue").click();
+          await page.locator("#hud").waitFor({ state: "visible" });
           expect(
             (await page.evaluate(() => SignalGame.snapshot())).recon,
           ).toEqual(saved.recon);

@@ -56,6 +56,7 @@ test("mouse aims without moving the camera; walking still moves it", async ({
   await page.clock.pauseAt(new Date("2026-10-29T12:00:01Z"));
   await page.goto("/games/signal-frontier/");
   await page.locator("#start").click();
+  await page.locator("#hud").waitFor({ state: "visible" });
   await page.keyboard.press("Tab");
   await page.clock.runFor(4000);
   const before = await page.evaluate(() => ({

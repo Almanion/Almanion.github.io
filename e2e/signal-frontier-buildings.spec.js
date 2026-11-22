@@ -49,6 +49,7 @@ async function boot(page, s) {
   await page.goto("/games/signal-frontier/");
   await page.clock.pauseAt(await page.evaluate(() => Date.now() + 1000));
   await page.locator("#continue").click();
+  await page.locator("#hud").waitFor({ state: "visible" });
   await page.keyboard.press("Tab");
   await page.clock.runFor(100);
 }
@@ -175,6 +176,7 @@ for (const browserType of [chromium, webkit])
           expect(await page.evaluate(() => SignalGame.mode())).toBe("tactical");
           await page.reload();
           await page.locator("#continue").click();
+          await page.locator("#hud").waitFor({ state: "visible" });
           expect(
             E.living(
               await page.evaluate(() => SignalGame.snapshot()),

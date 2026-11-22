@@ -295,6 +295,7 @@ test("switching graphics from paused orders keeps the eastern operation and retu
   await page.goto(route + "?mission=east&renderer=canvas");
   await expect(page.locator(".mission-list button:visible").first()).toHaveId("start-east");
   await page.locator("#start-east").click();
+  await page.locator("#hud").waitFor({ state: "visible" });
   const snapshot = await page.evaluate(() => SignalGame.snapshot());
   await page.locator("#menu-button").click();
   await page.locator("#menu-tab-settings").click();

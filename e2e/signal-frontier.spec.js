@@ -635,6 +635,7 @@ test("supply: double-tap, refund, paused construction and reload preserve the re
   expect(post.build).toBeLessThan(4.5);
   await page.reload();
   await page.locator("#continue").click();
+  await page.locator("#hud").waitFor({ state: "visible" });
   await page.keyboard.press("Tab");
   const restored = await page.evaluate(() => SignalGame.snapshot());
   expect(restored.economy).toEqual(snap.economy);

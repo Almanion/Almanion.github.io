@@ -17,6 +17,7 @@ async function resume(page, state) {
   }, state);
   await page.goto(route);
   await page.locator("#continue").click();
+  await page.locator("#hud").waitFor({ state: "visible" });
   await page.keyboard.press("Tab");
 }
 function prepared() {
@@ -127,6 +128,7 @@ for (const width of [320, 390, 1440])
       // Keep the saved UI transaction; the initial fixture must not overwrite it on reload.
       await page.reload();
       await page.locator("#continue").click();
+      await page.locator("#hud").waitFor({ state: "visible" });
       await page.keyboard.press("Tab");
       s = await page.evaluate(() => SignalGame.snapshot());
       expect(s.version).toBe(4);

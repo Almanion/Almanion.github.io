@@ -108,6 +108,7 @@ test("a real mobile placement commits a condenser only on its crater and persist
   const after = await snap(page), u = after.units.find((u) => u.kind === "condenser" && u.site === m.id);
   expect(u).toBeTruthy(); expect(u.build).toBe(40); expect(E.restore(after)).not.toBeNull();
   await page.reload(); await page.locator("#continue").click();
+  await page.locator("#hud").waitFor({ state: "visible" });
   expect((await snap(page)).units.find((v) => v.id === u.id).construction).toEqual(u.construction);
   } finally { await context.close(); }
 });

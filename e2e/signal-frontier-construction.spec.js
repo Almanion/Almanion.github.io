@@ -22,6 +22,7 @@ async function boot(page, s) {
   }, s);
   await page.goto("/games/signal-frontier/");
   await page.locator("#continue").click();
+  await page.locator("#hud").waitFor({ state: "visible" });
   await page.keyboard.press("Tab");
   await page.clock.runFor(100);
 }
@@ -121,6 +122,7 @@ for (const [width, height, touch] of [
       const u = current.units.find((u) => u.construction);
       await page.reload();
       await page.locator("#continue").click();
+      await page.locator("#hud").waitFor({ state: "visible" });
       await page.keyboard.press("Tab");
       await page.clock.runFor(100);
       current = await page.evaluate(() => SignalGame.snapshot());
@@ -470,6 +472,7 @@ test("an exhausted home still offers a paid builder and preserves its queue afte
   await button.click();
   await page.reload();
   await page.locator("#continue").click();
+  await page.locator("#hud").waitFor({ state: "visible" });
   const queued = await page.evaluate(() => SignalGame.snapshot());
   expect(queued.economy.spent - before.economy.spent).toBe(50);
   expect(queued.economy.alloy).toBe(before.economy.alloy - 50);
