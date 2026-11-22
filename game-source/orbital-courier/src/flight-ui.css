@@ -353,3 +353,26 @@ body[data-page=play][data-flight=aiming] #play .telemetry{display:none}
   .launch-timing label b { display: block; font-size: 12px; }
   #launchForecast { grid-column: 1/-1; font-size: 11px; }
 }
+
+/* Keep the star chart usable on short phones while aiming or in flight. */
+@media (max-height: 660px) and (orientation: portrait) {
+  body:is([data-flight="aiming"], [data-flight="running"]) #play .mobile-dock {
+    grid-template-columns: 44px minmax(0, 1fr) 46px minmax(102px, 1fr);
+    grid-template-rows: 48px;
+    gap: 4px;
+  }
+  body:is([data-flight="aiming"], [data-flight="running"]) #play .mobile-retry { grid-column: 1; grid-row: 1; }
+  body:is([data-flight="aiming"], [data-flight="running"]) #mobileDock .mobile-options {
+    grid-column: 2;
+    grid-row: 1;
+    padding-inline: 6px;
+    justify-content: center;
+    text-align: center;
+  }
+  body:is([data-flight="aiming"], [data-flight="running"]) #mobileReadout strong {
+    font-size: 12px;
+    white-space: normal;
+  }
+  body:is([data-flight="aiming"], [data-flight="running"]) #mobileReadout .readout-arrow { display: none; }
+  body:is([data-flight="aiming"], [data-flight="running"]) #mobileDock :is(.mobile-fine, .mobile-speed) { grid-column: 3; padding-inline: 1px; }
+}

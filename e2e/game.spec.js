@@ -30,7 +30,8 @@ test('home game button opens the catalogue and both games remain reachable', asy
     await expect(page).toHaveURL(/\/games\/orbital-courier\/$/);
     await expect(page).toHaveTitle(/Орбитальный курьер 10/);
     await expect(page.locator('#continueButton')).toBeVisible();
-    expect(await page.evaluate(() => Orbital.LEVELS.length)).toBe(88);
+    expect(await page.evaluate(() => Orbital.Campaign.order.length)).toBe(88);
+    expect(await page.evaluate(() => Orbital.SECTORS.at(-1).name)).toBe('Приливная линия');
 });
 
 for (const [width, height] of [[1366, 768], [320, 568], [390, 844], [844, 390]]) {
