@@ -465,6 +465,10 @@ body:is(.exp-dark, .dark-theme, .midnight-theme) .kc-sketch {
 }
 .kc-sketch button:disabled { opacity: .36; cursor: default; }
 .kc-sketch button svg { width: 18px; height: 18px; flex: none; }
+.kc-ink-history [data-action="reset-view"] {
+    min-width: 3.15rem; padding-inline: .25rem; font-size: .78rem; font-variant-numeric: tabular-nums;
+}
+.kc-ink-history [data-action="reset-view"]:disabled { opacity: 1; color: var(--text-secondary); }
 .kc-sketch .kc-sketch-toggle {
     gap: .45rem; padding-inline: .45rem; color: var(--text-primary); font-size: .84rem; font-weight: 650;
 }
@@ -519,11 +523,17 @@ body:is(.exp-dark, .dark-theme, .midnight-theme) .kc-sketch {
 .kc-turn-off-pauses:hover { color: var(--text-primary); }
 @media (prefers-reduced-motion: no-preference) {
     :root:not([data-page-motion="off"]) body:not(.animations-off) .kc-bubble {
-        animation: kc-bubble-drift var(--period) ease-in-out infinite alternate;
+        animation: kc-bubble-drift var(--drift-time) ease-in-out var(--drift-phase) infinite alternate;
     }
-    .kc-bubble-a { --period: 7s; --dx: 29px; --dy: -4px; }
-    .kc-bubble-b { --period: 5.8s; --dx: -25px; --dy: 9px; }
-    .kc-bubble-c { --period: 8.4s; --dx: -24px; --dy: 5px; }
-    .kc-bubble-d { --period: 6.4s; --dx: -32px; --dy: -9px; }
+    :root:not([data-page-motion="off"]) body:not(.animations-off) .kc-bubble-orbit {
+        animation: kc-bubble-lift var(--lift-time) ease-in-out var(--lift-phase) infinite alternate;
+    }
 }
-@keyframes kc-bubble-drift { to { transform: translate(var(--dx), var(--dy)); } }
+@keyframes kc-bubble-drift {
+    from { transform: translateX(calc(-1 * var(--drift))); }
+    to { transform: translateX(var(--drift)); }
+}
+@keyframes kc-bubble-lift {
+    from { transform: translateY(calc(-1 * var(--lift))); }
+    to { transform: translateY(var(--lift)); }
+}

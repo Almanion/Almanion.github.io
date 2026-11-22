@@ -298,6 +298,110 @@ test.describe('touch study', () => {
         expect((await pixel())[3]).toBe(0);
     });
 
+    test('two fingers move and zoom the paper without drawing, scrolling the card or losing ink', async ({ page, browserName }) => {
+        test.skip(browserName !== 'chromium', 'Native multi-touch input is sent through Chromium.');
+        await page.goto('/physics-10.html');
+        const learn = page.locator('#expBottomNav').getByRole('button', { name: 'Учить' });
+        await learn.tap();
+        await page.locator('#kcQuickStart').tap();
+        const pad = page.locator('#kcSketch');
+        const canvas = pad.locator('canvas');
+        const reset = pad.getByRole('button', { name: 'Вернуть исходный вид черновика' });
+        const undo = pad.getByRole('button', { name: 'Отменить штрих' });
+        await canvas.scrollIntoViewIfNeeded();
+        const box = await canvas.boundingBox();
+        const center = { x: box.x + box.width / 2, y: box.y + box.height / 2 };
+        const client = await page.context().newCDPSession(page);
+        const point = (x, y, id = 1) => ({ x: center.x + x, y: center.y + y, id });
+        const touch = (type, ...points) => client.send('Input.dispatchTouchEvent', { type, touchPoints: points });
+        async function dot(x, y) {
+            await touch('touchStart', point(x, y));
+            await touch('touchEnd');
+        }
+        async function movePair(start, end) {
+            await touch('touchStart', ...start);
+            await touch('touchMove', ...end);
+            await touch('touchEnd');
+        }
+        const opacity = (x, y) => canvas.evaluate((node, offset) => {
+            const rect = node.getBoundingClientRect();
+            const px = Math.round((.5 + offset.x / rect.width) * node.width);
+            const py = Math.round((.5 + offset.y / rect.height) * node.height);
+            const pixels = node.getContext('2d').getImageData(px - 1, py - 1, 3, 3).data;
+            return Math.max(...pixels.filter((_, index) => index % 4 === 3));
+        }, { x, y });
+        const scroll = () => page.locator('#kcContent').evaluate(el => [el.scrollTop, window.visualViewport.scale]);
+        const initialScroll = await scroll();
+        await dot(-14, -12);
+        // The original dot sits between the two fingers, off centre.
+        await movePair([point(-34, -12), point(6, -12, 2)], [point(-23, 15), point(57, 15, 2)]);
+        await expect(reset).toHaveText('200%');
+        await expect.poll(() => opacity(17, 15)).toBeGreaterThan(160);
+        expect(await opacity(-14, -12)).toBe(0);
+        expect(await scroll()).toEqual(initialScroll);
+        // Draw on fresh paper beyond the original phone screen.
+        const from = [point(-25, 34), point(25, 34, 2)];
+        const to = [point(-25, -42), point(25, -42, 2)];
+        for (let i = 0; i < 4; i++) await movePair(from, to);
+        await dot(0, 0);
+        await page.locator('#kcPauseBtn').tap();
+        await page.reload();
+        await learn.tap();
+        await page.locator('#kcResumeSession').tap();
+        await expect(reset).toHaveText('200%');
+        await expect.poll(() => opacity(0, 0)).toBeGreaterThan(160);
+        await reset.tap();
+        await expect(reset).toBeDisabled();
+        await expect.poll(() => opacity(-14, -12)).toBeGreaterThan(160);
+        // Centring and navigation are not part of the drawing's undo history.
+        await undo.tap();
+        await expect.poll(() => opacity(-14, -12)).toBeGreaterThan(160);
+        await undo.tap();
+        await expect(undo).toBeDisabled();
+        expect(await opacity(-14, -12)).toBe(0);
+        await canvas.scrollIntoViewIfNeeded();
+        const close = [point(-3, 0), point(3, 0, 2)];
+        const wide = [point(-60, 0), point(60, 0, 2)];
+        await movePair(close, wide);
+        await expect(reset).toHaveText('400%');
+        await movePair(wide, close);
+        await expect(reset).toHaveText('25%');
+        await expect(undo).toBeDisabled();
+        await expect(pad.getByRole('button', { name: 'Вернуть штрих' })).toBeEnabled();
+        await reset.tap();
+        await touch('touchStart', point(-22, 0));
+        await touch('touchMove', point(-20, 0));
+        await touch('touchStart', point(-20, 0), point(20, 0, 2));
+        await touch('touchCancel');
+        await expect(undo).toBeDisabled();
+        await touch('touchStart', point(-35, 18));
+        await touch('touchMove', point(3, 18));
+        await touch('touchStart', point(3, 18), point(50, 18, 2));
+        await touch('touchEnd');
+        await expect.poll(() => opacity(-14, 18)).toBeGreaterThan(160);
+        await undo.tap();
+        await expect(undo).toBeDisabled();
+    });
+
+    test('each pause has its own bubble paths and phases at the faster tempo', async ({ page }) => {
+        await page.emulateMedia({ reducedMotion: 'no-preference' });
+        await page.goto('/physics-10.html');
+        await page.locator('#expBottomNav').getByRole('button', { name: 'Учить' }).tap();
+        await page.locator('#kcQuickStart').tap();
+        const art = page.locator('#kcManualPause .kc-pause-art');
+        const paths = () => art.locator('.kc-bubble-orbit').evaluateAll(els => els.map(el => el.getAttribute('style')));
+        await page.locator('#kcPauseBtn').tap();
+        await expect(art.locator('.kc-bubble').first()).toHaveCSS('animation-duration', '5s');
+        const first = await paths();
+        expect(first).toHaveLength(4);
+        await page.locator('#kcResumeSession').tap();
+        await page.locator('#kcPauseBtn').tap();
+        expect(await paths()).not.toEqual(first);
+        await page.emulateMedia({ reducedMotion: 'reduce' });
+        await expect(art.locator('.kc-bubble-orbit').first()).toHaveCSS('animation-name', 'none');
+        await expect(art.locator('.kc-bubble').first()).toHaveCSS('animation-name', 'none');
+    });
+
     test('timed confirmations honour the chosen interval and can be turned off during a wait', async ({ page }) => {
         await page.clock.install();
         await page.goto('/physics-10.html');
@@ -312,7 +416,7 @@ test.describe('touch study', () => {
         await expect(page.locator('#kcWaitTime')).toBeVisible();
         await expect(page.locator('#kcWaitTime')).toHaveText(/0:1[45]/);
         await page.emulateMedia({ reducedMotion: 'reduce' });
-        await expect(page.locator('.kc-intermission .kc-bubble-a')).toHaveCSS('animation-name', 'none');
+        await expect(page.locator('.kc-intermission .kc-bubble').first()).toHaveCSS('animation-name', 'none');
         await page.clock.fastForward(16_000);
         await expect(page.locator('#kcFront')).toBeVisible();
         await page.locator('#kcFront').tap();

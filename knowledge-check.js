@@ -1394,7 +1394,7 @@
                 '<div class="kc-select-scroll">' +
                 '<div id="kcSelectChoices">' +
                 '<div id="kcQuickOptions">' +
-                    '<div id="kcManualPause" hidden>' + pauseArtwork('kcManual') +
+                    '<div id="kcManualPause" hidden><div class="kc-pause-art" aria-hidden="true"></div>' +
                         '<button type="button" class="kc-turn-off-pauses" id="kcDisableManualPauses">Отключить паузы</button></div>' +
                     '<div class="kc-session-resume" id="kcSessionResume" hidden></div>' +
                     '<div class="kc-paragraph-choice" id="kcQuickChoice" hidden><strong id="kcQuickTopic"></strong>' +
@@ -1785,7 +1785,9 @@
         renderStudySection();
         quickChoice = currentParagraphChoice();
         renderResumeBanner();
-        document.getElementById('kcManualPause').hidden = !paused || !resumeAvailable;
+        const manualPause = document.getElementById('kcManualPause');
+        manualPause.hidden = !paused || !resumeAvailable;
+        if (!manualPause.hidden) manualPause.querySelector('.kc-pause-art').innerHTML = pauseArtwork('kcManual');
         setCustomOptions(!quickChoice && !resumeAvailable);
         savePreferences();
         if (storeDirty) { saveStore(); storeDirty = false; }
@@ -2239,25 +2241,38 @@
     }
 
     function pauseArtwork(id) {
-        return `<div class="kc-pause-art" aria-hidden="true">
-            <svg viewBox="0 0 360 128" width="360" height="128" focusable="false">
+        const speed = 1.4;
+        const between = (low, high) => low + Math.random() * (high - low);
+        const direction = Math.random() < .5 ? -1 : 1;
+        // Two independently phased motions let neighbours meet and separate
+        // without putting the whole scene on the same repeating path.
+        const circles = [
+            { x: 123, radius: 24, period: 7 }, { x: 162, radius: 13, period: 5.8 },
+            { x: 207, radius: 22, period: 8.4 }, { x: 246, radius: 9, period: 6.4 }
+        ].map(({ x, radius, period }) => {
+            const driftTime = period / speed, liftTime = driftTime * between(.73, 1.42);
+            const cx = Math.round(180 + direction * (x - 180) + between(-7, 7));
+            const cy = Math.round(64 + between(-10, 10)), r = Math.round(radius * between(.86, 1.12));
+            const motion = `--drift:${between(13, 19).toFixed(1)}px;--lift:${between(7, 16).toFixed(1)}px;` +
+                `--drift-time:${driftTime.toFixed(3)}s;--lift-time:${liftTime.toFixed(3)}s;` +
+                `--drift-phase:${(-Math.random() * 2 * driftTime).toFixed(3)}s;--lift-phase:${(-Math.random() * 2 * liftTime).toFixed(3)}s`;
+            return `<g class="kc-bubble-orbit" style="${motion}"><circle class="kc-bubble" cx="${cx}" cy="${cy}" r="${r}"/></g>`;
+        }).join('');
+        return `<svg viewBox="0 0 360 128" width="360" height="128" focusable="false">
                 <defs>
-                    <filter id="${id}Liquid" x="-15%" y="-45%" width="130%" height="190%" color-interpolation-filters="sRGB">
+                    <filter id="${id}Liquid" filterUnits="userSpaceOnUse" x="45" y="0" width="270" height="128" color-interpolation-filters="sRGB">
                         <feGaussianBlur stdDeviation="5"/>
                         <feColorMatrix type="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 19 -8"/>
                     </filter>
                     <linearGradient id="${id}Tint" x2="1" y2=".35">
                         <stop stop-color="var(--accent-color)"/><stop offset="1" stop-color="var(--kc-bubble-end)"/>
                     </linearGradient>
-                    <mask id="${id}Pool"><g fill="white" filter="url(#${id}Liquid)">
-                        <circle class="kc-bubble kc-bubble-a" cx="133" cy="65" r="25"/>
-                        <circle class="kc-bubble kc-bubble-b" cx="175" cy="58" r="13"/>
-                        <circle class="kc-bubble kc-bubble-c" cx="219" cy="64" r="22"/>
-                        <circle class="kc-bubble kc-bubble-d" cx="256" cy="66" r="8"/>
-                    </g></mask>
+                    <mask id="${id}Pool" maskUnits="userSpaceOnUse" x="0" y="0" width="360" height="128">
+                        <g fill="white" filter="url(#${id}Liquid)">${circles}</g>
+                    </mask>
                 </defs>
                 <rect width="360" height="128" fill="url(#${id}Tint)" mask="url(#${id}Pool)"/>
-            </svg></div>`;
+            </svg>`;
     }
 
     function showWaitState() {
@@ -2267,7 +2282,7 @@
         const earliest = readyAt(next);
         const content = document.getElementById('kcContent');
         content.innerHTML = '<section class="kc-state-screen kc-intermission" aria-labelledby="kcWaitHeading">' +
-            pauseArtwork('kcWait') +
+            '<div class="kc-pause-art" aria-hidden="true">' + pauseArtwork('kcWait') + '</div>' +
             '<h3 class="kc-state-title" id="kcWaitHeading">До повторения</h3>' +
             '<div class="kc-wait-time" id="kcWaitTime" role="timer"></div><div class="kc-wait-track"><div class="kc-wait-fill" id="kcWaitFill"></div></div>' +
             '<div class="kc-state-actions"><button type="button" class="kc-btn kc-btn-primary" id="kcRepeatNow">Повторить сейчас</button>' +
