@@ -115,11 +115,12 @@ test("a building can be assigned from its production panel, combined with troops
   expect(E.restore(after)).not.toBeNull();
   await page.reload();
   await page.locator("#continue").click();
+  await expect(tab(page, 0)).toBeVisible();
   await page.keyboard.press("0");
   expect((await selection(page)).ids).toEqual(mixed);
-  await expect(tab(page, 0)).toBeVisible();
   await page.reload();
   await page.locator("#continue").click();
+  await expect(tab(page, 0)).toBeVisible();
   await page.keyboard.press("0");
   expect((await selection(page)).ids).toEqual(mixed);
   expect((await selection(page)).groups[2]).toEqual([base.id, barracks.id]);

@@ -149,6 +149,7 @@ for (const touch of [false, true]) {
       await page.goto(route);
       await expect(page.locator("#continue-detail")).toContainText("Пепельный узел");
       await page.locator("#continue").click();
+      await expect(page.locator("#hud")).toBeVisible();
       if (touch) {
         await page.locator("#dock-shop").tap();
         await page.locator("#develop-tab-production").tap();
