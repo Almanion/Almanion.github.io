@@ -9,8 +9,9 @@
     minimap = new SignalMiniMap.MiniMap(miniCanvas),
     KEY = "signal-frontier-v1",
     coarse = matchMedia("(pointer:coarse)"),
-    motionPref = matchMedia("(prefers-reduced-motion:reduce)");
-  let state = E.make("frontier-9"),
+    motionPref = matchMedia("(prefers-reduced-motion:reduce)"),
+    defaultProfile = new URLSearchParams(location.search).get("mission")==="east"?"frontier-10":"frontier-9";
+  let state = E.make(defaultProfile, { resources: 2 }),
     mode = "menu",
     group = 1,
     selected = [],
@@ -25,7 +26,7 @@
     saved = null,
     settings = { volume: 40, reduced: motionPref.matches },
     lastMode = "playing",
-    dialogOrigin = "menu",
+    dialogTrigger = null,
     saveAvailable = true,
     noticeUntil = 0,
     lastSaved = 0,
@@ -43,7 +44,7 @@
     miniRect = null;
   const mapPointers = new Map();
   const controlGroups = new Map();
-  let dockTab = "shop", selectionPanel, mobileDockView = "selection", productionContext = null;
+  let dockTab = "shop", selectionPanel, mobileDockView = "selection", productionContext = null, keyboardShop = false;
   const actionPointers = new Map();
   let edge = null,
     pinch = null,
@@ -129,6 +130,7 @@
     // Object ids are local to an operation, so another save cannot inherit them.
     controlGroups.clear();
     settings.controlGroups = {};
+    development.reset();
     resultShown = false;
     phase = -1;
     group = 1;
@@ -191,12 +193,12 @@
     resetInput();
     combatFocus = null;
     view.resetInterpolation?.();
+    if (next === "tactical" && mode !== "paused") dockTab = "shop";
     mode = next;
     document.body.dataset.mode = mode;
     $("home").hidden = mode !== "menu";
     $("hud").hidden = mode === "menu";
     $("command-dock").hidden = !["playing", "tactical"].includes(mode) || !!placement;
-    if (next === "tactical") dockTab = "shop";
     $("minimap-panel").hidden = !["playing", "tactical"].includes(mode);
     $("map-tools").hidden = !["playing", "tactical"].includes(mode);
     $("tactical").setAttribute("aria-pressed", String(mode === "tactical"));
@@ -245,12 +247,24 @@
   mapLayout.observe($("dialog"));
   mapLayout.observe($("placement-panel"));
   mapLayout.observe($("minimap-panel"));
-  function updateHome() {
-    $("continue").hidden = !saved || saved.status !== "playing";
-    $("new-game").hidden = !saved || saved.status !== "playing";
-    $("start").hidden = !!saved && saved.status === "playing";
+  function missionName(operation) {
+    return operation?.campaign?.id === "frontier-10" ? "Доставка архива" : "Пепельный узел";
   }
-  function begin(resume = false, profile = new URLSearchParams(location.search).get("mission")==="east"?"frontier-10":"frontier-9") {
+  function updateHome() {
+    const active = saved?.status === "playing";
+    $("continue").hidden = !active;
+    $("new-operation-label").textContent = active ? "Новая операция" : "Операции";
+    $("continue-detail").textContent = active ? missionName(saved) + " · " + formatTime(saved.t) : "";
+    $("new-game").hidden = !active;
+    $("start").hidden = active;
+    const preferred = $(defaultProfile === "frontier-10" ? "start-east" : active ? "new-game" : "start");
+    const list = preferred.parentElement;
+    if (list.firstElementChild !== preferred) list.prepend(preferred);
+    for (const button of list.children) button.classList.toggle("primary", !active && button === preferred);
+    if(mode==="menu"&&view.preloadTerrain)
+      view.preloadTerrain(E.map(saved?.status==="playing"?saved:{campaign:{id:defaultProfile}}).id);
+  }
+  function begin(resume = false, profile = defaultProfile) {
     minimap.reset();
     if (!resume) {
       controlGroups.clear();
@@ -258,7 +272,9 @@
     }
     state = resume && saved ? E.restore(saved) : E.make(profile, { resources: 2 });
     if (!state) state = E.make(profile, { resources: 2 });
-    development.select();
+    view.preloadTerrain?.(E.map(state).id);
+    development.reset();
+    dockTab = "shop";
     group = 1;
     selected = [];
     selectedBuilding = null;
@@ -279,10 +295,6 @@
     save();
   }
   function toggleTactical() {
-    if ($("dialog").open && $("dialog").dataset.panel === "development") {
-      $("dialog").close();
-      document.body.classList.remove("development-open");
-    }
     if (!["playing", "tactical"].includes(mode)) return;
     setMode(mode === "playing" ? "tactical" : "playing");
     save();
@@ -353,7 +365,6 @@
   }
   function recallGroup(n, add) {
     if (!controlGroups.has(n)) return;
-    if ($("dialog").open && $("dialog").dataset.panel === "development") closeDialog();
     cancelMapGesture();
     selectHits(controlGroups.get(n), add);
   }
@@ -432,13 +443,13 @@
   }
   function refreshDock(members = selectedUnits()) {
     const active = ["playing", "tactical"].includes(mode) && !placement,
-      shop = mode === "tactical" && dockTab === "shop",
+      shop = mode === "tactical" && dockTab === "shop" && !!state.campaign,
       panel = $("command-dock"), next = shop ? "shop" : "selection",
       changed = panel.hidden !== !active || panel.dataset.view !== next;
     if (panel.hidden !== !active) panel.hidden = !active;
     if (panel.dataset.view !== next) panel.dataset.view = next;
     if ($("development-content").hidden !== !shop) $("development-content").hidden = !shop;
-    if ($("selection-content").hidden !== shop) $("selection-content").hidden = shop;
+    development.setContext(active && shop, members.length);
     $("dock-shop").hidden = false;
     if ($("dock-shop").getAttribute("aria-pressed") !== String(shop)) $("dock-shop").setAttribute("aria-pressed", String(shop));
     if ($("dock-count").textContent !== String(members.length)) $("dock-count").textContent = members.length;
@@ -446,7 +457,8 @@
     panel.dataset.empty = String(!members.length);
     const label = mode === "tactical" ? "Пауза" : "Бой";
     if ($("dock-mode").textContent !== label) $("dock-mode").textContent = label;
-    if (active && !shop) selectionPanel?.render();
+    if (active && shop) development.render();
+    if (active && !$("selection-content").hidden) selectionPanel?.render();
     else if (selectionPanel) selectionPanel.renderProduction(state, null);
     const narrow = matchMedia("(max-width: 759px) and (orientation: portrait)").matches,
       production = narrow && document.body.classList.contains("has-production") && !shop;
@@ -494,6 +506,7 @@
     cancelMapGesture();
     selected = [];
     selectedBuilding = rallyBuilding = null;
+    development.setBuilding();
     selectionVisible = true;
     orderMode = false;
     refreshSelection();
@@ -631,7 +644,8 @@
     rallyBuilding = null;
     selectionVisible = true;
     orderMode = false;
-    if (mode === "tactical" && selected.length) dockTab = "selection";
+    if (mode === "tactical" && dockTab === "shop" && E.construction.enabled(state)) development.setBuilding(selectedBuilding);
+    else if (mode === "tactical" && selected.length) dockTab = "selection";
     refreshSelection();
   }
   let lastEntityTap = null;
@@ -722,72 +736,73 @@
         !!hit?.closest("#touch-controls .stick")))
     );
   }
-  function openDialog(which) {
-    if (which === "development" && !storageConflict) {
-      if ($("dialog").open) $("dialog").close();
-      if (mode !== "tactical") setMode("tactical");
-      dockTab = "shop";
-      refreshDock(selectedUnits());
-      development.render();
-      measureMapArea();
-      return;
-    }
+  function openDialog(which, trigger = document.activeElement) {
     const dialog = $("dialog");
     if (storageConflict && which !== "storage") which = "storage";
-    const drawer = which === "development" && !storageConflict;
-    if (dialog.open && (dialog.dataset.panel === "development") !== drawer)
-      dialog.close();
-    if (!dialog.open) {
-      dialogOrigin = mode;
+    const entering = !dialog.open;
+    if (entering) {
+      dialogTrigger = trigger;
       lastMode =
         mode === "tactical" ? "tactical" : mode === "menu" ? "menu" : "playing";
       if (mode !== "menu") save();
-      if (drawer) lastMode = "tactical";
-      setMode(drawer ? "tactical" : mode === "menu" ? "menu" : "paused");
+      setMode(mode === "menu" ? "menu" : "paused");
       account?.changed();
     }
     dialog.dataset.panel = which;
-    dialog.classList.toggle("dock", drawer);
+    const menu = $("menu-sections"), tab = $("menu-tab-" + which);
+    menu.hidden = !tab;
+    $("menu-tab-pause").hidden = lastMode === "menu";
+    for (const button of menu.children) {
+      button.setAttribute("aria-selected", String(button === tab));
+      button.tabIndex = button === tab ? 0 : -1;
+    }
+    if (which === "pause") {
+      $("pause-mission").textContent = missionName(state) + " · " + formatTime(state.t);
+      $("resume").textContent = lastMode === "tactical" ? "Вернуться к приказам" : "Вернуться в бой";
+    }
     for (const section of dialog.querySelectorAll("section"))
       section.hidden = section.id !== which + "-content";
-    if (!dialog.open) drawer ? dialog.show() : dialog.showModal();
-    document.body.classList.toggle("development-open", drawer);
+    dialog.setAttribute("aria-label", $(which + "-content").querySelector("h2")?.textContent || "Меню игры");
+    if (entering) dialog.showModal();
+    if (tab) {
+      const panel = $(which + "-content");
+      if (entering) panel.scrollTop = 0;
+      tab.focus({ preventScroll: true });
+    }
     $("close-dialog").hidden = which === "result";
     if (which === "account") account.render();
     if (which === "supply") updateSupply();
-    if (which === "development") {
-      development.render();
-      measureMapArea();
-    }
-    if (which === "help")
-      $("economy-help").textContent = E.construction.enabled(state)
-        ? "В «Стройке» или «Добыче» выберите «Экстрактор» размером 4×4 и поставьте у свободного разведанного месторождения. Золотая линия показывает путь дронов: поверните выход к источнику, чтобы сократить доставку. R или кнопка поворота перебирает четыре стороны. Один дрон отправится строить; погибшего строителя можно заменить в карточке здания. Для добычи закажите зондов или выделите существующих и нажмите на ресурс: они выберут ближайший доступный экстрактор. " + (E.development.logistics(state) ? "На одном источнике работают до шести зондов; лишние ищут свободное месторождение с экстрактором. Узел снабжения стоит 90 сплава, строится 24 секунды и добавляет 12 снабжения армии и 4 места для зондов. Стартовые лимиты — 24 и 16, максимальные — 120 и 48 при восьми узлах. Боец и дозорный занимают 1 снабжения, артиллерия — 4. Очереди резервируют места заранее. Потеря узла сохраняет войска, но при превышении лимита приостанавливает производство." : "У каждого узла четыре рабочих места.") + " Выбранных бойцов можно направить ПКМ в экстрактор, на телефоне — кнопкой «Идти» и касанием здания. Внутри четыре места лечения, стрелять нельзя; после полного восстановления бойцы автоматически выходят, а если выход занят — ждут свободного места. Вкладка «Лечение» позволяет отправить разведчика или вывести пациентов досрочно. В разделе «Стройка» есть бункер на четыре бойца: отправьте их ПКМ или кнопкой приказа. Внутри дальность и обзор повышаются на 25%; огонь ведётся с крыши, лечения нет. Выберите бункер: нажатие на портрет выводит бойца, «Вывести всех» освобождает гарнизон. Разведчик стреляет вручную и выходит при движении. Двойное нажатие выбирает все объекты этого типа на видимой части экрана. На телефоне подтвердите место кнопкой; на компьютере — щелчком. Shift + ЛКМ размещает несколько зданий, Esc отменяет. У каждого производства своя очередь и точка сбора. Арсенал после II ступени открывает улучшения. Для III ступени нужны два экстрактора и подавленная внешняя база. Зондов можно выделить и отправить чинить своё повреждённое здание: ПКМ, а на телефоне — «Приказ» и касание здания. Ремонт расходует 1 сплава на 8 прочности; завершив его, зонд вернётся к добыче. «К добыче» отзывает работника. Стройка, ремонт и очереди продолжаются после выхода из паузы."
-        : E.development.expedition(state)
-          ? "Разверните добычу и казармы. Второй узел и подавление северного бастиона или южного арсенала откроют оперативный контур. Вражеские базы собирают отряды; их уничтожение прекращает подкрепления. Выберите осаду с артиллерией или проникновение через терминал. Нажмите на своё здание, чтобы открыть очередь. Очереди работают только вне паузы."
-          : E.development.extended(state)
-            ? "Дроны доставляют сплав в узлы. Развивайте добычу и казармы, исследуйте сеть управления. Второй добывающий узел и уничтоженный глушитель либо южная батарея откроют оперативный контур — артиллерию и проникновение. В разделе добычи доступны защита узлов и ремонт. Очереди работают только вне паузы."
-            : state.campaign
-              ? "Дроны доставляют сплав из конечных месторождений. Постройте казармы и добывающий узел, затем исследуйте сеть управления. Выберите тяжёлый цех для осады или модуль проникновения. Очереди работают только в бою. Приказ группе задаёт точку сбора подкреплений."
-              : "Сплав находится в контейнерах. Опорные пункты восстанавливают отряд; снабжение позволяет выбрать артиллерию или модуль взлома.";
-    if (which === "help" && E.development.matter.enabled(state)) $("economy-help").textContent = "Материя нужна для III ступени, артиллерии, улучшений и проникновения. Конденсатор строится на фиолетовом кратере. Его строитель начнёт добычу; второго зонда назначьте в панели здания. Оба ресурса зачисляются после доставки. Отмена до начала заказа возвращает 100% обеих цен, после — 75%. " + $("economy-help").textContent;
+    if (which === "help") updateHelp(lastMode === "menu" && saved?.status === "playing" ? saved : state);
     if (which === "settings") {
       $("volume").value = settings.volume;
       $("volume-value").textContent = settings.volume + "%";
       $("motion").checked = settings.reduced;
     }
   }
+  function updateHelp(operation) {
+    $("archive-help").hidden = operation.campaign?.id !== "frontier-10";
+    $("recon-help").hidden = !E.fogged(operation);
+    $("economy-help").textContent = E.construction.enabled(operation)
+        ? "В «Стройке» или «Добыче» выберите «Экстрактор» размером 4×4 и поставьте у свободного разведанного месторождения. Золотая линия показывает путь дронов: поверните выход к источнику, чтобы сократить доставку. R или кнопка поворота перебирает четыре стороны. Один дрон отправится строить; погибшего строителя можно заменить в карточке здания. Для добычи закажите зондов или выделите существующих и нажмите на ресурс: они выберут ближайший доступный экстрактор. " + (E.development.logistics(operation) ? "На одном источнике работают до шести зондов; лишние ищут свободное месторождение с экстрактором. Узел снабжения стоит 90 сплава, строится 24 секунды и добавляет 12 снабжения армии и 4 места для зондов. Стартовые лимиты — 24 и 16, максимальные — 120 и 48 при восьми узлах. Боец и дозорный занимают 1 снабжения, артиллерия — 4. Очереди резервируют места заранее. Потеря узла сохраняет войска, но при превышении лимита приостанавливает производство." : "У каждого узла четыре рабочих места.") + " Выбранных бойцов можно направить ПКМ в экстрактор, на телефоне — кнопкой «Идти» и касанием здания. Внутри четыре места лечения, стрелять нельзя; после полного восстановления бойцы автоматически выходят, а если выход занят — ждут свободного места. Вкладка «Лечение» позволяет отправить разведчика или вывести пациентов досрочно. В разделе «Стройка» есть бункер на четыре бойца: отправьте их ПКМ или кнопкой приказа. Внутри дальность и обзор повышаются на 25%; огонь ведётся с крыши, лечения нет. Выберите бункер: нажатие на портрет выводит бойца, «Вывести всех» освобождает гарнизон. Разведчик стреляет вручную и выходит при движении. Двойное нажатие выбирает все объекты этого типа на видимой части экрана. На телефоне подтвердите место кнопкой; на компьютере — щелчком. Shift + ЛКМ размещает несколько зданий, Esc отменяет. У каждого производства своя очередь и точка сбора. Арсенал после II ступени открывает улучшения. Для III ступени нужны два экстрактора и подавленная внешняя база. Зондов можно выделить и отправить чинить своё повреждённое здание: ПКМ, а на телефоне — «Приказ» и касание здания. Ремонт расходует 1 сплава на 8 прочности; завершив его, зонд вернётся к добыче. «К добыче» отзывает работника. Стройка, ремонт и очереди продолжаются после выхода из паузы."
+        : E.development.expedition(operation)
+          ? "Разверните добычу и казармы. Второй узел и подавление северного бастиона или южного арсенала откроют оперативный контур. Вражеские базы собирают отряды; их уничтожение прекращает подкрепления. Выберите осаду с артиллерией или проникновение через терминал. Нажмите на своё здание, чтобы открыть очередь. Очереди работают только вне паузы."
+          : E.development.extended(operation)
+            ? "Дроны доставляют сплав в узлы. Развивайте добычу и казармы, исследуйте сеть управления. Второй добывающий узел и уничтоженный глушитель либо южная батарея откроют оперативный контур — артиллерию и проникновение. В разделе добычи доступны защита узлов и ремонт. Очереди работают только вне паузы."
+            : operation.campaign
+              ? "Дроны доставляют сплав из конечных месторождений. Постройте казармы и добывающий узел, затем исследуйте сеть управления. Выберите тяжёлый цех для осады или модуль проникновения. Очереди работают только в бою. Приказ группе задаёт точку сбора подкреплений."
+              : "Сплав находится в контейнерах. Опорные пункты восстанавливают отряд; снабжение позволяет выбрать артиллерию или модуль взлома.";
+    if (E.development.matter.enabled(operation)) $("economy-help").textContent = "Материя нужна для III ступени, артиллерии, улучшений и проникновения. Конденсатор строится на фиолетовом кратере. Его строитель начнёт добычу; второго зонда назначьте в панели здания. Оба ресурса зачисляются после доставки. Отмена до начала заказа возвращает 100% обеих цен, после — 75%. " + $("economy-help").textContent;
+  }
   function closeDialog() {
     if (storageConflict) return;
     if(view.lost){notice("Изображение ещё восстанавливается. Игра остаётся на паузе.");return;}
     if (state.status !== "playing" && mode !== "menu") return;
     $("dialog").close();
-    document.body.classList.remove("development-open");
     setMode(lastMode);
     account?.changed();
-  }
-  function backFromDetail() {
-    if (dialogOrigin === "menu") closeDialog();
-    else openDialog("pause");
+    if (dialogTrigger?.getClientRects().length) dialogTrigger.focus({ preventScroll: true });
+    else if (lastMode !== "menu") $("menu-button").focus({ preventScroll: true });
+    dialogTrigger = null;
   }
   function home() {
     save();
@@ -857,13 +872,13 @@
       citadel: "Подавить цитадель",
     };
     const hints = {
-      develop: "Развитие · производство",
+      develop: "Магазин · производство",
       expand: "Разведчик строит узел у месторождения",
-      network: "Развитие · исследуйте сеть управления",
+      network: "Технологии · исследуйте сеть управления",
       "expand-network": "Постройте второй добывающий узел",
       secure: "Южная батарея или северный глушитель",
       fortress: "Северный бастион или южный арсенал",
-      command: "Развитие · исследуйте оперативный контур",
+      command: "Технологии · исследуйте оперативный контур",
       jammer: "Глушитель или обход через терминал",
       relay: "Удерживайте действие рядом с узлом",
       defend:
@@ -885,11 +900,11 @@
       !E.living(state, "artillery")
     )
       hints.citadel = E.living(state, "foundry")
-        ? "Развитие · закажите артиллерию"
-        : "Развитие · постройте тяжёлый цех";
+        ? "Закажите артиллерию в тяжёлом цехе"
+        : "Постройте тяжёлый цех";
     if (E.construction.enabled(state)) {
-      hints.develop = "Развитие → Стройка · выберите площадку";
-      hints.expand = "Развитие → Экстрактор · разместите у свободной жилы";
+      hints.develop = "Стройка · выберите площадку для казарм";
+      hints.expand = "Стройка · поставьте экстрактор у свободной жилы";
       hints["expand-network"] = "Постройте экстрактор у второй свободной жилы";
     }
     $("objective-text").textContent = task.title || titles[task.id];
@@ -982,9 +997,7 @@
       }
     }
     $("interact").classList.toggle("pressed", !!act?.allowed && (input.interact || keys.has("KeyE")));
-    $("recon-help").hidden = !E.fogged(state);
     if ($("dialog").open && !$("supply-content").hidden) updateSupply();
-    if (mode === "tactical" && !$("development-content").hidden) development.render();
     if (performance.now() > noticeUntil)
       $("notice").classList.remove("visible");
   }
@@ -1047,6 +1060,8 @@
   };
   const development = new SignalDevelopmentPanel($("development-panel"), {
     state: () => state,
+    inspector: $("shop-inspector"), roster: $("selection-content"),
+    showSelection: () => selectionPanel?.render(),
     buy, care: careAction,
     place: beginPlacement,
     layout: measureMapArea,
@@ -1076,6 +1091,7 @@
   });
   selectionPanel = new SignalSelectionPanel($("selection-content"), {
     state: () => state, members: selectedUnits, buy, care: careAction, selectType,
+    shop: () => mode === "tactical" && dockTab === "shop",
     production: $("combat-production"), combat: () => mode === "playing", reason: (code) => reasons[code],
     productionState: (active) => {
       // Selection normalization may reorder IDs on the next tick; keep the user's tab.
@@ -1085,7 +1101,7 @@
     select: (ids) => selectHits(ids, false),
     inspect: (id) => {
       development.select(id);
-      openDialog("development");
+      openShop(false);
     },
   });
   function updateSupply() {
@@ -1182,7 +1198,6 @@
       return;
     }
     $("dialog").close();
-    document.body.classList.remove("development-open");
     setMode("tactical");
     clearSelection();
     placement = { kind, turn: 0, key: null, point: null, result: null };
@@ -1272,9 +1287,11 @@
             ? "Зонд назначен · 12 прочности/с · 1 сплава за 8 прочности"
             : action === "stop-repair"
               ? "Зонды возвращаются к добыче"
-          : action === "cancel"
+          : action === "cancel" || action === "cancel-build"
             ? "Возвращено " + -result.cost + " сплава" + (result.matter ? " · " + -result.matter + " материи" : "")
-            : mode === "playing" ? "Заказ принят" : "Заказ принят · продолжится после выхода из паузы"
+            : action === "assign-builder" ? "Зонд направлен на стройку"
+            : state.events.some((event) => event.type === "build") ? "Стройка начата"
+            : E.development.items(state)[action] ? "В очереди · " + E.development.items(state)[action].label : "Приказ принят"
           : reasons[result.reason] || "Недоступно"
         : result.allowed
           ? action === "salvage"
@@ -1314,7 +1331,7 @@
     canApply: () => ["menu", "paused", "tactical"].includes(mode),
     localConflict: () => storageConflict || !!localStore?.stale(),
     applySave: loadOperation,
-    back: backFromDetail,
+    back: closeDialog,
   });
   $("storage-load").onclick = () => {
     try {
@@ -1344,25 +1361,22 @@
     }
   };
   $("supply-back").onclick = closeDialog;
-  $("dock-shop").onclick = () => {
+  function openShop(catalogue) {
+    if (storageConflict) { openDialog("storage"); return; }
     if (!state.campaign) { openDialog("supply"); return; }
     if (mode === "playing") { setMode("tactical"); save(); }
     dockTab = "shop";
-    development.select();
+    if (catalogue && development.selected !== null) development.setBuilding();
     $("development-feedback").textContent = "";
     refreshDock(selectedUnits());
     development.render();
-  };
+  }
+  $("dock-shop").onclick = () => openShop(true);
+  $("command-dock").addEventListener("pointerdown", () => { keyboardShop = false; });
   $("dock-selection").onclick = () => { dockTab = "selection"; mobileDockView = "selection"; refreshDock(selectedUnits()); };
   $("dock-production").onclick = () => { dockTab = "selection"; mobileDockView = "production"; refreshDock(selectedUnits()); };
   $("select-army").onclick = () => selectHits(state.units.filter((u) => selectable(u) && [1, 2].includes(u.group)).map((u) => u.id));
-  $("dialog").addEventListener("close", () => {
-    document.body.classList.toggle(
-      "development-open",
-      $("dialog").open && $("dialog").dataset.panel === "development",
-    );
-    measureMapArea();
-  });
+  $("dialog").addEventListener("close", measureMapArea);
   $("map-overview").onclick = () => {
     if (mode === "playing") {
       setMode("tactical");
@@ -1627,9 +1641,9 @@
       );
       buy(post ? "salvage" : "outpost", button.dataset.site);
     };
-  $("start").onclick = () => begin();
+  $("start").onclick = () => begin(false, "frontier-9");
   $("continue").onclick = () => begin(true);
-  $("new-game").onclick = () => begin();
+  $("new-game").onclick = $("start").onclick;
   $("start-east").onclick=()=>begin(false,"frontier-10");
   $("tactical").onclick = toggleTactical;
   $("order-move").onclick = () => {
@@ -1654,17 +1668,51 @@
       } else clearSelection();
     }
   };
-  $("menu-button").onclick = () => openDialog("pause");
+  $("menu-button").onclick = () => openDialog("pause", $("menu-button"));
   $("resume").onclick = closeDialog;
   $("close-dialog").onclick = closeDialog;
-  $("help-back").onclick = backFromDetail;
-  $("settings-back").onclick = backFromDetail;
-  $("restart").onclick = () => begin();
-  $("retry").onclick = () => begin();
+  $("help-back").onclick = closeDialog;
+  $("settings-back").onclick = closeDialog;
+  $("restart").onclick = () => begin(false, state.campaign?.id || "classic");
+  $("retry").onclick = $("restart").onclick;
   $("to-home").onclick = home;
   $("result-home").onclick = home;
   for (const button of document.querySelectorAll("[data-open]"))
-    button.onclick = () => openDialog(button.dataset.open);
+    button.onclick = () => openDialog(button.dataset.open, button);
+  for (const link of document.querySelectorAll("a[data-renderer]")) {
+    link.onclick = (event) => {
+      if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+      event.preventDefault();
+      if (link.hasAttribute("aria-current")) return;
+      const target = new URL(link.href);
+      target.hash = "graphics-" + lastMode;
+      location.assign(target.href);
+    };
+  }
+  // The arrow keys switch nearby sections. Tab keeps its normal dialog traversal.
+  document.addEventListener("keydown", (event) => {
+    const list = event.target.closest?.('[role="tablist"]');
+    if (!list || !event.target.matches('[role="tab"]')) return;
+    if (list.closest("#development-panel") && event.key === "ArrowDown") {
+      event.preventDefault();
+      keyboardShop = true;
+      const catalogue = list.parentElement.querySelector(".shop-scroll");
+      (catalogue?.querySelector(".command-tile:enabled") || catalogue?.querySelector(".offer-info"))?.focus();
+      return;
+    }
+    if (
+        !["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key) ||
+        event.altKey || event.metaKey || event.ctrlKey) return;
+    const tabs = [...list.querySelectorAll('[role="tab"]')].filter((tab) => !tab.hidden && !tab.disabled);
+    const i = tabs.indexOf(event.target);
+    if (i < 0) return;
+    if (list.closest("#development-panel")) keyboardShop = true;
+    const next = event.key === "Home" ? tabs[0] : event.key === "End" ? tabs.at(-1)
+      : tabs[(i + (event.key === "ArrowRight" ? 1 : tabs.length - 1)) % tabs.length];
+    event.preventDefault();
+    next.click();
+    document.getElementById(next.id)?.focus({ preventScroll: true });
+  });
   $("dialog").addEventListener("cancel", (e) => {
     e.preventDefault();
     closeDialog();
@@ -1680,6 +1728,7 @@
   };
   $("motion").onchange = (e) => {
     settings.reduced = e.target.checked;
+    document.body.classList.toggle("reduced-motion", settings.reduced);
     persist();
   };
   for (const action of ["dash", "reload"]) {
@@ -1812,13 +1861,8 @@
   );
   function openBuilding(u) {
     openingClick = true;
-    selectedBuilding = u.id;
-    selected = [u.id];
-    selectionVisible = true;
-    refreshSelection();
+    if (mode === "tactical") dockTab = "shop";
     development.select(u.id);
-    if (mode === "tactical") { dockTab = "shop"; development.render(); }
-    refreshDock(selectedUnits());
   }
   function edgeAt(e) {
     const margin = e.pointerType === "touch" ? 30 : 24;
@@ -2154,6 +2198,17 @@
   addEventListener("keydown", (e) => {
     if (e.defaultPrevented || e.isComposing ||
       (e.target instanceof Element && e.target.closest('input, textarea, select, [contenteditable="true"], [contenteditable=""]') && e.code !== "Escape")) return;
+    if ($("dialog").open) return;
+    if (e.code === "KeyB" && !e.altKey && !e.ctrlKey && !e.metaKey && !placement &&
+        ["playing", "tactical"].includes(mode)) {
+      e.preventDefault();
+      if (!e.repeat) {
+        $("dock-shop").click();
+        keyboardShop = true;
+        $("development-panel").querySelector('[role="tab"][aria-selected="true"]')?.focus();
+      }
+      return;
+    }
     if (e.code === "Escape" && !$("minimap-legend").hidden) {
       closeMiniLegend();
       $("minimap-key").focus();
@@ -2191,26 +2246,17 @@
       e.preventDefault();
       return;
     }
-    // In the drawer Tab navigates controls; resuming remains an explicit action.
-    if ($("dialog").open && e.code === "Tab") return;
+    if (e.code === "Escape" && development.inspected) {
+      e.preventDefault();
+      development.closeProfile(true);
+      return;
+    }
+    if (e.code === "Tab" && mode === "tactical" && (keyboardShop || e.target.closest?.("#shop-inspector")) && e.target.closest?.("#command-dock")) return;
     if (e.repeat && ["Tab", "Escape"].includes(e.code)) {
       e.preventDefault();
       return;
     }
-    if (
-      $("dialog").open &&
-      $("dialog").dataset.panel === "development" &&
-      e.code === "Escape"
-    ) {
-      e.preventDefault();
-      closeDialog();
-      return;
-    }
-    if (
-      ($("dialog").open && $("dialog").dataset.panel !== "development") ||
-      mode === "menu"
-    )
-      return;
+    if (mode === "menu") return;
     if (e.code === "Escape") {
       e.preventDefault();
       if (mode === "tactical" && (selectedBuilding || selectedUnits().length)) {
@@ -2430,8 +2476,9 @@
         lastSaved = now;
       }
     }
-    const animated =
-      mode === "playing" || (mode === "menu" && !settings.reduced);
+    // Warm the field on entry while the start screen animates its own artwork.
+    if (mode === "menu" && !renderDirty) return;
+    const animated = mode === "playing";
     if (
       !animated &&
       !renderDirty &&
@@ -2493,8 +2540,18 @@
     lastDraw = now;
     renderDirty = false;
   }
+  document.body.classList.toggle("reduced-motion", settings.reduced);
   updateHome();
   setMode("menu");
+  const graphicsReturn = /^#graphics-(menu|playing|tactical)$/.exec(location.hash);
+  if (graphicsReturn) {
+    history.replaceState(history.state, "", location.pathname + location.search);
+    if (graphicsReturn[1] !== "menu" && saved?.status === "playing") {
+      begin(true);
+      if (graphicsReturn[1] === "tactical") setMode("tactical");
+    }
+    openDialog("settings", mode === "menu" ? $("home").querySelector('[data-open="settings"]') : $("menu-button"));
+  }
   if(window.SignalGraphics) {
     document.documentElement.removeAttribute("data-render-loading");
     for(const id of ["start","start-east","continue","new-game"])$(id).disabled=false;

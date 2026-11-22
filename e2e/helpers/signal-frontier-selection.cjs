@@ -42,13 +42,8 @@ async function selectArmy(page) {
 
 async function deckCard(page, id) {
   const card = page.locator("#" + id);
-  for (let i = 0; i < 8; i++) {
-    if (await card.count()) return card;
-    const next = page.locator('[data-deck-page="1"]');
-    if (!await next.count() || !await next.isEnabled()) break;
-    await next.click();
-  }
-  throw Error("Card not found in shop: " + id);
+  await card.scrollIntoViewIfNeeded();
+  return card;
 }
 
 async function revealPoint(page, world) {

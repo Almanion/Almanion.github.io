@@ -35,6 +35,31 @@ test("tactical camera draws at evenly spaced refreshes and recovers after a miss
   expect(result.rows).toEqual([[1],[2],[2],[3],[4],[1],[2],[1]]);
   expect(result.late).toBe(true);
 });
+test("the first zoom frame after idle and the next frame after a stall keep the pointer anchored",async({page})=>{
+  await captureView(page);await page.goto(route);await ready(page);await page.locator('#start').click();
+  await page.waitForFunction(()=>gpuTestView.cameraSettled&&!gpuTestView.memoryNeedsRefine&&gpuTestView.gpuMap?.terrain.art.ground==="ready");
+  await page.waitForTimeout(250);
+  const result=await page.evaluate(()=>new Promise(resolve=>{
+    const v=gpuTestView,render=v.render,x=v.origin.x+100,y=v.origin.y-40,point=v.world(x,y);
+    v.render=function(s,ui,dt){
+      v.render=render;
+      const period=(v.refreshPeriod||1000/60)*(v.cameraStride||1)/1000;
+      function sample(elapsed){
+        const before=v.camera.scale,target=v.tactical.zoom;
+        render.call(v,s,ui,elapsed);
+        return (v.camera.scale-before)/(target-before);
+      }
+      const first=sample(dt),normal=sample(period),late=sample(.1),anchor=v.screen(point.x,point.y);
+      resolve({dt,period,first,normal,late,drift:Math.hypot(anchor.x-x,anchor.y-y),time:s.t});
+    };
+    document.querySelector('#field').dispatchEvent(new WheelEvent('wheel',{clientX:x,clientY:y,deltaY:-180,bubbles:true,cancelable:true}));
+  }));
+  expect(result.dt).toBeGreaterThanOrEqual(.099);
+  expect(result.first).toBeCloseTo(1-Math.exp(-8*Math.min(result.period,result.dt)),5);
+  expect(result.normal).toBeCloseTo(1-Math.exp(-8*result.period),5);
+  expect(result.late).toBeCloseTo(1-Math.exp(-8*Math.min(.1,1.5*result.period)),5);
+  expect(result.drift).toBeLessThan(.5);expect(result.time).toBe(0);
+});
 test("3D motion blends between fixed steps without changing the operation or its fog",async({page})=>{
   await captureView(page);await page.goto(route);await ready(page);
   const result=await page.evaluate(()=>{
@@ -64,6 +89,23 @@ test("3D motion blends between fixed steps without changing the operation or its
   }
   expect(result.bullet.x).toBeCloseTo((result.previous.bullet.x+result.current.bullet.x)/2,8);
   expect(result.paused).toBe(result.current.x);expect(result.reset).toBe(result.current.x);
+});
+test("70 percent scales only the world and keeps picking aligned after resizing",async({browser})=>{
+  const page=await browser.newPage({viewport:{width:1920,height:1080},deviceScaleFactor:1});
+  try{
+    await captureView(page);await page.goto(route+"&scale3d=70");await ready(page);await page.locator('#start').click();
+    for(const size of [{width:1920,height:1080},{width:390,height:844},{width:844,height:390}]){
+      await page.setViewportSize(size);
+      await page.waitForFunction(size=>gpuTestView.canvas.width===size.width&&gpuTestView.cameraSettled&&!gpuTestView.memoryNeedsRefine,size);
+      const result=await page.evaluate(()=>{
+        const v=gpuTestView,h=SignalEngine.hero(SignalGame.snapshot()),a=v.project(h.x,h.y),b=v.screen(h.x,h.y);
+        return {world:[v.gpuCanvas.width,v.gpuCanvas.height],hud:[v.canvas.width,v.canvas.height],
+          error:Math.hypot(a.x-b.x,a.y-b.y),t:SignalGame.snapshot().t};
+      });
+      expect(result.world).toEqual([Math.round(size.width*.7),Math.round(size.height*.7)]);
+      expect(result.hud).toEqual([size.width,size.height]);expect(result.error).toBeLessThan(.1);expect(result.t).toBe(0);
+    }
+  }finally{await page.close();}
 });
 
 test("newly visible troops, shelter changes and teleports snap to their observed position",async({page})=>{
@@ -151,6 +193,7 @@ for(const [width,height]of [[1440,900],[390,844],[844,390]])test(`3D field is vi
   const errors=[];page.on("pageerror",e=>errors.push(e.message));page.on('console',m=>{if(m.type()==='error')errors.push(m.text());});
   await page.setViewportSize({width,height});await captureView(page);
   await page.goto(route);await ready(page);await page.locator("#start").click();
+  await expect(page.locator(".topbar .objective")).toHaveCSS("backdrop-filter","none");
   await page.waitForFunction(()=>SignalGame.cameraSettled()&&!gpuTestView.memoryNeedsRefine);
   const frameBefore=await page.evaluate(()=>gpuTestView.scene.getFrameId());
   const before=await page.evaluate(()=>SignalGame.snapshot());
@@ -240,9 +283,9 @@ test("all model types render without mutating an operation and instances stay bo
     return {results,pure,types:kinds.sort(),meshes,formationMeshes:v.scene.meshes.length,maxMeshes:v.diagnostics().maxBatches*2+1};
   });
   // Cover the canonical registry, including the four eastern archive objects.
-  // Four primitives and 46 rigid assemblies, each with one shadow, plus terrain.
+  // Each distinct model may own one solid and one shadow, irrespective of formation size.
   expect(results.pure).toBe(true);expect(results.types).toEqual(Object.keys(E.C).sort());expect(results.meshes).toBeLessThanOrEqual(results.maxMeshes);
-  expect(results.maxMeshes).toBe(101);expect(results.formationMeshes).toBe(results.meshes);
+  expect(results.maxMeshes).toBe(151);expect(results.formationMeshes).toBe(results.meshes);
   for(const row of results.results){expect(row.gpu.units).toBe(row.count);expect(row.gpu.batches).toBeGreaterThan(4);expect(row.gpu.batches).toBeLessThanOrEqual(45);expect(row.gpu.drawCalls).toBeLessThanOrEqual(row.gpu.activeBatches*2+1);expect(row.gpu.parts).toBeLessThan(row.count*60+100);}
   expect(results.results.map(r=>r.gpu.batches)).toEqual(Array(4).fill(results.results[0].gpu.batches));
 });

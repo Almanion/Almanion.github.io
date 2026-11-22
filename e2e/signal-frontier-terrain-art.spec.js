@@ -8,6 +8,27 @@ async function capture(page){
   Object.defineProperty(window,"SignalGraphics",{value,writable:true,configurable:true});
  }}));
 }
+for(const resume of [false,true]){
+ test("3D prepares the "+(resume?"saved":"selected")+" operation on the home screen and reuses its textures",async({page})=>{
+  await capture(page);
+  if(resume){
+   const E=require("../game-source/signal-frontier/src/engine");
+   await page.addInitScript(save=>localStorage.setItem("signal-frontier-v1",JSON.stringify({save})),E.snapshot(E.make("frontier-10",{resources:2})));
+  }
+  const files=[];
+  page.on("request",r=>{if(r.url().includes("/assets/terrain/"))files.push(new URL(r.url()).pathname.split("/").pop());});
+  await page.goto("/games/signal-frontier/?renderer=babylon"+(resume?"":"&mission=east"));
+  await page.waitForFunction(()=>window.terrainTestView?.terrainTextures.get("districts-east")?.state==="ready"&&terrainTestView.gpuMap?.terrain.art.cliff==="ready");
+  expect(await page.evaluate(()=>SignalGame.mode())).toBe("menu");
+  await page.evaluate(()=>{window.warmedArt=["districts-east","cliff"].map(id=>terrainTestView.terrainTextures.get(id).texture);});
+  await page.locator(resume?"#continue":"#start-east").click();
+  await page.waitForFunction(()=>terrainTestView.gpuMap?.id==="districts-east");
+  expect(await page.evaluate(()=>warmedArt.every(t=>terrainTestView.materials.terrain.getActiveTextures().includes(t)))).toBe(true);
+  expect(files.filter(f=>f==="districts-east.webp")).toHaveLength(1);
+  expect(files.filter(f=>f==="cliff.webp")).toHaveLength(1);
+  expect(files).not.toContain("districts.webp");
+ });
+}
 for(const renderer of ["babylon","canvas"]){
  test(renderer+": expanded operation loads its complete deck without stretching the western atlas",async({page})=>{
   await capture(page);const requests=[],errors=[];

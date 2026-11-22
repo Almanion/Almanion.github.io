@@ -192,7 +192,7 @@ test("missing audio support does not block play, pause or settings", async ({
     .poll(() => page.evaluate(() => SignalGame.snapshot().t))
     .toBeGreaterThan(0.1);
   await page.locator("#menu-button").click();
-  await page.locator('#pause-content [data-open="settings"]').click();
+  await page.locator('#menu-tab-settings').click();
   await page.locator("#volume").fill("50");
   await page.locator("#volume").dispatchEvent("change");
   expect(await page.evaluate(() => SignalGame.audioState())).toBe(
@@ -235,11 +235,11 @@ for (const browserType of [chromium, webkit])
         .toBe("suspended");
       expect(await page.evaluate(() => SignalGame.audio().ambience)).toBe(0);
       expect(await page.evaluate(() => SignalGame.audio().voices)).toBe(0);
-      await page.locator('#pause-content [data-open="settings"]').tap();
+      await page.locator('#menu-tab-settings').tap();
       await page.locator("#volume").fill("23");
       await page.locator("#volume").dispatchEvent("change");
       await page.locator("#settings-back").tap();
-      await page.locator("#resume").tap();
+      await expect(page.locator("#dialog")).not.toBeVisible();
       await expect
         .poll(() =>
           page.evaluate(() => Math.round(SignalGame.audio().volume * 100)),

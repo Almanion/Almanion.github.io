@@ -1,12 +1,14 @@
 // Articulated 3D counterparts of the procedural models. Every helper submits
 // an instance of shared immutable geometry; simulation objects remain read-only.
-const P={shell:"#d9dfd3",field:"#b9c7ba",dark:"#243b43",steel:"#58756e",enemy:"#aaa18c",copper:"#ad8567",mint:"#a4edd9",amber:"#efae8c",black:"#0c1b22"},
+const P={shell:"#d8e3dc",field:"#9ebcb4",dark:"#293b44",steel:"#728d8b",enemy:"#b1a28b",copper:"#bd7958",mint:"#95ebe0",amber:"#ffbd83",black:"#111f28"},
   clamp=(x)=>Math.max(0,Math.min(1,x));
 
 export class Models {
   constructor(parts,E,view){this.parts=parts;this.E=E;this.view=view;}
   begin(u,s,ui,memory=false) {
     this.u=u;this.s=s;this.ui=ui;this.memory=memory;
+    // A destroyed unit can retain its last hit timer in an existing save.
+    this.hitFlash=u.hp>0&&u.hit>0&&!ui.reduced&&!memory;
     this.floor=this.E.elevation(u.x,u.y,this.view.mapId);
     this.pose=memory?{phase:0,move:0,angle:u.angle||0}:this.view.pose(u,s,ui);
     this.gaitPose={...this.pose,cycle:globalThis.SignalUnitModels.gaits[u.kind]};
@@ -22,11 +24,11 @@ export class Models {
   }
   shape(kind,x,y,w,d,z,h,color=P.shell,a=this.a,emission=false) {
     const p=this.point(x,y,z,a);
-    this.parts.part(kind,...p,w,d,h,a,this.u.hit>0&&!this.ui.reduced&&!this.memory?P.amber:color,this.floor,this.memory,emission);
+    this.parts.part(kind,...p,w,d,h,a,this.hitFlash?P.amber:color,this.floor,this.memory,emission);
   }
   box(...args){this.shape("box",...args);}
-  prefab(name,x=0,y=0,z=0,a=this.a,w=1,d=1,h=1){
-    this.parts.part(name,...this.point(x,y,z,a),w,d,h,a,this.u.hit>0&&!this.ui.reduced&&!this.memory?'#fff0da':'#ffffff',this.floor,this.memory);
+  prefab(name,x=0,y=0,z=0,a=this.a,w=1,d=1,h=1,tint='#ffffff'){
+    this.parts.part(name,...this.point(x,y,z,a),w,d,h,a,this.hitFlash?'#fff0da':tint,this.floor,this.memory);
   }
   disc(x,y,r,z,h,color=P.dark,a=this.a){this.shape("cylinder",x,y,r*2,r*2,z,h,color,a);}
   joint(x,y,z,r,color=P.dark,a=this.a){this.shape("sphere",x,y,r*2,r*2,z-r,r*2,color,a);}
@@ -130,9 +132,7 @@ export class Models {
       this.beam([0,7,19],[12,7,17],3.5,P.dark,a);this.beam([0,-7,19],[21,6,17],3,P.enemy,a);
       this.flash(31-this.recoil,7,18,a,.6);return;
     }
-    this.box(-2,0,heavy?22:14,heavy?24:16,11,heavy?17:12,P.enemy,a);
-    this.box(2,0,heavy?14:13,10,heavy?29:24,8,P.dark,a);this.light(8,0,1,6,heavy?33:28,1.8,a);
-    this.gun(a,18,heavy?31:28,heavy?5:3.5,heavy?12:7,P.enemy);
+    this.prefab('warden-armour',0,0,0,a);this.gun(a,18,31,5,12);
   }
   runner() {
     const coil=this.progress,a=coil?this.aim:this.a,body=6.8-coil*1.7;
@@ -179,17 +179,15 @@ export class Models {
   }
   tracks(length=39,spread=14,material=P.shell) {
     for(const side of [-1,1]) {
-      if(this.u.kind==='artillery')this.prefab('allied-track',0,side*spread,0,this.a,length/39,1,1);
-      else {this.box(0,side*spread,length,9,1,6,P.dark);this.box(-1,side*spread,length-7,7,7,3,material);}
+      this.prefab(this.u.team?'siege-track':'allied-track',0,side*spread,0,this.a,length/39,1,1,material===P.steel?'#788686':'#ffffff');
       const distance=(side<0?this.pose.left:this.pose.right)||0,pitch=(length-10)/5,shift=((distance%pitch)+pitch)%pitch;
       for(let i=0;i<5;i++)this.box(-length/2+4+i*pitch+shift,side*spread,1.3,7,10.1,.7,P.dark);
     }
   }
-  gun(a,z,front=40,width=5,back=2,material=P.shell) {
-    const r=this.recoil;
-    this.box((front+back)/2-r,0,front-back,width,z-width/2,width,P.dark,a);
-    this.box(back+6-r,0,13,width+5,z-3,7,material,a);
-    this.box(front-2.5-r,0,5,width+3,z-4,8,material,a);this.flash(front-r,0,z,a,1);
+  gun(a,z,front=40,width=5,back=2) {
+    const barrel=this.u.kind==='flamer'?'thermal-nozzle':this.u.team?'siege-barrel':'field-barrel';
+    this.prefab(barrel,back-this.recoil,0,z,a,(front-back)/32,width/5,width/5);
+    this.flash(front-this.recoil,0,z,a,1);
   }
   artillery() {
     this.tracks();this.prefab('artillery-chassis');this.prefab('artillery-turret',-this.recoil*.25,0,0,this.aim);
@@ -209,9 +207,8 @@ export class Models {
   }
   armored() {
     this.armoredWheels(); this.prefab('armored-chassis');
-    this.box(-1,0,17,13,16,6,P.field,this.aim);
-    this.box(-3,-5,8,4,21.5,2,P.shell,this.aim);
-    this.gun(this.aim,this.E.MOUNTS.armored,31,3.2,6,P.steel);
+    this.prefab('armored-turret',0,0,0,this.aim);
+    this.gun(this.aim,this.E.MOUNTS.armored,31,3.2,6);
   }
   rocket() {
     const a=this.aim,brace=this.progress;
@@ -227,18 +224,20 @@ export class Models {
   tank() {
     const mortar=this.u.kind==="mortar",a=this.aim;
     this.tracks(mortar?35:45,mortar?13:16,P.enemy);
-    this.box(0,0,mortar?32:41,mortar?25:29,6,8,P.enemy);
-    this.box(-3,0,mortar?19:25,mortar?18:22,14,mortar?12:11,P.dark,a);
-    this.box(-3,0,mortar?16:22,mortar?15:19,24,3,P.enemy,a);
-    this.gun(a,this.E.MOUNTS[this.u.kind],mortar?28:36,mortar?7:5,-4,P.enemy);
-    this.light(3,0,1,6,25,1,a);
+    this.prefab(mortar?'mortar-hull':'tank-hull');
+    if(mortar){
+      this.prefab('mortar-cradle',0,0,0,a);this.prefab('mortar-tube',-this.recoil,0,-this.recoil*20/34,a);
+      this.flash(28-this.recoil,0,this.E.MOUNTS.mortar-this.recoil*20/34,a,1);
+    }else{
+      this.prefab('tank-turret',0,0,0,a);this.gun(a,this.E.MOUNTS.tank,36,5,-4);
+    }
   }
   specialist() {
     const bomber=this.u.kind==="bomber",a=this.aim;
     this.legs(bomber?8:10,bomber?6:8,bomber?9:13,P.enemy);
-    this.box(0,0,bomber?21:25,bomber?19:24,8,bomber?9:13,P.enemy,a);
-    if(bomber){this.disc(0,0,8,17,5,P.dark,a);this.light(0,0,8,8,22,1,a,this.progress?P.amber:P.copper);}
-    else {for(const side of [-1,1])this.disc(-5,side*7,4,13,14,P.dark,a);this.gun(a,18,23,7,3,P.copper);}
+    this.prefab(bomber?'bomber-core':'flamer-rig',0,0,0,a);
+    if(bomber)this.light(0,0,5.7,5.7,18.6,2.5,a,this.progress?P.amber:P.copper);
+    else this.gun(a,18,23,7,3);
   }
   building() {
     const u=this.u,E=this.E,shape=u.construction?E.construction.shape(u):null,
@@ -282,7 +281,7 @@ export class Models {
       const work=this.view.buildingActivity.get(u.id)?.some(v=>v.active),slide=work&&!this.ui.reduced?Math.sin(this.s.t*1.5)*w*.25:0;
       this.box(slide,0,14,10,46,4,P.copper);this.beam([slide,0,46],[slide,0,5+25*layer],1,P.dark);
     }
-    if(u.defense&&progress===1){const mount=E.MOUNTS[u.kind]||51;this.box(0,0,16,14,mount-6,6,P.dark,this.aim);this.gun(this.aim,mount,32,4,1,P.field);}
+    if(u.defense&&progress===1){const mount=E.MOUNTS[u.kind]||51;this.box(0,0,16,14,mount-6,6,P.dark,this.aim);this.gun(this.aim,mount,32,4,1);}
   }
   fortification() {
     const kind=this.u.kind,a=this.aim,r=this.E.C[kind].r;
@@ -307,7 +306,7 @@ export class Models {
     } else {
       const z=this.E.MOUNTS[kind]||24;this.box(0,0,r*1.75,r*1.4,0,10,P.dark);
       this.box(0,0,r*1.3,r*1.1,10,z-12,P.enemy);this.box(0,0,r*1.15,r*.95,z-2,7,P.steel,a);
-      this.gun(a,z,kind==="citadel"?45:kind==="bastion"?43:32,kind==="turret"?4:7,0,P.enemy);
+      this.gun(a,z,kind==="citadel"?45:kind==="bastion"?43:32,kind==="turret"?4:7,0);
       if(kind==="citadel")for(let i=0;i<3;i++){const angle=i*Math.PI*2/3;this.box(30,0,24,18,0,22,P.dark,angle);this.light(22,0,5,15,z,2,angle);}
     }
   }
@@ -316,12 +315,14 @@ export class Models {
       w=shape?shape[0]*40:r*1.8,h=shape?shape[1]*40:r*1.4;
     this.box(0,0,w,h,0,3,P.dark);
     if(shape||!this.E.C[this.u.kind].speed) {
-      for(let i=0;i<3;i++)this.box((i-1)*w*.23,(i%2-.5)*h*.3,w*.31,h*.42,3,5+i*3,P.steel,this.a+i*.13);
+      this.prefab('rubble',0,0,3,this.a+.12,w/50,h/45,1.1);
     } else if(this.u.kind==="armored") {
-      this.armoredWheels(true); this.box(-1,0,39,21,3,3,P.steel);
+      this.armoredWheels(true); this.prefab('armored-chassis',0,0,1,this.a,1,.98,.42,'#738484');
       this.box(-3,1,16,12,6,3,P.dark,this.aim); this.beam([3,0,8],[23,4,3],3,P.dark,this.aim);
     } else if(["artillery","tank","mortar"].includes(this.u.kind)) {
-      this.tracks(this.u.kind==="tank"?45:39,14,P.steel);this.box(-3,0,23,19,5,5,P.steel,this.a+.15);this.beam([0,0,9],[32,6,4],5,P.dark);
+      this.tracks(this.u.kind==="tank"?45:39,14,P.steel);
+      this.prefab(this.u.kind==='artillery'?'artillery-turret':this.u.kind==='tank'?'tank-turret':'mortar-cradle',-1,1,1,this.a+.22,1,.92,.32,'#758383');
+      this.beam([0,0,9],[32,6,4],5,P.dark);
     } else {
       this.box(-1,0,r*1.4,r*1.2,3,4,P.steel);for(const side of [-1,1])this.beam([-3,side*3,2],[-r,side*7,1],3,P.dark);
       if(this.u.kind==="scout"){this.beam([-4,0,4],[7,5,3],2.5,P.dark);this.box(7,5,14,8,2,3,P.steel,this.a+.2);}
@@ -346,19 +347,25 @@ export class Models {
     else if(["base","outpost","barracks","foundry","arsenal","bunker","logistics","condenser"].includes(u.kind))this.building();else this.fortification();
   }
   scenery(s,ui) {
-    const base=(p)=>{this.parts.opacity=1;this.u=p;this.floor=this.E.elevation(p.x,p.y,this.view.mapId);this.a=0;this.ui=ui;this.memory=false;this.accent=P.mint;};
+    const base=(p)=>{this.parts.opacity=1;this.u=p;this.floor=this.E.elevation(p.x,p.y,this.view.mapId);this.a=0;this.ui=ui;this.memory=false;this.hitFlash=false;this.accent=P.mint;};
     if(s.east){
       const e=s.east;
       for(const p of [{x:5280,y:2080,dock:true},{x:4880,y:3000}]){
         if(!this.view.inView(p.x,p.y,180)||!this.E.visible(s,0,p))continue;base(p);
-        if(p.dock){this.box(0,0,100,130,0,3,P.dark);for(const side of [-1,1]){this.box(side*43,0,9,130,3,7,P.steel);this.light(side*43,0,3,90,10,1,0,e.upload===1?P.mint:'#81b3c9');}this.box(68,-30,20,24,0,20,P.steel);this.light(68,-30,12,12,20);}
-        else {this.box(0,0,22,22,0,18,P.dark);this.light(0,0,14,14,18,2,0,e.service?P.mint:P.amber);}
+        if(p.dock){
+          this.prefab('mission-dock');
+          for(const side of [-1,1])this.light(side*43,0,3,90,9.6,1,0,e.upload===1?P.mint:'#81b3c9');
+          this.light(68,-30,9,9,20);
+        }else{this.prefab('field-console');this.light(0,-2,9,3,25.5,1,0,e.service?P.mint:P.amber);}
       }
       for(const gate of (s.fog?.world||this.E.map(s)).walls.filter(w=>w.gate&&w.gate!=='direct')){
         const p={x:gate.x+gate.w/2,y:gate.y+gate.h/2};if(!this.view.inView(p.x,p.y,180))continue;base(p);
         const opening=gate.gate==='entrance'&&e.open?clamp((s.t-e.openedAt)/1.2):0;
-        for(const side of [-1,1])this.box(0,side*(gate.h/4+opening*gate.h/2),26,gate.h/2,0,38,P.steel);
-        for(let y=-90;y<=90;y+=60)this.light(14,y,2,18,19,5,0,P.amber);
+        for(const side of [-1,1]){
+          const centre=side*(gate.h/4+opening*gate.h/2);
+          this.prefab('archive-barrier',0,centre,0,0,1,gate.h/232,1);
+          this.light(0,centre,10,2,40.6,1,0,P.amber);
+        }
       }
     }
     for(const mine of s.campaign?.mines||[]) {
@@ -366,40 +373,37 @@ export class Models {
       if(mine.resource === "matter"){
         this.disc(0,0,48,0,2,P.dark);this.disc(0,0,34,2,2,"#535268");
         const n=mine.remaining>0?6:2;
-        for(let i=0;i<n;i++){const a=i*Math.PI/3;this.shape("rock",Math.cos(a)*24,Math.sin(a)*24,12,9,4,8+(i%3)*4,"#a495b8",a);}
+        for(let i=0;i<n;i++)this.prefab('matter-outcrop',24,0,4,i*Math.PI/3,1,1,.65+(i%3)*.22);
         this.disc(0,0,14,2,1,mine.remaining>0?"#9a87b2":"#39414c");continue;
       }
       const n=mine.remaining>0?5:2;
-      for(let i=0;i<n;i++){const a=i*2.4;this.shape("rock",Math.cos(a)*19,Math.sin(a)*17,21,17,0,16+(i%3)*6,i%2?P.steel:P.field,a);}
+      for(let i=0;i<n;i++){const a=i*2.4;this.parts.part('ore-outcrop',mine.x+Math.cos(a)*19,mine.y+Math.sin(a)*17,this.floor,1.2,1.2,1+(i%3)*.32,a,'#ffffff',this.floor);}
     }
-    for(const cache of s.caches||[])if(!cache.unknown&&!cache.taken&&this.view.inView(cache.x,cache.y)){base(cache);this.box(0,0,20,15,0,8,P.copper);this.light(0,0,3,9,8);}
+    for(const cache of s.caches||[])if(!cache.unknown&&!cache.taken&&this.view.inView(cache.x,cache.y)){base(cache);this.prefab('supply-crate');this.light(0,0,2.7,6,9.2);}
     for(const item of [s.relay,...(s.terminals||[s.terminal]),...(s.watch||[])]) {
       if(!item||item.unknown||!this.view.inView(item.x,item.y))continue;base(item);
-      this.box(0,0,32,26,0,5,P.dark);this.disc(0,0,12,5,15,P.steel);
-      this.box(0,0,12,12,20,12,P.dark);this.light(0,0,8,8,32,2,0,item.online||item.side===0?P.mint:P.copper);
-      for(const side of [-1,1])this.beam([side*17,0,3],[side*12,0,20],3,P.field);
+      const relay=item===s.relay,watch=s.watch?.includes(item);
+      this.prefab(relay?'relay-mast':watch?'watch-tower':'field-console');
+      this.light(0,relay||watch?0:-2,relay?7:9,3,relay?31.1:watch?30.5:25.5,1.4,0,item.online||item.side===0?P.mint:P.copper);
     }
   }
   archiveModel(){
     const u=this.u;
     if(u.kind==='carrier'){
       this.tracks(49,18,u.hp>0?P.field:P.steel);
-      this.box(0,0,47,32,6,9,P.dark);this.box(-2,0,39,28,15,13,P.shell);
-      this.box(1,0,29,24,28,3,P.steel);this.box(-11,0,6,27,17,11,P.field);this.box(11,0,6,27,17,11,P.field);
-      this.light(1,0,19,5,31,1,this.a,u.hp<=0?P.amber:'#83d9f0');
-      for(const side of [-1,1]){this.box(23,side*14,5,5,10,4,P.steel);this.light(25,side*12,2,5,13);}
+      this.prefab('archive-carrier',0,0,0,this.a,1,1,1,u.hp>0?'#ffffff':'#758383');
+      this.light(-5,0,4,11,30.5,1,this.a,u.hp<=0?P.amber:'#83d9f0');
       if(u.hp<360)this.box(-13,0,10,19,30,3,P.copper);
     }else if(u.kind==='archive-gate'){
       if(u.hp<=0)return;
-      this.a=0;this.box(0,0,25,234,0,38,P.steel);for(const side of [-1,1])this.box(0,side*112,36,16,0,48,P.dark);
+      this.a=0;for(const side of [-1,1]){this.prefab('archive-barrier',0,side*58);this.box(0,side*112,36,16,0,48,P.dark);}
       for(let y=-80;y<=80;y+=40)this.light(-14,y,2,18,18,6,0,P.amber);
     }else if(u.kind==='power-node'){
-      this.a=0;this.box(0,0,72,72,0,9,P.dark);this.box(0,0,54,54,9,u.hp>0?28:9,P.steel);
-      for(const side of [-1,1])this.box(side*23,0,9,50,22,18,P.field);
-      this.light(0,0,12,42,u.hp>0?38:18,2,0,this.s.east?.power?P.dark:'#83d9f0');
+      this.a=0;this.prefab('archive-power',0,0,0,0,1,1,u.hp>0?1:.4,u.hp>0?'#ffffff':'#758383');
+      this.light(0,0,11,12,u.hp>0?25:11,2,0,this.s.east?.power?P.dark:'#83d9f0');
     }else{
-      this.a=0;this.box(0,0,150,150,0,9,P.dark);this.box(0,-12,132,115,9,u.hp>0?35:7,P.enemy);
-      if(u.hp>0){this.box(0,58,70,16,8,17,P.steel);this.box(0,54,56,5,9,17,P.dark);for(const side of [-1,1])this.light(side*51,0,6,65,44,2,0,P.amber);this.box(-38,-22,26,58,44,5,P.steel);}
+      this.a=0;this.prefab('archive-depot',0,0,0,0,1,1,u.hp>0?1:.33,u.hp>0?'#ffffff':'#758383');
+      if(u.hp>0)for(const side of [-1,1])this.light(side*45,7,3,18,47.2,1,0,P.amber);
     }
   }
 }

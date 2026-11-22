@@ -13,7 +13,8 @@ async function open(page){
 }
 test('selected references, eight directions, assembly phases and frozen memory use the real GPU models',async({page})=>{
   test.setTimeout(90000);const errors=[];page.on('pageerror',e=>errors.push(e.message));page.on('console',m=>{if(m.type()==='error')errors.push(m.text());});
-  await open(page);expect(await page.locator('#model option').count()).toBe(20);
+  await open(page);
+  expect(await page.locator('#model option').count()).toBe(await page.evaluate(()=>Object.keys(SignalEngine.C).length+1));
   for(const item of catalog.assets){
     await page.selectOption('#model',item.kind);await expect(page.locator('#reference')).toHaveAttribute('src',item.preview);
     await page.evaluate(async()=>{await SignalModelGallery.view().scene.whenReadyAsync();SignalModelGallery.advance(0);});
@@ -32,6 +33,37 @@ test('selected references, eight directions, assembly phases and frozen memory u
   await page.evaluate(()=>SignalModelGallery.advance(2));expect(await page.locator('#stage').screenshot()).toEqual(remembered);
   const data=await page.evaluate(()=>({saved:localStorage.getItem('signal-frontier-v1'),mode:SignalModelGallery.diagnostics()}));
   expect(data.saved).toBeNull();expect(errors).toEqual([]);
+});
+
+test('the full roster shows its in-game model, with the correct allegiance and no unrelated reference',async({page})=>{
+  await open(page);
+  const kinds=await page.evaluate(()=>Object.keys(SignalEngine.C));
+  for(const kind of kinds.filter(k=>!catalog.assets.some(a=>(a.engineKind||a.kind)===k))){
+    await page.selectOption('#model',kind);
+    await expect(page.locator('aside')).toBeHidden();
+    const data=await page.evaluate(async()=>{
+      const g=SignalModelGallery;await g.view().scene.whenReadyAsync();g.advance(0);
+      const u=g.snapshot().units[0],d=g.diagnostics().graphics;
+      return {kind:u.kind,team:u.team,units:d.units,parts:d.parts,reference:document.querySelector('#reference').getAttribute('src')};
+    });
+    expect(data.kind).toBe(kind);expect(data.units).toBe(1);expect(data.parts).toBeGreaterThan(0);expect(data.reference).toBeNull();
+    expect(data.team).toBe(['warden','flamer','bomber','tank','mortar','archive-depot','archive-gate','power-node'].includes(kind)?1:0);
+  }
+  await page.selectOption('#model','hero');await expect(page.locator('aside')).toBeVisible();
+});
+
+test('destroyed structures in older saves keep their wreck colours after a lethal hit',async({page})=>{
+  await open(page);
+  await page.evaluate(()=>{SignalModelGallery.choose('condenser');SignalModelGallery.state('wreck');});
+  await page.waitForFunction(()=>!SignalModelGallery.view().memoryNeedsRefine);
+  expect(await page.evaluate(()=>SignalModelGallery.diagnostics().graphics.units)).toBe(1);
+  const wreck=await page.locator('#stage').screenshot();
+  await page.evaluate(()=>{
+    const g=SignalModelGallery,models=g.view().models,draw=models.draw;
+    models.draw=function(u,...rest){return draw.call(this,{...u,hit:.14},...rest);};
+    g.advance(0);
+  });
+  expect(await page.locator('#stage').screenshot()).toEqual(wreck);
 });
 
 for(const [width,height]of [[1440,900],[390,844],[320,568],[844,390]])test(`model comparison fits ${width}x${height} and pause freezes the image`,async({page})=>{

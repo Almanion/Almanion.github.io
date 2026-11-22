@@ -25,6 +25,39 @@
   };
   const icon = (kind) => `<svg viewBox="0 0 64 64" aria-hidden="true">${shapes[kind] || (kind === "hero" ? shapes.rifle : shapes.base)}</svg>`;
   const cardName = kind => ({ armored: "Броне<wbr>машина", shield: "Щито<wbr>носец", grenadier: "Грана<wbr>то<wbr>мётчик", scout: "Дозор<wbr>ный" })[kind] || names[kind];
+  function buildingRoles(items) {
+    return {
+      base: "Принимает сплав и выпускает зондов",
+      barracks: items.medic ? "Выпускают пехоту, дозорных и медиков" : "Выпускают бойцов и дозорных",
+      outpost: "Принимает сплав у свободного месторождения",
+      condenser: "Добывает тёмную материю в кратере",
+      logistics: "Добавляет 12 снабжения армии и 4 места для зондов",
+      bunker: "Укрывает до четырёх бойцов и увеличивает их дальность и обзор на 25%",
+      foundry: items.armored ? "Выпускает бронемашины и артиллерию" : "Выпускает артиллерию",
+      arsenal: "Улучшает войска и открывает модуль проникновения",
+    };
+  }
+  function profileFacts(s, kind, unit) {
+    const E = root.SignalEngine, def = E.C[kind];
+    if (!def) return [];
+    const u = unit || { kind, team: 0 }, stats = E.stats(s, u) || def;
+    const cells = (value) => (value / 40).toLocaleString("ru-RU", { maximumFractionDigits: 1 });
+    const facts = unit ? [] : [["Прочность", def.hp]];
+    const size = unit ? unit.construction && E.construction.shape(unit) : E.construction.shapes[kind];
+    if (size) facts.push(["Площадка", size.join(" × ")]);
+    if (stats.damage) facts.push(["Базовый урон", stats.damage], ["Дальность", cells(stats.range) + " кл."]);
+    if (kind === "medic") facts.push(["Лечение", "+" + E.support.fieldCare.amount], ["Дальность", cells(E.support.fieldCare.range) + " кл."]);
+    if (stats.speed) facts.push(["Скорость", cells(stats.speed) + " кл./с"]);
+    const sight = E.sightRange(s, u);
+    if (sight) facts.push(["Обзор", cells(sight) + " кл."]);
+    if (kind === "condenser") facts.push(["Места зондов", 2]);
+    if (kind === "bunker") facts.push(["Гарнизон", 4]);
+    return facts;
+  }
+  function factList(facts) {
+    return '<dl class="profile-facts">' + facts.map(([label, value]) =>
+      '<div><dt>' + label + '</dt><dd>' + value + '</dd></div>').join("") + '</dl>';
+  }
   const productionTypes = { base: ["drone"], outpost: ["drone"], barracks: ["rifle", "scout", "medic", "shield", "grenadier"], foundry: ["armored", "artillery"] },
     barracksRoles = { rifle: "Пехота", scout: "Разведка", medic: "Лечение", shield: "Защита", grenadier: "Взрыв" },
     roles = { rifle: "Линейная пехота", medic: "Лечит пехоту и героя", shield: "Защита спереди", grenadier: "Огонь по площади", scout: "Разведка · без оружия", armored: "Защита фланга", artillery: "Дальнобойное орудие", drone: "Добыча · стройка · ремонт" },
@@ -180,7 +213,12 @@
         if (buildings.length > 1) head += '<div class="producer-pager"><button data-producer-page="-1" aria-label="Предыдущее выбранное здание">‹</button><small>' + (buildings.indexOf(u) + 1) + '/' + buildings.length + '</small><button data-producer-page="1" aria-label="Следующее выбранное здание">›</button></div>';
         head += '</div>';
         let body = u.kind==='carrier'?'<button class="roster-inspect" data-archive-move="'+u.id+'">Двигаться к доку</button><p>ПКМ по носителю — следовать отрядом. Зонды ремонтируют корпус.</p>':'';
-        if (building) {
+        if (building && this.options.shop?.() && s.campaign) {
+          const facts = profileFacts(s, u.kind, u);
+          if (u.build) facts.unshift(["Построено", Math.floor(100 * (1 - u.build / items[u.kind].time)) + "%"]);
+          else if (["base", "barracks", "outpost", "foundry", "arsenal"].includes(u.kind)) facts.unshift(["Очередь", jobs.length + " / 3"]);
+          body = '<p class="roster-task">' + buildingRoles(items)[u.kind] + '</p>' + factList(facts);
+        } else if (building) {
           body = '<div class="roster-section-heading"><strong>' + (care ? bunker ? 'Гарнизон' : 'Лечение' : u.build ? 'Строительство' : u.kind === 'logistics' ? 'Снабжение' : u.kind === 'condenser' ? 'Добыча' : 'Очередь') + '</strong>';
           if (facility && !bunker) body += '<button class="care-toggle" data-care-view="' + u.id + '" aria-pressed="' + care + '">' + (care ? '‹ Очередь' : 'Лечение ' + patients.length + '/4') + '</button>';
           else body += ' <span>' + (care ? patients.length + '/4' : u.build || ['logistics', 'condenser'].includes(u.kind) ? '' : jobs.length + '/3') + '</span>';
@@ -228,6 +266,10 @@
     }
   }
   SelectionPanel.icon = icon;
+  SelectionPanel.patch = patch;
+  SelectionPanel.buildingRoles = buildingRoles;
+  SelectionPanel.profileFacts = profileFacts;
+  SelectionPanel.factList = factList;
   SelectionPanel.recruits = (kind, items) => (productionTypes[kind] || []).filter((key) => items[key]);
   root.SignalSelectionPanel = SelectionPanel;
 })(window);

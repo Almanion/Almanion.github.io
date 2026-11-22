@@ -9,7 +9,7 @@ import { Texture } from "@babylonjs/core/Materials/Textures/texture.js";
 import { Parts } from "./babylon/batches.js";
 import { Models } from "./babylon/models.js";
 import { materials } from "./babylon/materials.js";
-import { buildTerrain } from "./babylon/terrain.js";
+import { buildTerrain, loadTerrainTexture } from "./babylon/terrain.js";
 import { fogUpdateRect } from "./babylon/fog-updates.js";
 
 const E=globalThis.SignalEngine,Legacy=globalThis.SignalView,Y=.73;
@@ -22,7 +22,8 @@ export class BabylonView extends Legacy {
     canvas.before(this.gpuCanvas);
     try {
       this.engine=new Engine(this.gpuCanvas,true,{preserveDrawingBuffer:false,stencil:true,alpha:false,powerPreference:"high-performance"},false);
-      this.engine.setHardwareScalingLevel(1/this.dpr);this.engine.setSize(this.canvas.width,this.canvas.height);
+      this.renderScale = new URLSearchParams(location.search).get("scale3d") === "70" ? 0.7 : 1;
+      this.resizeWorld();
       if(this.engine.webGLVersion<2)throw Error("Для 3D-режима нужен WebGL 2");
       // Software WebGL gains nothing from a GPU-to-GPU copy. Keep its exact
       // CPU raster and typed-array uploads, including headless renderers.
@@ -33,7 +34,7 @@ export class BabylonView extends Legacy {
       this.camera3d.mode=Camera.ORTHOGRAPHIC_CAMERA;this.camera3d.minZ=1;this.camera3d.maxZ=40000;
       this.scene.activeCamera=this.camera3d;
       this.materials=materials(this.scene);this.parts=new Parts(this.scene,this.materials.main,this.materials.shadow);
-      this.models=new Models(this.parts,E,this);this.gpuMap=null;this.timings={};this.fogUploads=0;
+      this.models=new Models(this.parts,E,this);this.gpuMap=null;this.terrainTextures=new Map();this.timings={};this.fogUploads=0;
       this.refreshSamples=new Float32Array(32);this.refreshCount=0;
       this.cameraStride=0;this.refreshPeriod=null;this.cameraDrawGap=1000/90;
       this.previousUnits=new Map();this.previousBullets=new WeakMap();
@@ -133,7 +134,13 @@ export class BabylonView extends Legacy {
   pan(x,y){if(x||y)this.zoomAnchor=null;super.pan(x,y);}
   focus(x,y){this.zoomAnchor=null;super.focus(x,y);}
   prepareFrame(s,ui,dt) {
-    const frame=super.prepareFrame(s,ui,dt),a=this.zoomAnchor;
+    const a=this.zoomAnchor;
+    // Idle tactical views can go seconds without a draw. A new wheel or pinch
+    // gesture starts now; it must not spend that idle time advancing the zoom.
+    const framePeriod=(this.refreshPeriod||1000/60)*(this.cameraStride||1)/1000;
+    const cameraDt=ui.mode==="tactical"&&a
+      ?Math.min(dt,framePeriod*(this.cameraSettled?1:1.5)):dt;
+    const frame=super.prepareFrame(s,ui,dt,cameraDt);
     if(a){
       if(ui.mode!=="tactical"||ui.selecting||ui.placement||this.tactical.overview||
           this.origin.x!==a.originX||this.origin.y!==a.originY||
@@ -147,7 +154,14 @@ export class BabylonView extends Legacy {
     }
     return frame;
   }
-  resize(){this.zoomAnchor=null;super.resize();if(this.engine){this.engine.setHardwareScalingLevel(1/this.dpr);this.engine.setSize(this.canvas.width,this.canvas.height);}}
+  resizeWorld() {
+    this.engine.setHardwareScalingLevel(1/(this.dpr*this.renderScale));
+    this.engine.setSize(
+      Math.max(1,Math.round(this.canvas.width*this.renderScale)),
+      Math.max(1,Math.round(this.canvas.height*this.renderScale)),
+    );
+  }
+  resize(){this.zoomAnchor=null;super.resize();if(this.engine)this.resizeWorld();}
   reset(s){super.reset(s);this.maskKey=null;this.fogPaths={};this.resetInterpolation();this.previousUnits.clear();this.previousBullets=new WeakMap();}
   fogPath(fog,kind) {
     const sources=fog.observers.map(u=>[u.id,u.x,u.y,u.radius].join(":")),
@@ -175,10 +189,24 @@ export class BabylonView extends Legacy {
     this.fogPath(fog,kind);const region=this.fogPaths[kind];
     region.path ||= this.projectFog(region.polygons);c.clip(region.path);
   }
+  preloadTerrain(id) {
+    this.nextTerrain=id;
+    this.artFor(id,this.gpuMap?.id);
+  }
+  artFor(id,keep) {
+    // The home preview and the next operation can overlap. They share one cliff texture.
+    for(const [key,entry] of this.terrainTextures){
+      if(key===id||key===keep||key==="cliff")continue;
+      entry.texture?.dispose();this.terrainTextures.delete(key);
+    }
+    for(const key of [id,"cliff"])if(!this.terrainTextures.has(key))
+      this.terrainTextures.set(key,loadTerrainTexture(this.scene,key));
+    return {ground:this.terrainTextures.get(id),cliff:this.terrainTextures.get("cliff")};
+  }
   map(world) {
     if(this.gpuMap?.id===world.id)return;
     this.gpuMap?.terrain.dispose();this.mask?.dispose();
-    const terrain=buildTerrain(this.scene,this.materials.terrain,E,world,()=>{this.memoryNeedsRefine=true;}),
+    const terrain=buildTerrain(this.scene,this.materials.terrain,E,world,this.artFor(world.id,this.nextTerrain),()=>{this.memoryNeedsRefine=true;}),
       max=Math.min(world.id==='districts-east'?Math.ceil(world.W*2048/3840):2048,this.engine.getCaps().maxTextureSize),scale=max/Math.max(world.W,world.H),
       width=Math.ceil(world.W*scale),height=Math.ceil(world.H*scale);
     // A hardware renderer can upload a crop directly from a drawable canvas.
@@ -372,8 +400,9 @@ export class BabylonView extends Legacy {
   }
   diagnostics() {
     return {renderer:"babylon",backend:"WebGL "+this.engine.webGLVersion,version:Engine.Version,
+      renderScale:this.renderScale,renderSize:[this.gpuCanvas.width,this.gpuCanvas.height],
       units:this.drawnUnits,...this.parts.diagnostics(),drawCalls:this.lastDrawCalls||0,
       terrainTriangles:this.gpuMap?.terrain.triangles||0,terrainArt:{...this.gpuMap?.terrain.art},fogTransfer:this.canvasFogUpload?"canvas":"pixels",fogUploads:this.fogUploads,fogUploadBytes:this.fogUploadBytes||0,fogPaintPixels:this.fogPaintPixels||0,timings:{...this.timings},lost:this.lost};
   }
-  dispose(){this.gpuMap?.terrain.dispose();this.mask?.dispose();this.parts?.dispose();this.scene?.dispose();this.engine?.dispose();this.gpuCanvas?.remove();}
+  dispose(){this.gpuMap?.terrain.dispose();this.mask?.dispose();this.parts?.dispose();this.scene?.dispose();this.terrainTextures?.clear();this.engine?.dispose();this.gpuCanvas?.remove();}
 }

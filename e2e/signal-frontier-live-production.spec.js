@@ -162,7 +162,9 @@ test("idle console explains the hero and shop opens a paused menu without losing
   await page.locator("#dock-shop").click();
   expect(await page.evaluate(() => SignalGame.mode())).toBe("tactical");
   await expect(page.locator("#develop-tab-build")).toBeVisible();
-  await expect(page.locator(".dock-orders")).toBeHidden();
+  await expect(page.locator("#selection-content")).toBeVisible();
+  await expect(page.locator("#order-move")).toBeVisible();
+  await expect(page.locator("#combat-production")).toBeHidden();
   await page.clock.runFor(1200); expect(await snapshot(page)).toEqual(before);
   await page.locator("#dock-selection").click(); await contentFits(page);
   expect(await page.evaluate(() => SignalGame.selection().ids)).toEqual(ids);

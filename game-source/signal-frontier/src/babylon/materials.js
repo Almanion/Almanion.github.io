@@ -5,6 +5,7 @@ import "@babylonjs/core/Shaders/ShadersInclude/instancesVertex.js";
 
 const vertex=`precision highp float;
 attribute vec3 position;attribute vec3 normal;attribute vec4 color;
+attribute vec2 uv;
 uniform mat4 viewProjection;
 #include<instancesDeclaration>
 #ifdef INSTANCES
@@ -12,9 +13,11 @@ attribute float floorHeight;
 #endif
 varying vec3 vPosition;varying vec3 vNormal;varying vec4 vColor;
 #ifdef TERRAIN
-attribute vec2 uv;attribute vec2 uv2;
+attribute vec2 uv2;
 varying vec2 vTerrainUV;varying float vSurface;
 varying float vTerrainLight;
+#else
+varying vec2 vFinish;
 #endif
 void main(void){
 #include<instancesVertex>
@@ -29,6 +32,8 @@ vPosition=p.xyz;gl_Position=viewProjection*p;
 #ifdef TERRAIN
 vTerrainUV=uv;vSurface=uv2.x;
 vTerrainLight=0.54+0.46*max(dot(vNormal,normalize(vec3(-0.45,0.85,-0.3))),0.0);
+#else
+vFinish=uv;
 #endif
 }`;
 const fragment=`precision highp float;
@@ -39,6 +44,8 @@ uniform sampler2D groundMap;uniform sampler2D cliffMap;
 uniform float groundReady;uniform float cliffReady;
 varying vec2 vTerrainUV;varying float vSurface;
 varying float vTerrainLight;
+#else
+varying vec2 vFinish;
 #endif
 void main(void){
 #ifdef TERRAIN
@@ -60,11 +67,18 @@ if(vSurface<0.5&&groundReady>0.5){
 }
 else if(vSurface>0.5&&vSurface<1.5&&cliffReady>0.5)rgb=texture2D(cliffMap,vTerrainUV).rgb*light;
 #else
-vec3 n=normalize(vNormal),sun=normalize(vec3(-0.45,0.85,-0.3));
-float light=0.54+0.46*max(dot(n,sun),0.0);
-vec3 rgb=vColor.rgb*(vColor.a<0.0?1.0:light);
-// Restrained satin highlights reveal bevels without a post-processing pass.
-if(vColor.a>0.0){vec3 halfDirection=normalize(sun+normalize(vec3(0.0,1.0,-1.0)));rgb+=vec3(0.075)*pow(max(0.0,dot(n,halfDirection)),28.0);}
+vec3 rgb=vColor.rgb;
+if(vColor.a>0.0){
+ vec3 n=normalize(vNormal),sun=normalize(vec3(-0.45,0.85,-0.3)),eye=vec3(0.0,0.707107,-0.707107);
+ float direct=max(dot(n,sun),0.0),sky=n.y*.5+.5,finish=vFinish.x;
+ vec3 fill=mix(vec3(.36,.42,.47),vec3(.55,.59,.61),sky);
+ rgb*=mix(.78,1.0,vFinish.y)*(fill+vec3(.49,.455,.41)*direct);
+ float highlight=max(dot(n,normalize(sun+eye)),0.0);
+ rgb+=vec3(.96,1.0,1.0)*(.06+.22*finish)*pow(highlight,18.0);
+ // A broad sky reflection separates glass and bare metal from painted armour.
+ float reflectedSky=reflect(-eye,n).y;
+ rgb+=vec3(.12,.18,.20)*finish*finish*smoothstep(.12,.90,reflectedSky);
+}
 #endif
 float seen=fogEnabled>0.5?smoothstep(0.1,0.9,fog.g):1.0;
 float grey=dot(rgb,vec3(0.299,0.587,0.114));
@@ -103,7 +117,7 @@ gl_FragColor=vec4(0.015,0.035,0.045,0.3);
 
 export function materials(scene) {
   const main=new ShaderMaterial("signal-solid",scene,{vertexSource:vertex,fragmentSource:fragment},{
-    attributes:["position","normal","color","floorHeight"],uniforms:["world","viewProjection","mapSize","fogEnabled"],samplers:["fogMask"]});
+    attributes:["position","normal","color","uv","floorHeight"],uniforms:["world","viewProjection","mapSize","fogEnabled"],samplers:["fogMask"]});
   main.backFaceCulling=false;
   const terrain=new ShaderMaterial("signal-terrain",scene,{vertexSource:vertex,fragmentSource:fragment},{
     attributes:["position","normal","color","uv","uv2"],

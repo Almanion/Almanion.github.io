@@ -3,7 +3,12 @@
   const requested=new URLSearchParams(location.search).get("renderer")==="babylon",
     status={requested:requested?"babylon":"canvas",active:"canvas",error:null};
   let View=root.SignalView;
-  document.querySelector('[data-renderer="'+(requested?'babylon':'canvas')+'"]').setAttribute('aria-current','page');
+  for(const link of document.querySelectorAll("a[data-renderer]")) {
+    const target=new URL(location.href);
+    target.searchParams.set("renderer",link.dataset.renderer);
+    link.href=target.href;
+    if(link.dataset.renderer===status.requested)link.setAttribute("aria-current","page");
+  }
   if(requested) {
     document.documentElement.dataset.renderLoading="true";
     for(const id of ["start","start-east","continue","new-game"])document.getElementById(id).disabled=true;

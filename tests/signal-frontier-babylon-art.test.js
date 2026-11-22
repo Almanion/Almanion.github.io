@@ -2,9 +2,17 @@
 const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),Module=require('node:module'),esbuild=require('esbuild');
 const source=path.resolve('game-source/signal-frontier/src/babylon/prefabs.js'),compiled=esbuild.transformSync(fs.readFileSync(source,'utf8'),{format:'cjs',target:'node20'}),moduleFile=new Module(source,module);
 moduleFile._compile(compiled.code,source);const {PREFAB_NAMES,prefabData,Kit}=moduleFile.exports;
-assert.equal(PREFAB_NAMES.length,46);assert.ok(PREFAB_NAMES.includes('medic-armour'));assert.ok(PREFAB_NAMES.includes('shield-plate'));assert.ok(PREFAB_NAMES.includes('grenadier-armour'));assert.ok(PREFAB_NAMES.includes('armored-chassis') && PREFAB_NAMES.includes('armored-wheel'));let triangles=0,shadowTriangles=0;
+assert.equal(PREFAB_NAMES.length,new Set(PREFAB_NAMES).size);
+for(const required of ['medic-armour','shield-plate','grenadier-armour','armored-chassis','armored-wheel','armored-turret',
+ 'warden-armour','flamer-rig','bomber-core','tank-hull','tank-turret','mortar-hull','mortar-cradle','mortar-tube',
+ 'archive-carrier','archive-barrier','archive-power','archive-depot','mission-dock','field-console','relay-mast','watch-tower','supply-crate','ore-outcrop','matter-outcrop','rubble']){
+ assert.ok(PREFAB_NAMES.includes(required),required+' must have its authored geometry');
+}
+let triangles=0,shadowTriangles=0;
 for(const name of PREFAB_NAMES){
  const model=prefabData(name);assert.equal(model,prefabData(name),name+': immutable geometry must be reused');
+ assert.equal(model.solid.uvs.length,model.solid.positions.length/3*2,name+': each solid vertex has finish and joint shading');
+ assert.ok(model.solid.uvs.every(v=>Number.isFinite(v)&&v>=0&&v<=1),name+': bounded material response');
  for(const part of ['solid','shadow']){
   const d=model[part];assert.ok(d.positions.length>0,name+' '+part);assert.equal(d.positions.length%3,0);assert.equal(d.normals.length,d.positions.length);assert.equal(d.colors.length,d.positions.length/3*4);
   assert.ok(d.positions.every(Number.isFinite),name+': finite vertices');assert.ok(d.indices.every(i=>Number.isInteger(i)&&i>=0&&i<d.positions.length/3));
@@ -19,6 +27,10 @@ for(const name of PREFAB_NAMES){
  assert.ok(model.shadow.indices.length<=model.solid.indices.length,name+': seams and lamps need no redundant shadow geometry');
 }
 assert.ok(shadowTriangles<triangles*.85,'cosmetic surface details must not duplicate full shadow work');
+assert.ok(triangles<=49476,'the complete fleet must fit the previous solid triangle budget');
+const marking=new Kit().panel(0,0,6,9,3).result();
+assert.equal(marking.solid.indices.length/3,6,'paint needs only one cut-corner face');
+assert.equal(marking.shadow.indices.length,0,'paint must not cast a second shadow');
 const outer=new Kit().box(0,0,0,20,20,20).result(),nested=new Kit().box(0,0,0,20,20,20).box(0,0,5,5,5,3).result();
 assert.ok(nested.culledFaces>0,'a fully buried component must not be sent to the GPU');
 assert.deepEqual(nested.solid,outer.solid,'removing a buried component preserves every exterior vertex, colour and normal');

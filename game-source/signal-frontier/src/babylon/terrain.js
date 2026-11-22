@@ -3,7 +3,24 @@ import { VertexData } from "@babylonjs/core/Meshes/mesh.vertexData.js";
 import { RawTexture } from "@babylonjs/core/Materials/Textures/rawTexture.js";
 import { Texture } from "@babylonjs/core/Materials/Textures/texture.js";
 
-export function buildTerrain(scene,material,E,world,onArtChange=()=>{}) {
+export function loadTerrainTexture(scene,id) {
+  const url=globalThis.SignalTerrainArt?.url(id),entry={texture:null,state:"unavailable",ready:null};
+  if(!url)return entry;
+  entry.state="loading";
+  entry.ready=new Promise(resolve=>{
+    const finish=state=>{entry.state=state;resolve();};
+    try{
+      const texture=new Texture(url,scene,false,false,Texture.TRILINEAR_SAMPLINGMODE,
+        ()=>finish("ready"),()=>finish("unavailable"));
+      texture.wrapU=texture.wrapV=id==="cliff"?Texture.WRAP_ADDRESSMODE:Texture.CLAMP_ADDRESSMODE;
+      texture.anisotropicFilteringLevel=1;
+      entry.texture=texture;
+    }catch{finish("unavailable");}
+  });
+  return entry;
+}
+
+export function buildTerrain(scene,material,E,world,textures,onArtChange=()=>{}) {
   const positions=[],normals=[],colors=[],indices=[],uvs=[],uvs2=[],
     high=["districts","highlands","districts-east"].includes(world.id),
     height=(x,y)=>E.elevation(x,y,world.id),
@@ -87,20 +104,20 @@ export function buildTerrain(scene,material,E,world,onArtChange=()=>{}) {
   }
   const heightTexture=RawTexture.CreateRGBATexture(pixels,cols,rows,scene,false,false,Texture.NEAREST_SAMPLINGMODE);
   heightTexture.wrapU=heightTexture.wrapV=Texture.CLAMP_ADDRESSMODE;
-  let disposed=false;const textures=[],art={ground:"loading",cliff:"loading"};
-  for(const [key,sampler,id]of [["ground","groundMap",world.id],["cliff","cliffMap","cliff"]]){
+  let disposed=false;const art={};
+  for(const [key,entry]of Object.entries(textures)){
     // Bind a complete placeholder so missing/slow artwork cannot hide the map.
-    material.setFloat(key+"Ready",0);material.setTexture(sampler,heightTexture);
-    const url=globalThis.SignalTerrainArt?.url(id);
-    if(!url){art[key]="unavailable";continue;}
-    const texture=new Texture(url,scene,false,false,Texture.TRILINEAR_SAMPLINGMODE,
-      ()=>{if(!disposed){material.setTexture(sampler,texture);material.setFloat(key+"Ready",1);art[key]="ready";onArtChange();}},
-      ()=>{if(!disposed){art[key]="unavailable";onArtChange();}});
-    texture.wrapU=texture.wrapV=key==="cliff"?Texture.WRAP_ADDRESSMODE:Texture.CLAMP_ADDRESSMODE;
-    // The fixed camera is not a grazing ground view. Ordinary mip filtering
-    // keeps the same source detail without four anisotropic samples per pixel.
-    texture.anisotropicFilteringLevel=1;textures.push(texture);
+    const bind=()=>{
+      art[key]=entry.state;
+      const ready=entry.state==="ready";
+      material.setFloat(key+"Ready",ready?1:0);
+      material.setTexture(key+"Map",ready?entry.texture:heightTexture);
+    };
+    bind();
+    if(entry.state==="loading")entry.ready.then(()=>{
+      if(!disposed){bind();onArtChange();}
+    });
   }
   return {mesh,heightTexture,triangles:indices.length/3,art,
-    dispose(){disposed=true;mesh.dispose();heightTexture.dispose();for(const t of textures)t.dispose();}};
+    dispose(){disposed=true;mesh.dispose();heightTexture.dispose();}};
 }

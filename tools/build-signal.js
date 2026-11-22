@@ -94,8 +94,8 @@ function build(root = path.resolve(__dirname, "..")) {
     if(fs.existsSync(target)&&fs.readFileSync(target,"utf8")===text)continue;
     fs.writeFileSync(target, text);
   }
-  fs.cpSync(path.join(root,"game-source/signal-frontier/src/assets/terrain"),
-    path.join(destination,"assets/terrain"),{recursive:true});
+  fs.cpSync(path.join(root,"game-source/signal-frontier/src/assets"),
+    path.join(destination,"assets"),{recursive:true});
   return out;
 }
 if (require.main === module) {

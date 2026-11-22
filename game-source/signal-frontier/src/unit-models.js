@@ -194,29 +194,30 @@
       clamp = (n, a = 0, b = 1) => Math.max(a, Math.min(b, n)),
       dark = M.graphite,
       ceramic = {
-        top: "#c7d3cd",
-        front: "#8aa69b",
-        side: "#48615e",
-        edge: "#e2ece2",
+        top: "#d8e3dc",
+        front: "#9bb7af",
+        side: "#58736f",
+        edge: "#edf1df",
       },
       alloy = {
-        top: "#728e85",
-        front: "#48675e",
-        side: "#263e3f",
-        edge: "#b4cabe",
+        top: "#728d8b",
+        front: "#4d696b",
+        side: "#2f454c",
+        edge: "#bad1c9",
       },
       enemy = {
-        top: "#817a6a",
-        front: "#575247",
-        side: "#343a3b",
-        edge: "#b3a58b",
+        top: "#aa9b85",
+        front: "#786759",
+        side: "#514740",
+        edge: "#d9c5a7",
       },
       copper = {
-        top: "#b18b70",
-        front: "#795947",
-        side: "#493e36",
-        edge: "#ddba95",
+        top: "#bd7958",
+        front: "#955c49",
+        side: "#5c403a",
+        edge: "#e3b498",
       },
+      enamel = {top:"#347477",front:"#29565c",side:"#203d47",edge:"#82b8b0",rim:false},
       wreck = {
         top: "#485451",
         front: "#303e3d",
@@ -382,11 +383,11 @@
     // Pilot art uses connected cast shells rather than a stack of cuboids.
     // Shared outlines are independent of pose; animated poses keep no raster atlas.
     const contours = new Map(),
-      pilotMetal = { top: "#aaa18c", front: "#817865", side: "#48504d", edge: "#d9cbb1" },
+      pilotMetal = { top: "#b1a28b", front: "#887863", side: "#524b46", edge: "#dfc9a6" },
       // Ceramic has one continuous satin outline. Avoid a second bright line
       // on every boot, clamp and tiny panel of the same connected shell.
-      fieldArmor = { top: "#b9c7ba", front: "#8da598", side: "#536d68", edge: "#dce6d7", rim: false },
-      pilotCeramic = { top: "#d9dfd3", front: "#a9b8ab", side: "#637e73", edge: "#f0f2e4", rim: false },
+      fieldArmor = { top: "#9ebcb4", front: "#769b95", side: "#4d6b6a", edge: "#dae9df", rim: false },
+      pilotCeramic = { ...ceramic, rim: false },
       ceramicReceiver = { ...pilotCeramic, front: "#30464b", side: "#1a3038" },
       fieldReceiver = { ...fieldArmor, front: "#30464b", side: "#1a3038" };
     function rounded(w, h, r, x = 0, y = 0) {
@@ -653,9 +654,10 @@
       infantryFeet(c, p, false);
       c.save(); c.translate(0, -Math.abs(Math.sin(p.phase)) * p.move * .35);
       cast(c, 0, 0, 14, 14, 3.5, 12, 10, a, ceramic);
-      cast(c, -8, -1, 7.5, 11, 2, 13, 21, a, dark);
-      cap(c, -8, -1, 7, 10, 33, 2, a, ceramic);
-      lightStrip(c, [[-10, -3], [-7, -3], [-7, 1]], 35.4, a, lampColor, 1.4);
+      cast(c, -8, -1, 8, 14, 2, 13, 19, a, enamel);
+      cap(c, -8, -1, 8, 13, 32, 2, a, ceramic);
+      seam(c,[[-10.5,-1],[-5.5,-1]],34.3,a,enamel.top,1.8);
+      seam(c,[[-8,-4],[-8,2]],34.3,a,enamel.top,1.8);
       cast(c, 2, 0, 11, 10, 3, 23, 8, a, ceramic);
       cap(c, 7, 0, 2.2, 8, 26, 3, a, dark);
       lightStrip(c, [[8, -2.5], [8, 2.5]], 27.8, a, lampColor, 1);
@@ -672,7 +674,7 @@
     }
     function handShield(c, { a, x, y, z }, pulse) {
       bone(c, [0,-6,20], [x,y-3,17], 4, a, alloy);
-      plate(c, shieldOutline(x,y), z, 24, a, fieldArmor);
+      plate(c, shieldOutline(x,y), z, 24, a, enamel);
       cap(c, x+4, y, 3, 8, z+1, 24, a, ceramic);
       lightStrip(c, [[x+1,y-12],[x+3,y-8],[x+3,y-4]], z+24.5, a, pulse ? "#efffea" : "#9cd4bd", 1.5);
     }
@@ -742,11 +744,13 @@
       // One shaped breastplate connects the neck, waist and shoulder sockets.
       cast(c, -.5, 0, hero ? 15 : 14, hero ? 15 : 14, 4.6, 14,
         hero ? 9.5 : 8.2, aim, material, 1.2);
-      cap(c, -8 - lean, 0, 6.5, hero ? 13 : 11, 14, hero ? 14 : 12, aim, dark);
+      cap(c, -8 - lean, 0, 6.5, hero ? 13 : 11, 14, hero ? 14 : 12, aim, enamel);
+      if(hero)bone(c,[-9,-4,26],[-11.8,-4,38],1.2,aim,alloy);
       cap(c, -8 - lean, 0, 5.5, 9, hero ? 27 : 25, 2, aim, material);
       lightStrip(c, [[-11 - lean, -3], [-11 - lean, 3]], 21, aim, accent, hero ? 1.8 : 1.3);
       for (const side of [-1, 1]) {
-        cap(c, -.5, side * 7.5, hero ? 8.5 : 7.5, 5.8, 19, hero ? 6 : 5, aim, material);
+        const command=hero&&side<0;
+        cap(c,-.5,side*7.5,command?11:8,command?7.3:5.8,19,command?7:5,aim,command?enamel:material);
         const elbow = [5, side * 8, 16.5],
           grip = side > 0 ? [11 - recoil, 5.5, 17.5 - bob] :
             channel ? [14, -5, 28 - bob] : [21 - hand * 12 - recoil, 3 - hand * 6, 18 - hand * 5 - bob];
@@ -768,7 +772,7 @@
         25, hero ? 9 : 7, aim, hero ? pilotCeramic : dark, 1.2);
       cap(c, 5.4 + lean, 0, 3.4, 7, 25.5, 3, aim, material);
       lightStrip(c, [[6.6 + lean, -3], [6.6 + lean, 3]], hero ? 31 : 29, aim, accent, 1.6);
-      if (hero) seam(c, [[-1 + lean, -3], [3 + lean, -2]], 34, aim, "#aebeb0", .7);
+      if(hero)seam(c,[[-2+lean,-2],[1+lean,0],[-2+lean,2]],34.2,aim,enamel.top,1.4);
       c.restore();
       if (dash && !ui.reduced)
         for (const side of [-1, 1]) lightStrip(c, [[-11, side * 6], [-25, side * 6]], 13, p.angle, "#a4edd94d", 1.4);
@@ -931,9 +935,9 @@
       // Only the sensor head scans: its bearing rotates around the mast joint.
       const anchor = point(-4,0,0,p.angle);
       c.save(); c.translate(anchor[0],anchor[1]);
-      cap(c, 0, 0, 14, 9.5, 27, 3, sensor, dark);
-      cap(c, 0, 0, 13.5, 8.5, 29.5, 4.5, sensor, pilotCeramic);
-      lightStrip(c, [[6.9,-2.2],[6.9,2.2]], 30.8, sensor, accent, 1.8);
+      cap(c, 0, 0, 14, 10.5, 27, 4, sensor, enamel);
+      cap(c, -1.6, 0, 11.5, 9, 30, 4, sensor, pilotCeramic);
+      lamp(c,6.6,-2.6,31.5,sensor,2.1,accent);lamp(c,7,2.3,31.5,sensor,1.3,accent);
       c.restore();
     }
     function drone(c, d) {
@@ -1098,12 +1102,12 @@
       const {p, aim, recoil, accent} = d, a = p.angle, z = E.MOUNTS.armored;
       armoredWheels(c,p);
       plate(c,armoredHull,6,6,a,pilotCeramic);
-      cap(c,-14,0,11,18,12,3,a,fieldArmor);
+      cap(c,-14,0,11,18,12,3,a,enamel);
       for (const x of [-17,-14,-11]) lightStrip(c,[[x,-6],[x,6]],15.2,a,dark.front,1.4);
       plate(c,[[8,-9],[16,-6],[19,0],[16,6],[8,9]],12,2,a,dark);
       for (const side of [-1,1]) lightStrip(c,[[17,side*7],[21,side*4]],12.5,a,accent,1.5);
       plate(c,disc(7),13,3,aim,dark);
-      cap(c,-1,0,17,13,16,6,aim,fieldArmor);
+      cap(c,-1,0,17,13,16,6,aim,enamel);
       cap(c,-3,-5,8,4,21.5,2,aim,pilotCeramic);
       slab(c,18-recoil,0,24,3.2,z-1.6,3.2,aim,dark);
       cap(c,28-recoil,0,6,5,z-2.5,5,aim,alloy);
@@ -1546,18 +1550,13 @@
             slab(c, -w * 0.1 - bw * 0.35 * (1 - roof), -8,
               bw * 0.7 * roof, bh - 7, height + 3, 3, a, ceramic);
           cap(c, w * 0.33, -8, w * 0.16, bh * 0.8, 3, 15, a, dark);
-          for (const x of [-w * 0.26, -w * 0.05])
-            lightStrip(
-              c,
-              [
-                [x, -h * 0.22],
-                [x, h * 0.12],
-              ],
-              height + 7,
-              a,
-              "#78988b",
-              1.6,
-            );
+          if(roof){
+            cap(c,-w*.1,-8,bw*.12,bh*.70,height+6,1,a,enamel);
+            for(const side of [-1,1])for(const row of [-1,0,1]){
+              const x=-w*.1+side*bw*.20,y=-8+row*bh*.25;
+              cap(c,x,y,bw*.24*roof,bh*.2,height+6,4*roof,a,pilotCeramic);
+            }
+          }
         } else if (kind === "condenser") {
           plate(c,disc(w*.28,0,0,20),4,8,a,dark);
           plate(c,disc(w*.19,0,0,20),12,height*.5,a,fieldArmor);
