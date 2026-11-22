@@ -22,6 +22,10 @@
     "archive-depot": {hp:1000,r:65,speed:0,range:0,damage:0,rate:0},
     hero: { hp: 150, r: 14, speed: 205, range: 620, damage: 24, rate: 0.16 },
     rifle: { hp: 115, r: 12, speed: 125, range: 300, damage: 13, rate: 0.44 },
+    medic: { hp: 90, r: 12, speed: 140, range: 0, damage: 0, rate: 0 },
+    shield: { hp: 115, r: 16, speed: 110, range: 280, damage: 9, rate: .72 },
+    grenadier: { hp: 100, r: 14, speed: 112, range: 400, damage: 54, rate: 2.6 },
+    armored: { hp: 210, r: 22, speed: 215, range: 360, damage: 18, rate: .48 },
     artillery: { hp: 220, r: 20, speed: 78, range: 540, damage: 98, rate: 2.6 },
     sentinel: { hp: 90, r: 13, speed: 82, range: 310, damage: 10, rate: 1.35 },
     runner: { hp: 55, r: 11, speed: 145, range: 48, damage: 13, rate: 0.85 },
@@ -49,11 +53,11 @@
   // World units: one construction cell is 40. Older operations retain C above.
   const ENGAGEMENT = Object.freeze(Object.fromEntries([
     ["carrier",0,240],["archive-gate",0,120],["power-node",0,120],["archive-depot",0,300],
-    ["hero", 680, 780], ["rifle", 440, 640], ["artillery", 800, 720],
+    ["hero", 680, 780], ["rifle", 440, 640], ["armored", 360, 680], ["artillery", 800, 720],
     ["sentinel", 420, 720], ["runner", 56, 700], ["warden", 500, 780],
     ["rocket", 620, 820], ["flamer", 240, 720], ["bomber", 64, 740],
     ["tank", 640, 840], ["mortar", 840, 940],
-    ["scout", 0, 980], ["drone", 0, 240],
+    ["scout", 0, 980], ["medic", 0, 580], ["shield", 280, 640], ["grenadier", 400, 640], ["drone", 0, 240],
     ["base", 0, 800], ["outpost", 0, 840], ["barracks", 0, 360],
     ["bunker", 0, 360], ["logistics", 0, 240], ["condenser", 0, 400], ["foundry", 0, 400], ["arsenal", 0, 400], ["jammer", 0, 720],
     ["turret", 540, 800], ["bastion", 620, 940], ["citadel", 840, 980],
@@ -62,7 +66,7 @@
     balanced = (s) => balanceEligible(s) && s.campaign.balance === 1,
     rangedStats = Object.freeze(Object.fromEntries(Object.entries(ENGAGEMENT)
       .map(([kind, values]) => [kind, Object.freeze({ ...C[kind], range: values.range })]))),
-    legacySight = Object.freeze({ hero: 600, scout: 720, rifle: 440, artillery: 480,
+    legacySight = Object.freeze({ hero: 600, scout: 720, rifle: 440, shield: 440, grenadier: 440, armored: 480, artillery: 480,
       bunker: 280, drone: 180, base: 380, outpost: 380, barracks: 280, foundry: 280, arsenal: 280 });
   const sheltered = (u) => u.care?.inside && u.care.garrison === true,
     garrisonStats = [C, rangedStats].map((table) => Object.freeze(Object.fromEntries(
@@ -82,6 +86,9 @@
       damage: 54, rate: 6.4, siege: true })])));
   const MOUNTS = Object.freeze({
     hero: 19.5,
+    shield: 16,
+    grenadier: 25,
+    armored: 21,
     citadel: 64,
     turret: 24,
     artillery: 23,
@@ -92,6 +99,7 @@
     base: 51,
     outpost: 46,
   });
+  const GRENADE = Object.freeze({ windup: .65, radius: 80, arc: 58, speed: 420, muzzle: 23 });
   const COSTS = Object.freeze({
     outpost: 50,
     artillery: 90,
@@ -149,6 +157,7 @@
       : root.SignalDistricts;
   const districtMap = Districts.build(highlandsMap);
   const East = typeof module !== "undefined" && module.exports ? require("./east.js") : root.SignalEast;
+  const hasRelief = id => ["highlands", "districts", "districts-east"].includes(id);
   const geometryFor = value => (value === "districts-east" || value?.id === "districts-east" || value?.map === "districts-east" || value?.campaign?.id === "frontier-10") ? East.geometry() : Terrain;
   const mapFor = (s) =>
     (s?.navigation || (s?.id && s?.walls))
@@ -233,7 +242,7 @@
       x <= world.W - r - 24 &&
       y >= r + 24 &&
       y <= world.H - r - 24 &&
-      (!["highlands", "districts", "districts-east"].includes(world.id) ||
+      (!hasRelief(world.id) ||
         geometryFor(world).free(x, y, r)) &&
       !world.walls.some(
         (b) =>
@@ -277,7 +286,7 @@
   let nextSightKey = 0;
   function clear(a, b, r = 0) {
     const world = mapFor(owners.get(a) || a.map || b.map);
-    if (!["highlands", "districts", "districts-east"].includes(world.id))
+    if (!hasRelief(world.id))
       return wallClear(a, b, r);
     // Terrain and neutral cover are immutable. Repeated perception/targeting
     // queries may reuse an exact directed ray; moving endpoints get a new key.
@@ -344,7 +353,7 @@
     return result;
   }
   const elevation = (x, y, map) =>
-    ["highlands", "districts", "districts-east"].includes(mapFor(map).id)
+    hasRelief(mapFor(map).id)
       ? geometryFor(map).height(x, y)
       : 0;
   const projectileHeight = (b, age = b.age) =>
@@ -352,8 +361,8 @@
       ? null
       : b.z0 +
         (b.z1 - b.z0) * Math.min(1, age / b.duration) +
-        (b.kind === "shell"
-          ? Math.sin(Math.PI * Math.min(1, age / b.duration)) * 110
+        (b.kind === "shell" || b.kind === "grenade"
+          ? Math.sin(Math.PI * Math.min(1, age / b.duration)) * (b.kind === "grenade" ? GRENADE.arc : 110)
           : 0);
   function segmentCircle(a, b, u, r) {
     const dx = b.x - a.x,
@@ -398,6 +407,9 @@
       think: 0,
     };
     if (s.campaign) u.map = mapFor(s).id;
+    if (kind === "shield") u.guard = { angle: u.angle, lift: 0, pulse: 0, scan: 0, watch: 0 };
+    if (kind === "grenadier") u.cool = 0;
+    if (kind === "armored") u.drive = { heading: u.angle, speed: 0 };
     owners.set(u, s);
     s.units.push(u);
     return u;
@@ -779,7 +791,7 @@
       free(a.x, a.y, r, map) &&
       free(b.x, b.y, r, map) &&
       wallClear({ ...a, map }, b, Math.max(0, r - 1e-7)) &&
-      (!["highlands", "districts", "districts-east"].includes(mapFor(map).id) ||
+      (!hasRelief(mapFor(map).id) ||
         geometryFor(map).travel(a, b, r))
     );
   }
@@ -953,7 +965,7 @@
           yy >= rows ||
           (directed ? costs[k] <= costs[n] + 1 : prev[k] !== -2) ||
           !grid.point(k) ||
-          ((n === start || ["highlands", "districts", "districts-east"].includes(world.id)) &&
+          ((n === start || hasRelief(world.id)) &&
             !(n === start
               ? travelClear(from, grid.point(k), r, world)
               : grid.link(n, direction, k)))
@@ -976,13 +988,18 @@
   // A bolt collides with two pixels of cover padding. Use the same corridor
   // for AI aiming; visibility alone may see a point while a bolt clips a corner.
   const fireRays = new WeakMap();
+  function grenadeMuzzle(from, target) {
+    const fraction = Math.min(.5, GRENADE.muzzle / (dist(from, target) || 1));
+    return { x: from.x + (target.x - from.x) * fraction, y: from.y + (target.y - from.y) * fraction };
+  }
   function fireClear(from, target) {
     if (
-      ["highlands", "districts", "districts-east"].includes(mapFor(from.map || target.map).id)
+      hasRelief(mapFor(from.map || target.map).id)
     ) {
       const world = mapFor(owners.get(from) || from.map || target.map),
         geometry = geometryFor(from.map || target.map),
-        arc =
+        grenade = from.kind === "grenadier",
+        arc = grenade ? GRENADE.arc :
           ["artillery", "mortar", "citadel"].includes(from.kind) ||
           (from.kind === "bastion" && target.kind === "artillery")
             ? 110
@@ -994,16 +1011,19 @@
           previous.ax === from.x && previous.ay === from.y && previous.bx === target.x && previous.by === target.y &&
           previous.sourceId === from.id && previous.targetId === target.id && previous.mount === mount && previous.arc === arc)
         return previous.result;
-      const za = geometry.height(from.x, from.y) + mount,
+      const start = grenade ? grenadeMuzzle(from, target) : from,
+        za = geometry.height(from.x, from.y) + mount,
         zb = geometry.height(target.x, target.y) + 10,
-        result = geometry.ray(from, target, za, zb, arc) && !world.walls.some((w) => {
+        result = geometry.ray(start, target, za, zb, arc) && !world.walls.some((w) => {
         if(w.unitId&&(w.unitId===target.id||w.unitId===from.id))return false;
-        const t = segmentRect(from.x, from.y, target.x, target.y, w, 2);
-        return (
-          t !== null &&
-          za + (zb - za) * t + Math.sin(t * Math.PI) * arc <
-            geometry.height(w.x + w.w / 2, w.y + w.h / 2) + 54
-        );
+        const t = segmentRect(start.x, start.y, target.x, target.y, w, 2);
+        if (t === null) return false;
+        const top = geometry.height(w.x + w.w / 2, w.y + w.h / 2) + 54;
+        if (za + (zb - za) * t + Math.sin(t * Math.PI) * arc < top) return true;
+        if (!grenade) return false;
+        // A short lob may clear the near edge but descend into the far one.
+        const end = 1 - segmentRect(target.x, target.y, start.x, start.y, w, 2);
+        return za + (zb - za) * end + Math.sin(end * Math.PI) * arc < top;
       });
       fireRays.set(from, {world,geometry,walls:world.walls,wallCount:world.walls.length,revision:world.revision,
         ax:from.x,ay:from.y,bx:target.x,by:target.y,
@@ -1093,16 +1113,16 @@
     if (cache.size > 16) cache.delete(cache.keys().next().value);
     return grid;
   }
-  function firingPath(from, target) {
+  function firingPath(from, target, supportRange) {
     const world = navigation(from),
       state = owners.get(from) || world.state,
       def = state ? stats(state, from, target) : C[from.kind],
-      range = from.kind === "scout" ? balanced(state) ? sightRange(state, from) * 0.9 : 650 : def.range * 0.9,
+      range = supportRange ?? (from.kind === "scout" ? balanced(state) ? sightRange(state, from) * 0.9 : 650 : def.range * 0.9),
       minimum = from.kind === "mortar" ? 240 : 0;
     const goal = (p) =>
       dist(p, target) >= minimum &&
       rangeDistance(p, target) <= range &&
-      fireClear({ ...p, map: world.id, kind: from.kind }, target);
+      fireClear({ ...p, map: supportRange ? world : world.id, kind: from.kind }, target);
     if (goal(from)) return [];
     const edge = targetEdge(from, target),
       d = dist(from, edge),
@@ -1168,13 +1188,17 @@
         return smoothRoute(from, route.reverse(), def.r, world);
       }
       for (const [n, step] of edges(k))
-        if (cost + step < costs[n] - 1e-7) {
+        if (cost + step < costs[n] - 1e-7 && (!supportRange || cost + step <= supportRange * 4)) {
           costs[n] = cost + step;
           prev[n] = k;
           push(n, costs[n]);
         }
     }
     return [];
+  }
+  function interruptAim(u) {
+    if (u.kind === "medic") u.flash = 0;
+    if (u.grenadeAim) delete u.grenadeAim;
   }
   function order(s, group, x, y) {
     if (
@@ -1195,6 +1219,7 @@
       };
       u.target = null;
       u.order = target;
+      interruptAim(u);
       u.path = pathTo(u, target, C[u.kind].r);
     });
     const producers = s.campaign
@@ -1240,8 +1265,21 @@
         (Math.floor(i / width) - (Math.ceil(members.length / width) - 1) / 2) *
           spacing,
     }));
-    const waiting = [...members],
+    const shields = members.filter((u) => u.guard), mixed = shields.length > 0 && shields.length < members.length,
+      line = mixed ? members.filter((u) => !u.guard) : [...members],
       plans = [], departures = [], corridors = new Map(), reserved = [];
+    if (mixed) {
+      // The long axis of the formation points along the order. Even a pair
+      // moving due north gets a distinct front and rear slot.
+      const dx = x - members.reduce((sum, u) => sum + u.x, 0) / members.length,
+        dy = y - members.reduce((sum, u) => sum + u.y, 0) / members.length,
+        a = dx || dy ? Math.atan2(dy, dx) : shields[0].guard.angle, co = Math.cos(a), si = Math.sin(a);
+      slots.sort((a, b) => b.x - a.x);
+      for (const slot of slots) {
+        const forward = slot.x - x, side = slot.y - y;
+        slot.x = x + forward * co - side * si; slot.y = y + forward * si + side * co;
+      }
+    }
     const nav = navigation(s);
     if (members.length >= 8 && campaign.logistics(s)) {
       const centre = members.reduce((p, u) => ({ x: p.x + u.x / members.length, y: p.y + u.y / members.length }), { x: 0, y: 0 });
@@ -1271,6 +1309,7 @@
       return pathTo(u, target, r);
     };
     for (const slot of slots) {
+      const waiting = mixed && shields.length ? shields : line;
       // Only the nearest member is consumed. Sorting every remaining member
       // repeats thousands of distance calculations in a large formation.
       let nearest = 0, distance = dist(waiting[0], slot);
@@ -1317,6 +1356,7 @@
     for (const { u, path, target, origin } of plans) {
       support.leave(s, u, origin);
       u.target = null;
+      interruptAim(u);
       u.order = target;
       u.path = path;
     }
@@ -1326,18 +1366,27 @@
   }
   function attackUnits(s, ids, targetId) {
     const target = s.units.find((u) => u.id === targetId && u.team && u.hp > 0);
-    if (
-      !target ||
-      !visible(s, 0, target) ||
-      !orderUnits(s, ids, target.x, target.y)
-    )
-      return false;
-    const chosen = new Set(ids);
-    for (const u of s.units)
-      if (chosen.has(u.id) && !u.team && u.hp > 0 && [1, 2].includes(u.group)) {
-        u.target = { x: target.x, y: target.y, id: target.id };
-        u.think = 0;
+    if (!Array.isArray(ids) || !target || !visible(s, 0, target)) return false;
+    const chosen = new Set(ids), members = s.units.filter((u) => chosen.has(u.id) && !u.team && u.hp > 0 && u.group),
+      medics = members.filter((u) => u.kind === "medic"),
+      line = medics.length ? members.filter((u) => u.kind !== "medic") : members;
+    if (!line.length || !orderUnits(s, medics.length ? line.map((u) => u.id) : ids, target.x, target.y)) return false;
+    for (const u of line) {
+      u.target = { x: target.x, y: target.y, id: target.id };
+      if (u.guard) u.guard.scan = 0;
+      u.think = 0;
+    }
+    if (medics.length) {
+      // Plan an escort route to a nearby squadmate, never to the enemy's tile.
+      const foot = line.filter((u) => u.kind === "rifle"), armed = line.filter((u) => C[u.kind].damage),
+        leaders = foot.length ? foot : armed.length ? armed : line, escorts = new Map();
+      for (const medic of medics) {
+        const leader = leaders.reduce((best, u) => dist(medic, u) < dist(medic, best) ? u : best);
+        if (!escorts.has(leader.id)) escorts.set(leader.id, []);
+        escorts.get(leader.id).push(medic.id);
       }
+      for (const [id, group] of escorts) followUnits(s, group, id, false);
+    }
     const event = s.events.at(-1);
     if (event?.type === "order") event.intent = "attack";
     return true;
@@ -1547,6 +1596,7 @@
     for (const { u, order, origin } of plans) {
       support.leave(s, u, origin);
       u.order = order;
+      interruptAim(u);
       u.think = 0;
       updateFollow(s, u, 0, units);
     }
@@ -1683,7 +1733,9 @@
     }
   }
   function follow(u, dt) {
-    let distance = C[u.kind].speed * dt;
+    if (u.drive) return campaign.driveArmored(u, dt);
+    const speed = C[u.kind].speed;
+    let distance = (u.guard ? speed + (support.plate.speed - speed) * u.guard.lift : speed) * dt;
     // Consume the exact travel budget, including small arc segments: no corner
     // skipping, overshoot or frame-rate-dependent speed near the destination.
     while (u.path.length && distance > 1e-8) {
@@ -1819,7 +1871,7 @@
       tx: target.x,
       ty: target.y,
       age: 0,
-      ...(["highlands", "districts", "districts-east"].includes(mapFor(s).id)
+      ...(hasRelief(mapFor(s).id)
         ? {
             z0: geometryFor(s).height(from.x, from.y) + (from.mountHeight ?? MOUNTS[u.kind] ?? 16),
             z1: Number.isFinite(target.z)
@@ -1855,22 +1907,24 @@
       if (u.kind === "bastion") damage *= 0.6;
       if (["turret", "jammer"].includes(u.kind)) damage *= 0.8;
     }
-    if (
-      s.campaign?.armor &&
-      !u.team &&
-      ["hero", "rifle", "artillery"].includes(u.kind)
-    )
-      damage *= 0.85;
+    const blocked = u.guard && support.facesBolt(u, attacker);
+    if (blocked) {
+      damage *= 1 - support.plate.reduction;
+      u.guard.pulse = support.plate.pulse;
+      emit(s, "shield-block", attacker.x, attacker.y, { team: u.team });
+    }
+    if (s.campaign && !u.team) damage = campaign.armorDamage(s, u, attacker, damage);
     if (s.version >= 4 && u.defense) damage *= 0.35;
     u.hp -= damage;
-    u.hit = 0.14;
+    if (!blocked) u.hit = 0.14;
     u.repair = 3;
     if (u.kind === "hero") {
       s.damageTaken += damage;
       emit(s, "hurt", u.x, u.y);
-    } else emit(s, "hit", u.x, u.y, { team: u.team });
+    } else if (!blocked) emit(s, "hit", u.x, u.y, { team: u.team });
     if (u.hp <= 0) {
       u.hp = 0;
+      if (u.grenadeAim) delete u.grenadeAim;
       if (campaign.logistics(s)) u.deadAt = s.t;
       if (s.campaign) campaign.onDeath(s, u);
       support.onDeath(s, u);
@@ -1884,17 +1938,17 @@
     const radius = b.radius || 70,
       area = b.radius ? impactArea(s, b, radius) : null,
       hits = [];
-    emit(s, "blast", b.x, b.y, { radius });
+    emit(s, "blast", b.x, b.y, b.kind === "grenade" ? { radius, kind: b.kind } : { radius });
     // Resolve exposure before damage can destroy a shelter and evacuate its
     // occupants. A single explosion must not hit them twice depending on ID order.
-    for (const u of s.units)
-      if (
-        u.hp > 0 && !u.care?.inside &&
-        u.team !== b.team &&
-        (area ? insideArea(area, u) : rangeDistance(b, u) < radius) &&
-        clear(b, u)
-      )
-        hits.push([u, b.damage * (1 - rangeDistance(b, u) / (b.radius ? radius * 2 : 100))]);
+    const grenade = b.kind === "grenade";
+    for (const u of grenade ? nearby(s, 1 - b.team, b, radius) : s.units) {
+      if (u.hp <= 0 || u.care?.inside || u.team === b.team) continue;
+      const point = grenade && s.east ? East.contact(mapFor(s), b, u) : u;
+      const distance = rangeDistance(b, point);
+      if ((area ? insideArea(area, point) : distance < radius) && clear(b, point))
+        hits.push([u, b.damage * (1 - distance / (b.radius ? radius * 2 : 100))]);
+    }
     for (const [u, damage] of hits) hurt(s, u, damage, b);
   }
   function turnAngle(current, target, limit) {
@@ -1914,7 +1968,7 @@
     steps,
     walls = [
       ...mapFor(s).walls,
-      ...(["highlands", "districts", "districts-east"].includes(mapFor(s).id)
+      ...(hasRelief(mapFor(s).id)
         ? geometryFor(s).visionWalls(geometryFor(s).height(origin.x, origin.y) + 6)
         : []),
     ],
@@ -1963,11 +2017,11 @@
     const walls = [
       ...mapFor(s).walls.filter(
         (w) => (!w.unitId || w.unitId!==point.id) && (
-          !["highlands", "districts", "districts-east"].includes(mapFor(s).id) ||
+          !hasRelief(mapFor(s).id) ||
           geometryFor(s).height(w.x + w.w / 2, w.y + w.h / 2) + 54 >=
             geometryFor(s).height(point.x, point.y) + 24),
       ),
-      ...(["highlands", "districts", "districts-east"].includes(mapFor(s).id)
+      ...(hasRelief(mapFor(s).id)
         ? geometryFor(s).visionWalls(geometryFor(s).height(point.x, point.y) + 24)
         : []),
     ].filter(
@@ -1984,9 +2038,13 @@
   }
   const impactAreas = new Map();
   function impactArea(s, point, radius) {
-    const key = `${mapFor(s).id}:${point.x}:${point.y}:${radius}`;
+    const world = mapFor(s), key = `${world.id}:${world.revision || 0}:${point.x}:${point.y}:${radius}`;
     if (impactAreas.has(key)) return impactAreas.get(key);
-    const points = areaArc(s, point, radius, 0, Math.PI * 2, 64);
+    const walls = [...world.walls, ...(hasRelief(world.id)
+      ? geometryFor(s).visionWalls(geometryFor(s).height(point.x, point.y) + 6) : [])].filter(w =>
+      w.x <= point.x + radius && w.x + w.w >= point.x - radius &&
+      w.y <= point.y + radius && w.y + w.h >= point.y - radius);
+    const points = areaArc(s, point, radius, 0, Math.PI * 2, 64, walls);
     const area = Object.freeze({
       kind: "circle",
       x: point.x,
@@ -2059,9 +2117,38 @@
     }
     return inside;
   }
+  // Pick a visible group only when a round is ready. An explicit attack
+  // always designates its own target. After bracing, the mark stays on the ground.
+  function launcherOrigin(s, u) {
+    if (!sheltered(u)) return u;
+    const port = support.origin(s, u);
+    owners.set(port, s);
+    return port;
+  }
+  function windGrenade(s, u, dt) {
+    const mark = u.grenadeAim, from = launcherOrigin(s, u);
+    const foe = s.units.find(v => v.id === mark.id);
+    if (u.care?.exit || !foe || foe.hp <= 0 || foe.care?.inside || (foe.kind === "citadel" && shielded(s)) ||
+        !visible(s, u.team, foe, u) || !visible(s, u.team, mark, u) || !fireClear(from, mark)) {
+      delete u.grenadeAim;
+      return;
+    }
+    mark.remaining -= dt;
+    if (mark.remaining > 1e-9) return;
+    const start = grenadeMuzzle(from, mark), duration = Math.max(.05, dist(start, mark) / GRENADE.speed);
+    s.bullets.push({ kind: "grenade", team: u.team, owner: u.id, map: u.map, ...start,
+      vx: (mark.x - start.x) / duration, vy: (mark.y - start.y) / duration, tx: mark.x, ty: mark.y,
+      z0: elevation(from.x, from.y, u.map) + (from.mountHeight ?? MOUNTS.grenadier),
+      z1: elevation(mark.x, mark.y, u.map) + 10, duration, age: 0, life: duration,
+      radius: GRENADE.radius, damage: C.grenadier.damage * (s.campaign.weapons ? 1.2 : 1) });
+    delete u.grenadeAim;
+    u.cool = C.grenadier.rate; u.flash = .1;
+    emit(s, "grenade-launch", start.x, start.y, { team: u.team, owner: u.id });
+  }
   // A garrison never runs mobile pursuit/pathfinding. Reuse its target between
   // bounded scans and verify the actual roof-to-target corridor before firing.
   function garrisonFire(s, u, opponents, dt) {
+    if (u.kind === "grenadier") { campaign.prepareGrenade(s, u, opponents, dt); return; }
     const def = stats(s, u);
     if (!def.range) return;
     const from = support.origin(s, u), eligible = (v) => v && v.team !== u.team &&
@@ -2150,6 +2237,8 @@
       u.hit = Math.max(0, u.hit - dt);
       u.repair = Math.max(0, u.repair - dt);
       u.flash = Math.max(0, u.flash - dt);
+      if (u.guard) u.guard.pulse = Math.max(0, u.guard.pulse - dt);
+      if (u.grenadeAim) { windGrenade(s, u, dt); continue; }
       if (u.care) {
         if (!sheltered(u) || u.care.exit) continue;
         if (u.kind !== "hero") {
@@ -2193,6 +2282,12 @@
           });
         continue;
       }
+      if (u.kind === "medic") {
+        if (u.order?.followId !== undefined)
+          updateFollow(s, u, dt, (followLeaders ||= new Map(s.units.map((v) => [v.id, v]))));
+        support.fieldTick(s, u, dt);
+        continue;
+      }
       if (u.kind === "scout" || u.kind === "carrier") {
         if(u.kind === "carrier" && (!s.east?.claimed || s.east.immobilized || s.east.upload>0)){u.path=[];continue;}
         if (u.order?.followId !== undefined)
@@ -2220,6 +2315,7 @@
       }
       const def = stats(s, u);
       if (!def.range || u.build) continue;
+      if (u.drive && u.order?.post) campaign.watchPost(s, u, dt);
       const opponents = (
         combatTeams ? nearby(s, 1 - u.team, u, Math.max(def.range, detectionRange(s, u))) : s.units
       ).filter(
@@ -2272,6 +2368,7 @@
           );
         if (
           !escorting &&
+          !u.order?.post &&
           !u.target &&
           target &&
           def.speed &&
@@ -2317,7 +2414,10 @@
           )
             target = preferred;
         }
+        if (u.guard) support.turnShield(s, u, opponents, dt);
         if (u.path.length) follow(u, dt);
+        if (u.drive && !campaign.aimArmored(u, target, dt)) continue;
+        if (u.kind === "grenadier") { campaign.prepareGrenade(s, u, opponents, dt); continue; }
         // Movement can change both the angle and the cover corridor this frame.
         if (
           target &&
@@ -2392,7 +2492,8 @@
           b.vy = Math.sin(angle) * 260;
         }
       }
-      const next = { x: b.x + b.vx * dt, y: b.y + b.vy * dt };
+      const next = b.kind === "grenade" && b.life <= 0 ? { x: b.tx, y: b.ty } :
+        { x: b.x + b.vx * dt, y: b.y + b.vy * dt };
       if (
         b.z0 !== undefined &&
         !geometryFor(s).ray(
@@ -2407,8 +2508,8 @@
         b.life = -1;
         continue;
       }
-      if (b.kind === "shell") {
-        if (dist(next, { x: b.tx, y: b.ty }) < 16 || b.life <= 0) {
+      if (b.kind === "shell" || b.kind === "grenade") {
+        if (b.life <= 0 || (b.kind === "shell" && dist(next, { x: b.tx, y: b.ty }) < 16)) {
           b.x = b.tx;
           b.y = b.ty;
           blast(s, b);
@@ -2437,9 +2538,13 @@
       for (const u of nearby(s, 1 - b.team, b, dist(b, next))) {
         if (u.hp <= 0 || u.care?.inside || u.team === b.team) continue;
         if (u.kind === "hero" && s.dashT > 0) continue;
-        const t = u.construction
+        let t = u.construction
           ? segmentRect(b.x, b.y, next.x, next.y, construction.rect(u), 2)
           : segmentCircle(b, next, u, C[u.kind].r + 2);
+        if (u.guard) {
+          const plate = support.plateContact(u, b, next);
+          if (plate !== null && (t === null || plate < t)) t = plate;
+        }
         if (
           t !== null &&
           t < first &&
@@ -2604,6 +2709,10 @@
           !Object.hasOwn(C, u.kind) ||
           [
             "scout",
+            "medic",
+            "shield",
+            "grenadier",
+            "armored",
             "warden",
             "bastion",
             "rocket",
@@ -2612,7 +2721,8 @@
             "tank",
             "mortar",
           ].includes(u.kind) ||
-          u.combat !== undefined ||
+          u.combat !== undefined || u.guard !== undefined || u.grenadeAim !== undefined || u.drive !== undefined ||
+          u.order?.post !== undefined || u.order?.scan !== undefined ||
           ![0, 1].includes(u.team) ||
           !Number.isInteger(u.id) ||
           ids.has(u.id) ||
@@ -2848,6 +2958,7 @@
     DT,
     C,
     MOUNTS,
+    GRENADE,
     walls,
     PADS,
     CACHES,
@@ -2917,7 +3028,9 @@
   API.construction = construction;
   campaign = Campaign.create({
     ...API,
+    get support() { return support; },
     makeClassic,
+    launcherOrigin,
     initializeRecon: (s) => recon.init(s),
     map: mapFor,
     unit,
@@ -2930,7 +3043,7 @@
     spawnPoint,
   });
   const Support = typeof module !== "undefined" && module.exports ? require("./support.js") : root.SignalSupport;
-  support = Support.create({ ...API, map: mapFor, follow, emit, get development() { return campaign; } });
+  support = Support.create({ ...API, map: mapFor, follow, emit, nearby, get development() { return campaign; } });
   API.support = support;
   API.map = mapFor;
   API.pads = (s) =>

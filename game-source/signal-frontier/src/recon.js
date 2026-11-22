@@ -53,6 +53,10 @@
               [
                 "hero",
                 "rifle",
+                "medic",
+                "shield",
+                "grenadier",
+                "armored",
                 "scout",
                 "artillery",
                 "runner",
@@ -137,6 +141,7 @@
     function visible(s, team, p, witness) {
       if (!p || p.care?.inside || !Number.isFinite(p.x) || !Number.isFinite(p.y)) return false;
       if (!enabled(s)) return true;
+      if (p.eastRole && E.east.visibleFace(E.map(s),p,q=>visible(s,team,q,witness))) return true;
       if (s.fog) {
         const k = index(s, p);
         return k >= 0 && !!s.fog.visible[k] && sees(s.fog.observers, p);
@@ -351,7 +356,7 @@
         const mask = cached.visible[team],
           known = new Map(s.recon.memory[team].map((p) => [p.key, p])),
           present = new Set(current.map((p) => p.key));
-        const can = (p) => mask[index(s, p)] && sees(list, p);
+        const can = visibilityTest(s, mask, list);
         for (const [key, p] of known)
           if (can(p) && !present.has(key)) known.delete(key);
         for (const p of current)
@@ -400,12 +405,18 @@
         jobs: [],
       };
     }
+    function visibilityTest(s, mask, list) {
+      const point = p => !!p && mask[index(s,p)] && sees(list,p);
+      if (!s.east) return point;
+      const world = E.map(s);
+      return p => point(p) || E.east.visibleFace(world,p,point);
+    }
     function observe(s, team = 0) {
       if (!enabled(s)) return s;
       const mem = s.recon.memory[team],
         c = cache(s),
         list = observers(s, team),
-        can = (p) => !!p && c.visible[team][index(s, p)] && sees(list, p),
+        can = visibilityTest(s, c.visible[team], list),
         get = (type) => mem.filter((p) => p.type === type),
         neutral = (live) => (can(live) ? live : { unknown: true });
       const fog = {
@@ -533,7 +544,8 @@
             typeof p.key !== "string" ||
             keys.has(p.key) ||
             !num(p.seenAt, 0, s.t) ||
-            !known[index(s, p)]
+            (!known[index(s, p)] && !(s.east && p.type === "unit" &&
+              E.east.visibleFace(E.map(s),p,q=>known[index(s,q)])))
           )
             return false;
           keys.add(p.key);

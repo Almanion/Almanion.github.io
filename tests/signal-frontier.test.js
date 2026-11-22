@@ -475,6 +475,14 @@ test("published files exactly match canonical sources and stay self-contained", 
   const publicFiles = require('../tools/build-signal').render(root);
   for(const [file, content] of Object.entries(publicFiles))
     assert.equal(fs.readFileSync(path.join(root,'games/signal-frontier',file),'utf8'),content);
+  for (const file of ['orbit.webp', 'orbit-compact.webp']) {
+    const source = fs.readFileSync(path.join(root, 'game-source/signal-frontier/src/assets/menu', file));
+    const published = fs.readFileSync(path.join(root, 'games/signal-frontier/assets/menu', file));
+    assert.equal(source.toString('ascii', 0, 4), 'RIFF');
+    assert.equal(source.toString('ascii', 8, 12), 'WEBP');
+    assert.equal(source.readUInt32LE(4) + 8, source.length);
+    assert.deepEqual(published, source);
+  }
   const html = fs.readFileSync(
     path.join(root, "games/signal-frontier/index.html"),
     "utf8",

@@ -19,9 +19,11 @@
     condenser: '<path d="M5 19V7h14v12ZM8 16h8M9 5V3m6 2V3M12 7v6m-3-3 3 3 3-3"/>',
     alloy: '<path d="m12 3 8 9-8 9-8-9Zm-8 9h16M12 3v18"/>',
   };
-  const icon = (name) => ["rifle", "scout", "artillery", "drone"].includes(name) && root.SignalSelectionPanel
+  const icon = (name) => root.SignalEngine?.C[name] && root.SignalSelectionPanel
     ? root.SignalSelectionPanel.icon(name)
     : `<svg viewBox="0 0 24 24" aria-hidden="true">${paths[name] || paths.node}</svg>`;
+  const categories = { build: "Стройка", production: "Армия", economy: "Добыча", research: "Технологии" };
+  const producerKinds = ["barracks", "foundry", "arsenal"];
   class DevelopmentPanel {
     constructor(element, options) {
       this.el = element;
@@ -32,25 +34,27 @@
       this.expanded = true;
       this.job = null;
       this.section = "troops";
-      this.deckView = "home";
-      this.page = 0;
+      this.groupKind = null;
+      this.scrollPositions = new Map();
       this.queueIndex = 0;
+      this.offers = new Map();
+      this.inspected = null;
+      this.shopVisible = false;
+      options.inspector?.addEventListener("click", (event) => {
+        if (event.target.closest("[data-field-profile]")) this.closeProfile(true);
+      });
       element.addEventListener("click", (e) => {
         const button = e.target.closest("button");
         if (!button || !element.contains(button)) return;
-        if (button.hasAttribute("data-deck-back")) {
-          if (this.selected !== null) this.select();
-          else if (this.deckView === "group") {
-            this.groupKind = null;
-            this.deckView = "section";
-          } else this.deckView = "home";
-          this.page = 0;
-          this.key = "";
-          this.render();
-        } else if (button.dataset.deckPage) {
-          this.page = Math.max(0, this.page + Number(button.dataset.deckPage));
-          this.key = "";
-          this.render();
+        if (button.dataset.inspectOffer) {
+          if (this.inspected === button.dataset.inspectOffer) this.closeProfile();
+          else {
+            this.inspect(button.dataset.inspectOffer);
+            if (e.detail === 0) options.inspector.focus({ preventScroll: true });
+          }
+        } else if (button.hasAttribute("data-deck-back")) {
+          this.openTab(this.tab);
+          document.getElementById("develop-tab-" + this.tab)?.focus({ preventScroll: true });
         } else if (button.dataset.queueCycle) {
           this.queueIndex += Number(button.dataset.queueCycle);
           this.key = "";
@@ -61,11 +65,9 @@
         } else if (button.dataset.construct) {
           options.place(button.dataset.construct);
         } else if (button.dataset.productionGroup) {
-          this.select();
+          if (button.getAttribute("aria-pressed") !== "true") this.queueIndex = 0;
           this.groupKind = button.dataset.productionGroup;
-          this.tab = "production";
-          this.deckView = "group";
-          this.render();
+          this.openTab("production");
         } else if (button.hasAttribute("data-all-buildings")) {
           this.select();
           this.expand(true);
@@ -85,13 +87,7 @@
         } else if (button.dataset.rally) {
           options.rally(Number(button.dataset.rally));
         } else if (button.dataset.tab) {
-          this.tab = button.dataset.tab;
-          this.deckView = "section";
-          this.groupKind = null;
-          this.page = 0;
-          this.el.scrollTop = 0;
-          this.key = "";
-          this.render();
+          this.openTab(button.dataset.tab);
         } else if (button.dataset.action) {
           const offer = root.SignalEngine.supplyStatus(
             options.state(),
@@ -106,6 +102,10 @@
             this.render();
             return;
           }
+          if (offer.allowed && this.selected === null && this.tab === "production" && button.dataset.site) {
+            const owner = button.dataset.site.split(",").indexOf(button.dataset.producer);
+            if (owner >= 0) this.queueIndex = owner;
+          }
           if (button.dataset.action === "cancel") this.job = null;
           options.buy(button.dataset.action, button.dataset.site);
         } else if (button.dataset.focus) {
@@ -114,17 +114,77 @@
         }
       });
     }
-    select(id = null) {
-      this.selected = id;
+    reset() {
+      this.offers.clear();
+      this.tab = root.SignalEngine.construction.enabled(this.options.state()) ? "build" : "production";
       this.groupKind = null;
+      this.queueIndex = 0;
+      this.scrollPositions.clear();
+      const scroll = this.el.querySelector(".shop-scroll");
+      if (scroll) scroll.scrollTop = 0;
+      this.select();
+    }
+    openTab(tab) {
+      this.inspect(null);
+      if (this.selected !== null) this.select();
+      this.tab = tab;
+      this.render();
+    }
+    setBuilding(id = null) {
+      this.inspect(null);
+      this.selected = id;
       this.job = null;
       this.section = "troops";
-      this.deckView = id === null ? "home" : "building";
-      this.page = 0;
-      this.queueIndex = 0;
       this.el.scrollTop = 0;
       this.key = "";
+    }
+    select(id = null) {
+      this.setBuilding(id);
       this.options.select?.(id);
+    }
+    setContext(visible, members) {
+      if (this.shopVisible === visible && this.memberCount === members) return;
+      this.shopVisible = visible;
+      this.memberCount = members;
+      if (!visible) this.inspect(null);
+      else this.refreshProfile();
+    }
+    inspect(id) {
+      const changed = this.inspected !== id;
+      if (changed) {
+        const mark = (key, value) => {
+          if (key) this.el.querySelector('[data-inspect-offer="' + key + '"]')?.setAttribute("aria-pressed", String(value));
+        };
+        mark(this.inspected, false);
+        this.inspected = id;
+        mark(id, true);
+      }
+      this.refreshProfile();
+      if (changed && id) this.options.inspector.scrollTop = 0;
+    }
+    closeProfile(restoreFocus = false) {
+      const trigger = this.el.querySelector('[data-inspect-offer][aria-pressed="true"]');
+      this.inspect(null);
+      this.options.showSelection?.();
+      if (restoreFocus) trigger?.focus({ preventScroll: true });
+    }
+    refreshProfile() {
+      const { inspector, roster } = this.options;
+      if (!inspector || !roster) return;
+      const offer = this.shopVisible && this.offers.get(this.inspected);
+      inspector.hidden = !offer;
+      roster.hidden = !!offer;
+      if (!offer) return;
+      const { kind, symbol, category, item, role, status } = offer;
+      const s = this.options.state(), D = root.SignalEngine.development, panel = root.SignalSelectionPanel;
+      const timeLabel = { "Постройка": "Строительство", "Технология": "Исследование", "Войска": "Подготовка" }[category] || "Время";
+      const facts = [["Стоимость", D.matter.price(item)], [timeLabel, item.time + " с"]];
+      if (item.pop) facts.push(["Снабжение", item.pop]);
+      facts.push(...panel.profileFacts(s, kind));
+      const markup = `<div class="profile-heading">${icon(symbol)}<div><small>${category}</small><h3 id="shop-profile-name">${item.label}</h3></div></div>` +
+        `<p class="profile-role">${role}</p>${status ? '<p class="profile-status">' + status + '</p>' : ""}${panel.factList(facts)}` +
+        `<button class="profile-return" data-field-profile>‹ ${this.memberCount ? "К выделению" : "К разведчику"}</button>`;
+      panel.patch(inspector, markup);
     }
     expand(expanded) {
       this.expanded = expanded;
@@ -185,7 +245,8 @@
         s = this.options.state();
       if (!s.campaign) return;
       if (E.construction.enabled(s)) return this.renderConstruction(s);
-      this.el.classList.remove("free-development");
+      this.el.classList.remove("free-development", "command-deck");
+      this.el._html = null;
       this.el.closest(".command-dock").dataset.building = String(
         this.selected !== null,
       );
@@ -243,6 +304,7 @@
                 scout: "barracks",
                 weapons: "barracks",
                 artillery: "foundry",
+                armored: "foundry",
                 armor: "foundry",
                 network: "base",
                 command: "base",
@@ -299,6 +361,7 @@
         rifle: "Универсальная пехота · прикрытие и наступление",
         scout: "Без оружия · широкий обзор и быстрая разведка",
         artillery: "Дальний огонь · осада укреплений",
+        armored: "Быстрый резерв · прикрытие добычи",
         drone: "Добыча и доставка сплава",
         weapons: "Урон союзников +20%",
         armor: "Урон по армии и разведчику −15%",
@@ -367,7 +430,7 @@
               u.kind === "barracks"
                 ? ["rifle", ...(E.fogged(s) ? ["scout"] : [])]
                 : u.kind === "foundry"
-                  ? ["artillery"]
+                  ? root.SignalSelectionPanel.recruits("foundry", ITEMS)
                   : ["drone"];
             const tech =
               u.kind === "barracks"
@@ -494,6 +557,7 @@
                 undefined,
                 action === "rifle" ? "Обучить бойца" : "Собрать орудие",
               ) +
+                (kind === "foundry" && ITEMS.armored ? button("armored", u.id, "Собрать бронемашину", descriptions.armored) : "") +
                 (kind === "barracks" && E.fogged(s)
                   ? button(
                       "scout",
@@ -577,11 +641,15 @@
           condenser: "На кратере · 2 зонда · тёмная материя",
           logistics: "+12 снабжения · +4 зонда · 2×2",
           bunker: "4 места · дальность и обзор +25%",
-          barracks: "Бойцы и дозорные",
+          barracks: items.medic ? "Пехота, разведка и лечение" : "Бойцы и дозорные",
           outpost: "4×4 · рядом со свободным месторождением",
-          foundry: "Тяжёлая артиллерия",
+          foundry: items.armored ? "Бронемашины и артиллерия" : "Тяжёлая артиллерия",
           arsenal: "Улучшения армии и проникновение",
           rifle: E.balance.enabled(s) ? "Основная пехота · 11 клеток" : "Основная боевая пехота",
+          medic: "Лечит бойцов и героя · " + E.support.fieldCare.range / 40 + " клетки",
+          shield: "Принимает огонь спереди · сектор " + Math.round(E.support.plate.halfAngle * 360 / Math.PI) + "°",
+          grenadier: "Огонь по площади · радиус " + E.GRENADE.radius / 40 + " кл. · цель успевает выйти из круга",
+          armored: "Быстрый резерв · защита добычи · 9 клеток",
           scout: E.balance.enabled(s) ? "Разведка · обзор 24,5 клетки" : "Дальний обзор и разведка",
           artillery: E.balance.enabled(s) ? "20 клеток · огонь с разведкой" : "Дальнобойный огонь по укреплениям",
           drone: "Добыча, строительство и ремонт",
@@ -598,12 +666,10 @@
             ? `Не хватает ${Math.max(0, o.cost - s.economy.alloy)} сплава`
             : o.reason === "matter" ? `Не хватает ${Math.max(0, o.matter - (s.economy.matter || 0))} материи` : this.options.reason(o.reason);
       const key = JSON.stringify([
-        this.deckView,
         this.tab,
         this.selected,
         this.groupKind,
         this.section,
-        this.page,
         this.queueIndex,
         innerWidth,
         innerHeight,
@@ -619,17 +685,25 @@
       ]);
       if (key === this.key) return;
       this.key = key;
-      const focus = document.activeElement?.id;
-      const tile = (id, label, detail, note, attrs = "", symbol = "node") =>
-        `<button ${id ? `id="${id}"` : ""} class="command-tile" title="${[label, detail, note].filter(Boolean).join(" · ").replaceAll('"', "&quot;")}" ${attrs}>${icon(symbol)}<span><strong>${label}</strong><small>${attrs.includes("disabled") && note && detail !== "Исследовано" ? note : detail}</small><em>${attrs.includes("disabled") ? detail : note || ""}</em></span></button>`;
-      const construct = (kind) => {
+      const offers = new Map(), panel = root.SignalSelectionPanel, buildingRoles = panel.buildingRoles(items);
+      const tile = (id, label, detail, note, attrs = "", symbol = "node", kind = null) => {
+        const locked = attrs.includes("disabled");
+        const button = `<button ${id ? `id="${id}"` : ""} data-key="${id || label}" class="command-tile" title="${[label, detail, note].filter(Boolean).join(" · ").replaceAll('"', "&quot;")}" ${attrs}>${icon(symbol)}<span><strong>${label}</strong><small>${locked && note && detail !== "Исследовано" ? note : detail}</small><em>${locked ? detail : note || ""}</em></span></button>`;
+        if (!kind || !this.options.inspector) return button;
+        const building = !!C.shapes[kind], item = items[kind];
+        offers.set(id, { kind, item, symbol, category: building ? "Постройка" : E.C[kind] ? "Войска" : ["repair", "defense"].includes(kind) ? "Обслуживание" : "Технология",
+          role: building ? buildingRoles[kind] : roles[kind], status: locked ? (detail === "Исследовано" ? detail : note) : "" });
+        return `<div class="shop-offer" data-key="offer-${id}">${button}<button class="offer-info" data-inspect-offer="${id}" aria-controls="shop-inspector" aria-pressed="${this.inspected === id}" aria-label="Характеристики: ${item.label}" title="Характеристики: ${item.label}"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 11v5m0-9v1"/></svg></button></div>`;
+      };
+      const construct = (kind, label = items[kind].label) => {
         const o = C.availability(s, kind);
         return tile(
           "develop-" + kind,
-          items[kind].label,
+          label,
           `${D.matter.price(items[kind])} · ${items[kind].time} с`,
           o.allowed ? roles[kind] : reason(o),
           `data-construct="${kind}" ${o.allowed ? "" : "disabled"}`,
+          kind,
           kind,
         );
       };
@@ -652,57 +726,29 @@
               ? roles[action] || "Нажмите для заказа"
               : reason(o),
           `data-action="${action}" ${site !== undefined ? `data-site="${site}"` : ""} ${o.producer ? `data-producer="${o.producer.id}"` : ""} ${o.allowed ? "" : "disabled"}`,
-          paths[action] || ["rifle", "scout", "artillery", "drone"].includes(action) ? action : "command",
+          paths[action] || ["rifle", "scout", "medic", "shield", "grenadier", "armored", "artillery", "drone"].includes(action) ? action : "command",
+          action,
         );
       };
       const queue = (u, cycle = false) => {
-        if (!u)
-          return '<p class="deck-empty">Постройте производство в разделе «Стройка»</p>';
+        const count = u.jobs.length + "/3";
         const owner =
-          this.deckView === "group"
-            ? `<button class="deck-producer" data-select="${u.id}" title="Открыть панель здания">${name(u)} ›</button>`
-            : `<span>${name(u)} · очередь ${u.jobs.length} / 3</span>`;
-        return `<div class="deck-queue-heading">${owner}${cycle ? '<button data-queue-cycle="-1" aria-label="Предыдущее производство">‹</button><button data-queue-cycle="1" aria-label="Следующее производство">›</button>' : ""}<small>${D.matter.enabled(s) ? "До начала 100% · после начала 75%" : "Нажатие — отмена · возврат 75%"}</small></div><div class="free-queue">${[
+          this.selected === null
+            ? `<button class="deck-producer" data-select="${u.id}" title="Открыть ${name(u)}" aria-label="${name(u)} · очередь ${count}"><span class="queue-owner">${items[u.kind].label}</span> <span class="queue-count">${cycle ? "№" + u.id + " · " : ""}${count} ›</span></button>`
+            : `<span>Очередь · ${count}</span>`;
+        return `<div class="deck-queue-heading">${owner}${cycle ? '<button data-queue-cycle="-1" aria-label="Предыдущее производство">‹</button><button data-queue-cycle="1" aria-label="Следующее производство">›</button>' : ""}</div><div class="free-queue" role="group" aria-label="Очередь заказов">${[
           0, 1, 2,
         ]
           .map((i) => {
             const j = u.jobs[i];
-            return j
-              ? `<button class="job-select" data-job="${u.id}:${j.id}" aria-label="Отменить: ${items[j.action].label} · вернуть ${D.matter.price({cost:D.matter.refund(s,j).alloy,matter:D.matter.refund(s,j).matter})}"><span>${items[j.action].label}</span><small>${i ? "Ожидает" : D.supplyBlocked(s, j) ? "Нет снабжения" : j.remaining ? Math.ceil(j.remaining) + " с" : "Выход занят"}</small><i style="--progress:${(1 - j.remaining / j.duration) * 100}%"></i></button>`
-              : '<div class="free-queue-empty">Свободно</div>';
+            if (!j) return '<div class="free-queue-empty" aria-hidden="true">—</div>';
+            const refund = D.matter.refund(s, j);
+            const cancel = `Отменить «${items[j.action].label}» и вернуть ${D.matter.price({cost:refund.alloy,matter:refund.matter})}`;
+            return `<button class="job-select" data-key="job-${j.id}" data-job="${u.id}:${j.id}" title="${cancel}" aria-label="${cancel}"><span>${items[j.action].label}</span><small>${i ? "Ожидает" : D.supplyBlocked(s, j) ? "Нет снабжения" : j.remaining ? Math.ceil(j.remaining) + " с" : "Выход занят"}</small><i style="--progress:${(1 - j.remaining / j.duration) * 100}%"></i></button>`;
           })
           .join("")}</div>`;
       };
-      const pages = (cards, garrison = false) => {
-        const width =
-            this.el.clientWidth ||
-            (innerWidth < 760
-              ? innerWidth - 28
-              : Math.min(960, innerWidth - 246)),
-          compact = width < 600,
-          home = this.deckView === "home" && this.selected === null,
-          size = extra ? (compact && width < 280 && !garrison ? 1 : 2) : compact && width < 400 && !home ? 2 : 4;
-        this.el.closest(".command-dock").dataset.compact = String(compact);
-        this.el.closest(".command-dock").dataset.deckHome = String(home);
-        const count = Math.max(1, Math.ceil(cards.length / size));
-        this.page = Math.min(this.page, count - 1);
-        return {
-          body: `<div class="command-grid">${
-            cards
-              .slice(this.page * size, this.page * size + size)
-              .map((card) =>
-                compact && home ? card.replace(/<em>.*?<\/em>/g, "") : card,
-              )
-              .join("") ||
-            '<p class="deck-empty">Пока нет доступных объектов</p>'
-          }</div>`,
-          controls:
-            count > 1
-              ? `<div class="deck-pages"><button data-deck-page="-1" ${this.page ? "" : "disabled"} aria-label="Предыдущая страница">‹</button><span>${this.page + 1} / ${count}</span><button data-deck-page="1" ${this.page < count - 1 ? "" : "disabled"} aria-label="Следующая страница">›</button></div>`
-              : "",
-        };
-      };
-      let heading = "Развитие базы",
+      let heading = "", group = "",
         cards = [],
         extra = "",
         sections = "";
@@ -743,14 +789,7 @@
             ),
           );
         } else {
-          const troops =
-              {
-                base: ["drone"],
-                outpost: ["drone"],
-                barracks: ["rifle", "scout"],
-                foundry: ["artillery"],
-                arsenal: [],
-              }[selected.kind] || [],
+          const troops = root.SignalSelectionPanel.recruits(selected.kind, items),
             tech =
               {
                 base: ["network", "command", "defense"],
@@ -770,7 +809,7 @@
               `data-care="admit" data-care-id="${selected.id}" ${(!bunker && h.hp >= E.C.hero.hp) || h.care || patients.length >= 4 ? "disabled" : ""}`, bunker ? "bunker" : "repair"),
               tile("develop-exit-all", "Вывести всех", `Занято ${patients.length} из 4 мест`, "Выход всех бойцов по вашему приказу",
                 `data-care="evacuate" data-care-id="${selected.id}" ${patients.length ? "" : "disabled"}`, "command"),
-              ...patients.map((u) => tile("develop-patient-" + u.id, ({ hero: "Разведчик", rifle: "Боец", scout: "Дозорный", artillery: "Артиллерия" })[u.kind],
+              ...patients.map((u) => tile("develop-patient-" + u.id, items[u.kind]?.label || "Разведчик",
                 Math.ceil(u.hp) + " / " + E.C[u.kind].hp + (u.care.inside ? u.care.exit ? " · выход занят" : bunker ? " · в гарнизоне" : u.hp >= E.C[u.kind].hp ? " · вылечен" : " · лечится" : " · в пути"), !bunker && u.care.inside && !u.care.exit && u.hp >= E.C[u.kind].hp ? "Выходит автоматически" : "Нажать — выйти",
                 `data-care="exit" data-care-id="${u.id}"`, bunker ? "bunker" : "repair"))];
             if (bunker) {
@@ -835,86 +874,25 @@
             extra = queue(selected);
           }
         }
-      } else if (this.deckView === "home") {
-        cards = [
-          tile(
-            "develop-tab-build",
-            "Стройка",
-            "Размещение зданий",
-            "Shift + ЛКМ — несколько",
-            'data-tab="build"',
-            "barracks",
-          ),
-          tile(
-            "develop-tab-production",
-            "Армия",
-            "Бойцы и производство",
-            "Отдельная очередь у каждого здания",
-            'data-tab="production"',
-            "command",
-          ),
-          tile(
-            "develop-tab-economy",
-            "Добыча",
-            "Зонды и месторождения",
-            "Экстракторы и дроны",
-            'data-tab="economy"',
-            "alloy",
-          ),
-          tile(
-            "develop-tab-research",
-            "Технологии",
-            "Улучшения и ступени базы",
-            "Действуют всю операцию",
-            'data-tab="research"',
-            "network",
-          ),
-        ];
-      } else if (this.deckView === "group") {
-        const kind = this.groupKind,
-          buildings = alive.filter((u) => u.kind === kind),
-          ready = buildings.filter((u) => !u.build),
-          ids = ready.map((u) => u.id),
-          list =
-            kind === "barracks"
-              ? ["rifle", "scout"]
-              : kind === "foundry"
-                ? ["artillery"]
-                : ["weapons", "armor", "hack"];
-        heading =
-          (items[kind]?.label || "Производство") + ` · ${ready.length} готово`;
-        cards = ready.length
-          ? list.map((a) => purchase(a, ids))
-          : [
-              tile(
-                "",
-                "Построить здание",
-                items[kind].label,
-                "Открыть размещение",
-                `data-construct="${kind}"`,
-              ),
-            ];
-        const index =
-          ((this.queueIndex % ready.length) + ready.length) % ready.length;
-        extra = queue(ready[index], ready.length > 1);
-      } else if (this.tab === "build") {
-        heading = "Стройка";
-        cards = ["barracks", "outpost", ...(D.matter.enabled(s) ? ["condenser"] : []), ...(D.logistics(s) ? ["logistics"] : []), "bunker", "foundry", "arsenal"].map(construct);
       } else if (this.tab === "production") {
-        heading = "Армия и производство";
-        cards = ["barracks", "foundry", "arsenal"].map((kind) => {
-          const n = alive.filter((u) => u.kind === kind && !u.build).length;
-          return tile(
-            "",
-            items[kind].label,
-            `${n} готовых зданий`,
-            n ? "Заказать и управлять очередями" : "Нужно построить здание",
-            `data-production-group="${kind}"`,
-            kind,
-          );
-        });
+        const kind = this.groupKind || producerKinds.find((k) => alive.some((u) => u.kind === k && !u.build)) || "barracks";
+        group = kind;
+        const buildings = alive.filter((u) => u.kind === kind),
+          ready = buildings.filter((u) => !u.build),
+          list = kind === "arsenal" ? ["weapons", "armor", "hack"] : root.SignalSelectionPanel.recruits(kind, items);
+        sections = '<div class="building-tabs producer-types" role="group" aria-label="Производство">' +
+          producerKinds.map((k) => `<button data-production-group="${k}" aria-pressed="${k === kind}" title="${items[k].label}">${k === "foundry" ? "Тяжёлый цех" : items[k].label}</button>`).join("") + "</div>";
+        if (ready.length) {
+          cards = list.map((action) => purchase(action, ready.map((u) => u.id)));
+          const index = ((this.queueIndex % ready.length) + ready.length) % ready.length;
+          extra = queue(ready[index], ready.length > 1);
+        } else {
+          cards = buildings.map((u) => tile("", name(u), "Строится", "Открыть стройку", `data-select="${u.id}"`, kind));
+          cards.push(construct(kind, "Построить " + items[kind].label.toLowerCase()));
+        }
+      } else if (this.tab === "build") {
+        cards = ["barracks", "outpost", ...(D.matter.enabled(s) ? ["condenser"] : []), ...(D.logistics(s) ? ["logistics"] : []), "bunker", "foundry", "arsenal"].map((kind) => construct(kind));
       } else if (this.tab === "economy") {
-        heading = "Добыча";
         cards = [
           construct("outpost"),
           ...alive
@@ -939,24 +917,34 @@
           ...(D.matter.enabled(s) ? [construct("condenser")] : []),
         ];
       } else {
-        heading = "Технологии";
         cards = ["network", "command", "weapons", "armor", "hack"].map((a) =>
           purchase(a),
         );
       }
-      const page = pages(cards, selected?.kind === "bunker" && this.section !== "service");
+      const dock = this.el.closest(".command-dock");
       this.el.classList.add("free-development", "command-deck");
-      this.el.closest(".command-dock").dataset.deckDetail = String(
-        this.selected !== null || this.deckView === "group",
-      );
-      this.el.dataset.hasSections = String(!!sections);
-      this.el.closest(".command-dock").dataset.building = String(
-        this.selected !== null,
-      );
-      this.el.innerHTML = `<nav class="command-nav" aria-label="Раздел магазина">${this.deckView !== "home" ? '<button data-deck-back aria-label="Назад к разделам">‹ Назад</button>' : ""}<strong>${heading}</strong>${page.controls}</nav>${sections}<div id="development-body" class="deck-content">${page.body}${extra}</div>`;
-      this.el.scrollTop = 0;
+      dock.dataset.compact = String(this.el.clientWidth < 600);
+      dock.dataset.deckDetail = String(!!selected || this.tab === "production");
+      dock.dataset.building = String(!!selected);
+      const tabs = Object.entries(categories).map(([id, label]) =>
+        `<button id="develop-tab-${id}" role="tab" aria-selected="${this.tab === id}" aria-controls="development-body" tabindex="${this.tab === id ? 0 : -1}" data-tab="${id}">${label}</button>`).join("");
+      const back = selected ? `<button class="deck-building-back" data-deck-back title="Вернуться в раздел «${categories[this.tab]}»" aria-label="Вернуться в раздел «${categories[this.tab]}»"><span aria-hidden="true">‹</span><span class="back-name"> ${heading}</span></button>` : "";
+      const viewKey = selected ? `building-${selected.id}-${this.section}` : this.tab + group;
+      const catalogue = cards.join("") || '<p class="deck-empty">Пока нет доступных объектов</p>';
+      const previous = this.el.querySelector(".shop-scroll");
+      const changedView = previous?.dataset.key !== viewKey;
+      if (previous && changedView) this.scrollPositions.set(previous.dataset.key, previous.scrollTop);
+      root.SignalSelectionPanel.patch(this.el,
+        `<nav class="shop-categories" role="tablist" aria-label="Разделы магазина">${tabs}</nav>` +
+        `<div class="shop-context" ${back || sections ? "" : "hidden"}>${back}${sections}</div>` +
+        `<div id="development-body" class="shop-body" role="tabpanel" aria-labelledby="develop-tab-${this.tab}">` +
+        `<div class="shop-scroll" data-key="${viewKey}"><div class="command-grid">${catalogue}</div></div>` +
+        `<div class="shop-tail" ${extra ? "" : "hidden"}>${extra}</div></div>`);
+      if (changedView) this.el.querySelector(".shop-scroll").scrollTop = this.scrollPositions.get(viewKey) || 0;
+      this.offers = offers;
+      if (!offers.has(this.inspected)) this.inspected = null;
+      this.refreshProfile();
       this.options.layout?.();
-      if (focus) document.getElementById(focus)?.focus({ preventScroll: true });
     }
   }
   root.SignalDevelopmentPanel = DevelopmentPanel;

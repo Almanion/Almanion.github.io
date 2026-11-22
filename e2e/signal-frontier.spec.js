@@ -578,7 +578,7 @@ test("audio resumes after rapid pause transitions and volume is remembered", asy
   await expect
     .poll(() => page.evaluate(() => SignalGame.audioState()))
     .toBe("suspended");
-  await page.locator('#pause-content [data-open="settings"]').click();
+  await page.locator('#menu-tab-settings').click();
   await page.locator("#volume").focus();
   await page.keyboard.press("Home");
   await page.locator("#motion").check();

@@ -4,10 +4,96 @@
   function create(E) {
     const capacity = 4, rate = 8, enabled = (s) => E.construction.enabled(s),
       facility = (u) => u && !u.team && u.hp > 0 && !u.build && ["outpost", "bunker"].includes(u.kind),
-      patient = (u) => u && !u.team && u.hp > 0 && ["hero", "rifle", "scout", "artillery"].includes(u.kind),
+      patient = (u) => u && !u.team && u.hp > 0 && ["hero", "rifle", "shield", "grenadier", "medic", "scout", "armored", "artillery"].includes(u.kind),
       occupants = (s, id) => s.units.filter((u) => u.hp > 0 && u.care?.facility === id),
       fail = (reason) => ({ allowed: false, reason });
     const source = (s, p) => ({ ...p, map: E.navigation(s) });
+    const fieldCare = Object.freeze({ range: 120, search: 240, amount: 15, interval: 1.25, pulse: .24 });
+    const plate = Object.freeze({ halfAngle: Math.PI / 3, turnRate: Math.PI * 2 / 3,
+      readyTime: .4, awareness: 560, speed: 72, reduction: .7, offset: 16, halfWidth: 20, pulse: .16 });
+    function turnShield(s, u, opponents, dt) {
+      const g = u.guard;
+      const exposed = (v) => v && E.rangeDistance(u, v) <= plate.awareness &&
+        E.visible(s, 0, v, u) && E.fireClear(u, v);
+      let threat;
+      g.scan = Math.max(0, g.scan - dt);
+      if (!g.scan) {
+        let best = Infinity;
+        for (const v of opponents) {
+          if (v.build || !E.stats(s, v, u).damage) continue;
+          const score = v.id === u.target?.id ? -1 : E.dist(u, v);
+          if (score < best && exposed(v)) { threat = v; best = score; }
+        }
+        g.watch = threat?.id || 0;
+        g.scan = .22 + (u.id % 4) * .02;
+      } else if (g.watch) {
+        threat = opponents.find((v) => v.id === g.watch);
+        if (!exposed(threat)) { threat = null; g.watch = 0; }
+      }
+      const facing = threat || u.path[0],
+        angle = facing ? Math.atan2(facing.y - u.y, facing.x - u.x) : u.angle;
+      g.angle = E.turnAngle(g.angle, angle, plate.turnRate * dt);
+      g.lift = E.clamp(g.lift + (threat ? dt : -dt) / plate.readyTime, 0, 1);
+    }
+    function facesBolt(u, b) {
+      if (!u.guard || u.guard.lift < 1 || u.care?.inside || b.kind !== "bolt") return false;
+      const dot = -b.vx * Math.cos(u.guard.angle) - b.vy * Math.sin(u.guard.angle);
+      return dot > 0 && dot + 1e-9 >= Math.hypot(b.vx, b.vy) * Math.cos(plate.halfAngle);
+    }
+    // Intersection with the finite front edge. The usual cover and elevation
+    // tests still decide which object the projectile actually reaches first.
+    function plateContact(u, b, next) {
+      if (!facesBolt(u, b)) return null;
+      const nx = Math.cos(u.guard.angle), ny = Math.sin(u.guard.angle),
+        dx = b.x - u.x, dy = b.y - u.y, sx = next.x - b.x, sy = next.y - b.y,
+        t = (plate.offset - dx * nx - dy * ny) / (sx * nx + sy * ny);
+      if (!(t >= 0 && t <= 1)) return null;
+      return Math.abs(-(dx + sx * t) * ny + (dy + sy * t) * nx) <= plate.halfWidth ? t : null;
+    }
+    function fieldTick(s, u, dt) {
+      const escort = u.order?.followId !== undefined;
+      // A destination takes priority over autonomous triage. An escort may
+      // briefly stop for a pulse while the formation is moving.
+      if (u.order && !escort && u.path.length) { E.follow(u, dt); return; }
+      if (!escort) u.order = null;
+      if (u.cool > 0) {
+        if (!u.flash) E.follow(u, dt);
+        return;
+      }
+      const from = source(s, u), candidates = [];
+      for (const v of E.nearby(s, 0, u, fieldCare.search)) {
+        if (v.hp <= 0 || v.care || !["hero", "rifle", "shield", "grenadier"].includes(v.kind) || v.hp >= E.C[v.kind].hp) continue;
+        const distance = E.dist(u, v);
+        if (distance > fieldCare.search) continue;
+        const ready = distance <= fieldCare.range && E.fireClear(from, v);
+        if (!escort || ready) candidates.push({ v, ready, distance, fraction: v.hp / E.C[v.kind].hp });
+      }
+      candidates.sort((a, b) => Number(b.ready) - Number(a.ready) ||
+        Number(b.v.id === u.order?.followId) - Number(a.v.id === u.order?.followId) ||
+        a.fraction - b.fraction || a.distance - b.distance || a.v.id - b.v.id);
+      u.cool = .4 + (u.id % 5) * .04;
+      for (const { v, ready } of candidates) {
+        if (ready) {
+          if (!escort) u.path = [];
+          u.angle = Math.atan2(v.y - u.y, v.x - u.x);
+          v.hp = Math.min(E.C[v.kind].hp, v.hp + fieldCare.amount);
+          u.cool = fieldCare.interval; u.flash = fieldCare.pulse;
+          E.emit(s, "field-heal", u.x, u.y, { medic: u.id, patient: v.id, team: 0 });
+          return;
+        }
+        const end = u.path.at(-1);
+        if (!(end && E.dist(end, v) <= fieldCare.range &&
+            E.fireClear({ ...end, kind: u.kind, map: from.map }, v))) {
+          const path = E.firingPath(u, v, fieldCare.range * .85);
+          if (!path.length) continue;
+          u.path = path;
+        }
+        E.follow(u, dt);
+        return;
+      }
+      if (!escort) u.path = [];
+      E.follow(u, dt);
+    }
     function route(s, u, p) {
       const r = E.C[u.kind].r;
       if (!E.free(p.x, p.y, r, E.navigation(s))) return null;
@@ -54,7 +140,12 @@
         existing = occupants(s, id);
       let count = 0, reserved = existing.length;
       for (const u of members) {
+        if (garrison && u.kind === "armored") continue;
         if (u.care?.facility === id) { count++; continue; }
+        if (u.drive && !garrison && u.hp >= E.C.armored.hp) {
+          if (E.development.guardPost(s, u, b)) count++;
+          continue;
+        }
         if (reserved >= capacity || (!garrison && u.hp >= E.C[u.kind].hp)) continue;
         // Changing infirmaries is an explicit exit first; never teleport a patient.
         if (u.care?.inside) continue;
@@ -64,6 +155,9 @@
         u.care = { facility: id, entry, retry: 0, inside: false, exit: false,
           ...(garrison ? { garrison: true, slot } : {}) };
         if (garrison) slots.add(slot);
+        if (u.guard) Object.assign(u.guard, { lift: 0, pulse: 0, scan: 0, watch: 0 });
+        if (u.grenadeAim) delete u.grenadeAim;
+        if (u.drive) u.drive.speed = 0;
         u.path = path; u.target = u.order = null; u.wind = 0;
         if (u.kind === "hero") s.dashT = 0;
         reserved++; count++;
@@ -106,6 +200,7 @@
     }
     function leave(s, u, point = departure(s, u)) {
       if (!u.care) return true;
+      if (u.grenadeAim) delete u.grenadeAim;
       if (!point) { u.care.exit = true; return false; }
       if (u.care.inside) {
         const b = s.units.find((v) => v.id === u.care.facility);
@@ -132,18 +227,19 @@
         const b = s.units.find((v) => v.id === c.facility);
         if (!facility(b)) c.exit = true;
         c.retry = Math.max(0, c.retry - dt);
-        if (c.exit) { if (!c.retry) { leave(s, u); if (u.care) c.retry = .8; } continue; }
-        if (c.inside) {
-          if (!c.garrison) {
-            u.hp = Math.min(E.C[u.kind].hp, u.hp + rate * dt);
-            // Discharge in the healing tick, including fully healed legacy saves.
-            // A blocked patient keeps the reservation and retries at the normal cadence.
-            if (u.hp >= E.C[u.kind].hp) {
-              c.exit = true;
-              if (!leave(s, u)) c.retry = .8;
-            }
+        if (c.inside && !c.exit && !c.garrison) {
+          u.hp = Math.min(E.C[u.kind].hp, u.hp + rate * dt);
+          if (u.hp >= E.C[u.kind].hp) { c.exit = true; c.retry = 0; }
+        }
+        if (c.exit) {
+          if (!c.retry) {
+            if (!leave(s, u)) c.retry = .8;
+            else if (u.drive && b?.hp > 0 && u.hp === E.C.armored.hp) E.development.guardPost(s, u, b);
           }
-        } else if (E.dist(u, c.entry) <= 5) {
+          continue;
+        }
+        if (c.inside) continue;
+        if (E.dist(u, c.entry) <= 5) {
           E.emit(s, "care-door", b.x, b.y);
           c.inside = true; u.x = b.x; u.y = b.y; u.path = []; u.wind = u.flash = 0; u.think = 0;
         } else {
@@ -168,7 +264,7 @@
           typeof c.inside !== "boolean" || typeof c.exit !== "boolean" ||
           !Number.isFinite(c.retry) || c.retry < 0 || c.retry > .81) return false;
         const b = s.units.find((v) => v.id === c.facility);
-        if (!b || b.team || !["outpost", "bunker"].includes(b.kind) || b.build || (!b.hp && !c.exit) ||
+        if (!b || b.team || !["outpost", "bunker"].includes(b.kind) || (b.kind === "bunker" && u.drive) || b.build || (!b.hp && !c.exit) ||
           !Number.isFinite(c.entry?.x) || !Number.isFinite(c.entry?.y) ||
           E.dist(c.entry, E.construction.exit(b, E.C[u.kind].r)) > .001 ||
           (b.kind === "bunker" ? c.garrison !== true || !Number.isInteger(c.slot) || c.slot < 0 || c.slot >= capacity : c.garrison !== undefined || c.slot !== undefined) ||
@@ -183,7 +279,8 @@
       }
       return true;
     }
-    return { enabled, capacity, rate, facility, patient, occupants, assignResource, admit,
+    return { enabled, capacity, rate, facility, patient, occupants, assignResource, admit, fieldCare, fieldTick,
+      plate, turnShield, facesBolt, plateContact,
       port, origin, departure, leave, evacuate, tick, onDeath, validate };
   }
   const api = { create };

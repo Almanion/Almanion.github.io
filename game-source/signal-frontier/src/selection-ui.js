@@ -1,14 +1,18 @@
 /* Bounded, paginated roster. No canvas or per-frame portrait rendering. */
 (function (root) {
   "use strict";
-  const names = { condenser: "Конденсатор", carrier: "Носитель архива", logistics: "Узел снабжения", hero: "Разведчик", rifle: "Боец", scout: "Дозорный", artillery: "Артиллерия", drone: "Зонд",
+  const names = { condenser: "Конденсатор", carrier: "Носитель архива", logistics: "Узел снабжения", hero: "Разведчик", rifle: "Боец", medic: "Медик", shield: "Щитоносец", grenadier: "Гранатомётчик", scout: "Дозорный", armored: "Бронемашина", artillery: "Артиллерия", drone: "Зонд",
     base: "База", outpost: "Экстрактор", barracks: "Казармы", foundry: "Тяжёлый цех", arsenal: "Арсенал", bunker: "Бункер" };
   const shapes = {
+    shield: '<path d="m9 25 18-6 15 6v18l-7 10-8 5-10-6-8-10Z"/><path d="m27 24 1 27m-13-21 9-3m7 0 6 3M26 16l3-7h13l5 6v11l-5 3m5 3 7 3v12l-8 1"/><path class="visor" d="M32 15h12v4H32Z"/>',
+    grenadier: '<path d="m14 25 3-12 7-4 12 2 5 7-2 11-9 4-11-2Zm-3 4-4 4v15l9 6 12-3m11-18 9 3 8-1v12l-21 4-11-4-5-8 6-3 7 6 15-3"/><path d="m35 33 15-3 6 5m-9 1 1 11M11 34l8 2m-8 5 7 2"/><path class="visor" d="m23 17 13 1-1 5-13-1Z"/>',
+    medic: '<path d="M9 46V15l6-5h8v21m1-11V12l6-5h11l6 6v13l-6 6H30l-6-6ZM25 33l-7 6-4 16h33l-2-17-5-5"/><path class="visor" d="M27 17h17v5H27Z"/><path d="M32 37v11m-5-6h10m6-7 7 4 4-8m-3-4 4 3 5-3M14 18v11"/>',
     carrier: '<path d="M8 22h48v26H8ZM15 16h34v28H15ZM9 49h46M12 55h12m16 0h12M23 25h18v10H23Z"/>',
     hero: '<path d="M22 27V15a10 10 0 0 1 20 0v12l-6 5h-8ZM24 8l16 2M21 30l-9 6-5 19h49l-5-19-9-6M21 34l11 8 11-8M24 43v10m16-10v10M11 35V19h8"/><path class="visor" d="M24 19h16v5H24Z"/><path d="m17 51 29-11 3 6-29 11Zm29-11 10-4 3 5-10 5M11 23v7"/>',
     logistics: "<path d=\"M7 55V24h19v31Zm31 0V24h19v31ZM7 35h19m12 0h19M13 44h7m24 0h7M32 13v30M22 13h20M29 7h6M32 7V3\"/><path class=\"visor\" d=\"M12 49h9v4h-9Zm31 0h9v4h-9ZM27 10h10v6H27Z\"/>",
     rifle: '<path d="M21 16 25 6h14l5 10v12l-7 5H28l-7-5ZM22 16h21M25 32l-11 5-6 18h48l-6-18-11-5M24 36l8 7 8-7M22 45v9m20-9v9M12 34V20h7"/><path class="visor" d="M24 20h17v5H24Z"/><path d="m15 51 31-12 3 6-31 12Zm31-12 10-4 3 5-10 5M12 25v6"/>',
     scout: '<path d="M21 7h22a3 3 0 0 1 3 3v6H18v-6a3 3 0 0 1 3-3ZM27 16v17h9V16M14 34l14-5 21 8v10l-21 6-14-9ZM27 34v10M14 38l-6-4-3 4 8 7m35-7 8-4 3 4-10 7M18 49l-7 8H5v-6l10-6m28 4 9 8h7v-6l-10-6"/><path class="visor" d="M42 10h4v5h-4ZM36 39h9v3h-9Z"/>',
+    armored: '<path d="M5 36l4-10h22l6-5 9 3 12 10-2 8h-5m-31 0h4m12 0h4M16 26v-7l5-4h10l5 5-3 6m3-6 17-2 1 4-16 2"/><path class="visor" d="m37 27 7 1 6 5-14-1Z"/><circle cx="13" cy="42" r="6"/><circle cx="30" cy="42" r="6"/><circle cx="47" cy="42" r="6"/>',
     artillery: '<rect x="5" y="43" width="52" height="14" rx="7"/><path d="M10 43l6-7h30l7 7M18 36V26a5 5 0 0 1 5-5h13a5 5 0 0 1 5 5v10ZM41 28h14v5H41M55 25h5v11h-5M23 21v-5h10v5"/><path class="visor" d="M20 27h4v7h-4Z"/><circle cx="13" cy="50" r="3"/><circle cx="25" cy="50" r="3"/><circle cx="37" cy="50" r="3"/><circle cx="49" cy="50" r="3"/>',
     drone: '<rect x="12" y="18" width="28" height="28" rx="8"/><rect x="19" y="24" width="14" height="16" rx="2"/><path d="M26 24v16m-7-8h14M15 19l-6-8H4v8l8 8m23-7 3-9h8v8l-8 9M15 45l-6 8H4v-8l8-7m23 7 3 8h8v-8l-8-7M40 26l7-4 6 3m-1-4 7 3v5l-6 1m-13 8 7 4 6-3m-1 4 7-3v-5l-6-1"/><path class="visor" d="M36 29h3v6h-3Z"/>',
     base: '<path d="m32 7 13 9v12l12 7v19H7V35l12-7V16Zm-13 9 13 8 13-8M19 28v14h26V28M7 35l12 7m26 0 12-7"/><path class="visor" d="M27 29h10v13H27Z"/>',
@@ -20,8 +24,43 @@
     arsenal: '<path d="M8 55V23l24-13 24 13v32ZM15 27l17-9 17 9M8 55h48"/><path class="visor" d="m32 26-10 15h8l-2 10 15-17h-9l2-8Z"/>',
   };
   const icon = (kind) => `<svg viewBox="0 0 64 64" aria-hidden="true">${shapes[kind] || (kind === "hero" ? shapes.rifle : shapes.base)}</svg>`;
-  const productionTypes = { base: ["drone"], outpost: ["drone"], barracks: ["rifle", "scout"], foundry: ["artillery"] },
-    roles = { rifle: "Линейная пехота", scout: "Разведка · без оружия", artillery: "Дальнобойное орудие", drone: "Добыча · стройка · ремонт" },
+  const cardName = kind => ({ armored: "Броне<wbr>машина", shield: "Щито<wbr>носец", grenadier: "Грана<wbr>то<wbr>мётчик", scout: "Дозор<wbr>ный" })[kind] || names[kind];
+  function buildingRoles(items) {
+    return {
+      base: "Принимает сплав и выпускает зондов",
+      barracks: items.medic ? "Выпускают пехоту, дозорных и медиков" : "Выпускают бойцов и дозорных",
+      outpost: "Принимает сплав у свободного месторождения",
+      condenser: "Добывает тёмную материю в кратере",
+      logistics: "Добавляет 12 снабжения армии и 4 места для зондов",
+      bunker: "Укрывает до четырёх бойцов и увеличивает их дальность и обзор на 25%",
+      foundry: items.armored ? "Выпускает бронемашины и артиллерию" : "Выпускает артиллерию",
+      arsenal: "Улучшает войска и открывает модуль проникновения",
+    };
+  }
+  function profileFacts(s, kind, unit) {
+    const E = root.SignalEngine, def = E.C[kind];
+    if (!def) return [];
+    const u = unit || { kind, team: 0 }, stats = E.stats(s, u) || def;
+    const cells = (value) => (value / 40).toLocaleString("ru-RU", { maximumFractionDigits: 1 });
+    const facts = unit ? [] : [["Прочность", def.hp]];
+    const size = unit ? unit.construction && E.construction.shape(unit) : E.construction.shapes[kind];
+    if (size) facts.push(["Площадка", size.join(" × ")]);
+    if (stats.damage) facts.push(["Базовый урон", stats.damage], ["Дальность", cells(stats.range) + " кл."]);
+    if (kind === "medic") facts.push(["Лечение", "+" + E.support.fieldCare.amount], ["Дальность", cells(E.support.fieldCare.range) + " кл."]);
+    if (stats.speed) facts.push(["Скорость", cells(stats.speed) + " кл./с"]);
+    const sight = E.sightRange(s, u);
+    if (sight) facts.push(["Обзор", cells(sight) + " кл."]);
+    if (kind === "condenser") facts.push(["Места зондов", 2]);
+    if (kind === "bunker") facts.push(["Гарнизон", 4]);
+    return facts;
+  }
+  function factList(facts) {
+    return '<dl class="profile-facts">' + facts.map(([label, value]) =>
+      '<div><dt>' + label + '</dt><dd>' + value + '</dd></div>').join("") + '</dl>';
+  }
+  const productionTypes = { base: ["drone"], outpost: ["drone"], barracks: ["rifle", "scout", "medic", "shield", "grenadier"], foundry: ["armored", "artillery"] },
+    barracksRoles = { rifle: "Пехота", scout: "Разведка", medic: "Лечение", shield: "Защита", grenadier: "Взрыв" },
+    roles = { rifle: "Линейная пехота", medic: "Лечит пехоту и героя", shield: "Защита спереди", grenadier: "Огонь по площади", scout: "Разведка · без оружия", armored: "Защита фланга", artillery: "Дальнобойное орудие", drone: "Добыча · стройка · ремонт" },
     alloyIcon = '<svg class="production-alloy" viewBox="0 0 20 20" aria-hidden="true"><path d="m10 2 7 8-7 8-7-8Zm-7 8h14M10 2v16"/></svg>',
     escape = (text) => String(text).replaceAll("&", "&amp;").replaceAll('"', "&quot;").replaceAll("<", "&lt;");
   // Patch only changed nodes/attributes, retaining focused buttons while timers tick.
@@ -118,7 +157,7 @@
       const el = this.options.production;
       if (!el) return;
       const E = root.SignalEngine, items = s.campaign ? E.development.items(s) : {},
-        actions = (productionTypes[detail?.kind] || []).filter((a) => items[a]),
+        actions = SelectionPanel.recruits(detail?.kind, items),
         active = !!this.options.combat?.() && !!detail && !!s.campaign && (actions.length > 0 || buildings.length > 1);
       el.hidden = !active;
       document.body.classList.toggle("has-production", active);
@@ -126,16 +165,17 @@
       if (!active) { this.feedback = null; return; }
       const u = detail;
       if (this.feedback?.id !== u.id) this.feedback = null;
+      const slots = u.jobs?.length || 0, full = slots === 3 && (actions.length > 2 || actions.includes("armored"));
       const cards = actions.map((a) => {
         const item = items[a], offer = E.supplyStatus(s, a, u.id),
           allowed = !u.build && offer.allowed,
           reason = u.build ? "Здание строится" : this.reason(offer.reason),
           label = `${names[a]} · ${E.development.matter.price(item)} · ${item.time} с · ${item.pop ? item.pop + " снабжения · " : ""}${roles[a]}${allowed ? "" : " · " + reason}`;
-        return `<button class="production-card" data-key="train${u.id}-${a}" data-train="${a}" data-site="${u.id}" aria-disabled="${!allowed}" aria-label="${escape(label)}" title="${escape(label)}">${icon(a)}<strong>${names[a]}</strong><span class="production-cost">${alloyIcon}${item.cost}${item.matter ? `<em class="matter-cost"> ◇ ${item.matter}</em>` : ""}<small>${item.time} с</small></span><span class="production-lock">${allowed ? roles[a] : escape(reason)}</span></button>`;
+        return `<button class="production-card" data-key="train${u.id}-${a}" data-train="${a}" data-site="${u.id}" aria-disabled="${!allowed}" aria-label="${escape(label)}" title="${escape(label)}">${icon(a)}<strong>${cardName(a)}</strong><span class="production-cost">${alloyIcon}${item.cost}${item.matter ? `<em class="matter-cost"> ◇ ${item.matter}</em>` : ""}<small>${item.time} с</small></span><span class="production-lock"${full && offer.reason === "queue" ? " hidden" : ""}>${allowed ? ((actions.length > 2 && barracksRoles[a]) || roles[a]) : escape(reason)}</span></button>`;
       }).join("");
       const message = this.feedback && performance.now() < this.feedback.until ? this.feedback.message : "";
       const pager = buildings.length > 1 ? `<div class="production-pager"><button data-production-page="-1" aria-label="Предыдущее производство">‹</button><span>${buildings.indexOf(u) + 1}/${buildings.length}</span><button data-production-page="1" aria-label="Следующее производство">›</button></div>` : "";
-      patch(el, `<div class="production-heading"><span title="${names[u.kind]} №${u.id}">${names[u.kind]}</span>${pager}<small title="Занято мест в очереди">${actions.length ? (u.jobs || []).length + "/3" : ""}</small></div><div class="production-grid">${cards || '<span class="production-empty">Это здание не выпускает войска</span>'}</div>${actions.length ? queue(s, u, true) : ""}<p class="production-feedback" role="status" aria-live="polite">${escape(message)}</p>`);
+      patch(el, `<div class="production-heading"><span title="${names[u.kind]} №${u.id}">${names[u.kind]}</span>${pager}<small title="Занято мест в очереди">${actions.length ? (full ? "Очередь заполнена · " : "") + slots + "/3" : ""}</small></div><div class="production-grid${actions.length > 2 ? " multi" : ""}">${cards || '<span class="production-empty">Это здание не выпускает войска</span>'}</div>${actions.length ? queue(s, u, true) : ""}<p class="production-feedback" role="status" aria-live="polite">${escape(message)}</p>`);
     }
     render() {
       const E = root.SignalEngine, s = this.options.state(), members = this.options.members(),
@@ -169,11 +209,16 @@
           jobs = u.jobs || [], max = E.C[u.kind].hp, bunker = u.kind === "bunker",
           facility = E.support.enabled(s) && E.support.facility(u), care = facility && (bunker || this.careView === u.id),
           patients = facility ? E.support.occupants(s, u.id) : [];
-        let head = '<div class="roster-detail-head">' + (building ? '<button class="roster-profile" data-inspect="' + u.id + '" aria-label="Развитие: ' + names[u.kind] + '" title="Открыть полное меню здания · тактическая пауза">' : '') + icon(u.kind) + '<div class="roster-identity"><strong>' + names[u.kind] + '</strong><span>' + Math.ceil(u.hp) + ' / ' + max + '</span>' + hp(u) + '</div>' + (building ? '</button>' : '');
+        let head = '<div class="roster-detail-head">' + (building ? '<button class="roster-profile" data-inspect="' + u.id + '" aria-label="Развитие: ' + names[u.kind] + '" title="Открыть полное меню здания · тактическая пауза">' : '') + icon(u.kind) + '<div class="roster-identity"><strong>' + cardName(u.kind) + '</strong><span>' + Math.ceil(u.hp) + ' / ' + max + '</span>' + hp(u) + '</div>' + (building ? '</button>' : '');
         if (buildings.length > 1) head += '<div class="producer-pager"><button data-producer-page="-1" aria-label="Предыдущее выбранное здание">‹</button><small>' + (buildings.indexOf(u) + 1) + '/' + buildings.length + '</small><button data-producer-page="1" aria-label="Следующее выбранное здание">›</button></div>';
         head += '</div>';
         let body = u.kind==='carrier'?'<button class="roster-inspect" data-archive-move="'+u.id+'">Двигаться к доку</button><p>ПКМ по носителю — следовать отрядом. Зонды ремонтируют корпус.</p>':'';
-        if (building) {
+        if (building && this.options.shop?.() && s.campaign) {
+          const facts = profileFacts(s, u.kind, u);
+          if (u.build) facts.unshift(["Построено", Math.floor(100 * (1 - u.build / items[u.kind].time)) + "%"]);
+          else if (["base", "barracks", "outpost", "foundry", "arsenal"].includes(u.kind)) facts.unshift(["Очередь", jobs.length + " / 3"]);
+          body = '<p class="roster-task">' + buildingRoles(items)[u.kind] + '</p>' + factList(facts);
+        } else if (building) {
           body = '<div class="roster-section-heading"><strong>' + (care ? bunker ? 'Гарнизон' : 'Лечение' : u.build ? 'Строительство' : u.kind === 'logistics' ? 'Снабжение' : u.kind === 'condenser' ? 'Добыча' : 'Очередь') + '</strong>';
           if (facility && !bunker) body += '<button class="care-toggle" data-care-view="' + u.id + '" aria-pressed="' + care + '">' + (care ? '‹ Очередь' : 'Лечение ' + patients.length + '/4') + '</button>';
           else body += ' <span>' + (care ? patients.length + '/4' : u.build || ['logistics', 'condenser'].includes(u.kind) ? '' : jobs.length + '/3') + '</span>';
@@ -193,8 +238,25 @@
           else body += queue(s, u) + '<small class="roster-note">' + (jobs.length ? E.development.matter.enabled(s) ? 'Отмена до начала — 100% · после — 75%' : 'Нажмите на заказ для отмены · возврат 75%' : 'Новые заказы появятся здесь') + '</small>';
         } else {
           const stat = E.stats(s, u), task = u.care ? u.care.inside ? u.care.exit ? 'Ожидает свободного выхода' : u.care.garrison ? 'В гарнизоне · дальность и обзор +25%' : 'Лечится · выход автоматически' : u.care.garrison ? 'Идёт в бункер' : 'Идёт на лечение' : u.mineId && !u.workerTask ? 'Добывает ресурс' : u.workerTask?.kind === 'repair' ? 'Ремонтирует здание' : u.buildingId ? 'Строит здание' : u.order?.followId ? 'Следует за ведущим' : u.order ? 'Выполняет приказ' : u.kind === 'hero' ? 'Личное управление' : 'Готов к приказу';
-          body += '<p class="roster-task">' + task + '</p>';
+          const duty = u.kind === 'medic' && !u.care && (u.flash > 0 ? 'Оказывает помощь' :
+            !u.order ? (u.path.length ? 'Идёт к раненому' : 'Ищет раненых рядом') : null);
+          const guard = u.guard && !u.care && (u.guard.lift === 1 ? "Держит щит" :
+            u.guard.watch ? "Поднимает щит" : null);
+          const launcher = u.kind === "grenadier" && !u.care && (u.grenadeAim ? "Целится" : u.cool > 0 && !u.path.length ? "Перезаряжает" : null);
+          const patrol = u.order?.post && (u.target ? "Перехватывает налётчика" : "Охраняет экстрактор");
+          body += '<p class="roster-task">' + (guard || duty || launcher || patrol || task) + '</p>';
           if (u.care) body += '<button class="roster-inspect" data-care="exit" data-care-id="' + u.id + '">Выйти из ' + (u.care.garrison ? 'бункера' : 'экстрактора') + '</button>';
+          else if (u.guard) {
+            const plate = E.support.plate;
+            body += '<div class="roster-stats"><span>Спереди<b>' + Math.round(plate.reduction * 100) + '%</b></span><span>Сектор<b>' + Math.round(plate.halfAngle * 360 / Math.PI) + '°</b></span><span>Огонь<b>' + stat.range / 40 + ' кл.</b></span></div><small class="roster-note role-note">Щит задерживает пули. Фланги открыты. Ракеты и взрывы наносят полный урон.</small>';
+          } else if (u.kind === "armored") {
+            body += '<div class="roster-stats"><span>Скорость<b>' + (stat.speed / 40).toLocaleString("ru-RU", {maximumFractionDigits: 1}) + ' кл./с</b></span><span>Огонь<b>' + stat.range / 40 + ' кл.</b></span><span>От пуль<b>−' + E.development.lightArmor * 100 + '%</b></span></div><small class="roster-note role-note">Приказ на экстрактор — охрана и ремонт. Броня гасит пули дозорных и стражей.</small>';
+          } else if (u.kind === "grenadier") {
+            body += '<div class="roster-stats"><span>Урон<b>' + Math.round(stat.damage * (s.campaign.weapons ? 1.2 : 1)) + '</b></span><span>Радиус<b>' + E.GRENADE.radius / 40 + ' кл.</b></span><span>Огонь<b>' + stat.range / 40 + ' кл.</b></span></div><small class="roster-note role-note">Бьёт по отмеченному месту. Быстрый противник может выйти из круга.</small>';
+          } else if (u.kind === "medic") {
+            const care = E.support.fieldCare;
+            body += '<div class="roster-stats"><span>Лечение<b>+' + care.amount + '</b></span><span>Интервал<b>' + care.interval.toLocaleString('ru-RU') + ' с</b></span><span>Дальность<b>' + care.range / 40 + ' кл.</b></span></div><small class="roster-note">Следует за союзником. Лечит героя и вооружённую пехоту.</small>';
+          }
           else body += '<div class="roster-stats"><span>Урон<b>' + (stat.damage || '—') + '</b></span><span>Дальность<b>' + (stat.range ? (stat.range / 40).toLocaleString('ru-RU', { maximumFractionDigits: 1 }) : '—') + '</b></span><span>Обзор<b>' + (E.sightRange(s, u) / 40).toLocaleString('ru-RU', { maximumFractionDigits: 1 }) + '</b></span></div>';
         }
         info = '<aside class="roster-detail" data-key="detail' + u.id + '">' + head + '<div class="roster-detail-body">' + body + '</div></aside>';
@@ -204,5 +266,10 @@
     }
   }
   SelectionPanel.icon = icon;
+  SelectionPanel.patch = patch;
+  SelectionPanel.buildingRoles = buildingRoles;
+  SelectionPanel.profileFacts = profileFacts;
+  SelectionPanel.factList = factList;
+  SelectionPanel.recruits = (kind, items) => (productionTypes[kind] || []).filter((key) => items[key]);
   root.SignalSelectionPanel = SelectionPanel;
 })(window);

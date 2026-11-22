@@ -7,6 +7,10 @@
     names = {
       hero: "Герой",
       rifle: "Стрелок",
+      medic: "Полевой медик",
+      shield: "Щитоносец",
+      grenadier: "Гранатомётчик",
+      armored: "Бронемашина",
       scout: "Дозорный игрока",
       drone: "Рабочий дрон",
       artillery: "Артиллерия",
@@ -46,7 +50,8 @@
         height: id === "citadel" ? 80 : id === "base" ? 70 : 50,
       };
     }),
-    all = [...current, ...studies.specs],
+    all = [...current, ...studies.specs.map((spec) => ["medic", "shield", "grenadier", "armored"].includes(spec.id)
+      ? { ...spec, id: "study-" + spec.id, study: spec.id, name: spec.name + " · эскиз" } : spec)],
     $ = (id) => document.getElementById(id),
     canvas = $("model-canvas"),
     group = $("group"),
@@ -64,6 +69,10 @@
   const ally = new Set([
     "hero",
     "rifle",
+    "medic",
+    "shield",
+    "grenadier",
+    "armored",
     "scout",
     "drone",
     "artillery",
@@ -82,7 +91,7 @@
         options.progress ??
         (running ? (t % 3) / 3 : Number(progress.value) / 100);
     if (spec.group !== "current")
-      return studies.draw(c, spec.id, {
+      return studies.draw(c, spec.study || spec.id, {
         mode: m,
         angle: a,
         time: t,
@@ -107,10 +116,16 @@
         x: 0,
         y: 0,
         team: ally.has(id) ? 0 : 1,
+        ...(id === "armored" ? { drive: { heading: a, speed: moving ? def.speed : 0 } } : {}),
         hp: m === "wreck" ? 0 : m === "damaged" ? def.hp * 0.3 : def.hp,
         angle: a,
         wind: action ? total * (1 - q) : 0,
-        flash: 0,
+        flash: id === "armored" && action ? Math.max(0, .1 - (t % def.rate)) : id === "medic" && action ? E.support.fieldCare.pulse : 0,
+        ...(id === "grenadier" && action ? q < .35
+          ? { grenadeAim: { x: 300 * Math.cos(a), y: 300 * Math.sin(a), remaining: E.GRENADE.windup * (1 - q / .35) } }
+          : { cool: def.rate * (1 - q) / .65 } : {}),
+        ...(id === "shield" ? { guard: { angle: a, lift: action ? Math.min(1, q * 3) : 0,
+          pulse: action && q > .65 && q < .75 ? E.support.plate.pulse : 0 } } : {}),
         hit: 0,
         build: build ? E.development.items(state)[id].time * (1 - q) : 0,
         jobs:
@@ -129,7 +144,7 @@
         path: [],
         combat: {
           mode: action ? "aim" : "idle",
-          angle: a,
+          angle: id === "armored" && action ? a + Math.sin(q * Math.PI * 2) * .85 : a,
           time: total * (1 - q),
           total,
         },

@@ -44,10 +44,9 @@ for (const browserType of [chromium, webkit]) for (const [width, height] of [[14
       await expect(page.locator(".roster-section-heading")).toContainText("Снабжение");
       await expect(page.locator(".roster-task")).toContainText("+12 снабжения армии");
       await page.locator("#tactical").click();
-      if (await page.locator("[data-deck-back]").count()) await page.locator("[data-deck-back]").click();
       await page.locator("#develop-tab-build").click();
       const node = page.locator("#develop-logistics");
-      if (!(await node.isVisible())) await page.locator('[data-deck-page="1"]').click();
+      await node.scrollIntoViewIfNeeded();
       await expect(node).toBeVisible(); await expect(node).toContainText("90");
       await expect(node.locator("svg")).toBeVisible();
       const r = await node.boundingBox(); expect(r.x).toBeGreaterThanOrEqual(0); expect(r.x + r.width).toBeLessThanOrEqual(width);

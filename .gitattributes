@@ -18,5 +18,7 @@ project-docs/almanion-defense/Almanion.html text eol=lf
 
 /game-source/signal-frontier/src/assets/terrain/*.webp -text
 /games/signal-frontier/assets/terrain/*.webp -text
+/game-source/signal-frontier/src/assets/menu/*.webp -text
+/games/signal-frontier/assets/menu/*.webp -text
 /game-source/signal-frontier/**/*.png -text
 /game-source/signal-frontier/**/*.zip -text

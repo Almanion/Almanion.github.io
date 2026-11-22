@@ -2,22 +2,29 @@ import {BabylonView} from '../../../games/signal-frontier/babylon-view.js';
 const E=window.SignalEngine,$=id=>document.getElementById(id),catalog=await fetch('BABYLON_ART_REFERENCES.json').then(r=>r.json()),
   view=new BabylonView($('field')),origin={x:180,y:750};
 let scene,unit,kind,reference,time=0,previous=0,running=true,frame=0,pose=null;
-for(const item of catalog.assets){const option=document.createElement('option');option.value=item.kind;option.textContent=item.title;$('model').append(option);}
+const titles={medic:'Медик',shield:'Щитоносец',grenadier:'Гранатомётчик',armored:'Бронемашина',warden:'Страж',flamer:'Огнемётчик',
+  bomber:'Подрывник',tank:'Танк',mortar:'Миномёт',condenser:'Конденсатор',carrier:'Носитель архива','archive-gate':'Архивные ворота','power-node':'Узел питания','archive-depot':'Хранилище архива'};
+const roster=[...catalog.assets,...Object.keys(E.C).filter(k=>!catalog.assets.some(a=>(a.engineKind||a.kind)===k)).map(kind=>({kind,title:titles[kind]||kind}))];
+const hostile=new Set(['runner','sentinel','warden','rocket','flamer','bomber','tank','mortar','jammer','turret','bastion','citadel','archive-gate','archive-depot','power-node']);
+for(const item of roster){const option=document.createElement('option');option.value=item.kind;option.textContent=item.title;$('model').append(option);}
 function layout(){
   const aside=document.querySelector('aside'),stage=$('stage');
   if(innerWidth<=700&&innerHeight>innerWidth){
     const top=document.querySelector('header').getBoundingClientRect().bottom+10,bottom=document.querySelector('footer').getBoundingClientRect().top-12,
       height=Math.min(170,Math.max(104,(bottom-top)*.28));
     aside.style.top=top+'px';aside.style.height=height+'px';$('reference').style.height=(height-16)+'px';
-    stage.style.top=(top+height+12)+'px';stage.style.bottom=(innerHeight-bottom)+'px';
+    stage.style.top=(aside.hidden?top:top+height+12)+'px';stage.style.bottom=(innerHeight-bottom)+'px';
   }else {aside.removeAttribute('style');stage.removeAttribute('style');$('reference').removeAttribute('style');}
 }
 function choose(value){
-  reference=catalog.assets.find(a=>a.kind===value)||catalog.assets[0];kind=reference.engineKind||reference.kind;
-  $('model').value=reference.kind;$('reference').src=reference.preview;$('reference').alt=reference.title+' — выбранный рисунок';
-  $('reference-note').textContent=reference.note||reference.promptId+' · исходный рисунок из вашей библиотеки.';
+  reference=roster.find(a=>a.kind===value)||roster[0];kind=reference.engineKind||reference.kind;
+  $('model').value=reference.kind;document.querySelector('aside').hidden=!reference.preview;
+  if(reference.preview){
+    $('reference').src=reference.preview;$('reference').alt=reference.title+' — выбранный рисунок';
+    $('reference-note').textContent=reference.note||reference.promptId+' · исходный рисунок из вашей библиотеки.';
+  }else{$('reference').removeAttribute('src');$('reference').alt='';$('reference-note').textContent='';}
   $('angle').value=E.C[kind].speed?'35':'0';
-  scene=E.make('classic');unit={...E.hero(scene),id:1,kind,team:['rocket','runner'].includes(kind)?1:0,hp:E.C[kind].hp,
+  scene=E.make('classic');unit={...E.hero(scene),id:1,kind,team:hostile.has(kind)?1:0,hp:E.C[kind].hp,
     ...origin,angle:0,jobs:[],build:0,cargo:0,path:[],work:'idle',combat:{mode:'idle',angle:0,time:0,total:.65}};
   if(E.construction.shapes[kind])unit.construction={turn:0,footprint:[...E.construction.shapes[kind]],builderId:null};
   if(reference.sector)unit.sector=reference.sector;

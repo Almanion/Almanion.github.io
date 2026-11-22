@@ -12,28 +12,28 @@
       content="Предел сигнала — тактическая операция на заброшенном кольце."
     />
     <title>Предел сигнала · Almanion</title>
-    <link rel="stylesheet" href="style.css?v=0.35.0" />
-    <script src="terrain.js?v=0.35.0" defer></script>
-    <script src="districts.js?v=0.35.0" defer></script>
-    <script src="east.js?v=0.35.0" defer></script>
-    <script src="matter.js?v=0.35.0" defer></script>
-    <script src="campaign.js?v=0.35.0" defer></script>
-    <script src="recon.js?v=0.35.0" defer></script>
-    <script src="construction.js?v=0.35.0" defer></script>
-    <script src="support.js?v=0.35.0" defer></script>
-    <script src="engine.js?v=0.35.0" defer></script>
-    <script src="unit-models.js?v=0.35.0" defer></script>
-    <script src="minimap.js?v=0.35.0" defer></script>
-    <script src="terrain-art.js?v=0.35.0" defer></script>
-    <script src="view.js?v=0.35.0" defer></script>
-    <script src="renderer-loader.js?v=0.35.0" defer></script>
-    <script src="audio.js?v=0.35.0" defer></script>
-    <script src="development-ui.js?v=0.35.0" defer></script>
-    <script src="cloud-core.js?v=0.35.0" defer></script>
-    <script src="persistence.js?v=0.35.0" defer></script>
-    <script src="account-ui.js?v=0.35.0" defer></script>
-    <script src="selection-ui.js?v=0.35.0" defer></script>
-    <script src="app.js?v=0.35.0" defer></script>
+    <link rel="stylesheet" href="style.css?v=0.39.0" />
+    <script src="terrain.js?v=0.39.0" defer></script>
+    <script src="districts.js?v=0.39.0" defer></script>
+    <script src="east.js?v=0.39.0" defer></script>
+    <script src="matter.js?v=0.39.0" defer></script>
+    <script src="campaign.js?v=0.39.0" defer></script>
+    <script src="recon.js?v=0.39.0" defer></script>
+    <script src="construction.js?v=0.39.0" defer></script>
+    <script src="support.js?v=0.39.0" defer></script>
+    <script src="engine.js?v=0.39.0" defer></script>
+    <script src="unit-models.js?v=0.39.0" defer></script>
+    <script src="minimap.js?v=0.39.0" defer></script>
+    <script src="terrain-art.js?v=0.39.0" defer></script>
+    <script src="view.js?v=0.39.0" defer></script>
+    <script src="renderer-loader.js?v=0.39.0" defer></script>
+    <script src="audio.js?v=0.39.0" defer></script>
+    <script src="development-ui.js?v=0.39.0" defer></script>
+    <script src="cloud-core.js?v=0.39.0" defer></script>
+    <script src="persistence.js?v=0.39.0" defer></script>
+    <script src="account-ui.js?v=0.39.0" defer></script>
+    <script src="selection-ui.js?v=0.39.0" defer></script>
+    <script src="app.js?v=0.39.0" defer></script>
   </head>
   <body data-mode="menu">
     <canvas
@@ -42,35 +42,53 @@
     ></canvas>
     <div id="selection-box" hidden aria-hidden="true"></div>
     <div class="vignette" aria-hidden="true"></div>
-    <main id="home" class="home">
-      <a class="back" href="/games/">← Игры Almanion</a>
+    <main id="home" class="home" aria-labelledby="home-title">
+      <div class="home-art" aria-hidden="true">
+        <div class="home-scene">
+          <picture>
+            <source media="(max-width: 640px) and (orientation: portrait)" srcset="assets/menu/orbit-compact.webp" />
+            <img src="assets/menu/orbit.webp" alt="" width="1774" height="887" fetchpriority="high" />
+          </picture>
+          <span class="station-light station-light--relay"></span>
+          <span class="station-light station-light--dock"></span>
+          <span class="station-light station-light--bridge"></span>
+          <span class="home-flight home-flight--shuttle"><span class="home-ship"></span></span>
+          <span class="home-flight home-flight--freighter"><span class="home-ship"></span></span>
+        </div>
+      </div>
+      <header class="home-header">
+        <a class="home-back" href="/games/"><span aria-hidden="true">←</span> Игры Almanion</a>
+        <span class="edition" title="Версия игры">0.39.0</span>
+      </header>
       <div class="home-content">
-        <p class="eyebrow">Операция 01 · Пепельный узел</p>
-        <h1>Предел<br />сигнала<span>.</span></h1>
-        <p class="intro">
-          Подавить цитадель.<br />Доставить архив через восточную палубу к орбитальному доку.
-        </p>
+        <h1 id="home-title">Предел <span>сигнала</span></h1>
         <div class="home-actions">
-          <button id="start-east" class="primary">Доставка архива · расширенная миссия <span aria-hidden="true">↗</span></button>
-          <button id="start" class="text-button">
-            Начать операцию <span aria-hidden="true">↗</span></button
-          ><button id="continue" class="primary" hidden>
-            Продолжить <span aria-hidden="true">↗</span></button
-          ><button id="new-game" class="text-button" hidden>
-            Новая операция
+          <button id="continue" class="mission-action primary" hidden>
+            <span class="mission-copy"><strong>Продолжить</strong><small id="continue-detail"></small></span>
+            <span class="mission-arrow" aria-hidden="true">→</span>
           </button>
+          <h2 id="new-operation-label" class="mission-label">Операции</h2>
+          <div class="mission-list" role="group" aria-labelledby="new-operation-label">
+            <button id="start" class="mission-action">
+              <span class="mission-copy"><strong>Пепельный узел</strong><small>Подавить цитадель</small></span>
+              <span class="mission-arrow" aria-hidden="true">→</span>
+            </button>
+            <button id="new-game" class="mission-action" hidden>
+              <span class="mission-copy"><strong>Пепельный узел</strong><small>Подавить цитадель</small></span>
+              <span class="mission-arrow" aria-hidden="true">→</span>
+            </button>
+            <button id="start-east" class="mission-action">
+              <span class="mission-copy"><strong>Доставка архива</strong><small>Доставить носитель к доку</small></span>
+              <span class="mission-arrow" aria-hidden="true">→</span>
+            </button>
+          </div>
         </div>
-        <div class="home-links">
-          <button data-open="help">Управление</button
-          ><button data-open="settings">Настройки</button
-          ><button data-open="account">Аккаунт</button>
-        </div>
-        <nav class="renderer-links" aria-label="Версия игры">
-          <a href="?renderer=canvas" data-renderer="canvas">Canvas · классическая</a>
-          <a href="?renderer=babylon" data-renderer="babylon">Babylon · 3D</a>
+        <nav class="home-links" aria-label="Меню игры">
+          <button data-open="settings">Настройки</button>
+          <button data-open="help">Управление</button>
+          <button data-open="account">Аккаунт</button>
         </nav>
       </div>
-      <p class="edition">Первая операция <span>0.35.0</span></p>
     </main>
     <div id="hud" hidden>
       <header class="topbar">
@@ -195,9 +213,9 @@
         <nav id="control-groups" class="control-groups" aria-label="Группы войск и зданий · Ctrl + 1–0 — назначить, цифра — выбрать" hidden></nav>
         <header class="dock-header">
           <div class="dock-tabs" aria-label="Содержимое командной панели">
-            <button id="dock-selection" aria-pressed="false">Выделение <span id="dock-count">0</span></button>
+            <button id="dock-selection" aria-label="Выделение" title="Выделение" aria-pressed="false"><svg class="dock-tab-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5m6 0h5v5m0 6v5h-5m-6 0H4v-5"/><circle cx="12" cy="12" r="3"/></svg><span class="dock-tab-name">Выделение</span> <span id="dock-count">0</span></button>
             <button id="dock-production" aria-pressed="false" hidden>Выпуск</button>
-            <button id="dock-shop" aria-pressed="true" title="Магазин · тактическая пауза">Магазин</button>
+            <button id="dock-shop" aria-label="Магазин" aria-pressed="true" aria-keyshortcuts="B" title="Магазин · B"><svg class="dock-tab-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m3 8 2-4h14l2 4v3H3Zm2 3v9h14v-9m-10 9v-6h6v6"/></svg><span class="dock-tab-name">Магазин</span></button>
           </div>
           <span id="selection-count" role="status" aria-live="polite"></span>
         <div class="actions">
@@ -223,12 +241,13 @@
         </header>
         <div class="dock-workspace">
           <div class="dock-main">
-            <section id="development-content" aria-label="Магазин">
-              <div id="development-panel"></div>
-              <p id="development-feedback" class="supply-feedback" role="status"></p>
-            </section>
+            <p id="development-feedback" class="supply-feedback" role="status"></p>
+            <section id="shop-inspector" aria-labelledby="shop-profile-name" tabindex="-1" hidden></section>
             <section id="selection-content" aria-label="Выделенные войска и здания" hidden></section>
           </div>
+          <section id="development-content" aria-label="Магазин">
+            <div id="development-panel"></div>
+          </section>
           <aside class="dock-orders" aria-label="Приказы выделению">
             <section id="combat-production" aria-label="Производство выбранного здания" hidden></section>
             <div class="dock-order-actions">
@@ -272,8 +291,14 @@
         <small id="placement-help"></small>
       </section>
     </div>
-    <dialog id="dialog">
+    <dialog id="dialog" aria-label="Меню игры">
       <div class="dialog-inner">
+        <nav id="menu-sections" role="tablist" aria-label="Меню игры" hidden>
+          <button id="menu-tab-pause" role="tab" aria-controls="pause-content" data-open="pause">Операция</button>
+          <button id="menu-tab-settings" role="tab" aria-controls="settings-content" data-open="settings">Настройки</button>
+          <button id="menu-tab-help" role="tab" aria-controls="help-content" data-open="help">Управление</button>
+          <button id="menu-tab-account" role="tab" aria-controls="account-content" data-open="account">Аккаунт</button>
+        </nav>
         <button
           class="close icon-button"
           id="close-dialog"
@@ -283,7 +308,7 @@
             <path d="m6 6 12 12M18 6 6 18" />
           </svg>
         </button>
-        <section id="account-content" hidden></section>
+        <section id="account-content" role="tabpanel" aria-labelledby="menu-tab-account" hidden></section>
         <section id="storage-content" hidden>
           <p class="eyebrow">Другая вкладка</p>
           <h2>Операция изменена</h2>
@@ -300,131 +325,60 @@
             Перед выбором обе копии сохраняются на устройстве.
           </p>
         </section>
-        <section id="pause-content" hidden>
-          <p class="eyebrow">Пепельный узел</p>
+        <section id="pause-content" role="tabpanel" aria-labelledby="menu-tab-pause" hidden>
+          <p class="eyebrow" id="pause-mission">Пепельный узел</p>
           <h2>Пауза</h2>
           <button id="resume" class="primary">Вернуться в бой</button>
           <div class="menu-list">
-            <button data-open="help">Управление <span>↗</span></button
-            ><button data-open="settings">Настройки <span>↗</span></button
-            ><button data-open="account">Аккаунт <span>↗</span></button
-            ><button id="restart">Начать заново <span>↻</span></button
-            ><button id="to-home">Главный экран <span>←</span></button>
+            <button id="to-home">На главный экран <span aria-hidden="true">←</span></button>
+            <button id="restart">Начать заново <span aria-hidden="true">↻</span></button>
           </div>
         </section>
-        <section id="help-content" hidden>
-          <p class="eyebrow">Управление</p>
-          <h2>Разведчик и отряд</h2>
-          <div class="route-help">
-            <p>
-              <strong>Осада.</strong> Снимите глушитель, запустите узел и
-              защитите его. Постройте опорный пункт и закажите артиллерию.
-            </p>
-            <p>
-              <strong>Обход.</strong> Купите модуль взлома и проведите отряд к
-              терминалу. Разведчик удерживает действие, отключая щит и орудие
-              цитадели, а бойцы атакуют. После отпускания защита вернётся через
-              7 секунд.
-            </p>
-          </div>
-          <p id="economy-help">
-            Сплав конечен: 120 при высадке и три склада по 40 на карте.
-            Собирайте его действием рядом со складом. Опорный пункт строится
-            рядом с разведчиком; он ремонтирует бойцов вне огня и принимает
-            подкрепления. Снабжение открывается в тактической паузе.
-          </p>
-          <div class="help-desktop">
-            <dl>
-              <dt><kbd>W A S D</kbd> / <kbd>↑ ↓ ← →</kbd></dt>
-              <dd>Движение · в паузе — перемещение камеры</dd>
-              <dt>Мышь · левая кнопка</dt>
-              <dd>Прицел и огонь · союзник — выбор · здание — очередь</dd>
-              <dt><kbd>Shift</kbd> / <kbd>R</kbd></dt>
-              <dd>Рывок / перезарядка</dd>
-              <dt><kbd>E</kbd>, удерживать</dt>
-              <dd>Взаимодействовать</dd>
-              <dt><kbd>Tab</kbd></dt>
-              <dd>Тактическая пауза / продолжить бой</dd>
-              <dt>В паузе: ЛКМ / ПКМ</dt>
-              <dd>
-                Выбор и рамка / приказ выбранным · Shift добавляет или убирает
-                бойца
-              </dd>
-              <dt>Во время боя: ПКМ</dt>
-              <dd>Рамка выбирает бойцов, короткое нажатие отдаёт приказ</dd>
-              <dt><kbd>Ctrl + 1–0</kbd> / <kbd>1–0</kbd></dt>
-              <dd>
-                Назначить выбранные войска и здания / выбрать группу.
-                Закладки внизу показывают номер и число живых участников.
-                Shift + цифра добавляет группу к выделению;
-                Ctrl + Shift + цифра дополняет сохранённую группу.
-                Ctrl + цифра при пустом выделении очищает её.
-                «Вся армия» выбирает бойцов, дозорных и артиллерию.
-                Нажатие на портрет оставляет один объект; Shift убирает его,
-                Ctrl выбирает все объекты этого типа внутри выделения.
-              </dd>
-              <dt>Двойное нажатие по бойцу или зданию</dt>
-              <dd>Выбрать все объекты этого типа на видимой части экрана. Shift добавляет их к выделению.</dd>
-              <dt>Зонды → ресурс</dt>
-              <dd>Выделите зондов и нажмите на месторождение: они присоединятся к ближайшему доступному экстрактору. У каждого узла четыре места с учётом заказанных зондов.</dd>
-              <dt>Войска → экстрактор</dt>
-              <dd>ПКМ, на телефоне — «Идти» и касание здания. Четыре места, лечение внутри — 8 прочности/с; стрелять нельзя. Полностью вылеченные бойцы выходят автоматически. Если выход занят, они ждут внутри до освобождения места. Во вкладке «Лечение» можно отправить разведчика или прервать лечение.</dd>
-              <dt>Shift + ЛКМ при стройке</dt>
-              <dd>
-                Поставить здание и продолжить размещать такие же. Esc или ПКМ
-                заканчивает размещение.
-              </dd>
-              <dt>ПКМ по своему бойцу или разведчику</dt>
-              <dd>
-                Выбранная группа следует за ним. ПКМ по земле заменяет
-                следование перемещением, по врагу — атакой.
-              </dd>
-              <dt>Камера в паузе</dt>
-              <dd>
-                WASD, края экрана или средняя кнопка · колесо меняет масштаб
-              </dd>
-              <dt>Esc</dt>
-              <dd>Отмена жеста или приказа, затем снятие выбора и меню</dd>
-            </dl>
-          </div>
-          <div class="help-touch">
-            <p>
-              Коснитесь левой половины поля для движения, правой — для огня.
-              Центр круга остаётся в точке касания до отпускания пальца.
-              Небольшое отклонение — точный шаг, полное — бег. Справа тяните для
-              прицеливания и стрельбы; короткое касание — выстрел по ближайшему
-              видимому врагу. Возврат в центр прекращает огонь. Круглые кнопки
-              «Рывок» и «Заряд» работают одновременно с движением и
-              прицеливанием, отдельным пальцем.
-            </p>
-            <p>
-              «Приказы» останавливают бой. Коснитесь бойца или обведите отряд
-              одним пальцем. Нажмите «Идти», затем укажите точку, врага или
-              своего бойца / разведчика для следования. Два пальца двигают и
-              масштабируют карту; удержание у края прокручивает её. «Отмена»
-              оставляет прежний приказ. Касание здания открывает очередь;
-              «Каталог» раскрывает покупки. «Сбор» направляет только будущие
-              подкрепления. Закрытие панели оставляет паузу: для продолжения
-              нажмите «В бой».
-            </p>
-          </div>
-          <p id="recon-help" class="help-note" hidden>
-            Чёрная область не разведана. Серая — память о последнем наблюдении.
-            Дозорный в казармах видит дальше; наблюдательные точки расширяют
-            обзор, пока рядом стоит отряд.
-          </p>
-          <p class="help-note">
-            Отряд стреляет сам. Линия предупреждает о выстреле, сектор — об
-            огне, круг — о взрыве. Укрытие срывает захват ракеты. Подрывника
-            можно уничтожить до конца запала; танк уязвим с фланга, осадная
-            машина — вблизи. Рывок помогает выйти из опасной зоны. Потеря
-            разведчика или посадочного модуля завершает операцию.
-          </p>
+        <section id="help-content" role="tabpanel" aria-labelledby="menu-tab-help" hidden>
+          <h2>Управление</h2>
+          <dl class="control-guide help-desktop">
+            <dt><kbd>W A S D</kbd> / <kbd>↑ ↓ ← →</kbd></dt><dd>Движение. В паузе — камера.</dd>
+            <dt>ЛКМ / ПКМ</dt><dd>В бою — огонь / приказ. В паузе — выделение / приказ.</dd>
+            <dt><kbd>Shift</kbd> / <kbd>R</kbd> / <kbd>E</kbd></dt><dd>Рывок / перезарядка / удержать для действия.</dd>
+            <dt><kbd>Tab</kbd> / <kbd>B</kbd></dt><dd>Тактическая пауза / магазин.</dd>
+          </dl>
+          <dl class="control-guide help-touch">
+            <dt>Левый джойстик</dt><dd>Малое отклонение — шаг, полное — бег.</dd>
+            <dt>Правый джойстик</dt><dd>Тяните для прицела и огня. Касание стреляет по ближайшему видимому врагу.</dd>
+            <dt>«Приказы» / «В бой»</dt><dd>Остановить время / продолжить операцию.</dd>
+          </dl>
+          <details class="guide-topic">
+            <summary>Отряды, камера и приказы</summary>
+            <div class="help-desktop">
+              <p>В паузе обведите отряд ЛКМ. В бою удерживайте ПКМ и растяните рамку. Короткий щелчок ПКМ отправляет выбранных в точку, на врага или вслед за союзником. Shift добавляет бойца к выделению или убирает его.</p>
+              <p>Двойной щелчок выбирает всех бойцов или здания этого типа на видимой части карты. На портретах щелчок оставляет одного, Shift убирает его, Ctrl оставляет весь тип из выделения.</p>
+              <p>Ctrl + цифра записывает группу, цифра выбирает её, Shift + цифра добавляет к выделению. Ctrl + Shift + цифра дополняет сохранённую группу. Для очистки запишите пустое выделение.</p>
+              <p>В паузе средняя кнопка и края экрана перемещают камеру, колесо меняет масштаб. Esc отменяет текущее действие, затем снимает выделение и открывает меню.</p>
+              <p>В магазине стрелки влево и вправо меняют раздел, вниз переводит к покупке. Enter выполняет действие, Tab переводит фокус дальше.</p>
+            </div>
+            <div class="help-touch">
+              <p>Коснитесь бойца или обведите группу в паузе. Нажмите «Идти» и коснитесь точки, врага или союзника. «Снять» отменяет подготовку приказа.</p>
+              <p>Двумя пальцами перемещайте и масштабируйте карту. Удерживайте палец у края для прокрутки. «Рывок» и «Заряд» можно нажимать свободным пальцем во время движения.</p>
+            </div>
+            <p>Касание или щелчок по зданию открывает его очередь. «Сбор» задаёт направление для будущих подкреплений. В экстракторе до четырёх бойцов восстанавливают по 8 прочности в секунду. Вылеченные выходят, как только путь свободен.</p>
+          </details>
+          <details class="guide-topic">
+            <summary>Добыча и строительство</summary>
+            <p id="economy-help"></p>
+            <div class="help-desktop"><p>Shift + ЛКМ ставит здание и оставляет включённым размещение следующих. Esc или ПКМ завершает размещение.</p></div>
+          </details>
+          <details class="guide-topic">
+            <summary>Цели и опасности</summary>
+            <p><strong>Осада.</strong> Снимите глушитель, запустите и удержите узел. Подведите артиллерию к цитадели.</p>
+            <p><strong>Обход.</strong> Модуль взлома позволяет отключить защиту цитадели. Пока разведчик удерживает действие у терминала, отряд атакует. Защита вернётся через 7 секунд после прекращения взлома.</p>
+            <p id="archive-help" hidden>В восточной операции проведите носитель с архивом к орбитальному доку.</p>
+            <p id="recon-help" hidden>Чёрная область ещё не разведана. Серая показывает последнее наблюдение. Дозорные и занятые отрядом наблюдательные точки расширяют обзор.</p>
+            <p>Отряд стреляет сам. Линия предупреждает о выстреле, сектор — об огне, круг — о взрыве. Укрытие срывает захват ракеты. Подрывника можно остановить до взрыва. Танк уязвим с фланга, осадная машина — вблизи. Потеря разведчика или посадочного модуля завершает операцию.</p>
+          </details>
           <button class="primary" id="help-back">Понятно</button>
         </section>
-        <section id="settings-content" hidden>
-          <p class="eyebrow">Настройки</p>
-          <h2>Звук и движение</h2>
+        <section id="settings-content" role="tabpanel" aria-labelledby="menu-tab-settings" hidden>
+          <h2>Настройки игры</h2>
           <label class="setting"
             >Громкость <output id="volume-value">40%</output
             ><input
@@ -437,9 +391,13 @@
             ><input id="motion" type="checkbox" />Уменьшить движение и
             вспышки</label
           >
-          <p class="help-note">
-            Прогресс операции сохраняется на этом устройстве.
-          </p>
+          <div class="graphics-setting">
+            <span>Графика</span>
+            <nav class="renderer-links" aria-label="Режим графики">
+              <a href="?renderer=canvas" data-renderer="canvas">2D</a>
+              <a href="?renderer=babylon" data-renderer="babylon">3D</a>
+            </nav>
+          </div>
           <button class="primary" id="settings-back">Готово</button>
         </section>
         <section id="supply-content" hidden>

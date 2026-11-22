@@ -182,9 +182,9 @@
               ? type + e.id
               : type;
       const interval =
-        type === "shot"
+        type === "field-heal" ? .22 : type === "grenade-launch" ? .09 : type === "shot"
           ? 0.045
-          : ["hit", "spark", "shield"].includes(type)
+          : ["hit", "spark", "shield", "shield-block"].includes(type)
             ? 0.07
             : 0.035;
       if (now - (this.last[key] ?? -100) < interval || this.voices.size >= 24)
@@ -298,6 +298,10 @@
         if (e.kind === "runner") {
           noise(1200, 180, 0.12, 0.18);
           tone(145, 58, 0.1, 0.08);
+        } else if (e.kind === "armored") {
+          noise(2600, 650, .06, .13, 0, "bandpass");
+          tone(144 * variation, 56, .14, .12);
+          noise(1120, 510, .045, .042, .075, "bandpass");
         } else if (e.team) {
           tone(280 * variation, 86, 0.22, 0.1, 0, "triangle");
           noise(1800, 520, 0.07, 0.1);
@@ -337,6 +341,12 @@
       } else if (type === "hurt") {
         noise(680, 180, 0.16, 0.12);
         tone(105, 60, 0.19, 0.14);
+      } else if (type === "grenade-launch") {
+        noise(920, 210, .092, .074, 0, "bandpass");
+        tone(150, 71, .13, .065, 0, "triangle");
+      } else if (type === "shield-block") {
+        noise(2800, 850, .055, .048, 0, "bandpass");
+        tone(390, 215, .085, .039, 0, "triangle");
       } else if (type === "shield") {
         tone(620, 360, 0.23, 0.075);
         tone(934, 670, 0.18, 0.035);
@@ -349,6 +359,9 @@
         tone(420, 260, 0.045, 0.035);
         noise(1600, 500, 0.06, 0.07, 0.82);
         tone(320, 240, 0.055, 0.025, 1.02);
+      } else if (type === "field-heal") {
+        tone(480, 620, .10, .026, 0, "sine");
+        tone(720, 790, .13, .018, .055, "sine");
       } else if (type === "order") {
         tone(640, 520, 0.055, 0.035);
         tone(970, 860, 0.06, 0.02, 0.035);

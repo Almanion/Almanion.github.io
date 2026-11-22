@@ -9,7 +9,7 @@ import { Texture } from "@babylonjs/core/Materials/Textures/texture.js";
 import { Parts } from "./babylon/batches.js";
 import { Models } from "./babylon/models.js";
 import { materials } from "./babylon/materials.js";
-import { buildTerrain } from "./babylon/terrain.js";
+import { buildTerrain, loadTerrainTexture } from "./babylon/terrain.js";
 import { fogUpdateRect } from "./babylon/fog-updates.js";
 
 const E=globalThis.SignalEngine,Legacy=globalThis.SignalView,Y=.73;
@@ -22,7 +22,8 @@ export class BabylonView extends Legacy {
     canvas.before(this.gpuCanvas);
     try {
       this.engine=new Engine(this.gpuCanvas,true,{preserveDrawingBuffer:false,stencil:true,alpha:false,powerPreference:"high-performance"},false);
-      this.engine.setHardwareScalingLevel(1/this.dpr);this.engine.setSize(this.canvas.width,this.canvas.height);
+      this.renderScale = new URLSearchParams(location.search).get("scale3d") === "70" ? 0.7 : 1;
+      this.resizeWorld();
       if(this.engine.webGLVersion<2)throw Error("Для 3D-режима нужен WebGL 2");
       // Software WebGL gains nothing from a GPU-to-GPU copy. Keep its exact
       // CPU raster and typed-array uploads, including headless renderers.
@@ -33,7 +34,7 @@ export class BabylonView extends Legacy {
       this.camera3d.mode=Camera.ORTHOGRAPHIC_CAMERA;this.camera3d.minZ=1;this.camera3d.maxZ=40000;
       this.scene.activeCamera=this.camera3d;
       this.materials=materials(this.scene);this.parts=new Parts(this.scene,this.materials.main,this.materials.shadow);
-      this.models=new Models(this.parts,E,this);this.gpuMap=null;this.timings={};this.fogUploads=0;
+      this.models=new Models(this.parts,E,this);this.gpuMap=null;this.terrainTextures=new Map();this.timings={};this.fogUploads=0;
       this.refreshSamples=new Float32Array(32);this.refreshCount=0;
       this.cameraStride=0;this.refreshPeriod=null;this.cameraDrawGap=1000/90;
       this.previousUnits=new Map();this.previousBullets=new WeakMap();
@@ -56,6 +57,7 @@ export class BabylonView extends Legacy {
       if(!p){p={};this.previousUnits.set(u.id,p);}
       p.time=s.t;p.kind=u.kind;p.x=u.x;p.y=u.y;p.angle=u.angle||0;
       p.combatAngle=u.combat?.angle;
+      if (u.drive) p.heading = u.drive.heading;
       p.inside=!!u.care?.inside;p.visible=!u.team||!!this.visibleUnits?.has(u.id);
     }
     if(this.previousUnits.size>512)for(const [id,p]of this.previousUnits)if(p.time!==s.t)this.previousUnits.delete(id);
@@ -74,6 +76,7 @@ export class BabylonView extends Legacy {
     if(!Number.isFinite(alpha)||alpha<0||alpha>=1||this.previousTime===null||
         Math.abs(s.t-this.previousTime-E.DT)>1e-7)return s;
     const world=E.map(s),blend=(a,b)=>a+(b-a)*alpha,
+      blendAngle=(a,b)=>a+Math.atan2(Math.sin(b-a),Math.cos(b-a))*alpha,
       units=observed.units.map(u=>{
         const p=this.previousUnits.get(u.id);
         // Reveals, spawns, deaths, shelter changes and teleports appear at
@@ -81,15 +84,13 @@ export class BabylonView extends Legacy {
         if(!p||p.time!==this.previousTime||p.kind!==u.kind||!p.visible||u.hp<=0||
             p.inside!==!!u.care?.inside)return u;
         const rotating=Number.isFinite(p.combatAngle)&&Number.isFinite(u.combat?.angle)&&p.combatAngle!==u.combat.angle;
-        if(p.x===u.x&&p.y===u.y&&p.angle===u.angle&&!rotating)return u;
+        const steering = u.drive && Number.isFinite(p.heading) && p.heading !== u.drive.heading;
+        if(p.x===u.x&&p.y===u.y&&p.angle===u.angle&&!rotating&&!steering)return u;
         if(Math.hypot(u.x-p.x,u.y-p.y)>32||
             Math.abs(E.elevation(u.x,u.y,world)-E.elevation(p.x,p.y,world))>8)return u;
-        const turn=Math.atan2(Math.sin((u.angle||0)-p.angle),Math.cos((u.angle||0)-p.angle));
-        const next={...u,x:blend(p.x,u.x),y:blend(p.y,u.y),angle:p.angle+turn*alpha};
-        if(rotating){
-          const rotation=Math.atan2(Math.sin(u.combat.angle-p.combatAngle),Math.cos(u.combat.angle-p.combatAngle));
-          next.combat={...u.combat,angle:p.combatAngle+rotation*alpha};
-        }
+        const next={...u,x:blend(p.x,u.x),y:blend(p.y,u.y),angle:blendAngle(p.angle,u.angle||0)};
+        if (steering) next.drive={...u.drive,heading:blendAngle(p.heading,u.drive.heading)};
+        if (rotating) next.combat={...u.combat,angle:blendAngle(p.combatAngle,u.combat.angle)};
         return next;
       }),
       bullets=observed.bullets.map(b=>{
@@ -133,7 +134,13 @@ export class BabylonView extends Legacy {
   pan(x,y){if(x||y)this.zoomAnchor=null;super.pan(x,y);}
   focus(x,y){this.zoomAnchor=null;super.focus(x,y);}
   prepareFrame(s,ui,dt) {
-    const frame=super.prepareFrame(s,ui,dt),a=this.zoomAnchor;
+    const a=this.zoomAnchor;
+    // Idle tactical views can go seconds without a draw. A new wheel or pinch
+    // gesture starts now; it must not spend that idle time advancing the zoom.
+    const framePeriod=(this.refreshPeriod||1000/60)*(this.cameraStride||1)/1000;
+    const cameraDt=ui.mode==="tactical"&&a
+      ?Math.min(dt,framePeriod*(this.cameraSettled?1:1.5)):dt;
+    const frame=super.prepareFrame(s,ui,dt,cameraDt);
     if(a){
       if(ui.mode!=="tactical"||ui.selecting||ui.placement||this.tactical.overview||
           this.origin.x!==a.originX||this.origin.y!==a.originY||
@@ -147,7 +154,14 @@ export class BabylonView extends Legacy {
     }
     return frame;
   }
-  resize(){this.zoomAnchor=null;super.resize();if(this.engine){this.engine.setHardwareScalingLevel(1/this.dpr);this.engine.setSize(this.canvas.width,this.canvas.height);}}
+  resizeWorld() {
+    this.engine.setHardwareScalingLevel(1/(this.dpr*this.renderScale));
+    this.engine.setSize(
+      Math.max(1,Math.round(this.canvas.width*this.renderScale)),
+      Math.max(1,Math.round(this.canvas.height*this.renderScale)),
+    );
+  }
+  resize(){this.zoomAnchor=null;super.resize();if(this.engine)this.resizeWorld();}
   reset(s){super.reset(s);this.maskKey=null;this.fogPaths={};this.resetInterpolation();this.previousUnits.clear();this.previousBullets=new WeakMap();}
   fogPath(fog,kind) {
     const sources=fog.observers.map(u=>[u.id,u.x,u.y,u.radius].join(":")),
@@ -175,10 +189,24 @@ export class BabylonView extends Legacy {
     this.fogPath(fog,kind);const region=this.fogPaths[kind];
     region.path ||= this.projectFog(region.polygons);c.clip(region.path);
   }
+  preloadTerrain(id) {
+    this.nextTerrain=id;
+    this.artFor(id,this.gpuMap?.id);
+  }
+  artFor(id,keep) {
+    // The home preview and the next operation can overlap. They share one cliff texture.
+    for(const [key,entry] of this.terrainTextures){
+      if(key===id||key===keep||key==="cliff")continue;
+      entry.texture?.dispose();this.terrainTextures.delete(key);
+    }
+    for(const key of [id,"cliff"])if(!this.terrainTextures.has(key))
+      this.terrainTextures.set(key,loadTerrainTexture(this.scene,key));
+    return {ground:this.terrainTextures.get(id),cliff:this.terrainTextures.get("cliff")};
+  }
   map(world) {
     if(this.gpuMap?.id===world.id)return;
     this.gpuMap?.terrain.dispose();this.mask?.dispose();
-    const terrain=buildTerrain(this.scene,this.materials.terrain,E,world,()=>{this.memoryNeedsRefine=true;}),
+    const terrain=buildTerrain(this.scene,this.materials.terrain,E,world,this.artFor(world.id,this.nextTerrain),()=>{this.memoryNeedsRefine=true;}),
       max=Math.min(world.id==='districts-east'?Math.ceil(world.W*2048/3840):2048,this.engine.getCaps().maxTextureSize),scale=max/Math.max(world.W,world.H),
       width=Math.ceil(world.W*scale),height=Math.ceil(world.H*scale);
     // A hardware renderer can upload a crop directly from a drawable canvas.
@@ -300,7 +328,8 @@ export class BabylonView extends Legacy {
     this.parts.opacity=1;
     for(const b of s.bullets) {
       const z=E.projectileHeight(b)??this.z(b.x,b.y)+16,speed=Math.hypot(b.vx,b.vy)||1,
-        length=b.kind==="shell"?10:b.kind==="missile"?15:11;
+        length=b.kind==="grenade"?6:b.kind==="shell"?10:b.kind==="missile"?15:11;
+      if(b.kind==="grenade")this.parts.part("sphere",b.x,b.y,z-3,6.6,6.6,6.6,0,"#dce6bc",-10000,false,true);
       this.parts.beam(b.x-b.vx/speed*length,b.y-b.vy/speed*length,z,b.x,b.y,z,b.kind==="missile"?2:1.2,b.team?"#efae8c":"#d5f4df",-10000,false,true);
     }
     this.parts.commit();this.timings.models=performance.now()-time;time=performance.now();
@@ -318,10 +347,12 @@ export class BabylonView extends Legacy {
     if(ui.modelPreview)return;
     c.setTransform(this.dpr,0,0,this.dpr,0,0);c.save();c.translate(this.origin.x,this.origin.y);c.scale(cam.scale,cam.scale*Y);c.translate(-cam.x,-cam.y);
     for(const u of s.units) {
+      if(u.grenadeAim)this.grenadeMark(c,s,u.grenadeAim,u.grenadeAim.remaining/E.GRENADE.windup);
       if(u.care?.inside||u.hp<=0)continue;
       const selected=!u.team&&(ui.selectionIds!=null?ui.selectionIds.includes(u.id):ui.mode==="tactical"&&u.group===ui.group);
       if(selected) {
         this.groundRing(c,u.x,u.y,E.C[u.kind].r+10,"#c8edda",2);
+        if(u.guard)this.shieldArc(c,u);
         if(ui.mode==="tactical"&&u.path?.length){c.setLineDash([5,7]);this.groundLine(c,[[u.x,u.y],...u.path.map(p=>[p.x,p.y])],"#b6e6d17a",2);c.setLineDash([]);const p=u.path.at(-1);this.groundRing(c,p.x,p.y,12,"#c8edda",2);}
         if(ui.mode==="tactical"&&u.rally){c.setLineDash([5,8]);this.groundLine(c,[[u.x,u.y],[u.rally.x,u.rally.y]],"#b2d6bf65",1);c.setLineDash([]);this.groundRing(c,u.rally.x,u.rally.y,14,"#b2d6bf",1.5);}
         if(ui.mode==="tactical"&&u.construction){const b=E.construction.rect(u);this.groundLine(c,[[b.x,b.y],[b.x+b.w,b.y],[b.x+b.w,b.y+b.h],[b.x,b.y+b.h],[b.x,b.y]],"#c8edda",2);}
@@ -339,13 +370,14 @@ export class BabylonView extends Legacy {
         c.fillStyle="#102832";c.fillRect(u.x-r,y,r*2,3);c.fillStyle=u.team?"#d29c83":"#9cd8c7";c.fillRect(u.x-r,y,r*2*Math.max(0,u.hp)/E.C[u.kind].hp,3);
       }
     }
+    for(const b of s.bullets)if(b.kind==="grenade")this.grenadeMark(c,s,{x:b.tx,y:b.ty},b.life/b.duration,true);
     this.statusOverlay(c,s,ui);
     if(ui.placement)this.placementOverlay(c,s,ui.placement);
     const task=s.observationTask||E.objective(s);
     if(task.target&&!task.target.unknown)this.groundRing(c,task.target.x,task.target.y,task.radius,"#d5dab078",1.4);
     // Existing feedback and construction effects retain their observed events,
     // seeded animation and tactical-pause clock while migrating independently.
-    this.effects(c,dt,ui,frame.active);c.restore();this.productionBars(s,ui);
+    this.effects(c,dt,ui,frame.active,s);c.restore();this.productionBars(s,ui);
   }
   statusOverlay(c,s,ui) {
     if(ui.mode==="tactical")for(const mine of s.campaign?.mines||[]) {
@@ -368,8 +400,9 @@ export class BabylonView extends Legacy {
   }
   diagnostics() {
     return {renderer:"babylon",backend:"WebGL "+this.engine.webGLVersion,version:Engine.Version,
+      renderScale:this.renderScale,renderSize:[this.gpuCanvas.width,this.gpuCanvas.height],
       units:this.drawnUnits,...this.parts.diagnostics(),drawCalls:this.lastDrawCalls||0,
       terrainTriangles:this.gpuMap?.terrain.triangles||0,terrainArt:{...this.gpuMap?.terrain.art},fogTransfer:this.canvasFogUpload?"canvas":"pixels",fogUploads:this.fogUploads,fogUploadBytes:this.fogUploadBytes||0,fogPaintPixels:this.fogPaintPixels||0,timings:{...this.timings},lost:this.lost};
   }
-  dispose(){this.gpuMap?.terrain.dispose();this.mask?.dispose();this.parts?.dispose();this.scene?.dispose();this.engine?.dispose();this.gpuCanvas?.remove();}
+  dispose(){this.gpuMap?.terrain.dispose();this.mask?.dispose();this.parts?.dispose();this.scene?.dispose();this.terrainTextures?.clear();this.engine?.dispose();this.gpuCanvas?.remove();}
 }

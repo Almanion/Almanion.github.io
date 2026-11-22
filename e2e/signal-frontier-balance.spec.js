@@ -81,8 +81,7 @@ for (const [width, height] of [[1440, 900], [390, 844], [320, 568]])
     await page.locator("#develop-tab-production").click();
     await page.locator('[data-production-group="barracks"]').click();
     await expect(page.locator("#develop-rifle")).toContainText("11 клеток");
-    if (!(await page.locator("#develop-scout").count()))
-      await page.locator('[data-deck-page="1"]').click();
+    await page.locator("#develop-scout").scrollIntoViewIfNeeded();
     await expect(page.locator("#develop-scout")).toContainText("24,5");
     const layout = await page.locator("#development-panel").evaluate((p) => ({
       scroll: p.scrollHeight - p.clientHeight, overflow: document.documentElement.scrollWidth - innerWidth,

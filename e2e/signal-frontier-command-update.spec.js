@@ -59,9 +59,11 @@ async function fits(page) {
       scroll: panel.scrollHeight,
       width: panel.clientWidth,
       scrollWidth: panel.scrollWidth,
+      listHeight: panel.querySelector(".shop-scroll").clientHeight,
       outside: [...panel.querySelectorAll("button:not([disabled])")]
         .filter((e) => {
           const b = e.getBoundingClientRect();
+          if (e.closest(".shop-scroll")) return b.right > r.right + 2 || b.left < r.left - 2;
           return (
             b.bottom > r.bottom + 2 ||
             b.right > r.right + 2 ||
@@ -69,7 +71,7 @@ async function fits(page) {
           );
         })
         .map((e) => e.textContent),
-      blocks: [...panel.querySelector(".deck-content").children].map((e) => {
+      blocks: [...panel.querySelector(".shop-body").children].filter((e) => !e.hidden).map((e) => {
         const b = e.getBoundingClientRect();
         return { top: b.top, bottom: b.bottom, left: b.left, right: b.right };
       }),
@@ -77,6 +79,7 @@ async function fits(page) {
   });
   expect(layout.scroll).toBeLessThanOrEqual(layout.height + 2);
   expect(layout.scrollWidth).toBeLessThanOrEqual(layout.width + 2);
+  expect(layout.listHeight).toBeGreaterThanOrEqual(44);
   expect(layout.outside).toEqual([]);
   for (let i = 0; i < layout.blocks.length; i++) for (let j = i + 1; j < layout.blocks.length; j++) {
     const a = layout.blocks[i], b = layout.blocks[j];
@@ -89,8 +92,10 @@ for (const [width, height] of [
   [390, 844],
   [320, 568],
   [844, 390],
+  [667, 375],
+  [568, 320],
 ])
-  test(`command deck fits sections and selected production without scrolling ${width}x${height}`, async ({
+  test(`command deck pins the sections and queue and scrolls only the catalogue ${width}x${height}`, async ({
     browser,
   }, info) => {
     test.setTimeout(120000);
@@ -112,10 +117,17 @@ for (const [width, height] of [
         await page.clock.runFor(50);
         await fits(page);
         if (section === "research") {
-          await page.locator('[data-deck-page="1"]').click();
+          const card = page.locator("#develop-hack");
+          await card.scrollIntoViewIfNeeded();
+          await expect(card).toBeInViewport();
+          const bounds = await card.evaluate((el) => {
+            const box = el.getBoundingClientRect(), view = el.closest(".shop-scroll").getBoundingClientRect();
+            return box.top >= view.top - 1 && box.bottom <= view.bottom + 1;
+          });
+          expect(bounds).toBe(true);
           await fits(page);
         }
-        await page.locator("[data-deck-back]").click();
+        await expect(page.locator("#develop-tab-" + section)).toHaveAttribute("aria-selected", "true");
       }
       await page.locator("#develop-tab-economy").click();
       await page

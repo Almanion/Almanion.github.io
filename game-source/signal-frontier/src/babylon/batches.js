@@ -39,7 +39,9 @@ function geometry(kind) {
     }
     face(outline.map(p=>ring(p,.5,.86)));
   }
-  const data=new VertexData();data.positions=positions;data.normals=normals;data.indices=indices;data.colors=Array(positions.length/3*4).fill(1);return data;
+  const data=new VertexData();data.positions=positions;data.normals=normals;data.indices=indices;data.colors=Array(positions.length/3*4).fill(1);
+  data.uvs=[];for(let i=1;i<positions.length;i+=3)data.uvs.push(.22,positions[i]+.5);
+  return data;
 }
 function vertexData(source){const data=new VertexData();Object.assign(data,source);return data;}
 

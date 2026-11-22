@@ -60,7 +60,8 @@ async function fits(page, selector) {
     const r = (el.querySelector("#development-panel") || el).getBoundingClientRect();
     const clipped = [...el.querySelectorAll("button")].filter((b) => b.getClientRects().length).filter((b) => {
       const x = b.getBoundingClientRect();
-      return x.top < r.top - 1 || x.bottom > r.bottom + 1 || x.left < r.left - 1 || x.right > r.right + 1;
+      const scroll = b.closest(".shop-scroll");
+      return (!scroll && (x.top < r.top - 1 || x.bottom > r.bottom + 1)) || x.left < r.left - 1 || x.right > r.right + 1;
     }).map((b) => b.textContent.trim());
     return { clipped, x: r.x, right: r.right, top: r.top, bottom: r.bottom, width: innerWidth, height: innerHeight };
   });
@@ -78,16 +79,23 @@ test("pause opens the shop directly, combat shares its position and groups prese
   await expect(page.locator("#develop-tab-build")).toBeVisible();
   await expect(page.locator("#dialog")).not.toBeVisible();
   await expect(page.locator("#group-one, #group-two, #tactical-panel")).toHaveCount(0);
-  expect(await page.locator("#command-dock").boundingBox()).toEqual(before);
+  const paused = await page.locator("#command-dock").boundingBox();
+  expect([paused.x, paused.width, paused.y + paused.height]).toEqual([before.x, before.width, before.y + before.height]);
+  const profile = await page.locator("#selection-content").boundingBox(), shop = await page.locator("#development-content").boundingBox();
+  expect(profile.x + profile.width).toBeLessThanOrEqual(shop.x + 1);
+  expect(profile.y).toBeLessThan(shop.y + shop.height);
   await page.clock.runFor(3000); expect(await snapshot(page)).toEqual(s);
   await page.locator("#dock-selection").click();
+  expect(await page.locator("#command-dock").boundingBox()).toEqual(paused);
   await expect(page.locator(".roster-unit")).toHaveCount(3);
   await page.locator("#dock-shop").click();
   await page.locator("#develop-tab-build").click();
   await expect(page.locator("#develop-barracks")).toBeVisible();
-  await expect(page.locator("#develop-tab-build")).toHaveCount(0);
-  await page.locator("[data-deck-back]").click();
-  await expect(page.locator("#develop-tab-build")).toBeVisible();
+  await page.locator("#develop-tab-research").click();
+  await expect(page.locator("#develop-network")).toBeVisible();
+  await page.locator("#dock-selection").click();
+  await page.locator("#dock-shop").click();
+  await expect(page.locator("#develop-tab-research")).toHaveAttribute("aria-selected", "true");
   await page.locator("#tactical").click();
   expect(await selected(page)).toEqual(army);
   await page.clock.runFor(500); expect((await snapshot(page)).t).toBeGreaterThan(s.t);

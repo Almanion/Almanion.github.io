@@ -1154,6 +1154,34 @@
       }
       this.groundLine(c, p, color, width);
     }
+    shieldArc(c, u) {
+      if (u.guard?.lift !== 1) return;
+      const arc = [], half = E.support.plate.halfAngle, r = E.C.shield.r + 13;
+      for (let i = 0; i <= 12; i++) {
+        const a = u.guard.angle + (i / 6 - 1) * half;
+        arc.push([u.x + Math.cos(a) * r, u.y + Math.sin(a) * r]);
+      }
+      this.groundLine(c, arc, "#b9edd2", 3);
+    }
+    grenadeMark(c, s, point, remaining, inFlight = false) {
+      const r = E.GRENADE.radius;
+      if (!this.inView(point.x, point.y, r) || !E.visible(s, 0, point)) return;
+      const area = E.impactArea(s, point, r), [x,y] = this.p(point.x, point.y), scale = this.camera.scale;
+      c.save();
+      if (!inFlight) c.setLineDash([5/scale,3/scale]);
+      c.lineWidth = 1.5 / scale;
+      poly(c, this.groundPoints(area.points.map(p => [p.x,p.y])), "#9acbb81a", "#a4d6be");
+      c.setLineDash([]);
+      c.translate(x,y);
+      const size = Math.min(1, r * scale * Y / 18);
+      c.scale(size / scale, size / (scale * Y));
+      const gap = 2 + 5 * Math.max(0, Math.min(1, remaining));
+      for (const side of [-1,1]) {
+        line(c, [[side*gap,0],[side*(gap+4),0]], "#d4e8d3", 2);
+        line(c, [[0,side*gap],[0,side*(gap+4)]], "#d4e8d3", 2);
+      }
+      c.restore();
+    }
     shadow(c, x, y, shape, height, angle = 0) {
       if (!["highlands", "districts", "districts-east"].includes(this.mapId)) return;
       const T = E.terrainFor(this.mapId),
@@ -1435,7 +1463,7 @@
       for (const e of events) {
         if (
           e.type === "care-door" || (e.type === "reinforce" &&
-          ["rifle", "scout", "artillery", "drone"].includes(e.action))
+          ["rifle", "medic", "shield", "grenadier", "scout", "armored", "artillery", "drone"].includes(e.action))
         ) {
           this.modelExits.set(e.x + ":" + e.y, this.modelClock || 0);
           if (this.modelExits.size > 128)
@@ -1464,6 +1492,8 @@
             "build",
             "post-ready",
             "repair-ready",
+            "field-heal",
+            "shield-block",
             "salvage",
             "breach",
           ].includes(e.type)
@@ -1472,7 +1502,7 @@
             ...e,
             seed,
             life: 0,
-            max: ["destroy", "blast"].includes(e.type)
+            max: e.type === "shield-block" ? E.support.plate.pulse : e.type === "field-heal" ? E.support.fieldCare.pulse : ["destroy", "blast"].includes(e.type)
               ? 1.1
               : e.type === "order"
                 ? 0.8
@@ -1487,7 +1517,7 @@
       this.scars = this.scars.slice(-40);
       this.fx = this.fx.slice(-96);
     }
-    prepareFrame(s, ui, dt) {
+    prepareFrame(s, ui, dt, cameraDt = dt) {
       this.spriteFrame = (this.spriteFrame || 0) + 1;
       for (const [id, sprite] of this.unitSprites)
         if ((sprite.lastUsed || 0) < this.spriteFrame - 120) {
@@ -1657,7 +1687,7 @@
         scale = this.camera.scale;
       }
       // Placement coordinates must stay under the pointer while confirming a footprint.
-      const blend = ui.placement ? 1 : 1 - Math.exp(-dt * 8);
+      const blend = ui.placement ? 1 : 1 - Math.exp(-cameraDt * 8);
       // Direct assignment avoids subpixel cancellation on the first still frame.
       this.camera.x = ui.reduced
         ? tx
@@ -1818,6 +1848,7 @@
               : u.group === ui.group),
         )) {
           this.groundRing(c, u.x, u.y, E.C[u.kind].r + 10, "#c8edda", 2);
+          if (u.guard) this.shieldArc(c, u);
           if (overview && u.path.length) {
             c.save();
             c.setLineDash([5, 7]);
@@ -1833,7 +1864,9 @@
           }
         }
       }
+      let grenadeMarks;
       for (const u of s.units) {
+        if (u.grenadeAim) (grenadeMarks ||= []).push(u.grenadeAim);
         if (u.care?.inside) continue;
         const area = E.dangerArea(s, u);
         if (area)
@@ -1924,6 +1957,8 @@
         c.save();
         this.fogClip(c, s.fog, "visible");
       }
+      if (grenadeMarks) for (const mark of grenadeMarks)
+        this.grenadeMark(c, s, mark, mark.remaining / E.GRENADE.windup);
       // Elevated flights share their height with collision tests; legacy flights keep their visual arc.
       for (const b of s.bullets) {
         const owner = s.units.find((u) => u.id === b.owner),
@@ -1979,6 +2014,10 @@
             "#7c6658",
           );
           c.restore();
+        } else if (b.kind === "grenade") {
+          this.grenadeMark(c, s, { x:b.tx, y:b.ty }, b.life / b.duration, true);
+          line(c, [[b.x-b.vx*.018,b.y-z-b.vy*.018],[b.x,b.y-z]], "#acd6bd", 2.5);
+          ellipse(c, b.x, b.y-z, 3.6, 3.6, "#dce6bc", "#405e56");
         } else if (b.kind === "shell") {
           const arcHeight =
             (b.z0 === undefined ? Math.sin(progress * Math.PI) * 55 : 0) + z;
@@ -2036,7 +2075,7 @@
         ellipse(c, hero.x, hero.y - 17, 2, 2, "#d3f1e4");
         c.restore();
       }
-      this.effects(c, dt, ui, active);
+      this.effects(c, dt, ui, active, s);
       const task = s.observationTask || E.objective(s),
         objective = task.target;
       if (objective && s.status === "playing") {
@@ -3215,7 +3254,7 @@
         );
       c.restore();
     }
-    effects(c, dt, ui, active) {
+    effects(c, dt, ui, active, s) {
       for (const f of this.fx) {
         f.life += f.type === "order" ? dt : active ? dt : 0;
         const t = f.life / f.max;
@@ -3225,11 +3264,29 @@
             ? "#99e6e2" : f.team ? "#e7aa87" : "#afe1cc";
         c.save();
         c.translate(0, -this.z(f.x, f.y));
-        if (f.type === "destroy" || f.type === "blast") {
+        if (f.type === "shield-block") {
+          c.globalAlpha = 1 - t;
+          for (let i = 0; i < 3; i++) {
+            const a = f.seed + i * TAU / 3, dx = Math.cos(a), dy = Math.sin(a), r = 2 + 7 * t;
+            line(c, [[f.x+dx*r,f.y-19+dy*r],[f.x+dx*(r+3),f.y-19+dy*(r+3)]], "#e0f5d8", 1.3);
+          }
+        } else if (f.type === "field-heal") {
+          const medic = s.units.find((u) => u.id === f.medic), patient = s.units.find((u) => u.id === f.patient);
+          if (medic?.hp > 0 && medic.flash > 0 && patient?.hp > 0 && !medic.care && !patient.care &&
+              E.dist(medic, patient) <= E.support.fieldCare.range) {
+            const a = Math.atan2(patient.y-medic.y, patient.x-medic.x),
+              x = medic.x + 19*Math.cos(a) - 8*Math.sin(a),
+              y = medic.y + 19*Math.sin(a) + 8*Math.cos(a) - 20,
+              endY = patient.y - 16 + this.z(f.x, f.y) - this.z(patient.x, patient.y);
+            c.globalAlpha = (1 - t) * .85; c.setLineDash([4, 6]);
+            line(c, [[x, y], [patient.x, endY]], "#a4e6e8", 1.7);
+            c.setLineDash([]); ring(c, patient.x, endY, 3 + t * 5, "#a4e6e8", 1.2);
+          }
+        } else if (f.type === "destroy" || f.type === "blast") {
           const heavy =
               f.type === "blast" ||
               ["citadel", "base", "jammer"].includes(f.kind),
-            r = heavy ? 65 : 34;
+            r = f.kind === "grenade" ? f.radius - 7 : heavy ? 65 : 34;
           c.globalAlpha = (1 - t) * 0.32;
           ellipse(
             c,
@@ -3833,13 +3890,15 @@
             pose.angle,
             pose.direction,
             pose.cycle,
-            ["tank", "mortar", "artillery"].includes(u.kind)
-              ? [pose.left, pose.right]
+            ["tank", "mortar", "armored", "artillery"].includes(u.kind)
+              ? [pose.left, pose.right, pose.turn]
               : null,
           ],
           u.hp,
           u.defense,
-          ui.reduced ? 0 : u.flash,
+          u.guard ? [u.guard.angle, u.guard.lift, u.guard.pulse > 0] : null,
+          u.kind === "grenadier" ? [u.grenadeAim?.remaining ?? 0, u.cool] : null,
+          u.kind === "medic" ? u.flash > 0 : ui.reduced ? 0 : u.flash,
           !ui.reduced && u.hit > 0,
           u.wind > 0,
           ["runner", "rocket", "flamer", "bomber"].includes(u.kind) &&
@@ -4001,13 +4060,31 @@
     archiveModel(c,u,s){
       if(u.hp<=0&&u.kind==='archive-gate')return;
       c.save();c.translate(u.x,u.y-this.z(u.x,u.y));
-      const shell={top:'#c5d1d4',side:'#6a818c',front:'#4c6471',edge:'#d8e6ec'},dark={top:'#344c5c',side:'#1b303e',front:'#203746',edge:'#668797'},a=u.angle||0;
+      const shell=MAT.ceramic,dark=MAT.graphite,a=u.angle||0,live=u.hp>0;
       if(u.kind==='carrier'){
         for(const side of [-1,1])slab(c,0,side*18,48,9,2,7,a,dark);
-        slab(c,0,0,46,31,7,8,a,dark);slab(c,-1,0,38,26,15,13,a,shell);
-        slab(c,0,0,22,5,28,1,a,{...shell,top:u.hp<=0?'#dca785':'#8eddf0'});
-      }else if(u.kind==='archive-gate')slab(c,0,0,26,234,0,38,0,dark);
-      else {const d=u.kind==='archive-depot'?142:70;slab(c,0,0,d,d,0,8,0,dark);slab(c,0,-5,d*.8,d*.7,8,u.hp>0?30:7,0,shell);}
+        slab(c,0,0,46,31,7,8,a,dark);slab(c,-5,0,33,27,15,12,a,live?shell:MAT.deck);
+        for(const x of [-16,5])slab(c,x,0,4,31,16,13,a,MAT.ally);
+        plate(c,[[10,-13],[19,-9],[24,-4],[24,4],[19,9],[10,13]],14,9,a,shell);
+        slab(c,17,0,6,14,23,1,a,dark);
+        seam(c,[[-5,-5],[-5,5]],28,a,live?'#83d9f0':'#dca785',3.5);
+      }else if(u.kind==='archive-gate'){
+        for(const side of [-1,1]){
+          slab(c,0,side*58,24,114,0,36,0,MAT.enemy);
+          for(const y of [-38,0,38])slab(c,0,side*58+y,27,9,31,8,0,MAT.copper);
+        }
+      }else if(u.kind==='power-node'){
+        const z=live?24:11;
+        slab(c,0,0,72,72,0,8,0,dark);slab(c,0,0,53,53,8,z-8,0,MAT.enemy);
+        for(const side of [-1,1])slab(c,side*22,0,12,49,z-3,live?15:5,0,MAT.copper);
+        lamp(c,0,0,z+1,0,8,s.east?.power?dark.top:'#83d9f0');
+      }else{
+        const z=live?41:16;
+        slab(c,0,0,148,148,0,8,0,dark);slab(c,0,-10,133,115,8,z-8,0,MAT.enemy);
+        for(const side of [-1,1])slab(c,side*42,-10,24,70,z,live?7:3,0,MAT.copper);
+        slab(c,0,-8,40,62,z,5,0,dark);
+        for(const y of [-22,-8,6])slab(c,0,y,32,6,z+5,2,0,MAT.enemy);
+      }
       c.fillStyle='#12232e';c.fillRect(-28,32,56,4);c.fillStyle=u.hp<=0?'#e2ae83':'#8cdbec';c.fillRect(-28,32,56*Math.max(0,u.hp)/E.C[u.kind].hp,4);
       c.restore();
     }

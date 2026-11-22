@@ -3,14 +3,19 @@
   const requested=new URLSearchParams(location.search).get("renderer")==="babylon",
     status={requested:requested?"babylon":"canvas",active:"canvas",error:null};
   let View=root.SignalView;
-  document.querySelector('[data-renderer="'+(requested?'babylon':'canvas')+'"]').setAttribute('aria-current','page');
+  for(const link of document.querySelectorAll("a[data-renderer]")) {
+    const target=new URL(location.href);
+    target.searchParams.set("renderer",link.dataset.renderer);
+    link.href=target.href;
+    if(link.dataset.renderer===status.requested)link.setAttribute("aria-current","page");
+  }
   if(requested) {
     document.documentElement.dataset.renderLoading="true";
     for(const id of ["start","start-east","continue","new-game"])document.getElementById(id).disabled=true;
     const label=document.createElement("p");label.id="renderer-loading";label.setAttribute("role","status");label.textContent="Готовим 3D-сцену…";
     document.querySelector(".home-content").append(label);
   }
-  const ready=requested?import("./babylon-view.js?v=0.35.0").then(module=>{View=module.BabylonView;}).catch(error=>{status.error=String(error.message||error);}):Promise.resolve();
+  const ready=requested?import("./babylon-view.js?v=0.39.0").then(module=>{View=module.BabylonView;}).catch(error=>{status.error=String(error.message||error);}):Promise.resolve();
   root.SignalGraphics={ready,status,create(canvas){
     try {const view=new View(canvas);status.active=view.rendererId||"canvas";return view;}
     catch(error){status.error=String(error.message||error);status.active="canvas";return new root.SignalView(canvas);}
