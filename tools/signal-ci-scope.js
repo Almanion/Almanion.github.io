@@ -89,9 +89,58 @@ function isNoteContent(file) {
   return /^content\/[\w-]+\/(?:manifest\.json|sections\/[\w-]+\.json)$/.test(file)
     || /^images\/notes\/.+\.(?:svg|png|jpe?g|webp)$/.test(file);
 }
-function classify(files, { known = true, forceCampaign = false } = {}) {
+const appearanceFiles = new Set([
+  "images/almanion-wordmark.svg", "favicon.ico", "home-stars.js", "tools/build-favicons.js",
+  "e2e/appearance.spec.js", "e2e/star-waves.spec.js", "tests/star-waves.test.js", "tests/site-branding.test.js",
+  "tests/favicon-theme.test.js",
+]);
+
+function isAppearanceAsset(file) {
+  return appearanceFiles.has(file)
+    || /^favicons\/[\w-]+\.(svg|ico|png)$/.test(file)
+    || /^(?:style-new|styles\/(?:[\w-]+\/)*[\w-]+|constructor\/index|watch\/watch|games\/catalog)\.css$/.test(file);
+}
+
+function mayReferenceAppearance(file) {
+  return file.endsWith(".html") || ["manifest.json", "performance/sw-shell.json", "favicon-theme.js"].includes(file);
+}
+
+// Compare the complete contents of mixed files. A logo revision or its intrinsic
+// dimensions can change, but even a one-line change to a handler must remain visible.
+function normalizeAppearanceReferences(file, source) {
+  if (file === "favicon-theme.js") {
+    return source.replace(/^(\s*var ASSET_VERSION = ')[\w.-]+(';\s*)$/m, "$1VERSION$2");
+  }
+  const asset = /(images\/almanion-wordmark\.svg|favicons\/[\w-]+\.(?:svg|png|ico)|(?:favicon-theme|home-stars)\.js|\.css)\?v=[\w.-]+(?=["'])/g;
+  const normalized = source.replace(asset, "$1");
+  if (!file.endsWith(".html")) return normalized;
+  return normalized.replace(/<img\s[^<>]*>/gi, tag => {
+    if (!/\balt="Almanion"/.test(tag)) return tag;
+    if (!/\bsrc="(?:[^"]*\/)?almanion-wordmark\.svg"/.test(tag)
+        && !/\bsrc="data:image\/svg\+xml;base64,[A-Za-z0-9+/=]+"/.test(tag)) return tag;
+    return tag.replace(/(\bsrc="data:image\/svg\+xml;base64,)[A-Za-z0-9+/=]+"/, '$1LOGO"')
+      .replace(/\b(width|height)="\d+"/g, '$1="SIZE"');
+  });
+}
+
+function onlyAppearanceReferences(base, file) {
+  if (!mayReferenceAppearance(file)) return false;
+  const read = revision => execFileSync("git", ["show", revision + ":" + file], {
+    encoding: "utf8", maxBuffer: 16 * 1024 * 1024, stdio: ["ignore", "pipe", "pipe"],
+  });
+  try {
+    return normalizeAppearanceReferences(file, read(base)) === normalizeAppearanceReferences(file, read("HEAD"));
+  } catch {
+    return false; // A new, deleted or unreadable mixed file needs its normal checks.
+  }
+}
+
+function classify(files, { known = true, forceCampaign = false, appearanceEdit = () => false } = {}) {
   const changed = files.filter(file => !routing.has(file));
   if (forceCampaign || !known || !changed.length) return { suite: "all", campaign: true };
+  if (changed.every(file => isAppearanceAsset(file) || appearanceEdit(file))) {
+    return { suite: "appearance", campaign: false };
+  }
   if (changed.every(isNoteContent)) return { suite: "content", campaign: false };
   const readerOnly = changed.every(file => isReaderFile(file) || isNoteContent(file));
   if (readerOnly) return { suite: "reader", campaign: false };
@@ -158,6 +207,7 @@ async function run() {
   const scope = classify(files, {
     known,
     forceCampaign: process.env.SCOPE_FORCE_CAMPAIGN === "true",
+    appearanceEdit: file => onlyAppearanceReferences(base, file),
   });
   console.log(JSON.stringify({ ...scope, changedFiles: files.length, known }));
   if (process.env.GITHUB_OUTPUT)
@@ -172,4 +222,4 @@ if (require.main === module)
     console.error(error.message);
     process.exitCode = 1;
   });
-module.exports = { classify, publishedBase };
+module.exports = { classify, publishedBase, normalizeAppearanceReferences };

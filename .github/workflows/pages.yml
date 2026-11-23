@@ -62,7 +62,7 @@ jobs:
           cache: npm
 
       - name: Set up Java for Firebase rules tests
-        if: needs.scope.outputs.suite != 'content'
+        if: needs.scope.outputs.suite != 'content' && needs.scope.outputs.suite != 'appearance'
         uses: actions/setup-java@v5
         with:
           distribution: temurin
@@ -75,17 +75,17 @@ jobs:
         uses: actions/cache@v6.1.0
         with:
           path: ~/.cache/ms-playwright
-          key: playwright-all-ubuntu24-${{ runner.arch }}-${{ hashFiles('node_modules/playwright-core/package.json') }}
+          key: playwright-${{ needs.scope.outputs.suite == 'appearance' && 'chromium' || 'all' }}-ubuntu24-${{ runner.arch }}-${{ hashFiles('node_modules/playwright-core/package.json') }}
 
       - name: Use upstream Ubuntu packages
         run: bash .github/ubuntu-mirror.sh
 
       - name: Install browser for interface checks
         timeout-minutes: 15
-        run: npx playwright install --with-deps chromium webkit
+        run: npx playwright install --with-deps ${{ needs.scope.outputs.suite == 'appearance' && 'chromium' || 'chromium webkit' }}
 
       - name: Verify Firebase access rules
-        if: needs.scope.outputs.suite != 'content'
+        if: needs.scope.outputs.suite != 'content' && needs.scope.outputs.suite != 'appearance'
         run: npm run test:rules
 
       - name: Test, build, and validate
@@ -94,8 +94,12 @@ jobs:
         run: npm run ci
 
       - name: Verify native tab navigation
-        if: needs.scope.outputs.suite != 'reader' && needs.scope.outputs.suite != 'content'
+        if: needs.scope.outputs.suite != 'reader' && needs.scope.outputs.suite != 'content' && needs.scope.outputs.suite != 'appearance'
         run: npx playwright test e2e/game-pages.spec.js --grep "Control and middle" --workers 1
+
+      - name: Check branding, contrast and homepage appearance on desktop and mobile
+        if: needs.scope.outputs.suite == 'appearance'
+        run: npx playwright test e2e/appearance.spec.js e2e/contrast.spec.js e2e/star-waves.spec.js
 
       - name: Check Signal desktop and mobile interfaces
         if: needs.scope.outputs.suite == 'signal'

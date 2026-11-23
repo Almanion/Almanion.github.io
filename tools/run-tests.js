@@ -11,6 +11,11 @@ function compareNames(left, right) {
 
 function listTests(root, suite = 'all') {
     const testsRoot = path.join(root, 'tests');
+    if (suite === 'appearance') {
+        return ['signal-ci-scope', 'site-branding', 'favicon-theme', 'theme-bootstrap', 'star-waves',
+            'game-integration', 'performance-budget', 'service-worker-resilience']
+            .map(name => path.join('tests', name + '.test.js'));
+    }
     return fs.readdirSync(testsRoot, { withFileTypes: true })
         .filter(entry => entry.isFile() && entry.name.endsWith('.test.js'))
         .filter(entry => !['content', 'reader', 'web'].includes(suite) || entry.name === 'signal-ci-scope.test.js' || !/^(?:game[.-]|orbital-|signal-)/.test(entry.name))

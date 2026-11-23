@@ -92,6 +92,34 @@ assert.ok(readerTests.some(file => file.endsWith("signal-ci-scope.test.js")));
 assert.ok(readerTests.some(file => file.endsWith("reader-tools.test.js")));
 assert.ok(!readerTests.some(file => file.endsWith("signal-frontier-long-operation.test.js")));
 const workflow = fs.readFileSync(".github/workflows/pages.yml", "utf8");
+const { normalizeAppearanceReferences } = require("../tools/signal-ci-scope");
+const brand = ["images/almanion-wordmark.svg", "favicon.ico", "favicons/app-icon-192.png", "tools/build-favicons.js"];
+const fast = { suite: "appearance", campaign: false };
+const full = { suite: "all", campaign: true };
+assert.deepEqual(classify(brand), fast);
+assert.deepEqual(classify(["styles/home-dashboard.css", "home-stars.js"]), fast);
+assert.deepEqual(classify(brand, { known: false }), full);
+assert.deepEqual(classify(brand, { forceCampaign: true }), full);
+for (const file of ["account.js", "games/signal-frontier/engine.js", "game-source/orbital-courier/src/levels.js", "firebase/database.rules.json"]) {
+  assert.deepEqual(classify([...brand, file]), full, file);
+}
+const original = '<img src="../images/almanion-wordmark.svg?v=one" width="96" height="23" alt="Almanion">';
+const revised = original.replace("v=one", "v=two").replace('height="23"', 'height="20"');
+const embedded = src => '<img src="data:image/svg+xml;base64,' + src + '" width="74" alt="Almanion">';
+for (const [file, before, after] of [
+  ["physics.html", original, revised],
+  ["games/orbital-courier/offline.html", embedded("YWJj"), embedded("ZGVm")],
+  ["manifest.json", '"src":"/favicons/app-icon.svg?v=one"', '"src":"/favicons/app-icon.svg?v=two"'],
+  ["favicon-theme.js", "var ASSET_VERSION = 'one';", "var ASSET_VERSION = 'two';"],
+]) {
+  const same = candidate => normalizeAppearanceReferences(file, before) === normalizeAppearanceReferences(file, candidate);
+  assert.deepEqual(classify([...brand, file], { appearanceEdit: () => same(after) }), fast);
+  assert.equal(same(after + "\ninitialize();"), false, file + " must preserve other edits");
+}
+assert.notEqual(normalizeAppearanceReferences("index.html", revised.replace("images/", "other/")),
+  normalizeAppearanceReferences("index.html", revised));
+assert.ok(require("../tools/run-tests").listTests(".", "appearance").some(file => file.endsWith("site-branding.test.js")));
+assert.match(workflow, /if: needs\.scope\.outputs\.suite == 'appearance'\s+run: npx playwright test e2e\/appearance\.spec\.js/);
 assert.match(workflow, /needs: \[scope, build, campaign\]/);
 assert.match(workflow, /needs\.build\.result == 'success'/);
 assert.match(workflow, /needs\.scope\.result == 'success'/);

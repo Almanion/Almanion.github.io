@@ -153,6 +153,7 @@
         };
         const reduced = win.matchMedia('(prefers-reduced-motion: reduce)');
         const coarse = win.matchMedia('(pointer: coarse)');
+        let touchLayout = false;
         function stop() { if (frame) win.cancelAnimationFrame(frame); frame = 0; }
         function draw(timestamp, moving) {
             ctx.clearRect(0, 0, width, height);
@@ -169,7 +170,7 @@
                 const target = moving ? influence(x, y, pointer, coarse.matches ? 100 : 155) : { x: 0, y: 0, glow: 0 };
                 star.dx += (target.x * touchFade - star.dx) * .13;
                 star.dy += (target.y * touchFade - star.dy) * .13;
-                const drift = moving && mode === 'full' ? Math.sin(time / 8500 + star.phase) * 1.8 : 0;
+                const drift = moving && mode === 'full' && !touchLayout ? Math.sin(time / 8500 + star.phase) * 1.8 : 0;
                 const alpha = star.alpha + (moving ? Math.sin(time / 3700 + star.phase) * .025 : 0) + target.glow * touchFade * .16;
                 const waveGlow = glowAt(wave => wave.distances[i]);
                 return { x: x + star.dx + drift, y: y + star.dy + drift * .5, alpha: alpha + waveGlow * .12, glow: target.glow, waveGlow };
@@ -250,11 +251,25 @@
             resume();
         }
         function resize() {
-            width = win.innerWidth; height = win.innerHeight;
+            const keepSky = touchLayout && coarse.matches && width === win.innerWidth;
+            const oldHeight = height;
+            touchLayout = coarse.matches;
+            width = win.innerWidth;
+            // The address bar and keyboard change the visible area of the same sky.
+            height = touchLayout ? Math.max(win.innerHeight, win.screen.height, keepSky ? oldHeight : 0) : win.innerHeight;
             const dpr = Math.min(1.75, win.devicePixelRatio || 1);
+            if (keepSky && height === oldHeight && canvas.width === Math.round(width * dpr) && canvas.height === Math.round(height * dpr)) return;
+            canvas.style.height = touchLayout ? height + 'px' : '';
             canvas.width = Math.round(width * dpr); canvas.height = Math.round(height * dpr);
             ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-            stars = createStars(width, height);
+            if (!keepSky) {
+                stars = createStars(width, height);
+            } else if (height > oldHeight) {
+                // A larger display may expose a new strip. Preserve existing pixel positions.
+                stars.forEach(star => { star.v *= oldHeight / height; });
+                const extra = createStars(width, height).filter(star => star.v * height >= oldHeight);
+                stars.push(...extra.slice(0, 180 - stars.length));
+            }
             edges = createConnections(stars, width, height, coarse.matches ? 90 : 120);
             waves = []; visibleWaveEdges = 0; press = null;
             canvas.dataset.count = String(stars.length);

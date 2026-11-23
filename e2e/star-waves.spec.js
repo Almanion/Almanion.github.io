@@ -64,6 +64,30 @@ test('navigation, secondary clicks, dragging and open dialogs do not trigger a w
 
 test.describe('touch waves', () => {
     test.use({ isMobile: true, hasTouch: true });
+    test('scrolling and browser bar resizes keep the visible stars at the same pixels', async ({ page }) => {
+        await page.setViewportSize({ width: 390, height: 800 });
+        await page.emulateMedia({ reducedMotion: 'reduce' });
+        await home(page);
+        const field = page.locator('.home-starfield');
+        await expect(field).toHaveAttribute('data-motion', 'off');
+        // Compare a fixed patch in screen coordinates, including any CSS scaling of the canvas.
+        const sample = () => field.evaluate(canvas => {
+            const box = canvas.getBoundingClientRect();
+            const crop = document.createElement('canvas');
+            crop.width = 390;
+            crop.height = 500;
+            crop.getContext('2d').drawImage(canvas, box.x, box.y, box.width, box.height);
+            return crop.toDataURL();
+        });
+        const initial = await sample();
+        await page.evaluate(() => scrollTo({ top: 180, behavior: 'instant' }));
+        expect(await page.evaluate(() => scrollY)).toBeGreaterThan(0);
+        for (const height of [620, 880, 800]) {
+            await page.setViewportSize({ width: 390, height });
+            await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+            expect(await sample()).toBe(initial);
+        }
+    });
     test('a tap launches a wave but a touch scroll cancels it', async ({ page }, info) => {
         await page.setViewportSize({ width: 390, height: 844 });
         await home(page);
