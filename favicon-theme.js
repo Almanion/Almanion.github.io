@@ -1,7 +1,7 @@
 (function () {
     'use strict';
 
-    var ASSET_VERSION = '20261123-tech-book';
+    var ASSET_VERSION = '20261123-book-light';
     var iconSelector = 'link[rel~="icon"][type="image/svg+xml"]';
 
     function readSettings() {

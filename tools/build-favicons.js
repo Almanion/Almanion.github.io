@@ -41,16 +41,17 @@ function buildFavicons() {
         }
     }
     for (const [file, x, y, size, radius, background] of [
-        ['favicon.svg', -10, -4, 124, 22, '#26253d'],
+        ['favicon.svg', -10, -4, 124, 22, '#f8f8fc'],
         ['favicon-dark.svg', -10, -4, 124, 22, '#191922'],
-        ['app-icon.svg', -39, -33, 180, 0, '#26253d']
+        ['app-icon.svg', -39, -33, 180, 0, '#f8f8fc']
     ]) {
         const dimensions = file === 'app-icon.svg' ? ' width="512" height="512"' : '';
+        const initial = file === 'favicon-dark.svg' ? book : book.replace(/ fill="[^"]+"/, ' fill="#626bd4"');
         icons[file] = [
             '<svg xmlns="http://www.w3.org/2000/svg"' + dimensions + ' viewBox="' + [x, y, size, size].join(' ') + '">',
             '  <title>Almanion</title>',
             '  <rect x="' + x + '" y="' + y + '" width="' + size + '" height="' + size + '" rx="' + radius + '" fill="' + background + '"/>',
-            '  ' + book, '</svg>', ''
+            '  ' + initial, '</svg>', ''
         ].join('\n');
     }
     return icons;

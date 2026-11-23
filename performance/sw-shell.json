@@ -6,7 +6,7 @@
     "/offline.html",
     "/manifest.json",
     "/theme-bootstrap.js",
-    "/favicon-theme.js?v=20261123-tech-book",
+    "/favicon-theme.js?v=20261123-book-light",
     "/page-transitions.js",
     "/home-motion.js",
     "/home-stars.js",
@@ -28,8 +28,8 @@
     "/styles/home-motion.css",
     "/styles/home-dashboard.css",
     "/images/almanion-wordmark.svg?v=20261123-tech-book",
-    "/favicons/favicon.svg?v=20261123-tech-book",
-    "/favicons/favicon-dark.svg?v=20261123-tech-book",
-    "/favicons/app-icon.svg?v=20261123-tech-book"
+    "/favicons/favicon.svg?v=20261123-book-light",
+    "/favicons/favicon-dark.svg?v=20261123-book-light",
+    "/favicons/app-icon.svg?v=20261123-book-light"
   ]
 }

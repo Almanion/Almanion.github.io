@@ -40,12 +40,12 @@ vm.runInNewContext(
 );
 
 assert.strictEqual(link.dataset.appliedFaviconTheme, 'light');
-assert.strictEqual(linkAttributes.href, 'favicons/favicon-ph.svg?v=20261123-tech-book');
+assert.strictEqual(linkAttributes.href, 'favicons/favicon-ph.svg?v=20261123-book-light');
 
 classes.add('exp-dark');
 mutationCallback();
 assert.strictEqual(link.dataset.appliedFaviconTheme, 'dark');
-assert.strictEqual(linkAttributes.href, 'favicons/favicon-ph-dark.svg?v=20261123-tech-book');
+assert.strictEqual(linkAttributes.href, 'favicons/favicon-ph-dark.svg?v=20261123-book-light');
 
 classes.delete('experimental');
 classes.delete('exp-dark');
@@ -56,7 +56,7 @@ assert.strictEqual(link.dataset.appliedFaviconTheme, 'dark');
 classes.delete('midnight-theme');
 mutationCallback();
 assert.strictEqual(link.dataset.appliedFaviconTheme, 'light');
-assert.strictEqual(linkAttributes.href, 'favicons/favicon-ph.svg?v=20261123-tech-book');
+assert.strictEqual(linkAttributes.href, 'favicons/favicon-ph.svg?v=20261123-book-light');
 
 assert.ok(listeners.has('storage'));
 assert.ok(listeners.has('pageshow'));
