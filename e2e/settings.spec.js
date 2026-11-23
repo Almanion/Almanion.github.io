@@ -34,12 +34,12 @@ for (const width of [1440, 390, 320]) test(`settings controls fit and persist at
     await expect(page.locator('#noteScaleRange')).toHaveValue('113');
     await page.locator('[data-note-scale-action="reset"]').click();
     await expect(page.locator('#noteScaleInput')).toHaveValue('100');
-    const swatches = await page.locator('.exp-mode-card').evaluateAll(elements => elements.map(el => el.getBoundingClientRect().top));
+    const swatches = await page.locator('[data-exp-mode]').evaluateAll(elements => elements.map(el => el.getBoundingClientRect().top));
     expect(Math.abs(swatches[0] - swatches[1])).toBeLessThan(1);
     await page.locator('[data-exp-theme="dark"]').click();
     await page.locator('[data-exp-mode="graphite"]').click();
     await page.locator('[data-level="medium"]').click();
-    await page.locator('.toggle-switch').filter({ has: page.locator('#hoverToggle') }).click();
+    await page.locator('.prefs-hover').filter({ has: page.locator('#hoverToggle') }).click();
     const geometry = await page.locator('.settings-modal-content').evaluate(el => {
         const r = el.getBoundingClientRect();
         return { left: r.left, right: r.right, bottom: r.bottom, overflow: el.scrollWidth - el.clientWidth,
@@ -64,7 +64,7 @@ for (const width of [1440, 390, 320]) test(`settings controls fit and persist at
     await expect(page.locator('#hoverToggle')).not.toBeChecked();
     await page.locator('[data-design-mode="legacy"]').click();
     await expect(page.locator('#themeSection')).toBeVisible();
-    await page.locator('.theme-option[data-theme="sepia"]').click();
+    await page.locator('#themeSection [data-theme="sepia"]').click();
     await page.keyboard.press('Escape');
     await expect(page.locator('#settingsModal')).toHaveClass(/hidden/);
 });
@@ -94,13 +94,38 @@ test('shared settings remain usable on the home page, Matcenter and English', as
         await page.waitForFunction(() => typeof openSettingsModal === 'function');
         await page.evaluate(() => openSettingsModal());
         await expect(page.locator('#settingsDoneBtn')).toBeInViewport();
+        if (path === '/index.html') await expect(page.locator('#hoverToggle')).toHaveCount(0);
+        if (path === '/matcenter.html') await expect(page.locator('[data-solved-animation="strike"]')).toBeVisible();
         if (path === '/english.html') {
             await expect(page.locator('#settingsDoneBtn')).toHaveText('Done');
-            await expect(page.locator('#settingsResetBtn')).toContainText('Reset all');
+            await expect(page.locator('#settingsResetBtn')).toContainText('Reset settings');
         }
         await page.locator('.settings-modal-body').evaluate(el => el.scrollTop = el.scrollHeight);
         await expect(page.locator('#settingsDoneBtn')).toBeInViewport();
         await page.locator('#settingsDoneBtn').click();
         await expect(page.locator('#settingsModal')).toHaveClass(/hidden/);
     }
+});
+
+test('sync and confirmed reset update the open sheet in place', async ({ page }) => {
+    const opener = page.locator('#settingsButtonSidebar');
+    await opener.click();
+    await page.evaluate(() => {
+        const settings = window.AlmanionSettings;
+        settings.applySynced({ ...settings.get(), noteScale: 1.17, animationLevel: 'off' });
+        window.settingsDialogBeforeReset = document.querySelector('#settingsModal');
+    });
+    await expect(page.locator('#noteScaleInput')).toHaveValue('117');
+    await expect(page.locator('[data-level="off"]')).toHaveAttribute('aria-pressed', 'true');
+    await page.locator('#settingsResetBtn').click();
+    await expect(page.locator('#prefsCancel')).toBeFocused();
+    await page.locator('#prefsCancel').click();
+    await expect(page.locator('#noteScaleInput')).toHaveValue('117');
+    await page.locator('#settingsResetBtn').click();
+    await page.locator('#prefsConfirm').click();
+    await expect(page.locator('#noteScaleInput')).toHaveValue('100');
+    await expect(page.locator('[data-level="max"]')).toHaveAttribute('aria-pressed', 'true');
+    expect(await page.evaluate(() => document.querySelector('#settingsModal') === window.settingsDialogBeforeReset)).toBe(true);
+    await page.keyboard.press('Escape');
+    await expect(opener).toBeFocused();
 });

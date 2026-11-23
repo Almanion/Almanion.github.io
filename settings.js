@@ -153,6 +153,7 @@ function updateSettings(patch, options = {}) {
     window.siteSettings = siteSettings;
     saveSettings();
     if (options.apply !== false) applyAllSettings();
+    refreshSettingsControls();
     return { ...siteSettings };
 }
 
@@ -169,13 +170,7 @@ function applySyncedSettings(value) {
         detail: { settings: { ...siteSettings }, source: 'sync' }
     }));
 
-    // Закрытая панель пересоздаётся с актуальными состояниями кнопок. Открытую
-    // не заменяем под руками пользователя; она обновится при следующем открытии.
-    const modal = document.getElementById('settingsModal');
-    if (modal && modal.classList.contains('hidden')) {
-        modal.remove();
-        createSettingsModal();
-    }
+    refreshSettingsControls();
 }
 
 // ============================================
@@ -456,6 +451,69 @@ function initSettingsButton() {
 // МОДАЛЬНОЕ ОКНО НАСТРОЕК
 // ============================================
 
+function renderSettingsContents() {
+    const icon = path => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${path}</svg>`;
+    const device = icon('<rect x="3" y="5" width="18" height="13" rx="2"/><path d="M9 21h6m-3-3v3"/>');
+    const sun = icon('<circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.5 1.5m11 11L19 19M5 19l1.5-1.5m11-11L19 5"/>');
+    const moon = icon('<path d="M20.5 14A8.8 8.8 0 0 1 10 3.5 9 9 0 1 0 20.5 14Z"/>');
+    const row = (key, label, attribute, options) => `
+        <div class="prefs-row">
+            <h3 id="${key}">${label}</h3>
+            <div class="prefs-choices" role="group" aria-labelledby="${key}">
+                ${options.map(([value, text, preview = '']) => `<button type="button" ${attribute}="${value}" aria-pressed="false">${preview}<span>${text}</span></button>`).join('')}
+            </div>
+        </div>`;
+    return `
+        <div class="settings-modal-content">
+            <header class="settings-modal-header">
+                <h2 id="settingsModalTitle">Настройки</h2>
+                <button type="button" id="settingsDoneBtn">Готово</button>
+            </header>
+            <div class="settings-modal-body">
+                ${isNoteReadingPage() ? `
+                    <section class="prefs-reading" aria-labelledby="prefsScale">
+                        <div class="prefs-heading">
+                            <h3 id="prefsScale">Масштаб конспекта</h3>
+                            <button type="button" data-note-scale-action="reset">Сбросить</button>
+                        </div>
+                        <div class="prefs-scale">
+                            <div class="prefs-track">
+                                <input id="noteScaleRange" type="range" min="75" max="125" step="1" aria-labelledby="prefsScale">
+                                <div class="prefs-limits" aria-hidden="true"><span>75%</span><span>100%</span><span>125%</span></div>
+                            </div>
+                            <label class="prefs-number"><input id="noteScaleInput" type="number" min="75" max="125" step="1" inputmode="numeric" aria-label="Масштаб конспекта, %"><span aria-hidden="true">%</span></label>
+                        </div>
+                        <label class="prefs-hover"><span>Подсветка блоков при наведении</span><input id="hoverToggle" type="checkbox" role="switch"></label>
+                    </section>` : ''}
+                <div class="prefs-display">
+                    <div id="expSubpanel">
+                        ${row('prefsTheme', 'Тема', 'data-exp-theme', [['system', 'Авто', device], ['light', 'Светлая', sun], ['dark', 'Тёмная', moon]])}
+                        ${row('prefsPalette', 'Палитра', 'data-exp-mode', [
+                            ['prism', 'Призма', '<i class="prefs-swatch prism" aria-hidden="true"></i>'],
+                            ['graphite', 'Графит', '<i class="prefs-swatch graphite" aria-hidden="true"></i>']
+                        ])}
+                    </div>
+                    <div id="themeSection">${row('prefsClassicTheme', 'Тема', 'data-theme', [['light', 'Светлая'], ['dark', 'Тёмная'], ['sepia', 'Сепия'], ['midnight', 'Полночь']])}</div>
+                    ${row('prefsMotion', 'Анимации', 'data-level', [['max', 'Полные'], ['medium', 'Умеренные'], ['off', 'Минимум']])}
+                    ${row('prefsLayout', 'Вид сайта', 'data-design-mode', [['new', 'По разделам'], ['legacy', 'Общая лента']])}
+                    ${isMatcenterPage() ? row('prefsSolved', 'Отметка решённых задач', 'data-solved-animation', [
+                        ['circle', 'Кольцо', '<i aria-hidden="true" class="prefs-marker ring">17</i>'],
+                        ['strike', 'Зачёркивание', '<i aria-hidden="true" class="prefs-marker strike">17</i>']
+                    ]) : ''}
+                </div>
+                <div class="prefs-tools">
+                    <button type="button" id="settingsOfflineButton">${icon('<path d="M12 3v11m-4-4 4 4 4-4M5 15v4a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-4"/>')}<span>Конспекты на устройстве</span>${icon('<path d="m9 5 7 7-7 7"/>')}</button>
+                    <button type="button" id="settingsResetBtn" aria-controls="prefsResetConfirm" aria-expanded="false">Сбросить настройки</button>
+                    <div class="prefs-confirm" id="prefsResetConfirm" role="group" aria-labelledby="prefsResetTitle" hidden>
+                        <strong id="prefsResetTitle">Вернуть настройки по умолчанию?</strong>
+                        <button type="button" id="prefsCancel">Отмена</button>
+                        <button type="button" id="prefsConfirm">Сбросить</button>
+                    </div>
+                </div>
+            </div>
+        </div>`;
+}
+
 function createSettingsModal() {
     // Проверяем, не создано ли уже модальное окно
     if (document.getElementById('settingsModal')) return;
@@ -465,228 +523,81 @@ function createSettingsModal() {
     modal.className = 'settings-modal hidden';
     modal.inert = true;
     modal.setAttribute('aria-hidden', 'true');
-    // Inline SVG-иконки (Feather-style, наследуют currentColor)
-    const ICONS = {
-        settings: `<svg class="settings-section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>`,
-        palette: `<svg class="settings-section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="13.5" cy="6.5" r=".5" fill="currentColor"/><circle cx="17.5" cy="10.5" r=".5" fill="currentColor"/><circle cx="8.5" cy="7.5" r=".5" fill="currentColor"/><circle cx="6.5" cy="12.5" r=".5" fill="currentColor"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"/></svg>`,
-        sparkles: `<svg class="settings-section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l1.5 4.5L18 9l-4.5 1.5L12 15l-1.5-4.5L6 9l4.5-1.5z"/><path d="M19 14l.75 2.25L22 17l-2.25.75L19 20l-.75-2.25L16 17l2.25-.75z"/><path d="M5 17l.5 1.5L7 19l-1.5.5L5 21l-.5-1.5L3 19l1.5-.5z"/></svg>`,
-        bookOpen: `<svg class="level-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>`,
-        moonStars: `<svg class="level-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/><circle cx="5" cy="5" r="0.6" fill="currentColor"/><circle cx="8" cy="2.5" r="0.5" fill="currentColor"/><circle cx="3" cy="10" r="0.4" fill="currentColor"/></svg>`,
-        pointer: `<svg class="settings-section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 11V6a2 2 0 0 1 4 0v6"/><path d="M13 9a2 2 0 0 1 4 0v4"/><path d="M17 11a2 2 0 0 1 4 0v6a5 5 0 0 1-5 5h-3.5a5 5 0 0 1-4.3-2.5L4 14a2 2 0 0 1 3.5-2L9 14"/></svg>`,
-        sun: `<svg class="level-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><line x1="12" y1="2" x2="12" y2="5"/><line x1="12" y1="19" x2="12" y2="22"/><line x1="2" y1="12" x2="5" y2="12"/><line x1="19" y1="12" x2="22" y2="12"/><line x1="5" y1="5" x2="7" y2="7"/><line x1="17" y1="17" x2="19" y2="19"/><line x1="5" y1="19" x2="7" y2="17"/><line x1="17" y1="7" x2="19" y2="5"/></svg>`,
-        moon: `<svg class="level-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>`,
-        device: `<svg class="level-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 21h8M12 17v4"/></svg>`,
-        rocket: `<svg class="level-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 16.5c-1.5 1.5-2 5-2 5s3.5-.5 5-2c.85-.85.86-2.15.05-3-.81-.85-2.2-.85-3.05 0"/><path d="M12 15l-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/></svg>`,
-        zap: `<svg class="level-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>`,
-        muted: `<svg class="level-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="22" y1="9" x2="16" y2="15"/><line x1="16" y1="9" x2="22" y2="15"/></svg>`,
-        textSize: `<svg class="settings-section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6V4h16v2"/><path d="M9 20h6"/><path d="M12 4v16"/></svg>`,
-        refresh: `<svg class="reset-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 0 1-15.45 6.36L3 16"/><path d="M3 12a9 9 0 0 1 15.45-6.36L21 8"/><polyline points="21 3 21 8 16 8"/><polyline points="3 21 3 16 8 16"/></svg>`,
-        tree: `<svg class="settings-section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2 6 9h3l-4 5h3l-4 5h16l-4-5h3l-4-5h3z"/><line x1="12" y1="19" x2="12" y2="22"/></svg>`,
-        checkCircle: `<svg class="settings-section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 12.5 11.2 15 16 9"/><circle cx="12" cy="12" r="9"/></svg>`
-    };
-
-    modal.innerHTML = `
-        <div class="settings-modal-content">
-            <div class="settings-modal-header">
-                <div class="settings-modal-heading">
-                    <h2 id="settingsModalTitle">Настройки</h2>
-                </div>
-                <button class="settings-close-btn" id="settingsCloseBtn" aria-label="Закрыть"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="6" y1="6" x2="18" y2="18"/><line x1="6" y1="18" x2="18" y2="6"/></svg></button>
-            </div>
-
-            <div class="settings-modal-body">
-                ${isNoteReadingPage() ? `
-                <!-- Масштаб конспекта -->
-                <div class="settings-section settings-scale-section">
-                    <div class="settings-section-heading">
-                        <h3>${ICONS.textSize}<span>Масштаб конспекта</span></h3>
-                        <button type="button" class="note-scale-reset" data-note-scale-action="reset">Сбросить</button>
-                    </div>
-                    <div class="note-scale-control" role="group" aria-label="Масштаб конспекта">
-                        <label class="note-scale-number" for="noteScaleInput">
-                            <span class="note-scale-input-wrap">
-                                <input id="noteScaleInput" type="number" min="75" max="125" step="1" inputmode="numeric" value="${Math.round(normalizeNoteScale(siteSettings.noteScale) * 100)}" aria-label="Масштаб конспекта, %" aria-describedby="noteScaleLimits">
-                                <span aria-hidden="true">%</span>
-                            </span>
-                        </label>
-                        <div class="note-scale-slider-wrap">
-                            <input class="note-scale-slider" id="noteScaleRange" type="range" min="75" max="125" step="1" value="${Math.round(normalizeNoteScale(siteSettings.noteScale) * 100)}" aria-label="Масштаб конспекта">
-                            <div class="note-scale-limits" id="noteScaleLimits" aria-hidden="true"><span>75%</span><span>100%</span><span>125%</span></div>
-                        </div>
-                    </div>
-                </div>
-                ` : ''}
-
-                <!-- Новый и старый интерфейс -->
-                <div class="settings-section">
-                    <h3>${ICONS.settings}<span>Интерфейс</span></h3>
-                    <div class="settings-option">
-                        <div class="design-mode-selector" role="radiogroup" aria-label="Дизайн сайта">
-                            <button type="button" class="design-mode-option ${siteSettings.experimental ? 'active' : ''}" data-design-mode="new" role="radio" aria-checked="${siteSettings.experimental}">
-                                <span class="design-mode-name">Новый</span>
-                                <span class="design-mode-desc">По разделам</span>
-                                <span class="settings-choice-dot" aria-hidden="true"></span>
-                            </button>
-                            <button type="button" class="design-mode-option ${siteSettings.experimental ? '' : 'active'}" data-design-mode="legacy" role="radio" aria-checked="${!siteSettings.experimental}">
-                                <span class="design-mode-name">Старый</span>
-                                <span class="design-mode-desc">Общая лента</span>
-                                <span class="settings-choice-dot" aria-hidden="true"></span>
-                            </button>
-                        </div>
-                        <div class="exp-subpanel" id="expSubpanel" ${siteSettings.experimental ? '' : 'hidden'}>
-                            <div class="settings-subgroup-heading">
-                                <span>Цветовая система</span>
-                            </div>
-                            <div class="exp-mode-grid">
-                                <button type="button" class="exp-mode-card ${siteSettings.expMode === 'graphite' ? 'active' : ''}" data-exp-mode="graphite" aria-pressed="${siteSettings.expMode === 'graphite'}">
-                                    <span class="exp-mode-swatch exp-swatch-graphite"><span></span><span></span><span></span></span>
-                                    <span class="exp-mode-name">Графит</span>
-                                </button>
-                                <button type="button" class="exp-mode-card ${siteSettings.expMode === 'prism' ? 'active' : ''}" data-exp-mode="prism" aria-pressed="${siteSettings.expMode === 'prism'}">
-                                    <span class="exp-mode-swatch exp-swatch-prism"><span></span><span></span><span></span></span>
-                                    <span class="exp-mode-name">Призма</span>
-                                </button>
-                            </div>
-                            <div class="settings-subgroup-heading settings-subgroup-heading-compact">
-                                <span>Освещение</span>
-                            </div>
-                            <div class="exp-lightdark" role="group" aria-label="Цветовая тема">
-                                <button type="button" class="exp-ld-btn ${siteSettings.expTheme === 'system' ? 'active' : ''}" data-exp-theme="system" aria-pressed="${siteSettings.expTheme === 'system'}">${ICONS.device}<span>Как на устройстве</span></button>
-                                <button type="button" class="exp-ld-btn ${siteSettings.expTheme === 'light' ? 'active' : ''}" data-exp-theme="light" aria-pressed="${siteSettings.expTheme === 'light'}">${ICONS.sun}<span>Светлая</span></button>
-                                <button type="button" class="exp-ld-btn ${siteSettings.expTheme === 'dark' ? 'active' : ''}" data-exp-theme="dark" aria-pressed="${siteSettings.expTheme === 'dark'}">${ICONS.moon}<span>Тёмная</span></button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Тема -->
-                <div class="settings-section" id="themeSection" ${siteSettings.experimental ? 'style="display:none;"' : ''}>
-                    <h3>${ICONS.palette}<span>Темы старого дизайна</span></h3>
-                    <div class="settings-option">
-                        <div class="theme-selector">
-                            <button class="theme-option ${siteSettings.theme === 'light' ? 'active' : ''}" data-theme="light">
-                                <div class="theme-preview light-preview">
-                                    <div class="preview-header"></div>
-                                    <div class="preview-content"></div>
-                                </div>
-                                <span class="theme-option-label">${ICONS.sun}<span>Светлая</span></span>
-                            </button>
-                            <button class="theme-option ${siteSettings.theme === 'dark' ? 'active' : ''}" data-theme="dark">
-                                <div class="theme-preview dark-preview">
-                                    <div class="preview-header"></div>
-                                    <div class="preview-content"></div>
-                                </div>
-                                <span class="theme-option-label">${ICONS.moon}<span>Тёмная</span></span>
-                            </button>
-                            <button class="theme-option ${siteSettings.theme === 'sepia' ? 'active' : ''}" data-theme="sepia">
-                                <div class="theme-preview sepia-preview">
-                                    <div class="preview-header"></div>
-                                    <div class="preview-content"></div>
-                                </div>
-                                <span class="theme-option-label">${ICONS.bookOpen}<span>Сепия</span></span>
-                            </button>
-                            <button class="theme-option ${siteSettings.theme === 'midnight' ? 'active' : ''}" data-theme="midnight">
-                                <div class="theme-preview midnight-preview">
-                                    <div class="preview-header"></div>
-                                    <div class="preview-content"></div>
-                                </div>
-                                <span class="theme-option-label">${ICONS.moonStars}<span>Полночь</span></span>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Новогодний вайб (скрыт, код сохранён) -->
-                <div class="settings-section" id="nySettingsSection" style="display: none;">
-                    <h3>${ICONS.tree}<span>Новогодний вайб</span></h3>
-                    <div class="settings-option">
-                        <label class="toggle-switch">
-                            <input type="checkbox" id="newYearToggle" ${siteSettings.newYearMode ? 'checked' : ''}>
-                            <span class="toggle-slider"></span>
-                            <span class="toggle-label">Включить новогоднее настроение со снегом и украшениями</span>
-                        </label>
-                        <button class="ny-advanced-settings" id="nyAdvancedBtn" style="margin-top: 0.75rem;">
-                            ${ICONS.palette}<span>Дополнительные настройки снега</span>
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Анимации -->
-                <div class="settings-section">
-                    <h3>${ICONS.sparkles}<span>Движение интерфейса</span></h3>
-                    <div class="settings-option">
-                        <div class="animation-level-selector">
-                            <button class="animation-level-option ${siteSettings.animationLevel === 'max' ? 'active' : ''}" data-level="max">
-                                <span class="level-icon">${ICONS.rocket}</span>
-                                <span class="level-copy"><span class="level-title">Полное</span><span class="level-desc">Плавные переходы и отклики</span></span>
-                            </button>
-                            <button class="animation-level-option ${siteSettings.animationLevel === 'medium' ? 'active' : ''}" data-level="medium">
-                                <span class="level-icon">${ICONS.zap}</span>
-                                <span class="level-copy"><span class="level-title">Умеренное</span><span class="level-desc">Только основные переходы</span></span>
-                            </button>
-                            <button class="animation-level-option ${siteSettings.animationLevel === 'off' ? 'active' : ''}" data-level="off">
-                                <span class="level-icon">${ICONS.muted}</span>
-                                <span class="level-copy"><span class="level-title">Минимальное</span><span class="level-desc">Без декоративного движения</span></span>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                ${isMatcenterPage() ? `
-                <!-- Матцентр -->
-                <div class="settings-section" id="matcenterSolvedSection">
-                    <h3>${ICONS.checkCircle}<span>Отметка решённых задач</span></h3>
-                    <div class="settings-option">
-                        <div class="matcenter-solved-settings">
-                            <div class="matcenter-solved-settings-title">Вид отметки «решено»</div>
-                            <div class="matcenter-solved-animation-selector" role="group" aria-label="Анимация отметки решённой задачи">
-                                <button type="button" class="matcenter-solved-animation-option ${normalizeMatcenterSolvedAnimation(siteSettings.matcenterSolvedAnimation) === 'circle' ? 'active' : ''}" data-solved-animation="circle">
-                                    <span class="mc-solved-preview mc-solved-preview-circle"><span class="mc-prev-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span><span class="mc-prev-num">17</span></span>
-                                    <span class="level-title">Кольцо</span>
-                                    <span class="level-desc">Галочка с мягким обведением</span>
-                                </button>
-                                <button type="button" class="matcenter-solved-animation-option ${normalizeMatcenterSolvedAnimation(siteSettings.matcenterSolvedAnimation) === 'strike' ? 'active' : ''}" data-solved-animation="strike">
-                                    <span class="mc-solved-preview mc-solved-preview-strike"><span class="mc-prev-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span><span class="mc-prev-num">17</span></span>
-                                    <span class="level-title">Зачёркивание</span>
-                                    <span class="level-desc">Галочка и линия по номеру</span>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                ` : ''}
-
-                <div class="settings-section">
-                    <h3>${ICONS.bookOpen}<span>Без интернета</span></h3>
-                    <button type="button" class="settings-reset-btn" id="settingsOfflineButton">Конспекты на устройстве</button>
-                </div>
-
-                <!-- Hover-эффекты -->
-                <div class="settings-section">
-                    <h3>${ICONS.pointer}<span>Отклик курсора</span></h3>
-                    <div class="settings-option">
-                        <label class="toggle-switch">
-                            <input type="checkbox" id="hoverToggle" ${siteSettings.hoverEffects ? 'checked' : ''}>
-                            <span class="toggle-slider"></span>
-                            <span class="toggle-label">Подсветка учебных блоков при движении курсора</span>
-                        </label>
-                    </div>
-                </div>
-
-            </div>
-            <div class="settings-actions">
-                <button type="button" class="settings-reset-btn" id="settingsResetBtn">
-                    ${ICONS.refresh}<span>Сбросить всё</span>
-                </button>
-                <button type="button" class="settings-done-btn" id="settingsDoneBtn">Готово</button>
-            </div>
-        </div>
-    `;
-    
+    modal.innerHTML = renderSettingsContents();
     document.body.appendChild(modal);
     
     // Привязываем обработчики
     bindSettingsHandlers();
+    refreshSettingsControls();
+    initSettingsSwipe();
+}
+
+function refreshSettingsControls() {
+    const modal = document.getElementById('settingsModal');
+    if (!modal) return;
+    const selected = {
+        expTheme: siteSettings.expTheme,
+        expMode: siteSettings.expMode,
+        theme: siteSettings.theme,
+        designMode: siteSettings.experimental ? 'new' : 'legacy',
+        level: siteSettings.animationLevel,
+        solvedAnimation: siteSettings.matcenterSolvedAnimation
+    };
+    modal.querySelectorAll('.prefs-choices button').forEach(button => {
+        const [key, value] = Object.entries(button.dataset)[0];
+        button.setAttribute('aria-pressed', String(selected[key] === value));
+    });
+    modal.querySelector('#expSubpanel').hidden = !siteSettings.experimental;
+    modal.querySelector('#themeSection').hidden = siteSettings.experimental;
+    const hover = modal.querySelector('#hoverToggle');
+    if (hover) hover.checked = siteSettings.hoverEffects;
+    const percent = String(Math.round(normalizeNoteScale(siteSettings.noteScale) * 100));
+    const number = modal.querySelector('#noteScaleInput');
+    const range = modal.querySelector('#noteScaleRange');
+    const resetScale = modal.querySelector('[data-note-scale-action="reset"]');
+    if (resetScale) resetScale.disabled = percent === '100';
+    if (number && document.activeElement !== number) number.value = percent;
+    if (range) {
+        range.value = percent;
+        range.setAttribute('aria-valuetext', percent + '%');
+    }
+}
+
+function bindPreferenceChoices(modal) {
+    modal.querySelector('.prefs-display').addEventListener('click', event => {
+        const button = event.target.closest('.prefs-choices button');
+        if (!button || button.getAttribute('aria-pressed') === 'true') return;
+        const { expTheme, expMode, theme, designMode, level, solvedAnimation } = button.dataset;
+        if (level || solvedAnimation) {
+            if (level) {
+                siteSettings.animationLevel = level;
+                applyAnimationLevel(level);
+            } else {
+                siteSettings.matcenterSolvedAnimation = solvedAnimation;
+                applyMatcenterSolvedAnimation();
+            }
+            refreshSettingsControls();
+            saveSettings();
+            return;
+        }
+        animateThemeChange(() => {
+            if (expTheme) siteSettings.expTheme = expTheme;
+            if (expMode) siteSettings.expMode = expMode;
+            if (theme) siteSettings.theme = theme;
+            if (designMode) siteSettings.experimental = designMode === 'new';
+            applyExperimental();
+            applyTheme(siteSettings.theme);
+            refreshSettingsControls();
+            saveSettings();
+        });
+    });
+}
+
+function setResetConfirmation(open) {
+    const reset = document.getElementById('settingsResetBtn');
+    reset.setAttribute('aria-expanded', String(open));
+    reset.hidden = open;
+    document.getElementById('prefsResetConfirm').hidden = !open;
 }
 
 function bindSettingsHandlers() {
@@ -704,14 +615,17 @@ function bindSettingsHandlers() {
             }
             closeSettingsModal();
             await window.AlmanionOffline.open();
-        } catch (_) { window.AlmanionToast?.show('Не удалось открыть загрузки. Повторите попытку.', { type: 'error' }); }
+        } catch (_) {
+            const message = document.body.dataset.uiLanguage === 'en'
+                ? 'Could not open offline notes. Try again.'
+                : 'Не удалось открыть загрузки. Повторите попытку.';
+            showNotification(message);
+        }
         finally { this.disabled = false; }
     });
     // Закрытие модального окна
-    const closeBtn = document.getElementById('settingsCloseBtn');
     const modal = document.getElementById('settingsModal');
     
-    closeBtn.addEventListener('click', closeSettingsModal);
     document.getElementById('settingsDoneBtn').addEventListener('click', closeSettingsModal);
     
     // Закрытие по клику на фон
@@ -721,187 +635,21 @@ function bindSettingsHandlers() {
         }
     });
     
-    // Закрытие по Escape (только если это окно открыто)
-    document.addEventListener('keydown', (e) => {
-        const activeModal = document.getElementById('settingsModal');
-        if (e.key === 'Tab' && activeModal && !activeModal.inert) {
-            const controls = Array.from(activeModal.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'))
-                .filter(node => !node.disabled && node.getClientRects().length);
+    modal.addEventListener('keydown', event => {
+        if (event.key === 'Escape') {
+            event.preventDefault();
+            closeSettingsModal();
+        } else if (event.key === 'Tab') {
+            const controls = [...modal.querySelectorAll('button:not(:disabled), input:not(:disabled)')].filter(el => el.getClientRects().length);
             const first = controls[0], last = controls[controls.length - 1];
-            if (controls.length && (e.shiftKey ? document.activeElement === first : document.activeElement === last)) {
-                e.preventDefault();
-                (e.shiftKey ? last : first).focus();
-            }
-        }
-        if (e.key === 'Escape') {
-            const settingsModalElement = document.getElementById('settingsModal');
-            const nySettingsModalElement = document.getElementById('nySettingsModal');
-            
-            // Закрываем только если наше окно открыто и окно настроек снега закрыто
-            if (settingsModalElement && 
-                !settingsModalElement.classList.contains('hidden') &&
-                (!nySettingsModalElement || nySettingsModalElement.classList.contains('hidden'))) {
-                closeSettingsModal();
+            if (document.activeElement === (event.shiftKey ? first : last)) {
+                event.preventDefault();
+                (event.shiftKey ? last : first).focus();
             }
         }
     });
-    
-    // Переключение темы
-    const themeButtons = document.querySelectorAll('.theme-option');
-    themeButtons.forEach(btn => {
-        btn.addEventListener('click', () => {
-            const theme = btn.dataset.theme;
-            if (theme === siteSettings.theme) return;
-            animateThemeChange(() => {
-                siteSettings.theme = theme;
-                themeButtons.forEach(b => b.classList.toggle('active', b === btn));
-                applyTheme(theme);
-                saveSettings();
-            });
-        });
-    });
+    bindPreferenceChoices(modal);
 
-    // ---- Новый и старый интерфейс ----
-    const designModeButtons = document.querySelectorAll('.design-mode-option');
-    const expSubpanel = document.getElementById('expSubpanel');
-    const themeSection = document.getElementById('themeSection');
-    designModeButtons.forEach(btn => {
-        btn.addEventListener('click', () => {
-            const newDesign = btn.dataset.designMode === 'new';
-            if (newDesign === siteSettings.experimental) return;
-            animateThemeChange(() => {
-                siteSettings.experimental = newDesign;
-                designModeButtons.forEach(button => {
-                    const active = button === btn;
-                    button.classList.toggle('active', active);
-                    button.setAttribute('aria-checked', String(active));
-                });
-                if (expSubpanel) expSubpanel.hidden = !newDesign;
-                if (themeSection) themeSection.style.display = newDesign ? 'none' : '';
-                applyExperimental();
-                applyTheme(siteSettings.theme);
-                saveSettings();
-            });
-            showNotification(newDesign ? 'Включён новый интерфейс' : 'Включён старый интерфейс');
-        });
-    });
-
-    const expModeCards = document.querySelectorAll('.exp-mode-card');
-    expModeCards.forEach(card => {
-        card.addEventListener('click', () => {
-            const mode = card.dataset.expMode;
-            if (mode === siteSettings.expMode) return;
-            animateThemeChange(() => {
-                siteSettings.expMode = mode;
-                expModeCards.forEach(c => {
-                    const active = c === card;
-                    c.classList.toggle('active', active);
-                    c.setAttribute('aria-pressed', String(active));
-                });
-                applyExperimental();
-                saveSettings();
-            });
-        });
-    });
-    const expLdBtns = document.querySelectorAll('.exp-ld-btn');
-    expLdBtns.forEach(btn => {
-        btn.addEventListener('click', () => {
-            const theme = normalizeExperimentalTheme(btn.dataset.expTheme, siteSettings.expDark);
-            if (theme === siteSettings.expTheme) return;
-            animateThemeChange(() => {
-                siteSettings.expTheme = theme;
-                siteSettings.expDark = resolveExperimentalDark(theme);
-                expLdBtns.forEach(b => {
-                    const active = b === btn;
-                    b.classList.toggle('active', active);
-                    b.setAttribute('aria-pressed', String(active));
-                });
-                applyExperimental();
-                saveSettings();
-            });
-        });
-    });
-
-    // Переключение новогоднего режима
-    const newYearToggle = document.getElementById('newYearToggle');
-    newYearToggle.addEventListener('change', (e) => {
-        const enabled = e.target.checked;
-        siteSettings.newYearMode = enabled;
-        
-        // Применяем через глобальную функцию из newyear.js
-        if (typeof isNewYearMode !== 'undefined') {
-            if (enabled && !isNewYearMode) {
-                toggleNewYearMode();
-            } else if (!enabled && isNewYearMode) {
-                toggleNewYearMode();
-            }
-        } else if (enabled) {
-            window.dispatchEvent(new CustomEvent('almanion-load-newyear'));
-        }
-        
-        // Сохраняем
-        safeStorageSet('newYearMode', enabled);
-        saveSettings();
-    });
-    
-    // Кнопка дополнительных настроек снега
-    const nyAdvancedBtn = document.getElementById('nyAdvancedBtn');
-    nyAdvancedBtn.addEventListener('click', () => {
-        // Открываем модальное окно настроек снега из newyear.js
-        closeSettingsModal(); // Закрываем наше окно настроек
-        const ready = window.AlmanionNoteRuntime
-            ? window.AlmanionNoteRuntime.ensure('newyear').catch(() => null)
-            : Promise.resolve();
-        ready.then(() => setTimeout(() => {
-            // Используем глобальную функцию из newyear.js
-            if (typeof window.nyOpenSettingsModal === 'function') {
-                window.nyOpenSettingsModal();
-            } else {
-                // Fallback - открываем напрямую
-                const nySettingsModal = document.getElementById('nySettingsModal');
-                if (nySettingsModal) {
-                    nySettingsModal.classList.remove('hidden');
-                    document.body.style.overflow = 'hidden';
-                }
-            }
-        }, 120));
-    });
-    
-    // Переключение уровня анимаций
-    const animationButtons = document.querySelectorAll('.animation-level-option');
-    animationButtons.forEach(btn => {
-        btn.addEventListener('click', () => {
-            const level = btn.dataset.level;
-            siteSettings.animationLevel = level;
-            
-            // Обновляем UI
-            animationButtons.forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            
-            // Применяем и сохраняем
-            applyAnimationLevel(level);
-            saveSettings();
-            
-        });
-    });
-
-    // Матцентр: анимация личной отметки «решено»
-    const matcenterSolvedButtons = document.querySelectorAll('.matcenter-solved-animation-option');
-    matcenterSolvedButtons.forEach(btn => {
-        btn.addEventListener('click', () => {
-            const mode = normalizeMatcenterSolvedAnimation(btn.dataset.solvedAnimation);
-            siteSettings.matcenterSolvedAnimation = mode;
-
-            matcenterSolvedButtons.forEach(b => b.classList.toggle('active', b === btn));
-            applyMatcenterSolvedAnimation();
-            saveSettings();
-
-            showNotification(mode === 'strike'
-                ? 'Отметка задач: диагональное зачёркивание'
-                : 'Отметка задач: обведение номера');
-        });
-    });
-    
     // Отклик курсора
     const hoverToggle = document.getElementById('hoverToggle');
     if (hoverToggle) {
@@ -914,25 +662,18 @@ function bindSettingsHandlers() {
 
     const noteScaleInput = document.getElementById('noteScaleInput');
     const noteScaleRange = document.getElementById('noteScaleRange');
-    const updateNoteScaleControls = () => {
-        const percent = Math.round(normalizeNoteScale(siteSettings.noteScale) * 100);
-        if (noteScaleInput && document.activeElement !== noteScaleInput) noteScaleInput.value = String(percent);
-        if (noteScaleRange) {
-            noteScaleRange.value = String(percent);
-            noteScaleRange.setAttribute('aria-valuetext', percent + '%');
-        }
-    };
     const setNoteScalePercent = (rawValue, persist = true) => {
         const numeric = Number(rawValue);
-        if (!Number.isFinite(numeric)) return false;
+        if (rawValue === '' || !Number.isFinite(numeric)) return false;
         const percent = Math.min(NOTE_SCALE_MAX * 100, Math.max(NOTE_SCALE_MIN * 100, Math.round(numeric)));
         siteSettings.noteScale = normalizeNoteScale(percent / 100);
         applyNoteScale(siteSettings.noteScale);
-        updateNoteScaleControls();
+        refreshSettingsControls();
         if (persist) saveSettings();
         return true;
     };
-    noteScaleRange?.addEventListener('input', event => setNoteScalePercent(event.target.value));
+    noteScaleRange?.addEventListener('input', event => setNoteScalePercent(event.target.value, false));
+    noteScaleRange?.addEventListener('change', () => saveSettings());
     noteScaleInput?.addEventListener('input', event => {
         const value = Number(event.target.value);
         if (Number.isFinite(value) && value >= NOTE_SCALE_MIN * 100 && value <= NOTE_SCALE_MAX * 100) {
@@ -940,24 +681,28 @@ function bindSettingsHandlers() {
         }
     });
     noteScaleInput?.addEventListener('change', event => {
-        if (!setNoteScalePercent(event.target.value)) updateNoteScaleControls();
+        setNoteScalePercent(event.target.value);
+        event.target.value = String(Math.round(siteSettings.noteScale * 100));
     });
-    noteScaleInput?.addEventListener('blur', updateNoteScaleControls);
-    document.querySelector('[data-note-scale-action="reset"]')?.addEventListener('click', () => setNoteScalePercent(100));
-    updateNoteScaleControls();
-
-    // Сброс настроек
-    const resetBtn = document.getElementById('settingsResetBtn');
-    resetBtn.addEventListener('click', resetAllSettings);
-}
-
-function getAnimationLevelMessage(level) {
-    const messages = {
-        'max': 'Включено полное движение интерфейса',
-        'medium': 'Включено умеренное движение интерфейса',
-        'off': 'Декоративное движение отключено'
+    noteScaleInput?.addEventListener('blur', () => { noteScaleInput.value = String(Math.round(siteSettings.noteScale * 100)); });
+    modal.querySelector('[data-note-scale-action="reset"]')?.addEventListener('click', () => {
+        setNoteScalePercent(100);
+        noteScaleRange.focus();
+    });
+    const resetBtn = modal.querySelector('#settingsResetBtn');
+    resetBtn.addEventListener('click', () => {
+        setResetConfirmation(true);
+        modal.querySelector('#prefsCancel').focus();
+    });
+    const dismissReset = () => {
+        setResetConfirmation(false);
+        resetBtn.focus();
     };
-    return messages[level] || 'Настройки применены';
+    modal.querySelector('#prefsCancel').addEventListener('click', dismissReset);
+    modal.querySelector('#prefsConfirm').addEventListener('click', () => {
+        resetAllSettings();
+        dismissReset();
+    });
 }
 
 // ============================================
@@ -966,7 +711,9 @@ function getAnimationLevelMessage(level) {
 
 function openSettingsModal() {
     const modal = document.getElementById('settingsModal');
-    if (!modal) return;
+    if (!modal || !modal.inert) return;
+    refreshSettingsControls();
+    setResetConfirmation(false);
 
     modal.classList.remove('hidden');
     modal.inert = false;
@@ -977,14 +724,7 @@ function openSettingsModal() {
     modal.setAttribute('aria-modal', 'true');
     modal.setAttribute('aria-labelledby', 'settingsModalTitle');
 
-    const newYearToggle = document.getElementById('newYearToggle');
-    if (newYearToggle && typeof isNewYearMode !== 'undefined') {
-        newYearToggle.checked = isNewYearMode;
-    }
-    const hoverToggle = document.getElementById('hoverToggle');
-    if (hoverToggle) {
-        hoverToggle.checked = siteSettings.hoverEffects;
-    }
+    modal.querySelector('.settings-modal-body').scrollTop = 0;
 
     // Запоминаем элемент, с которого открыли — вернём фокус при закрытии
     settingsModalReturnFocus = document.activeElement;
@@ -1014,35 +754,13 @@ function closeSettingsModal() {
 // ============================================
 
 function resetAllSettings() {
-    const resetPrompt = document.body?.dataset.uiLanguage === 'en'
-        ? 'Are you sure you want to restore all settings to their defaults?'
-        : 'Вы уверены, что хотите сбросить все настройки на значения по умолчанию?';
-    if (confirm(resetPrompt)) {
-        // Сбрасываем настройки
-        siteSettings = { ...defaultSettings, expDark: systemPrefersDark() };
-        window.siteSettings = siteSettings;
-        
-        // Применяем
-        applyAllSettings();
-        
-        // Сбрасываем новогодний режим
-        if (typeof isNewYearMode !== 'undefined' && isNewYearMode !== defaultSettings.newYearMode) {
-            toggleNewYearMode();
-        }
-        
-        // Сохраняем
-        saveSettings();
-        
-        // Закрываем модальное окно
-        closeSettingsModal();
-        
-        // Перезагружаем страницу для применения всех изменений
-        setTimeout(() => {
-            location.reload();
-        }, 500);
-        
-        showNotification('Настройки сброшены! Страница будет перезагружена...');
-    }
+    siteSettings = { ...defaultSettings, expDark: systemPrefersDark() };
+    window.siteSettings = siteSettings;
+    applyAllSettings();
+    if (typeof isNewYearMode !== 'undefined' && isNewYearMode && typeof toggleNewYearMode === 'function') toggleNewYearMode();
+    safeStorageSet('newYearMode', false);
+    saveSettings();
+    refreshSettingsControls();
 }
 
 // ============================================
@@ -1097,7 +815,7 @@ function initSettingsSwipe() {
 
     modal.addEventListener('touchstart', (e) => {
         tracking = false;
-        if (window.innerWidth > 768) return;
+        if (!window.matchMedia('(max-width: 600px)').matches || e.touches.length !== 1) return;
         // The body scrolls independently; dragging its controls must not dismiss the sheet.
         if (!e.target.closest('.settings-modal-header') || e.target.closest('button')) return;
         const content = getContent();
@@ -1131,6 +849,15 @@ function initSettingsSwipe() {
             modal.style.background = `rgba(0, 0, 0, ${Math.max(0, 0.75 - swipeDelta / 400)})`;
         }
     }, { passive: false });
+
+    modal.addEventListener('touchcancel', () => {
+        tracking = false;
+        activated = false;
+        const content = getContent();
+        content.style.transition = '';
+        content.style.transform = '';
+        modal.style.background = '';
+    });
 
     modal.addEventListener('touchend', () => {
         if (!tracking) return;
@@ -1186,10 +913,8 @@ window.AlmanionSettings = {
 
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', initializeSettingsSystem, { once: true });
-    document.addEventListener('DOMContentLoaded', initSettingsSwipe, { once: true });
 } else {
     initializeSettingsSystem();
-    initSettingsSwipe();
 }
 
 console.log('⚙️ Система настроек загружена');

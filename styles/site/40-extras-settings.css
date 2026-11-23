@@ -475,302 +475,234 @@ body.new-year-mode .ny-toggle {
 }
 
 /* Shared settings layout, including deferred note pages. */
-.settings-modal .settings-modal-content {
-    width: min(600px, calc(100% - 32px));
-    max-width: 600px;
-    max-height: min(90dvh, 820px);
-    background: color-mix(in srgb, var(--bg-primary) 96%, var(--accent-color) 4%);
-    border-color: color-mix(in srgb, var(--border-color) 82%, var(--accent-color) 18%);
-    border-radius: 22px;
-    box-shadow: 0 26px 80px -22px rgba(8, 15, 35, 0.58);
-}
-
-.settings-modal .settings-modal-header {
-    flex-shrink: 0;
-    padding: 0.9rem 1.25rem;
-    background: var(--bg-primary);
-    border-radius: 22px 22px 0 0;
-}
-
-.settings-modal .settings-modal-body {
-    display: grid;
-    align-content: start;
-    gap: 1.25rem;
-    padding: 1.15rem 1.25rem;
-    overscroll-behavior: contain;
-    scrollbar-gutter: stable;
-}
-
-.settings-modal .settings-section,
-.settings-modal .settings-section:last-of-type {
-    box-sizing: border-box;
-    width: 100%;
-    min-width: 0;
-    margin: 0;
-    padding: 0;
-    background: transparent;
-    border: 0;
-    box-shadow: none;
-}
-
-.settings-modal .settings-section + .settings-section {
-    padding-top: 0;
-}
-
-.settings-modal .settings-section h3 {
-    margin: 0;
-    font-size: 0.98rem;
-    line-height: 1.2;
-}
-
-.settings-modal .settings-section h3 .settings-section-icon {
-    box-sizing: content-box;
-    width: 17px;
-    height: 17px;
-    padding: 0.2rem;
-    color: var(--accent-color);
-    background: transparent;
-    border-radius: 10px;
-}
-
-.settings-modal .settings-option {
-    width: 100%;
-    margin-top: 0.8rem;
-}
-
-.settings-modal .animation-level-selector {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 0.55rem;
-}
-
-.settings-modal .animation-level-option {
-    box-sizing: border-box;
-    display: grid;
-    grid-template-columns: 30px minmax(0, 1fr);
-    align-items: center;
-    column-gap: 0.65rem;
-    min-width: 0;
-    min-height: 62px;
-    padding: 0.78rem;
-    border-width: 1px;
-    border-radius: 10px;
-    line-height: 1;
-}
-
-.settings-modal .animation-level-option .level-icon {
-    width: 26px;
-    height: 26px;
-}
-
-.settings-modal .animation-level-option .level-icon-svg {
-    width: 21px;
-    height: 21px;
-}
-
-.settings-modal .animation-level-option .level-copy {
-    display: grid;
-    align-content: center;
-    gap: 0.22rem;
-    min-width: 0;
-    min-height: 42px;
-}
-
-.settings-modal .animation-level-option .level-title {
-    margin: 0;
-    font-size: 0.83rem;
-    line-height: 1.2;
-}
-
-.settings-modal .animation-level-option .level-desc {
-    margin: 0;
-    font-size: 0.7rem;
-    line-height: 1.32;
-}
-
-.settings-modal .toggle-switch {
-    box-sizing: border-box;
-    width: 100%;
-    padding: 0.8rem 0.9rem;
+/* Preferences share the active palette in both reader layouts. */
+#settingsModal .settings-modal-content {
+    width: min(540px, calc(100% - 32px));
+    max-height: min(90vh, 780px);
+    max-height: min(90dvh, 780px);
+    border-radius: 20px !important;
+    color: var(--text-primary);
     background: var(--bg-secondary);
-    border: 1px solid var(--border-color);
-    border-radius: 10px;
+    box-shadow: 0 18px 72px rgb(0 0 0 / 28%);
 }
-
-.settings-modal .settings-actions {
-    flex-shrink: 0;
+#settingsModal .settings-modal-header {
+    flex: none;
+    padding: 14px 22px;
+    background: transparent !important;
+    border-bottom: 1px solid var(--border-color);
+}
+#settingsModal h2 { margin: 0; font-size: 1.4rem; letter-spacing: -.035em; }
+#settingsModal h3, #settingsModal p { margin: 0; }
+#settingsModal h3 { color: var(--text-primary); font-size: .94rem; line-height: 1.3; font-weight: 650; }
+#settingsModal .settings-modal-body {
+    flex: 0 1 auto;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+    padding: 0 22px max(12px, env(safe-area-inset-bottom));
+}
+#settingsModal [hidden] { display: none !important; }
+#settingsModal button {
+    min-width: 0;
+    min-height: 44px;
+    font: inherit;
+    line-height: 1.25;
+    cursor: pointer;
+}
+#settingsModal :is(button, input):focus-visible {
+    outline: 2px solid var(--accent-color);
+    outline-offset: 2px;
+}
+#settingsModal #settingsDoneBtn, .prefs-confirm button {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 0 16px;
+    font-size: .9rem;
+    font-weight: 650;
+}
+.prefs-reading, .prefs-display {
+    padding-block: 12px;
+    border-bottom: 1px solid var(--border-color);
+}
+.prefs-heading, .prefs-hover {
+    display: flex;
+    align-items: center;
     justify-content: space-between;
     gap: 12px;
-    margin: 0;
-    padding: 0.75rem 1.25rem max(0.75rem, env(safe-area-inset-bottom));
-    border-top: 1px solid var(--border-color);
 }
-
-.settings-modal .settings-reset-btn {
-    width: auto;
-    padding: 0.55rem 0.75rem;
+#settingsModal [data-note-scale-action], #settingsModal #settingsResetBtn {
+    border: 0;
     background: transparent;
-    border-color: transparent;
-    font-size: 0.76rem;
+    color: var(--text-secondary);
+    font-size: .85rem;
+    padding: 0 6px;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    text-decoration-color: var(--border-color);
 }
-
-.settings-modal .settings-section-heading {
+.prefs-scale {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 78px;
+    align-items: center;
+    gap: 18px;
+    margin-block: 0 8px;
+}
+.prefs-track { min-width: 0; }
+#noteScaleRange {
+    display: block;
+    width: 100%;
+    height: 30px;
+    margin: 0;
+    cursor: pointer;
+    accent-color: var(--accent-color);
+}
+.prefs-limits {
+    display: flex;
+    justify-content: space-between;
+    font-size: .75rem;
+    font-variant-numeric: tabular-nums;
+    color: var(--text-secondary);
+}
+.prefs-number {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    gap: 0.5rem;
-}
-
-.settings-modal .note-scale-control {
-    display: grid;
-    grid-template-columns: 90px minmax(0, 1fr);
-    align-items: center;
-    gap: 1rem;
-    margin-top: 0.9rem;
-}
-
-.settings-modal .note-scale-reset {
-    flex: 0 0 auto;
+    justify-content: center;
+    gap: 2px;
     min-height: 44px;
-    padding: 0.42rem 0.68rem;
-    color: var(--text-secondary);
-    background: color-mix(in srgb, var(--bg-primary) 84%, transparent);
-    border: 1px solid color-mix(in srgb, var(--border-color) 84%, transparent);
-    border-radius: 9px;
-    font: inherit;
-    font-size: 0.72rem;
-    font-weight: 680;
-    line-height: 1.15;
-    cursor: pointer;
-    transition: color 0.15s ease, background-color 0.15s ease, border-color 0.15s ease;
-}
-
-.settings-modal .note-scale-number {
-    display: grid;
-    gap: 0.38rem;
-    min-width: 0;
-    color: var(--text-secondary);
-    font-size: 0.7rem;
-    font-weight: 650;
-    letter-spacing: 0.01em;
-}
-
-.settings-modal .note-scale-input-wrap {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    align-items: center;
-    min-height: 44px;
-    padding: 0 0.78rem;
-    color: var(--text-secondary);
-    background: var(--bg-primary);
     border: 1px solid var(--border-color);
-    border-radius: 11px;
-    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    background: var(--bg-tertiary);
+    border-radius: 12px;
+    color: var(--text-secondary);
 }
-
-.settings-modal .note-scale-input-wrap:focus-within {
-    border-color: var(--accent-color);
-    box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-color) 13%, transparent);
-}
-
-.settings-modal .note-scale-input-wrap input {
-    width: 100%;
-    min-width: 0;
+.prefs-number:focus-within { outline: 2px solid var(--accent-color); }
+#noteScaleInput {
+    width: 3ch;
     padding: 0;
+    border: 0;
     color: var(--text-primary);
     background: transparent;
-    border: 0;
-    outline: 0;
-    font: inherit;
-    font-size: 1rem;
-    font-weight: 750;
-    font-variant-numeric: tabular-nums;
-    -moz-appearance: textfield;
+    font-weight: 600;
+    line-height: 1.4;
+    font-family: inherit;
+    font-size: 16px;
+    text-align: end;
+    appearance: textfield;
 }
-
-.settings-modal .note-scale-input-wrap input::-webkit-inner-spin-button,
-.settings-modal .note-scale-input-wrap input::-webkit-outer-spin-button {
+#noteScaleInput::-webkit-inner-spin-button, #noteScaleInput::-webkit-outer-spin-button { appearance: none; margin: 0; }
+#settingsModal #noteScaleInput:focus-visible { outline: 0; }
+.prefs-hover { min-height: 44px; font-size: .9rem; cursor: pointer; }
+#hoverToggle {
+    flex: none;
+    appearance: none;
     margin: 0;
-    -webkit-appearance: none;
-}
-
-.settings-modal .note-scale-slider-wrap {
-    display: grid;
-    gap: 0.38rem;
-    min-width: 0;
-    padding-bottom: 0.08rem;
-}
-
-.settings-modal .note-scale-slider {
-    width: 100%;
-    min-height: 30px;
-    margin: 0;
-    accent-color: var(--accent-color);
+    width: 42px;
+    height: 26px;
+    border: 1px solid var(--text-secondary);
+    border-radius: 20px;
+    background: var(--bg-tertiary);
     cursor: pointer;
 }
-
-.settings-modal .note-scale-limits {
-    display: flex;
-    justify-content: space-between;
-    color: var(--text-secondary);
-    font-size: 0.65rem;
-    font-variant-numeric: tabular-nums;
-}
-
-.settings-modal .note-scale-reset:hover {
-    color: var(--accent-color);
-    border-color: color-mix(in srgb, var(--accent-color) 52%, var(--border-color));
-    background: color-mix(in srgb, var(--accent-color) 8%, var(--bg-primary));
-}
-
-.settings-modal :is(.settings-section-icon, .level-icon-svg, .settings-close-btn svg, .settings-reset-btn svg) {
+#hoverToggle::before {
+    content: '';
     display: block;
-    flex: 0 0 auto;
-    max-width: none;
-    aspect-ratio: 1;
-    overflow: visible;
+    width: 18px;
+    height: 18px;
+    margin: 3px;
+    border-radius: 50%;
+    background: var(--text-secondary);
 }
-
-@media (max-width: 768px) {
-    .settings-modal .settings-modal-content {
+#hoverToggle:checked { background: var(--text-primary); border-color: var(--text-primary); }
+#hoverToggle:checked::before { transform: translateX(16px); background: var(--bg-secondary); }
+.prefs-row {
+    display: grid;
+    grid-template-columns: 108px minmax(0, 1fr);
+    align-items: center;
+    gap: 6px 12px;
+    padding: 5px 0;
+}
+.prefs-choices {
+    display: grid;
+    grid-auto-columns: minmax(0, 1fr);
+    grid-auto-flow: column;
+    gap: 2px;
+    padding: 3px;
+    border: 1px solid var(--border-color);
+    border-radius: 13px;
+    background: var(--bg-tertiary);
+}
+#settingsModal .prefs-choices button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 4px;
+    border: 1px solid transparent;
+    border-radius: 9px;
+    background: transparent;
+    color: var(--text-secondary);
+    font-size: .85rem;
+    font-weight: 550;
+}
+#settingsModal .prefs-choices button[aria-pressed="true"] {
+    background: var(--bg-secondary);
+    border-color: var(--accent-color);
+    color: var(--text-primary);
+    font-weight: 700;
+}
+#settingsModal svg { width: 17px; height: 17px; flex: none; }
+.prefs-swatch { width: 15px; height: 15px; border-radius: 50%; border: 1px solid rgb(120 122 150 / 45%); }
+.prefs-swatch.prism { background: linear-gradient(125deg, #8297ea 48%, #c5acf0 50%); }
+.prefs-swatch.graphite { background: linear-gradient(125deg, #656b77 48%, #c7cbd3 50%); }
+.prefs-marker { width: 22px; font: 600 12px/20px sans-serif; }
+.prefs-marker.ring { border-radius: 50%; border: 1px solid currentColor; }
+.prefs-marker.strike { text-decoration: line-through; }
+.prefs-tools { padding-top: 8px; }
+#settingsOfflineButton {
+    display: flex; align-items: center; gap: 10px; width: 100%;
+    border: 0; background: transparent; color: var(--text-primary);
+    text-align: start; padding: 0 5px;
+}
+#settingsOfflineButton svg { color: var(--text-secondary); }
+#settingsOfflineButton svg:last-child { margin-inline-start: auto; }
+.prefs-confirm {
+    display: flex; align-items: center; flex-wrap: wrap; gap: 8px;
+    padding: 10px; border: 1px solid var(--border-color); border-radius: 12px;
+}
+.prefs-confirm strong { flex: 1 1 160px; font-size: .9rem; }
+#prefsConfirm { color: var(--text-primary); font-weight: 700; }
+@media (hover: hover) {
+    #settingsModal button:hover { color: var(--text-primary); }
+    #settingsModal .prefs-choices button:hover, #settingsModal #settingsDoneBtn:hover { border-color: var(--text-secondary); }
+}
+#settingsModal [data-note-scale-action]:disabled { opacity: .55; cursor: default; text-decoration: none; }
+@media (min-width: 601px) {
+    #settingsModal { align-items: center; }
+    #settingsModal .settings-modal-content::before { display: none; }
+}
+@media (max-width: 600px) {
+    #settingsModal { align-items: flex-end; }
+    #settingsModal .settings-modal-content {
         width: 100%;
-        max-height: 90dvh;
-        border-radius: 18px 18px 0 0;
+        max-height: calc(100vh - 12px);
+        max-height: calc(100dvh - max(12px, env(safe-area-inset-top)));
+        border-radius: 18px 18px 0 0 !important;
     }
-
-    .settings-modal .settings-modal-header {
-        padding: 0.85rem 1.1rem 0.9rem;
+    #settingsModal .settings-modal-content::before { display: none; }
+    #settingsModal .settings-modal-header { position: relative; padding: 14px 16px 8px; }
+    #settingsModal .settings-modal-header::before {
+        content: ''; position: absolute; top: 5px; left: calc(50% - 16px);
+        width: 32px; height: 4px; background: var(--border-color); border-radius: 4px;
     }
-
-    .settings-modal .settings-modal-body {
-        padding: 1rem;
-    }
-
-    .settings-modal .note-scale-control {
-        grid-template-columns: 80px minmax(0, 1fr);
-    }
+    #settingsModal .settings-modal-body { padding-inline: 16px; }
+    .prefs-row { grid-template-columns: minmax(0, 1fr); padding-block: 6px; }
+}
+@media (max-width: 360px) {
+    #settingsModal .settings-modal-body { padding-inline: 12px; }
+    #themeSection .prefs-choices { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-auto-flow: row; }
 }
 
-.settings-modal .design-mode-selector { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-.settings-modal .design-mode-option { min-height: 68px; padding: 12px 30px 12px 12px; }
-.settings-modal .settings-option .exp-subpanel { margin-top: 16px; background: transparent; }
-.settings-modal .settings-option .exp-mode-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-.settings-modal .exp-mode-card { min-height: 60px; padding: 10px 12px; gap: 8px; }
-.settings-modal .exp-mode-swatch { height: 8px; margin: 0; }
-.settings-modal .exp-lightdark { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; border-radius: 12px; }
-.settings-modal .exp-ld-btn { min-height: 44px; }
-@media (max-width: 520px) {
-    .settings-modal .exp-lightdark { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-}
-.settings-modal .settings-done-btn {
-    min-height: 44px; padding: 8px 22px; border: 1px solid var(--accent-color);
-    border-radius: 10px; background: var(--accent-color); color: var(--bg-primary);
-    font: inherit; font-weight: 600; cursor: pointer;
-}
-.settings-modal :is(button, input):focus-visible { outline: 2px solid var(--accent-color); outline-offset: 3px; }
-.settings-modal .settings-close-btn { width: 44px; height: 44px; }
-.settings-modal .settings-reset-btn { min-height: 44px; }
-.settings-modal .toggle-switch:focus-within { outline: 2px solid var(--accent-color); outline-offset: 3px; }
 
 /* РўРµРјРЅР°СЏ С‚РµРјР° РґР»СЏ РЅРѕРІРѕРіРѕРґРЅРёС… СЌР»РµРјРµРЅС‚РѕРІ */
 body.dark-theme .ny-notification {
