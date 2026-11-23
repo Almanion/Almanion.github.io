@@ -6,7 +6,7 @@
     "/offline.html",
     "/manifest.json",
     "/theme-bootstrap.js",
-    "/favicon-theme.js?v=20261123-graphite",
+    "/favicon-theme.js?v=20261123-soft-book",
     "/page-transitions.js",
     "/home-motion.js",
     "/home-stars.js",
@@ -27,11 +27,11 @@
     "/styles/typography.css",
     "/styles/home-motion.css",
     "/styles/home-dashboard.css",
-    "/images/almanion-wordmark.svg?v=20261123-tech-book",
-    "/favicons/favicon.svg?v=20261123-book-light",
-    "/favicons/favicon-dark.svg?v=20261123-book-light",
-    "/favicons/favicon-graphite.svg?v=20261123-book-light",
-    "/favicons/favicon-graphite-dark.svg?v=20261123-book-light",
-    "/favicons/app-icon.svg?v=20261123-book-light"
+    "/images/almanion-wordmark.svg?v=20261123-soft-book",
+    "/favicons/favicon.svg?v=20261123-soft-book",
+    "/favicons/favicon-dark.svg?v=20261123-soft-book",
+    "/favicons/favicon-graphite.svg?v=20261123-soft-book",
+    "/favicons/favicon-graphite-dark.svg?v=20261123-soft-book",
+    "/favicons/app-icon.svg?v=20261123-soft-book"
   ]
 }

@@ -26,7 +26,7 @@ function buildFavicons() {
     const read = file => fs.readFileSync(path.join(root, file), 'utf8').replace(/\r\n/g, '\n');
     const home = read('index.html');
     const css = read('styles/home-dashboard.css');
-    const book = read('images/almanion-wordmark.svg').match(/<path id="book-a"[^>]*\/>/)[0];
+    const bookPath = read('images/almanion-wordmark.svg').match(/<path id="book-a"[^>]*\sd="([^"]+)"/)[1];
     const icons = {};
     for (const [key, symbol, title] of sections) {
         const paths = home.match(new RegExp('<symbol id="academic-' + symbol + '"[^>]*>([\\s\\S]*?)</symbol>'))[1].trim();
@@ -47,12 +47,12 @@ function buildFavicons() {
         }
     }
     const initials = tiles.map(({ suffix, night, background, ink }) => [
-        'favicon' + suffix + '.svg', -10, -4, 124, 22, background, ink || (night ? null : '#626bd4')
+        'favicon' + suffix + '.svg', -2, -2, 28, 5, background, ink || (night ? '#818CF8' : '#626bd4')
     ]);
-    initials.push(['app-icon.svg', -39, -33, 180, 0, '#f8f8fc', '#626bd4']);
+    initials.push(['app-icon.svg', -5, -5, 34, 0, '#f8f8fc', '#626bd4']);
     for (const [file, x, y, size, radius, background, ink] of initials) {
         const dimensions = file === 'app-icon.svg' ? ' width="512" height="512"' : '';
-        const initial = ink ? book.replace(/ fill="[^"]+"/, ' fill="' + ink + '"') : book;
+        const initial = '<path id="book-a" fill="' + ink + '" fill-rule="evenodd" d="' + bookPath + '"/>';
         icons[file] = [
             '<svg xmlns="http://www.w3.org/2000/svg"' + dimensions + ' viewBox="' + [x, y, size, size].join(' ') + '">',
             '  <title>Almanion</title>',

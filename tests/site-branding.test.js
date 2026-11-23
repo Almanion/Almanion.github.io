@@ -27,7 +27,7 @@ for (const file of [
 ]) {
     const relative = path.posix.relative(path.posix.dirname(file), logo);
     const images = read(file).match(/<img\b[^>]+>/g) || [];
-    assert.equal(images.filter(tag => tag.includes('src="' + relative + '?v=20261123-tech-book"') && tag.includes('alt="Almanion"')).length, 1, file);
+    assert.equal(images.filter(tag => tag.includes('src="' + relative + '?v=20261123-soft-book"') && tag.includes('alt="Almanion"')).length, 1, file);
 }
 const catalog = read('games/index.html');
 assert.match(catalog, /signal-frontier\/\?renderer=canvas/);
