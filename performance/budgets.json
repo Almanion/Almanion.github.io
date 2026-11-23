@@ -26,7 +26,7 @@
     "games/orbital-courier/assets/levels.js": 210000,
     "games/orbital-courier/assets/legacy.css": 125000
   },
-  "maxPrecacheEntries": 30,
+  "maxPrecacheEntries": 32,
   "maxSearchSourceBytes": 1100000,
   "routes": {
     "games/signal-frontier/index.html": {

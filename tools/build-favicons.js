@@ -15,6 +15,13 @@ const sections = [
     ['tour', 'tour', 'Турслёт'], ['games', 'games', 'Игры'], ['contests', 'contests', 'Олимпиады']
 ];
 
+const tiles = [
+    { suffix: '', night: false, background: '#f8f8fc' },
+    { suffix: '-dark', night: true, background: '#191922' },
+    { suffix: '-graphite', night: false, background: '#fafafa', ink: '#505050' },
+    { suffix: '-graphite-dark', night: true, background: '#181818', ink: '#d4d4d4' }
+];
+
 function buildFavicons() {
     const read = file => fs.readFileSync(path.join(root, file), 'utf8').replace(/\r\n/g, '\n');
     const home = read('index.html');
@@ -27,10 +34,9 @@ function buildFavicons() {
         const palette = css.match(new RegExp('data-subject="' + subject + '"[^{}]*\\{\\s*--subject-light: (#[a-f0-9]+); --subject-dark: (#[a-f0-9]+)', 'i'));
         // Games and contests use the site's default indigo accent on the home page.
         const [, light, dark] = palette || [null, '#5147a5', '#a6aaff'];
-        for (const night of [false, true]) {
-            const color = night ? dark : light;
-            const background = night ? '#191922' : '#f8f8fc';
-            icons['favicon-' + key + (night ? '-dark' : '') + '.svg'] = [
+        for (const { suffix, night, background, ink } of tiles) {
+            const color = ink || (night ? dark : light);
+            icons['favicon-' + key + suffix + '.svg'] = [
                 '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 28 28">',
                 '  <title>' + title + '</title>',
                 '  <rect width="28" height="28" rx="6" fill="' + background + '"/>',
@@ -40,13 +46,13 @@ function buildFavicons() {
             ].join('\n');
         }
     }
-    for (const [file, x, y, size, radius, background] of [
-        ['favicon.svg', -10, -4, 124, 22, '#f8f8fc'],
-        ['favicon-dark.svg', -10, -4, 124, 22, '#191922'],
-        ['app-icon.svg', -39, -33, 180, 0, '#f8f8fc']
-    ]) {
+    const initials = tiles.map(({ suffix, night, background, ink }) => [
+        'favicon' + suffix + '.svg', -10, -4, 124, 22, background, ink || (night ? null : '#626bd4')
+    ]);
+    initials.push(['app-icon.svg', -39, -33, 180, 0, '#f8f8fc', '#626bd4']);
+    for (const [file, x, y, size, radius, background, ink] of initials) {
         const dimensions = file === 'app-icon.svg' ? ' width="512" height="512"' : '';
-        const initial = file === 'favicon-dark.svg' ? book : book.replace(/ fill="[^"]+"/, ' fill="#626bd4"');
+        const initial = ink ? book.replace(/ fill="[^"]+"/, ' fill="' + ink + '"') : book;
         icons[file] = [
             '<svg xmlns="http://www.w3.org/2000/svg"' + dimensions + ' viewBox="' + [x, y, size, size].join(' ') + '">',
             '  <title>Almanion</title>',

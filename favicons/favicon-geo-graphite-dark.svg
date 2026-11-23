@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 28 28">
+  <title>Геометрия</title>
+  <rect width="28" height="28" rx="6" fill="#181818"/>
+  <g transform="translate(2 2)" color="#d4d4d4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="12" cy="6.5" r="2.3"/>
+    <path d="M12 2.5v1.7M10.8 8.5 5.5 21m7.7-12.5L18.5 21M8.3 14.6a6.7 6.7 0 0 0 7.4 0"/>
+  </g>
+</svg>

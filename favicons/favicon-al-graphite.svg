@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 28 28">
+  <title>Математика</title>
+  <rect width="28" height="28" rx="6" fill="#fafafa"/>
+  <g transform="translate(2 2)" color="#505050" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M2.8 12.4h2.6l3 6.5 4.25-13.8h8.55"/>
+    <path d="m14.1 10.7 5 5.7m0-5.7-5 5.7"/>
+  </g>
+</svg>
