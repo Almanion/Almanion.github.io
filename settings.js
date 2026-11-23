@@ -3,7 +3,6 @@
 // ============================================
 
 // Настройки по умолчанию
-const VISUAL_DEFAULTS_MIGRATION_KEY = 'almanion:visual-defaults:2026-09-05-v1';
 const VISUAL_DEFAULTS_VERSION = 1;
 const NOTE_SCALE_MIN = 0.75;
 const NOTE_SCALE_MAX = 1.25;
@@ -11,16 +10,6 @@ const NOTE_SCALE_MAX = 1.25;
 function systemPrefersDark() {
     return typeof window.matchMedia === 'function'
         && window.matchMedia('(prefers-color-scheme: dark)').matches;
-}
-
-function normalizeExperimentalTheme(value, fallbackDark) {
-    if (value === 'system' || value === 'light' || value === 'dark') return value;
-    return typeof fallbackDark === 'boolean' ? (fallbackDark ? 'dark' : 'light') : 'system';
-}
-
-function resolveExperimentalDark(theme) {
-    if (theme === 'system') return systemPrefersDark();
-    return theme === 'dark';
 }
 
 function normalizeNoteScale(value) {
@@ -40,7 +29,8 @@ const defaultSettings = {
     hoverEffects: true,
     // Новый интерфейс (внутреннее имя experimental сохранено для совместимости)
     experimental: true,
-    expMode: 'prism',      // 'graphite' | 'prism'
+    readerLayout: 'sections',
+    expMode: 'prism',      // 'graphite' | 'prism' | 'sepia'
     expTheme: 'system',    // 'system' | 'light' | 'dark'
     expDark: systemPrefersDark(), // resolved value kept for early page rendering
     noteScale: 1,
@@ -49,18 +39,8 @@ const defaultSettings = {
 };
 
 function migrateVisualDefaults(value) {
-    return {
-        ...defaultSettings,
-        ...(value && typeof value === 'object' && !Array.isArray(value) ? value : {}),
-        newYearMode: false,
-        animationLevel: 'max',
-        hoverEffects: true,
-        experimental: true,
-        expMode: 'prism',
-        expTheme: 'system',
-        expDark: systemPrefersDark(),
-        visualDefaultsVersion: VISUAL_DEFAULTS_VERSION
-    };
+    const normalized = window.AlmanionThemeBootstrap.normalize(value || {});
+    return { ...defaultSettings, ...normalized, noteScale: normalizeNoteScale(normalized.noteScale) };
 }
 
 // Текущие настройки
@@ -108,26 +88,7 @@ function initializeSettingsSystem() {
 // ============================================
 
 function loadSettings() {
-    const saved = safeStorageGet('siteSettings');
-    if (saved) {
-        try {
-            siteSettings = { ...defaultSettings, ...JSON.parse(saved) };
-        } catch (e) {
-            siteSettings = { ...defaultSettings };
-        }
-    }
-    // Apply the new visual defaults exactly once per browser. This only touches
-    // appearance settings; account data, bookmarks, progress and drafts live elsewhere.
-    if (safeStorageGet(VISUAL_DEFAULTS_MIGRATION_KEY) !== '1') {
-        siteSettings = migrateVisualDefaults(siteSettings);
-        saveSettings();
-        safeStorageSet('newYearMode', false);
-        safeStorageSet(VISUAL_DEFAULTS_MIGRATION_KEY, '1');
-    }
-
-    siteSettings.expTheme = normalizeExperimentalTheme(siteSettings.expTheme, siteSettings.expDark);
-    siteSettings.expDark = resolveExperimentalDark(siteSettings.expTheme);
-    siteSettings.noteScale = normalizeNoteScale(siteSettings.noteScale);
+    siteSettings = migrateVisualDefaults(window.AlmanionThemeBootstrap.ensureSettings());
     window.siteSettings = siteSettings;
 }
 
@@ -146,10 +107,9 @@ function updateSettings(patch, options = {}) {
     if (!patch || typeof patch !== 'object' || Array.isArray(patch)) {
         return { ...siteSettings };
     }
-    siteSettings = { ...siteSettings, ...patch };
-    siteSettings.expTheme = normalizeExperimentalTheme(siteSettings.expTheme, siteSettings.expDark);
-    siteSettings.expDark = resolveExperimentalDark(siteSettings.expTheme);
-    siteSettings.noteScale = normalizeNoteScale(siteSettings.noteScale);
+    const merged = { ...siteSettings, ...patch };
+    if ('experimental' in patch && !('readerLayout' in patch)) merged.readerLayout = patch.experimental ? 'sections' : 'feed';
+    siteSettings = migrateVisualDefaults(merged);
     window.siteSettings = siteSettings;
     saveSettings();
     if (options.apply !== false) applyAllSettings();
@@ -159,10 +119,7 @@ function updateSettings(patch, options = {}) {
 
 function applySyncedSettings(value) {
     if (!value || typeof value !== 'object' || Array.isArray(value)) return;
-    siteSettings = { ...defaultSettings, ...value };
-    siteSettings.expTheme = normalizeExperimentalTheme(siteSettings.expTheme, siteSettings.expDark);
-    siteSettings.expDark = resolveExperimentalDark(siteSettings.expTheme);
-    siteSettings.noteScale = normalizeNoteScale(siteSettings.noteScale);
+    siteSettings = migrateVisualDefaults(value);
     window.siteSettings = siteSettings;
     saveSettings({ silent: true });
     applyAllSettings();
@@ -179,7 +136,7 @@ function applySyncedSettings(value) {
 
 function applyAllSettings() {
     applyExperimental();
-    applyTheme(siteSettings.theme);
+    applyReaderLayout();
     applyAnimationLevel(siteSettings.animationLevel);
     applyHoverEffects(siteSettings.hoverEffects);
     applyNoteScale(siteSettings.noteScale);
@@ -190,41 +147,10 @@ function applyAllSettings() {
 // body.experimental + body.exp-graphite|exp-prism + (body.exp-dark для тёмной).
 function applyExperimental() {
     const body = document.body;
-    const html = document.documentElement;
-    const on = !!siteSettings.experimental;
-    siteSettings.expTheme = normalizeExperimentalTheme(siteSettings.expTheme, siteSettings.expDark);
-    siteSettings.expDark = resolveExperimentalDark(siteSettings.expTheme);
-
-    // ВАЖНО: подавляем CSS-переходы на время переключения. Без этого при смене
-    // режима/темы/включении 300+ элементов одновременно анимируют цвета волной
-    // (0.3s) — это и есть «баги анимаций».
-    // Используем exp-switching (только transition: none), а НЕ theme-transitioning,
-    // чтобы не сбрасывать animation-duration и не дёргать анимацию модалки настроек.
     body.classList.add('exp-switching');
-
-    body.classList.toggle('experimental', on);
-    body.classList.toggle('exp-graphite', on && siteSettings.expMode === 'graphite');
-    body.classList.toggle('exp-prism', on && siteSettings.expMode === 'prism');
-    body.classList.toggle('exp-dark', on && !!siteSettings.expDark);
-
-    if (on) {
-        const mode = siteSettings.expMode === 'graphite' ? 'graphite' : 'prism';
-        html.dataset.exp = `${mode}-${siteSettings.expDark ? 'dark' : 'light'}`;
-        html.style.backgroundColor = mode === 'graphite'
-            ? (siteSettings.expDark ? '#09090b' : '#fafafa')
-            : (siteSettings.expDark ? '#0e0e16' : '#fbfbfe');
-        html.style.color = siteSettings.expDark ? '#ececf4' : '#16161f';
-    }
-
-    // Когда экспериментальный режим включён, его собственная светлая/тёмная
-    // тема управляет видом — снимаем легаси-классы тем, чтобы не было конфликта.
-    if (on) {
-        body.classList.remove('dark-theme', 'sepia-theme', 'midnight-theme');
-    }
-
-    window.dispatchEvent(new CustomEvent('experimental-mode-changed', {
-        detail: { enabled: on }
-    }));
+    window.AlmanionThemeBootstrap.applyEarlyTheme(siteSettings);
+    window.AlmanionThemeBootstrap.applyBody(siteSettings);
+    safeStorageSet('theme', siteSettings.expDark ? 'dark' : 'light');
 
     // Возвращаем переходы через 2 кадра (когда новые цвета уже применены),
     // + setTimeout-фоллбэк на случай фоновой вкладки (rAF приостановлен).
@@ -234,25 +160,21 @@ function applyExperimental() {
     setTimeout(clear, 260);
 }
 
+function applyReaderLayout() {
+    if (!document.body.hasAttribute('data-reader-layout')) return;
+    document.body.dataset.readerLayout = siteSettings.readerLayout;
+    window.dispatchEvent(new CustomEvent('experimental-mode-changed', {
+        detail: { enabled: true, readerLayout: siteSettings.readerLayout }
+    }));
+}
+
 function initSystemThemeSync() {
-    const applySystemTheme = (dark) => {
+    window.addEventListener('almanion-system-theme-changed', event => {
         if (siteSettings.expTheme !== 'system') return;
-        siteSettings.expDark = !!dark;
+        siteSettings.expDark = !!event.detail.dark;
         applyExperimental();
         saveSettings();
-    };
-
-    window.addEventListener('almanion-system-theme-changed', (event) => {
-        applySystemTheme(event.detail && event.detail.dark);
     });
-
-    // Fallback for a cached page that receives settings.js before theme-bootstrap.js.
-    if (!window.AlmanionThemeBootstrap && typeof window.matchMedia === 'function') {
-        const query = window.matchMedia('(prefers-color-scheme: dark)');
-        const listener = (event) => applySystemTheme(event.matches);
-        if (typeof query.addEventListener === 'function') query.addEventListener('change', listener);
-        else if (typeof query.addListener === 'function') query.addListener(listener);
-    }
 }
 
 function applyHoverEffects(enabled) {
@@ -266,54 +188,6 @@ function applyNoteScale(value) {
     siteSettings.noteScale = scale;
     document.documentElement.style.setProperty('--note-scale', String(scale));
     document.body.dataset.noteScale = String(Math.round(scale * 100));
-}
-
-function applyTheme(theme) {
-    const body = document.body;
-    const html = document.documentElement;
-
-    // В экспериментальном режиме внешним видом управляет он сам (свет/тьма
-    // через exp-dark) — легаси-темы не трогаем.
-    if (siteSettings.experimental) {
-        safeStorageSet('theme', theme);
-        return;
-    }
-
-    // Отключаем все transitions на момент смены темы — иначе сотни элементов
-    // одновременно начинают анимировать цвета и страница лагает.
-    body.classList.add('theme-transitioning');
-
-    // Снимаем все возможные классы тем, потом включаем нужный
-    body.classList.remove('dark-theme', 'sepia-theme', 'midnight-theme');
-    if (theme === 'dark')     body.classList.add('dark-theme');
-    if (theme === 'sepia')    body.classList.add('sepia-theme');
-    if (theme === 'midnight') body.classList.add('midnight-theme');
-    // 'light' — без дополнительного класса (значения из :root)
-
-    // Снимаем inline-стили, выставленные FOUC-скриптом в <head> —
-    // теперь цвет полностью контролируется CSS-переменными темы.
-    if (html.style.backgroundColor || html.style.color) {
-        html.style.backgroundColor = '';
-        html.style.color = '';
-    }
-    html.dataset.theme = theme;
-
-    // Сохраняем для совместимости со старым кодом (и для FOUC-скрипта)
-    safeStorageSet('theme', theme);
-
-    // Через 2 кадра отдаём управление — браузер уже применил новые цвета,
-    // можно вернуть transitions для пользовательских взаимодействий.
-    // setTimeout-fallback на случай если страница в фоне (rAF приостановлен).
-    let cleared = false;
-    const clearTransitioning = () => {
-        if (cleared) return;
-        cleared = true;
-        body.classList.remove('theme-transitioning');
-    };
-    requestAnimationFrame(() => {
-        requestAnimationFrame(clearTransitioning);
-    });
-    setTimeout(clearTransitioning, 250);
 }
 
 let themeTransitionGeneration = 0;
@@ -513,12 +387,12 @@ function renderSettingsContents() {
                         ${row('prefsTheme', 'Тема', 'data-exp-theme', [['system', 'Авто', device], ['light', 'Светлая', sun], ['dark', 'Тёмная', moon]])}
                         ${row('prefsPalette', 'Палитра', 'data-exp-mode', [
                             ['prism', 'Призма', prism],
-                            ['graphite', 'Графит', graphite]
+                            ['graphite', 'Графит', graphite],
+                            ['sepia', 'Сепия', icon('<path d="M5 4h12l3 3v13H5Z" fill="#cfa779" stroke="none"/><path d="M8 9h7m-7 4h9m-9 3h5" stroke="#63452f"/>')]
                         ])}
                     </div>
-                    <div id="themeSection">${row('prefsClassicTheme', 'Тема', 'data-theme', [['light', 'Светлая'], ['dark', 'Тёмная'], ['sepia', 'Сепия'], ['midnight', 'Полночь']])}</div>
                     ${row('prefsMotion', 'Анимации', 'data-level', [['max', 'Полные'], ['medium', 'Умеренные'], ['off', 'Минимум']])}
-                    ${row('prefsLayout', 'Вид сайта', 'data-design-mode', [['new', 'По разделам', pages], ['legacy', 'Общая лента', feed]])}
+                    ${row('prefsLayout', 'Вид конспектов', 'data-reader-layout', [['sections', 'По разделам', pages], ['feed', 'Общая лента', feed]])}
                     ${isMatcenterPage() ? row('prefsSolved', 'Отметка решённых задач', 'data-solved-animation', [
                         ['circle', 'Кольцо', '<i aria-hidden="true" class="prefs-marker ring">17</i>'],
                         ['strike', 'Зачёркивание', '<i aria-hidden="true" class="prefs-marker strike">17</i>']
@@ -561,8 +435,7 @@ function refreshSettingsControls() {
     const selected = {
         expTheme: siteSettings.expTheme,
         expMode: siteSettings.expMode,
-        theme: siteSettings.theme,
-        designMode: siteSettings.experimental ? 'new' : 'legacy',
+        readerLayout: siteSettings.readerLayout,
         level: siteSettings.animationLevel,
         solvedAnimation: siteSettings.matcenterSolvedAnimation
     };
@@ -574,8 +447,6 @@ function refreshSettingsControls() {
             if (active) group.style.setProperty('--prefs-index', index);
         });
     });
-    modal.querySelector('#expSubpanel').hidden = !siteSettings.experimental;
-    modal.querySelector('#themeSection').hidden = siteSettings.experimental;
     const hover = modal.querySelector('#hoverToggle');
     if (hover) hover.checked = siteSettings.hoverEffects;
     const percent = String(Math.round(normalizeNoteScale(siteSettings.noteScale) * 100));
@@ -594,7 +465,14 @@ function bindPreferenceChoices(modal) {
     modal.querySelector('.prefs-display').addEventListener('click', event => {
         const button = event.target.closest('.prefs-choices button');
         if (!button || button.getAttribute('aria-pressed') === 'true') return;
-        const { expTheme, expMode, theme, designMode, level, solvedAnimation } = button.dataset;
+        const { expTheme, expMode, readerLayout, level, solvedAnimation } = button.dataset;
+        if (readerLayout) {
+            siteSettings.readerLayout = readerLayout;
+            applyReaderLayout();
+            refreshSettingsControls();
+            saveSettings();
+            return;
+        }
         if (level || solvedAnimation) {
             if (level) {
                 siteSettings.animationLevel = level;
@@ -610,10 +488,8 @@ function bindPreferenceChoices(modal) {
         animateThemeChange(() => {
             if (expTheme) siteSettings.expTheme = expTheme;
             if (expMode) siteSettings.expMode = expMode;
-            if (theme) siteSettings.theme = theme;
-            if (designMode) siteSettings.experimental = designMode === 'new';
+            siteSettings.expDark = window.AlmanionThemeBootstrap.normalize(siteSettings).expDark;
             applyExperimental();
-            applyTheme(siteSettings.theme);
             refreshSettingsControls();
             saveSettings();
         });
@@ -757,7 +633,7 @@ function openSettingsModal() {
     settingsModalReturnFocus = document.activeElement;
     // Фокус на первой кнопке внутри модалки
     const firstFocusable = modal.querySelector('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
-    if (firstFocusable) firstFocusable.focus();
+    if (firstFocusable) firstFocusable.focus({ preventScroll: true });
 }
 
 let settingsModalReturnFocus = null;
@@ -771,7 +647,7 @@ function closeSettingsModal() {
     document.body.classList.remove('modal-open');
     // Возвращаем фокус на исходный элемент (кнопка настроек)
     if (settingsModalReturnFocus && typeof settingsModalReturnFocus.focus === 'function') {
-        try { settingsModalReturnFocus.focus(); } catch (_) {}
+        try { settingsModalReturnFocus.focus({ preventScroll: true }); } catch (_) {}
     }
     settingsModalReturnFocus = null;
 }

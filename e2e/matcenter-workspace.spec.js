@@ -135,7 +135,7 @@ test('published HTML must not reuse the old cached Matcenter runtime for printin
     await page.route('**/matcenter/runtime.js?v=20261014-print2',route=>route.fulfill({contentType:'application/javascript',
         body:'window.MatcenterRuntime={ensure:()=>Promise.reject(new Error("Stale cached runtime"))};'}));
     await page.goto('/matcenter.html?grade=grade-10'); await ready(page);
-    await expect(page.locator('script[src^="matcenter/runtime.js"]')).toHaveAttribute('src','matcenter/runtime.js?v=20261123-settings-2');
+    await expect(page.locator('script[src^="matcenter/runtime.js"]')).toHaveAttribute('src','matcenter/runtime.js?v=20261123-4');
     await page.locator('#mcPrintButton').click();
     await expect(page.locator('#mcPrintDialog')).toBeVisible();
     expect(errors).toEqual([]);
@@ -812,12 +812,13 @@ test('home grade default, previous section, browser back and unchanged summer to
     expect(errors).toEqual([]);
 });
 
-test('legacy visual theme supports the toolbar and reading mode', async ({ page }, info) => {
+test('a saved feed preference preserves the Matcenter toolbar and reading mode', async ({ page }, info) => {
     const errors = await setup(page, { old: true });
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto('/matcenter.html');
     await ready(page);
-    await expect(page.locator('body')).not.toHaveClass(/experimental/);
+    await expect(page.locator('body')).toHaveClass(/exp-prism/);
+    await expect(page.locator('body')).not.toHaveAttribute('data-reader-layout', /.+/);
     await page.locator('#mcFilterToggle').click();
     await page.locator('[data-mc-view="reading"]').click();
     await expect(page.locator('#tasksContainer .task-card.open')).toHaveCount(6);

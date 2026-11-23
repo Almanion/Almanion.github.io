@@ -133,7 +133,7 @@
         'Опишите эксперимент': 'Describe the experiment',
         'Аккаунт': 'Account',
         'Настройки': 'Settings',
-        'Вид сайта': 'Site layout',
+        'Вид конспектов': 'Note layout',
         'Конспекты на устройстве': 'Offline notes',
         'Тема': 'Theme',
         'Палитра': 'Palette',

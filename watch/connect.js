@@ -1,7 +1,6 @@
 (function () {
     'use strict';
-    const theme=window.AlmanionThemeBootstrap?.settings;
-    if(theme?.experimental!==false){document.body.classList.add('experimental',theme?.expMode==='graphite' ? 'exp-graphite' : 'exp-prism');document.body.classList.toggle('exp-dark',!!theme?.expDark);}
+    window.AlmanionThemeBootstrap.applyBody();
     const account=window.AlmanionAccount,api=window.AlmanionWatchSync;
     const status=document.getElementById('phoneStatus'),input=document.getElementById('watchCode'),approve=document.getElementById('approveWatch'),list=document.getElementById('watchDeviceList'),accountButton=document.getElementById('phoneAccount');
     let user,request,code='',query,handler,generation=0;

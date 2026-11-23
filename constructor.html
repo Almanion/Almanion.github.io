@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <script src="theme-bootstrap.js?v=20261120-navigation"></script>
+    <script src="theme-bootstrap.js?v=20261123-palettes"></script>
     <script defer src="page-transitions.js?v=20261120-navigation"></script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="color-scheme" content="light dark">
@@ -11,19 +11,9 @@
     <link rel="icon" href="favicons/favicon.svg?v=20261123-1" type="image/svg+xml">
     <script defer src="favicon-theme.js?v=20261123-1"></script>
     <script>
-        (function () {
-            var dark = false;
-            var palette = 'prism';
-            try {
-                var saved = JSON.parse(localStorage.getItem('siteSettings') || '{}');
-                dark = saved.experimental === false ? saved.theme === 'dark' || saved.theme === 'midnight' : saved.expDark === true;
-                palette = saved.experimental === false || saved.expMode === 'graphite' ? 'graphite' : 'prism';
-            } catch (_) {
-                dark = localStorage.getItem('theme') === 'dark';
-            }
-            document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
-            document.documentElement.setAttribute('data-palette', palette);
-        })();
+        var builderTheme = window.AlmanionThemeBootstrap.settings;
+        document.documentElement.dataset.theme = builderTheme.expDark ? 'dark' : 'light';
+        document.documentElement.dataset.palette = builderTheme.expMode;
     </script>
     <link rel="stylesheet" href="styles/page-transitions.css?v=20261120-navigation">
     <link rel="stylesheet" href="styles/tokens.css?v=20260929-2">
@@ -183,7 +173,7 @@
                         <button class="is-active" type="button" data-preview-size="wide" aria-pressed="true">Страница</button>
                         <button type="button" data-preview-size="mobile" aria-pressed="false">Телефон</button>
                     </div>
-                    <label class="builder-preview-theme-control"><span class="sr-only">Тема предпросмотра</span><select id="previewThemeSelect" aria-label="Тема предпросмотра"><option value="site">Как на сайте</option><option value="prism-light">Призма · светлая</option><option value="prism-dark">Призма · тёмная</option><option value="graphite-light">Графит · светлая</option><option value="graphite-dark">Графит · тёмная</option><option value="legacy-light">Старый · светлая</option><option value="legacy-dark">Старый · тёмная</option></select></label>
+                    <label class="builder-preview-theme-control"><span class="sr-only">Тема предпросмотра</span><select id="previewThemeSelect" aria-label="Тема предпросмотра"><option value="site">Как на сайте</option><option value="prism-light">Призма · светлая</option><option value="prism-dark">Призма · тёмная</option><option value="graphite-light">Графит · светлая</option><option value="graphite-dark">Графит · тёмная</option><option value="sepia-light">Сепия · светлая</option><option value="sepia-dark">Сепия · тёмная</option><option value="legacy-light">Старый · светлая</option><option value="legacy-dark">Старый · тёмная</option></select></label>
                     <a id="subjectPageLink" href="physics.html" target="_blank" rel="noopener">Открыть предмет ↗</a>
                 </div>
                 <div class="builder-preview-canvas" id="previewCanvas" data-size="wide">

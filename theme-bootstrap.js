@@ -20,6 +20,7 @@
             animationLevel: 'max',
             hoverEffects: true,
             experimental: true,
+            readerLayout: 'sections',
             expMode: 'prism',
             expTheme: 'system',
             expDark: dark,
@@ -47,6 +48,16 @@
 
     function normalize(settings) {
         var result = Object.assign(defaults(), settings || {});
+        // Older releases used the site design switch for continuous reading.
+        var legacyFeed = result.experimental === false;
+        result.readerLayout = legacyFeed || result.readerLayout === 'feed' ? 'feed' : 'sections';
+        result.experimental = true;
+        result.visualDefaultsVersion = VISUAL_DEFAULTS_VERSION;
+        if (legacyFeed && settings.theme) {
+            if (settings.theme === 'sepia') result.expMode = 'sepia';
+            result.expTheme = settings.theme === 'dark' || settings.theme === 'midnight' ? 'dark' : 'light';
+        }
+        if (result.expMode !== 'sepia' && result.expMode !== 'graphite') result.expMode = 'prism';
         if (result.expTheme !== 'system' && result.expTheme !== 'light' && result.expTheme !== 'dark') {
             result.expTheme = typeof result.expDark === 'boolean'
                 ? (result.expDark ? 'dark' : 'light')
@@ -67,25 +78,37 @@
     function applyEarlyTheme(settings) {
         var root = document.documentElement;
         root.dataset.pageMotion = settings.animationLevel;
-        if (settings.experimental !== false) {
-            var mode = settings.expMode === 'graphite' ? 'graphite' : 'prism';
-            root.dataset.exp = mode + (settings.expDark ? '-dark' : '-light');
-            root.style.backgroundColor = mode === 'graphite'
-                ? (settings.expDark ? '#09090b' : '#fafafa')
-                : (settings.expDark ? '#0e0e16' : '#fbfbfe');
-            root.style.color = settings.expDark ? '#ececf4' : '#16161f';
-            return;
+        var palettes = {
+            prism: ['#fbfbfe', '#0e0e16', '#16161f', '#ececf4'],
+            graphite: ['#fafafa', '#09090b', '#18181b', '#f4f4f5'],
+            sepia: ['#f6f0e5', '#201b17', '#35291f', '#efe4d5']
+        };
+        var colors = palettes[settings.expMode];
+        root.dataset.exp = settings.expMode + (settings.expDark ? '-dark' : '-light');
+        root.style.backgroundColor = colors[settings.expDark ? 1 : 0];
+        root.style.color = colors[settings.expDark ? 3 : 2];
+    }
+
+    function applyBody(settings) {
+        settings = settings || currentSettings;
+        var classes = document.body.classList;
+        classes.add('experimental');
+        ['prism', 'graphite', 'sepia'].forEach(function (mode) {
+            classes.toggle('exp-' + mode, settings.expMode === mode);
+        });
+        classes.toggle('exp-dark', settings.expDark);
+        if (document.body.hasAttribute('data-note-subject') || document.body.hasAttribute('data-reader-layout')) {
+            document.body.dataset.readerLayout = settings.readerLayout;
         }
-        root.dataset.theme = settings.theme || 'light';
     }
 
     function ensureSettings() {
         var previous = readSettings();
         var migrated = migrationWasApplied();
-        var next = migrated ? normalize(previous) : defaults();
+        var next = normalize(previous);
         if (JSON.stringify(previous) !== JSON.stringify(next)) writeSettings(next);
         if (!migrated) {
-            try { localStorage.setItem('newYearMode', 'false'); } catch (_) { /* ignore */ }
+            try { localStorage.setItem('newYearMode', String(next.newYearMode === true)); } catch (_) { /* ignore */ }
             markMigrationApplied();
         }
         applyEarlyTheme(next);
@@ -102,7 +125,7 @@
         writeSettings(settings);
         applyEarlyTheme(settings);
 
-        if (document.body && settings.experimental !== false) {
+        if (document.body) {
             document.body.classList.toggle('exp-dark', settings.expDark);
         }
         if (document.documentElement.hasAttribute('data-palette')) {
@@ -126,6 +149,9 @@
         migrationKey: MIGRATION_KEY,
         settings: currentSettings,
         ensureSettings: ensureSettings,
+        normalize: normalize,
+        applyBody: applyBody,
+        applyEarlyTheme: applyEarlyTheme,
         systemIsDark: systemIsDark
     };
 }());

@@ -195,7 +195,7 @@ body[data-note-subject]:has(.note-filter[open]) .scroll-to-top { visibility: hid
     }
 }
 @media screen and (min-width: 1024px) {
-    body.experimental.exp-reader-active .content-section > .topic.exp-reader-current { padding-top: 1.5rem !important; }
+    body.experimental.exp-reader-active .content-section > .topic[aria-hidden="false"] { padding-top: 1.5rem !important; }
 }
 @media screen and (max-width: 768px) {
     body[data-note-subject] .main-content > .page-header {

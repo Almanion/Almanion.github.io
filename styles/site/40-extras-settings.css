@@ -668,7 +668,7 @@ body.new-year-mode .ny-toggle {
     --sky-paper: #e8ebef; --sky-sun: #a9a390; --sky-cloud: #b7bdc4;
     --sky-far: #b4bcc7; --sky-near: #798491; --sky-trail: #eef0f2;
 }
-.sepia-theme #settingsModal .prefs-sky {
+.exp-sepia #settingsModal .prefs-sky {
     --sky-paper: #f3e6ce; --sky-far: #d3b994; --sky-near: #9e876a; --sky-cloud: #d0bfa3;
 }
 :is(.exp-dark, .dark-theme, .midnight-theme) #settingsModal .prefs-sky {
@@ -676,6 +676,10 @@ body.new-year-mode .ny-toggle {
 }
 .exp-graphite.exp-dark #settingsModal .prefs-sky {
     --sky-paper: #282d35; --sky-far: #414953; --sky-near: #596470; --sky-trail: #acb7c4;
+}
+.exp-sepia.exp-dark #settingsModal .prefs-sky {
+    --sky-paper: #332922; --sky-far: #625043; --sky-near: #8b6e56; --sky-trail: #cdb391;
+    --sky-moon: #f1dfbe;
 }
 .prefs-night { opacity: 0; }
 :is(.exp-dark, .dark-theme, .midnight-theme) .prefs-night { opacity: 1; }
@@ -713,7 +717,7 @@ body.new-year-mode .ny-toggle {
     body:not(.animations-off):not(.animations-medium) #settingsModal:not(.hidden) [data-exp-mode][aria-pressed="true"] svg {
         animation: prefs-facet-settle 300ms cubic-bezier(.2,.75,.25,1) both;
     }
-    body:not(.animations-off):not(.animations-medium) #settingsModal:not(.hidden) [data-design-mode][aria-pressed="true"] svg path:last-child {
+    body:not(.animations-off):not(.animations-medium) #settingsModal:not(.hidden) [data-reader-layout][aria-pressed="true"] svg path:last-child {
         stroke-dasharray: 42;
         animation: prefs-lines-in 380ms ease-out both;
     }
@@ -736,10 +740,6 @@ body.new-year-mode .ny-toggle {
 @media (max-width: 600px) {
     #settingsModal .prefs-sky { width: 63px; }
     .prefs-title { gap: 9px; }
-}
-@media (max-width: 360px) {
-    #settingsModal #themeSection .prefs-choices::before { display: none; }
-    #settingsModal #themeSection button[aria-pressed="true"] { background: var(--bg-secondary); border-color: var(--accent-color); }
 }
 @media (forced-colors: active) {
     #settingsModal .prefs-choices::before { display: none; }
@@ -788,9 +788,13 @@ body.new-year-mode .ny-toggle {
     #settingsModal .settings-modal-body { padding-inline: 16px; }
     .prefs-row { grid-template-columns: minmax(0, 1fr); padding-block: 6px; }
 }
+/* Keep the reader at its scroll position while its layout changes behind the sheet. */
+@media (max-width: 768px) {
+    html:has(#settingsModal[aria-hidden="false"]) { overflow: hidden; }
+    body.modal-open:has(#settingsModal[aria-hidden="false"]) { position: static; overflow: visible; }
+}
 @media (max-width: 360px) {
     #settingsModal .settings-modal-body { padding-inline: 12px; }
-    #themeSection .prefs-choices { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-auto-flow: row; }
 }
 
 

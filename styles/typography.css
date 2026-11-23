@@ -613,7 +613,7 @@ body .kc-deck {
         margin-inline: 0;
     }
 
-    body.experimental.exp-reader-active .topic.exp-reader-current > :is(
+    body.experimental.exp-reader-active .topic[aria-hidden="false"] > :is(
         p,
         ul,
         ol,
@@ -623,7 +623,7 @@ body .kc-deck {
         margin-inline: auto;
     }
 
-    body.experimental.exp-reader-active .topic.exp-reader-current > :is(
+    body.experimental.exp-reader-active .topic[aria-hidden="false"] > :is(
         .topic-title,
         .definition-box,
         .remark-box,
@@ -663,11 +663,11 @@ body .kc-deck {
         letter-spacing: -0.03em;
     }
 
-    body.experimental.exp-reader-active .content-section > .topic.exp-reader-current {
+    body.experimental.exp-reader-active .content-section > .topic[aria-hidden="false"] {
         font-size: var(--type-body);
     }
 
-    body.experimental.exp-reader-active .topic.exp-reader-current > .topic-title {
+    body.experimental.exp-reader-active .topic[aria-hidden="false"] > .topic-title {
         font-size: clamp(1.38rem, 5.8vw, 1.58rem);
         font-weight: 680;
         line-height: 1.18;

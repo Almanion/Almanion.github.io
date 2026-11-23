@@ -574,7 +574,7 @@
         if (!document.querySelector('.main-content')) return;
         if (!document.querySelector('link[href^="styles/note-filter.css"]')) {
             const style = document.createElement('link');
-            style.rel = 'stylesheet'; style.href = 'styles/note-filter.css?v=20261122-3';
+            style.rel = 'stylesheet'; style.href = 'styles/note-filter.css?v=20261123-4';
             document.head.appendChild(style);
         }
         if (!document.querySelector('script[src^="note-filter.js"]')) {

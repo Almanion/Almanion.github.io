@@ -62,9 +62,11 @@ for (const width of [1440, 390, 320]) test(`settings controls fit and persist at
     await expect(page.locator('[data-exp-theme="dark"]')).toHaveAttribute('aria-pressed', 'true');
     await expect(page.locator('[data-exp-mode="graphite"]')).toHaveAttribute('aria-pressed', 'true');
     await expect(page.locator('#hoverToggle')).not.toBeChecked();
-    await page.locator('[data-design-mode="legacy"]').click();
-    await expect(page.locator('#themeSection')).toBeVisible();
-    await page.locator('#themeSection [data-theme="sepia"]').click();
+    await page.locator('[data-reader-layout="feed"]').click();
+    await expect(page.locator('body')).toHaveClass(/exp-reader-feed/);
+    await expect(page.locator('html')).toHaveAttribute('data-exp', 'graphite-dark');
+    await page.locator('[data-exp-mode="sepia"]').click();
+    await expect(page.locator('html')).toHaveAttribute('data-exp', 'sepia-dark');
     await page.keyboard.press('Escape');
     await expect(page.locator('#settingsModal')).toHaveClass(/hidden/);
 });
@@ -148,4 +150,109 @@ test('theme illustration and choice highlights follow the active settings with r
     });
     expect(Math.abs(highlight.actual - highlight.expected)).toBeLessThan(1);
     expect(highlight.duration).toBe('0s');
+});
+
+for (const width of [390, 1366]) test(`switching note layout preserves reading position and controls at ${width}px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 800 });
+    await page.evaluate(() => AlmanionSettings.update({ animationLevel: 'off', expMode: 'sepia', expTheme: 'light' }));
+    const current = page.locator('.topic.exp-reader-current');
+    const topics = page.locator('.content-section > .topic[id]');
+    const id = await topics.nth(3).getAttribute('id');
+    await page.evaluate(id => experimentalReader.goToId(id, { animate: false }), id);
+    await expect(current).toHaveAttribute('id', id);
+    const chrome = () => page.locator('.note-reader-controls, .sidebar-header, .mobile-bottom-nav').evaluateAll(elements =>
+        elements.map(el => { const s = getComputedStyle(el); return [s.display, s.backgroundColor, s.color, s.borderRadius, el.offsetWidth, el.offsetHeight]; }));
+    const before = await chrome();
+    const switchLayout = async (layout) => {
+        await page.evaluate(() => openSettingsModal());
+        await page.locator(`[data-reader-layout="${layout}"]`).click();
+        await page.locator('#settingsDoneBtn').click();
+    };
+    const top = () => current.evaluate(el => el.getBoundingClientRect().top);
+    const oldTop = await top();
+    await switchLayout('feed');
+    await expect(page.locator('.content-section > .topic:visible')).toHaveCount(await topics.count());
+    await expect(current).toHaveAttribute('id', id);
+    expect(Math.abs(await top() - oldTop)).toBeLessThan(4);
+    expect(await chrome()).toEqual(before);
+    const other = topics.nth(5);
+    const distance = await other.evaluate(el => el.getBoundingClientRect().top - document.querySelector('.note-reader-controls').getBoundingClientRect().bottom + 120);
+    await page.mouse.move(width - 40, 450);
+    await page.mouse.wheel(0, distance);
+    const nextId = await other.getAttribute('id');
+    await expect(current).toHaveAttribute('id', nextId);
+    await expect(page.locator('.nav-link[aria-current="location"]')).toHaveAttribute('href', '#' + nextId);
+    const feedTop = await top();
+    await switchLayout('sections');
+    await expect(page.locator('.content-section > .topic:visible')).toHaveCount(1);
+    await expect(current).toHaveAttribute('id', nextId);
+    expect(Math.abs(await top() - feedTop)).toBeLessThan(4);
+    await expect(page.locator('html')).toHaveAttribute('data-exp', 'sepia-light');
+    await page.reload();
+    await expect(page.locator('.topic.exp-reader-current')).toHaveAttribute('id', nextId);
+});
+
+test('graphite gives the wordmark and remarks neutral ink and keeps signed-in actions readable', async ({ page }) => {
+    // Supply only the auth state and empty database responses. The dialog HTML comes from account.js.
+    await page.evaluate(() => {
+        window.firebaseConfig = {};
+        const auth = () => ({
+            useDeviceLanguage() {}, setPersistence: () => Promise.resolve(),
+            onAuthStateChanged(callback) { callback({ uid: 'palette-test', email: 'reader@example.invalid' }); }
+        });
+        auth.Auth = { Persistence: { LOCAL: 'local' } };
+        const database = () => ({ ref: key => ({
+            set: () => Promise.resolve(), once: () => Promise.resolve({ val: () => key.endsWith('/contentEditor') || null }),
+            on() {}, off() {}
+        }) });
+        database.ServerValue = { TIMESTAMP: 0 };
+        window.firebase = { apps: [{}], auth, database };
+    });
+    await page.addScriptTag({ url: '/account.js' });
+    await page.evaluate(() => window.AlmanionAccount.openAccount());
+    const actions = page.locator('#accountOverlay .auth-submit');
+    await expect(actions).toHaveCount(3);
+    for (const expTheme of ['light', 'dark']) {
+        await page.evaluate(expTheme => AlmanionSettings.update({ expTheme, expMode: 'graphite', animationLevel: 'off' }), expTheme);
+        await expect(page.locator('.almanion-wordmark').first()).toHaveCSS('filter', 'grayscale(1)');
+        const ink = await page.evaluate(() => ['.remark-box', '.definition-box'].map(sel =>
+            getComputedStyle(document.querySelector(sel), '::before').color));
+        expect(ink[0]).toBe(ink[1]);
+        const ratios = await actions.evaluateAll(buttons => {
+            const luminance = rgb => rgb.match(/[\d.]+/g).map(Number).slice(0, 3)
+                .map(x => x / 255).map(x => x <= .04045 ? x / 12.92 : ((x + .055) / 1.055) ** 2.4)
+                .reduce((sum, x, i) => sum + x * [.2126, .7152, .0722][i], 0);
+            return buttons.map(button => {
+                const s = getComputedStyle(button);
+                const light = luminance(s.color), background = luminance(s.backgroundColor);
+                return (Math.max(light, background) + .05) / (Math.min(light, background) + .05);
+            });
+        });
+        for (const ratio of ratios) expect(ratio).toBeGreaterThanOrEqual(4.5);
+    }
+});
+
+test('a saved feed applies to older notes and leaves other site pages in the same palette', async ({ page }) => {
+    await page.evaluate(() => AlmanionSettings.update({ readerLayout: 'feed', expMode: 'sepia', expTheme: 'dark' }));
+    for (const path of ['/likbez.html', '/physics.html']) {
+        await page.goto(path);
+        await expect(page.locator('body')).toHaveClass(/exp-reader-feed/);
+        const topics = page.locator('.content-section > .topic[id]');
+        await expect(page.locator('.content-section > .topic[id]:visible')).toHaveCount(await topics.count());
+    }
+    await page.goto('/');
+    await expect(page.locator('html')).toHaveAttribute('data-exp', 'sepia-dark');
+    await expect(page.locator('body')).not.toHaveAttribute('data-reader-layout', /.+/);
+    await page.waitForFunction(() => window.AlmanionSettings?.ready);
+    const card = page.locator('.subject-card:visible').first();
+    const appearance = () => card.evaluate(el => {
+        const style = getComputedStyle(el);
+        return [style.color, style.background, style.border, el.clientWidth, el.clientHeight];
+    });
+    const before = await appearance();
+    await page.evaluate(() => openSettingsModal());
+    await page.locator('[data-reader-layout="sections"]').click();
+    await page.locator('#settingsDoneBtn').click();
+    expect(await appearance()).toEqual(before);
+    await expect(page.locator('html')).toHaveAttribute('data-exp', 'sepia-dark');
 });

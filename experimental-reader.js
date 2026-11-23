@@ -3,6 +3,10 @@
 
     const state = {
         active: false,
+        feed: false,
+        feedTopics: [],
+        feedFrame: 0,
+        releaseLayoutAnchor: null,
         index: 0,
         topics: [],
         sections: [],
@@ -120,25 +124,10 @@
         select.setAttribute('aria-label', 'Курс ликбеза');
         const firstTopics = state.sections.map(section => section.querySelector(':scope > .topic[id]'));
         firstTopics.forEach(topic => select.add(new Option(getPartTitle(topic).replace(/^\d+\.\s*/, ''), topic.id)));
-        select.addEventListener('change', () => {
-            const topic = document.getElementById(select.value);
-            if (!topic) return;
-            if (state.active) goToId(topic.id, { source: 'course' });
-            else if (location.hash !== '#' + topic.id) location.hash = topic.id;
-            else topic.scrollIntoView();
-        });
+        select.addEventListener('change', () => goToId(select.value, { source: 'course' }));
         label.append(select);
         state.anchor.before(label);
         state.courseSelect = select;
-        if ('IntersectionObserver' in window) {
-            const observer = new IntersectionObserver(entries => {
-                if (state.active) return;
-                for (const entry of entries) {
-                    if (entry.isIntersecting) select.selectedIndex = state.sections.indexOf(entry.target);
-                }
-            }, { rootMargin: '0px 0px -70% 0px' });
-            state.sections.forEach(section => observer.observe(section));
-        }
     }
 
     function bindReaderEvents(main) {
@@ -155,6 +144,7 @@
         window.addEventListener('popstate', restoreLocation);
         window.addEventListener('almanion:note-filter-changed', event => {
             if (!state.active) return;
+            if (state.feed) state.feedTopics = state.topics.filter(hasContent);
             const explicit = event.detail?.userChange;
             if (explicit) state.cancelPull();
             if (!hasContent(state.topics[state.index]) && (explicit || !new URLSearchParams(location.search).has('find'))) {
@@ -268,7 +258,7 @@
         }
 
         function canPull() {
-            return state.active && adjacentIndex(1) >= 0
+            return state.active && !state.feed && adjacentIndex(1) >= 0
                 && (window.visualViewport?.scale || 1) <= 1.01 && !window.getSelection()?.toString()
                 && !document.body.classList.contains('sidebar-open')
                 && !document.querySelector('dialog[open], .note-filter[open], .auth-overlay:not(.hidden), .settings-modal:not(.hidden), .lightbox-overlay.open');
@@ -387,18 +377,85 @@
     }
 
     function syncExperimentalReader() {
-        const shouldBeActive = document.body.classList.contains('experimental');
-        if (shouldBeActive && !state.active) activateReader();
-        if (!shouldBeActive && state.active) deactivateReader();
+        const feed = document.body.dataset.readerLayout === 'feed';
+        if (!state.active) {
+            state.feed = feed;
+            activateReader();
+            return;
+        }
+        if (state.feed === feed) return;
+        state.releaseLayoutAnchor?.();
+        if (state.feed) trackFeedPosition();
+        const topic = state.topics[state.index];
+        const oldTop = topic.getBoundingClientRect().top;
+        state.cancelPull();
+        cancelSwipe();
+        state.feed = feed;
+        document.body.classList.toggle('exp-reader-feed', feed);
+        positions.clear();
+        applyTopicVisibility();
+        prepareTopic(topic);
+        updateReaderUi();
+        if (oldTop < window.innerHeight) {
+            anchorLayoutChange(topic, oldTop);
+        }
+    }
+
+    // Images and typeset formulas above the open topic acquire their real height
+    // after the feed becomes visible. Keep the same line in view until it settles.
+    function anchorLayoutChange(topic, top) {
+        const controller = new AbortController();
+        const observer = new ResizeObserver(align);
+        let stableTimer;
+        function release() {
+            observer.disconnect();
+            controller.abort();
+            clearTimeout(stableTimer);
+            state.releaseLayoutAnchor = null;
+        }
+        function align() {
+            const delta = topic.getBoundingClientRect().top - top;
+            if (Math.abs(delta) > 1) window.scrollBy({ top: delta, behavior: 'instant' });
+            clearTimeout(stableTimer);
+            stableTimer = setTimeout(release, 500);
+        }
+        state.releaseLayoutAnchor = release;
+        for (const type of ['wheel', 'touchstart', 'pointerdown', 'keydown']) {
+            window.addEventListener(type, event => {
+                if (!event.target.closest?.('#settingsModal')) release();
+            }, { capture: true, passive: true, signal: controller.signal });
+        }
+        observer.observe(topic.closest('main') || topic.parentElement);
+        align();
+    }
+
+    function trackFeedPosition() {
+        if (!state.feed || !state.feedTopics.length || state.releaseLayoutAnchor) return;
+        const line = Math.max(0, state.controls.getBoundingClientRect().bottom) + 24;
+        let low = 0;
+        let high = state.feedTopics.length - 1;
+        while (low < high) {
+            const mid = Math.ceil((low + high) / 2);
+            if (state.feedTopics[mid].getBoundingClientRect().top <= line) low = mid;
+            else high = mid - 1;
+        }
+        const index = state.topics.indexOf(state.feedTopics[low]);
+        if (index === state.index) return;
+        const previous = state.index;
+        writeLocation(state.topics[index].id, { source: 'scroll' });
+        state.index = index;
+        applyTopicVisibility(previous);
+        prepareTopic(state.topics[index]);
+        updateReaderUi();
     }
 
     function activateReader() {
         state.active = true;
-        state.restoreScroll = history.scrollRestoration;
         history.scrollRestoration = 'manual';
         state.toolbar.hidden = false;
         state.footer.hidden = false;
         document.body.classList.add('exp-reader-active');
+        document.body.classList.toggle('exp-reader-feed', state.feed);
 
         const hashId = decodeURIComponent(window.location.hash.slice(1));
         const hashTarget = document.getElementById(hashId);
@@ -410,39 +467,6 @@
 
         if (history.state?.readerPlace) restoreLocation();
         else if (hashIndex >= 0) goToId(hashId, { animate: false, updateHash: false });
-    }
-
-    function deactivateReader() {
-        window.clearTimeout(state.rapidTimer);
-        state.rapidTimer = 0;
-        cancelSwipe();
-        state.cancelPull();
-        state.active = false;
-        history.scrollRestoration = state.restoreScroll;
-        state.toolbar.hidden = true;
-        state.footer.hidden = true;
-        document.body.classList.remove(
-            'exp-reader-active',
-            'exp-reader-rapid',
-            'exp-reader-at-start',
-            'exp-reader-at-end'
-        );
-
-        state.sections.forEach(section => {
-            section.classList.remove('exp-reader-section-current');
-            section.removeAttribute('aria-hidden');
-            setElementInert(section, false);
-        });
-        state.topics.forEach(topic => {
-            topic.classList.remove(
-                'exp-reader-current',
-                'exp-reader-dragging'
-            );
-            topic.style.removeProperty('--exp-reader-drag-x');
-            topic.style.removeProperty('--exp-reader-drag-opacity');
-            topic.removeAttribute('aria-hidden');
-            setElementInert(topic, false);
-        });
     }
 
     function goToId(id, options) {
@@ -476,6 +500,7 @@
     function goToIndex(nextIndex, options) {
         if (!state.active) return false;
         if (nextIndex < 0 || nextIndex >= state.topics.length) return false;
+        state.releaseLayoutAnchor?.();
 
         const settings = {
             animate: true,
@@ -500,7 +525,7 @@
         state.lastNavigationAt = now;
 
         setRapidNavigationState(rapid);
-        const readerScrollTop = settings.scroll ? getReaderScrollTop() : null;
+        const readerScrollTop = settings.scroll ? getReaderScrollTop(nextIndex) : null;
         const step = ['keyboard', 'controls', 'swipe', 'pull'].includes(settings.source);
         state.index = nextIndex;
         applyTopicVisibility(previousIndex);
@@ -527,54 +552,33 @@
         }, 160);
     }
 
+    function markReaderElement(element, currentClass, current) {
+        const hidden = !state.feed && !current;
+        element.classList.toggle(currentClass, current);
+        element.setAttribute('aria-hidden', String(hidden));
+        if ('inert' in element) element.inert = hidden;
+    }
+
     function applyTopicVisibility(previousIndex) {
-        const currentTopic = state.topics[state.index];
-        const currentSection = currentTopic.closest('.content-section');
-
-        // Update previous/current elements; activation needs a full pass.
-        if (Number.isInteger(previousIndex) && previousIndex !== state.index) {
-            const previousTopic = state.topics[previousIndex];
-            const previousSection = previousTopic && previousTopic.closest('.content-section');
-
-            if (previousTopic) {
-                previousTopic.classList.remove('exp-reader-current');
-                previousTopic.setAttribute('aria-hidden', 'true');
-                setElementInert(previousTopic, true);
-            }
-            currentTopic.classList.add('exp-reader-current');
-            currentTopic.setAttribute('aria-hidden', 'false');
-            setElementInert(currentTopic, false);
-
-            if (previousSection !== currentSection) {
-                if (previousSection) {
-                    previousSection.classList.remove('exp-reader-section-current');
-                    previousSection.setAttribute('aria-hidden', 'true');
-                    setElementInert(previousSection, true);
-                }
-                currentSection.classList.add('exp-reader-section-current');
-                currentSection.setAttribute('aria-hidden', 'false');
-                setElementInert(currentSection, false);
+        const current = state.topics[state.index];
+        const section = current.closest('.content-section');
+        const topicClass = 'exp-reader-current';
+        const sectionClass = 'exp-reader-section-current';
+        if (Number.isInteger(previousIndex)) {
+            const previous = state.topics[previousIndex];
+            const previousSection = previous.closest('.content-section');
+            markReaderElement(previous, topicClass, false);
+            markReaderElement(current, topicClass, true);
+            if (section !== previousSection) {
+                markReaderElement(previousSection, sectionClass, false);
+                markReaderElement(section, sectionClass, true);
             }
             return;
         }
 
-        state.sections.forEach(section => {
-            const isCurrent = section === currentSection;
-            section.classList.toggle('exp-reader-section-current', isCurrent);
-            section.setAttribute('aria-hidden', String(!isCurrent));
-            setElementInert(section, !isCurrent);
-        });
-
-        state.topics.forEach((topic, index) => {
-            const isCurrent = index === state.index;
-            topic.classList.toggle('exp-reader-current', isCurrent);
-            topic.setAttribute('aria-hidden', String(!isCurrent));
-            setElementInert(topic, !isCurrent);
-        });
-    }
-
-    function setElementInert(element, inert) {
-        if ('inert' in element) element.inert = inert;
+        state.feedTopics = state.feed ? state.topics.filter(hasContent) : [];
+        state.sections.forEach(item => markReaderElement(item, sectionClass, item === section));
+        state.topics.forEach(item => markReaderElement(item, topicClass, item === current));
     }
 
     function prepareTopic(topic, entrance = null) {
@@ -705,6 +709,12 @@
     }
 
     window.addEventListener('scroll', () => {
+        if (state.feed && !state.feedFrame) {
+            state.feedFrame = requestAnimationFrame(() => {
+                state.feedFrame = 0;
+                trackFeedPosition();
+            });
+        }
         const key = history.state?.readerPlace?.key;
         if (state.active && key && !state.controls.parentNode.classList.contains('reader-pulling')) positions.set(key, scrollY);
     }, { passive: true });
@@ -718,7 +728,11 @@
         if (Number.isFinite(y)) window.scrollTo({ top: y, behavior: 'instant' });
     }
 
-    function getReaderScrollTop() {
+    function getReaderScrollTop(index = state.index) {
+        if (state.feed) {
+            const sticky = Number.parseFloat(getComputedStyle(state.controls).top) || 0;
+            return Math.max(0, window.scrollY + state.topics[index].getBoundingClientRect().top - state.controls.offsetHeight - sticky - 4);
+        }
         if (!state.anchor || !state.toolbar) return window.scrollY;
         const anchorTop = state.anchor.getBoundingClientRect().top + window.scrollY;
         const stickyOffset = Number.parseFloat(window.getComputedStyle(state.controls || state.toolbar).top) || 0;

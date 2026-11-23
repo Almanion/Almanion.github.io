@@ -77,6 +77,40 @@
     --builder-on-accent: #111113;
 }
 
+[data-palette="sepia"] {
+    --builder-bg: #f6f0e5;
+    --builder-panel: #fffaf1;
+    --builder-panel-soft: #eee4d5;
+    --builder-text: #35291f;
+    --builder-muted: #665341;
+    --builder-faint: #79644f;
+    --builder-line: #dcd0be;
+    --builder-line-strong: #c8b69e;
+    --builder-accent: #80502f;
+    --builder-accent-hover: #623b22;
+    --builder-accent-soft: #efe2cd;
+    --builder-on-accent: #ffffff;
+    --builder-panel-raised: var(--builder-panel);
+}
+
+[data-theme="dark"][data-palette="sepia"] {
+    --builder-bg: #201b17;
+    --builder-panel: #2a241f;
+    --builder-panel-soft: #352c25;
+    --builder-text: #efe4d5;
+    --builder-muted: #cbb8a0;
+    --builder-faint: #b59e83;
+    --builder-line: #493c32;
+    --builder-line-strong: #635142;
+    --builder-accent: #e2b98a;
+    --builder-accent-hover: #f0cca4;
+    --builder-accent-soft: #3f3227;
+    --builder-on-accent: #231a12;
+    --builder-panel-raised: var(--builder-panel);
+}
+
+[data-palette="graphite"] .almanion-wordmark { filter: grayscale(1); }
+
 * { box-sizing: border-box; }
 [hidden] { display: none !important; }
 html { background: var(--builder-bg); }

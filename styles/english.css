@@ -802,7 +802,7 @@ body.experimental .english-translator-footer {
         gap: 0.48rem;
     }
 
-    .english-page.experimental.exp-reader-active .topic.exp-reader-current {
+    .english-page.experimental.exp-reader-active .topic[aria-hidden="false"] {
         padding: 1rem !important;
     }
 

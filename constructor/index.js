@@ -694,27 +694,19 @@
             if (mode === 'legacy') {
                 return { bodyClass: (dark ? 'dark-theme ' : '') + 'no-hover constructor-preview-page', label: 'Старый · ' + (dark ? 'тёмная' : 'светлая') };
             }
-            const palette = mode === 'graphite' ? 'graphite' : 'prism';
+            const palette = ['graphite', 'sepia'].includes(mode) ? mode : 'prism';
             return {
                 bodyClass: 'experimental exp-' + palette + (dark ? ' exp-dark' : '') + ' no-hover constructor-preview-page',
-                label: (palette === 'graphite' ? 'Графит' : 'Призма') + (dark ? ' · тёмная' : ' · светлая')
+                label: ({ graphite: 'Графит', sepia: 'Сепия', prism: 'Призма' }[palette]) + (dark ? ' · тёмная' : ' · светлая')
             };
         }
         let settings = {};
         try { settings = JSON.parse(localStorage.getItem('siteSettings') || '{}') || {}; } catch (_) {}
-        if (settings.experimental === false) {
-            const theme = settings.theme || (localStorage.getItem('theme') === 'dark' ? 'dark' : 'light');
-            const labels = { light: 'Старый · светлая', dark: 'Старый · тёмная', sepia: 'Старый · сепия', midnight: 'Старый · полночь' };
-            return {
-                bodyClass: (theme && theme !== 'light' ? theme + '-theme ' : '') + 'no-hover constructor-preview-page',
-                label: labels[theme] || labels.light
-            };
-        }
-        const mode = settings.expMode === 'graphite' ? 'graphite' : 'prism';
+        const mode = ['graphite', 'sepia'].includes(settings.expMode) ? settings.expMode : 'prism';
         const dark = settings.expDark === true;
         return {
             bodyClass: 'experimental exp-' + mode + (dark ? ' exp-dark' : '') + ' no-hover constructor-preview-page',
-            label: (mode === 'graphite' ? 'Графит' : 'Призма') + (dark ? ' · тёмная' : ' · светлая')
+            label: ({ graphite: 'Графит', sepia: 'Сепия', prism: 'Призма' }[mode]) + (dark ? ' · тёмная' : ' · светлая')
         };
     }
 
@@ -726,10 +718,11 @@
             doc.open();
             doc.write('<!DOCTYPE html><html lang="ru"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">' +
                 '<base href="' + escapeHtml(baseHref) + '">' +
-                '<link rel="stylesheet" href="styles/site/index.css?v=20261002-1">' +
+                '<link rel="stylesheet" href="styles/site/index.css?v=20261123-4">' +
                 '<link rel="stylesheet" href="styles/tokens.css?v=20260929-2">' +
-                '<link rel="stylesheet" href="style-new.css?v=20260929-2">' +
-                '<link rel="stylesheet" href="styles/typography.css?v=20261002-1">' +
+                '<link rel="stylesheet" href="styles/legacy-refresh.css?v=20260903-2">' +
+                '<link rel="stylesheet" href="style-new.css?v=20261123-4">' +
+                '<link rel="stylesheet" href="styles/typography.css?v=20261123-4">' +
                 '<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">' +
                 '<link rel="stylesheet" href="constructor/preview.css?v=20260903-1">' +
                 '</head><body><main class="main-content" id="previewContent"></main></body></html>');

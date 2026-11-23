@@ -849,7 +849,7 @@ body:not(.no-hover) .kc-answer-remember:hover { background: var(--success-color)
     padding: 0.75rem 1rem;
     border: 0;
     border-radius: 10px;
-    color: #fff;
+    color: var(--exp-accent-contrast, #fff);
     background: var(--accent-color);
     font: inherit;
     font-weight: 680;
@@ -996,7 +996,8 @@ body.dark-theme .sidebar-header .account-btn:hover { background: rgba(255,255,25
 .account-link { display: block; margin: 0.8rem auto 0; background: none; border: none; color: var(--accent-color); font: inherit; font-size: 0.85rem; cursor: pointer; }
 .account-link:hover { text-decoration: underline; }
 .account-link:disabled { opacity: 0.62; cursor: wait; text-decoration: none; }
-.account-signout { background: var(--error-color) !important; }
+#accountOverlay .account-signout { color: white; background: #ae383b; }
+#accountOverlay .account-signout:hover:not(:disabled) { background: #912d30; }
 
 /* ============================================
    Нижняя навигация — нативный мобильный экспериментальный дизайн

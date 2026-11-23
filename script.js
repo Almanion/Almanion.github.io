@@ -464,6 +464,7 @@ function initNoteEntrances() {
     }
 
     function watch(topic, direction = null, refresh = false) {
+        if (document.body.dataset.readerLayout === 'feed') topic = null;
         const nextScope = topic || main;
         const nextLevel = motionLevel();
         if (!refresh && nextScope === scope && nextLevel === level) return;
