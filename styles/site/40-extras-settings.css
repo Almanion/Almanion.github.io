@@ -646,8 +646,6 @@ body.new-year-mode .ny-toggle {
     font-weight: 550;
 }
 #settingsModal .prefs-choices button[aria-pressed="true"] {
-    background: var(--bg-secondary);
-    border-color: var(--accent-color);
     color: var(--text-primary);
     font-weight: 700;
 }
@@ -696,7 +694,6 @@ body.new-year-mode .ny-toggle {
     background: var(--bg-secondary);
     transform: translateX(calc(var(--prefs-index, 0) * (100% + 2px)));
 }
-#settingsModal .prefs-choices button[aria-pressed="true"] { border-color: transparent; background: transparent; }
 @media (prefers-reduced-motion: no-preference) {
     #settingsModal:not(.hidden) .prefs-choices::before,
     #settingsModal:not(.hidden) #hoverToggle::before {
@@ -1474,147 +1471,6 @@ body.dark-theme .telegram-welcome-message {
     margin-top: 1rem;
 }
 
-/* Р’С‹Р±РѕСЂ С‚РµРјС‹ */
-.theme-selector {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 0.75rem;
-}
-
-.theme-option {
-    background: var(--bg-secondary);
-    border: 1.5px solid var(--border-color);
-    border-radius: 14px;
-    padding: 0.9rem;
-    cursor: pointer;
-    transition: var(--transition);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 0.6rem;
-}
-
-.theme-option:hover {
-    border-color: var(--accent-color);
-    box-shadow: var(--shadow-sm);
-}
-
-.theme-option.active {
-    border-color: var(--accent-color);
-    background: rgba(var(--accent-rgb), 0.07);
-    box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.14);
-}
-
-.theme-preview {
-    width: 100%;
-    height: 62px;
-    border-radius: 9px;
-    overflow: hidden;
-    display: flex;
-    flex-direction: column;
-    box-shadow: var(--shadow-sm);
-}
-
-.light-preview {
-    background: #ffffff;
-}
-
-.dark-preview {
-    background: #0f172a;
-}
-
-.sepia-preview {
-    background: #faf3e0;
-}
-
-.midnight-preview {
-    background: #0a0a0b;
-}
-
-.preview-header {
-    height: 18px;
-}
-
-.light-preview .preview-header {
-    background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
-}
-
-.dark-preview .preview-header {
-    background: linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%);
-}
-
-.sepia-preview .preview-header {
-    background: linear-gradient(135deg, #b45309 0%, #92400e 100%);
-}
-
-.midnight-preview .preview-header {
-    background: linear-gradient(135deg, #18181b 0%, #27272a 100%);
-    border-bottom: 1px solid #a78bfa;
-}
-
-.preview-content {
-    flex: 1;
-    padding: 0.5rem;
-    display: flex;
-    flex-direction: column;
-    gap: 0.25rem;
-}
-
-.light-preview .preview-content {
-    background: #f8f9fa;
-}
-
-.dark-preview .preview-content {
-    background: #1e293b;
-}
-
-.sepia-preview .preview-content {
-    background: #f4ecd8;
-}
-
-.midnight-preview .preview-content {
-    background: #131316;
-}
-
-.light-preview .preview-content::before,
-.light-preview .preview-content::after,
-.dark-preview .preview-content::before,
-.dark-preview .preview-content::after,
-.sepia-preview .preview-content::before,
-.sepia-preview .preview-content::after,
-.midnight-preview .preview-content::before,
-.midnight-preview .preview-content::after {
-    content: '';
-    height: 6px;
-    border-radius: 3px;
-}
-
-.light-preview .preview-content::before,
-.light-preview .preview-content::after {
-    background: #dee2e6;
-}
-
-.dark-preview .preview-content::before,
-.dark-preview .preview-content::after {
-    background: #334155;
-}
-
-.sepia-preview .preview-content::before,
-.sepia-preview .preview-content::after {
-    background: #d4c39d;
-}
-
-.midnight-preview .preview-content::before,
-.midnight-preview .preview-content::after {
-    background: #27272a;
-}
-
-.theme-option span {
-    color: var(--text-primary);
-    font-weight: 600;
-    font-size: 0.9rem;
-}
-
 /* Toggle Switch */
 .toggle-switch {
     display: flex;
@@ -2223,31 +2079,6 @@ body.dark-theme .settings-button-sidebar:hover {
         margin-bottom: 0.875rem;
     }
     
-    .theme-selector {
-        grid-template-columns: repeat(3, 1fr);
-        gap: 0.5rem;
-    }
-
-    .theme-option {
-        padding: 0.75rem;
-        border-radius: 12px;
-        border-width: 2px;
-        gap: 0.5rem;
-    }
-
-    .theme-option:hover {
-        transform: none;
-    }
-
-    .theme-option span {
-        font-size: 0.9rem;
-    }
-    
-    .theme-preview {
-        height: 50px;
-        border-radius: 8px;
-    }
-
     .animation-level-option {
         padding: 0.75rem 0.875rem;
         border-radius: 10px;
