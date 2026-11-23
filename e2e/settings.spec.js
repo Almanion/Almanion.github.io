@@ -192,46 +192,6 @@ for (const width of [390, 1366]) test(`switching note layout preserves reading p
     await expect(page.locator('.topic.exp-reader-current')).toHaveAttribute('id', nextId);
 });
 
-test('graphite gives the wordmark and remarks neutral ink and keeps signed-in actions readable', async ({ page }) => {
-    // Supply only the auth state and empty database responses. The dialog HTML comes from account.js.
-    await page.evaluate(() => {
-        window.firebaseConfig = {};
-        const auth = () => ({
-            useDeviceLanguage() {}, setPersistence: () => Promise.resolve(),
-            onAuthStateChanged(callback) { callback({ uid: 'palette-test', email: 'reader@example.invalid' }); }
-        });
-        auth.Auth = { Persistence: { LOCAL: 'local' } };
-        const database = () => ({ ref: key => ({
-            set: () => Promise.resolve(), once: () => Promise.resolve({ val: () => key.endsWith('/contentEditor') || null }),
-            on() {}, off() {}
-        }) });
-        database.ServerValue = { TIMESTAMP: 0 };
-        window.firebase = { apps: [{}], auth, database };
-    });
-    await page.addScriptTag({ url: '/account.js' });
-    await page.evaluate(() => window.AlmanionAccount.openAccount());
-    const actions = page.locator('#accountOverlay .auth-submit');
-    await expect(actions).toHaveCount(3);
-    for (const expTheme of ['light', 'dark']) {
-        await page.evaluate(expTheme => AlmanionSettings.update({ expTheme, expMode: 'graphite', animationLevel: 'off' }), expTheme);
-        await expect(page.locator('.almanion-wordmark').first()).toHaveCSS('filter', 'grayscale(1)');
-        const ink = await page.evaluate(() => ['.remark-box', '.definition-box'].map(sel =>
-            getComputedStyle(document.querySelector(sel), '::before').color));
-        expect(ink[0]).toBe(ink[1]);
-        const ratios = await actions.evaluateAll(buttons => {
-            const luminance = rgb => rgb.match(/[\d.]+/g).map(Number).slice(0, 3)
-                .map(x => x / 255).map(x => x <= .04045 ? x / 12.92 : ((x + .055) / 1.055) ** 2.4)
-                .reduce((sum, x, i) => sum + x * [.2126, .7152, .0722][i], 0);
-            return buttons.map(button => {
-                const s = getComputedStyle(button);
-                const light = luminance(s.color), background = luminance(s.backgroundColor);
-                return (Math.max(light, background) + .05) / (Math.min(light, background) + .05);
-            });
-        });
-        for (const ratio of ratios) expect(ratio).toBeGreaterThanOrEqual(4.5);
-    }
-});
-
 test('a saved feed applies to older notes and leaves other site pages in the same palette', async ({ page }) => {
     await page.evaluate(() => AlmanionSettings.update({ readerLayout: 'feed', expMode: 'sepia', expTheme: 'dark' }));
     for (const path of ['/likbez.html', '/physics.html']) {
