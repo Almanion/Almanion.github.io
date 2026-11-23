@@ -253,7 +253,8 @@ function build(options) {
             .replace(/(href=["'](?:constructor\/index|styles\/home-dashboard)\.css)(?:\?[^"']*)?(["'])/g, '$1?v=20261123-1$2')
             .replace(/(href=["']styles\/site\/index\.css)(?:\?[^"']*)?(["'])/g, '$1?v=20261123-3$2')
             .replace(/((?:src|href)=["'](?:(?:note-runtime|experimental-reader|english-ui|settings|script|print-export|constructor\/index)\.js|(?:style-new|styles\/(?:typography|english|site\/(?:reader|index))|constructor\/index)\.css))(?:\?[^"']*)?(["'])/g, '$1?v=20261123-4$2')
-            .replace(/((?:src|href)=["'](?:(?:note-runtime|experimental-reader|english-ui|settings)\.js|(?:style-new|styles\/site\/index)\.css))(?:\?[^"']*)?(["'])/g, '$1?v=20261123-7$2');
+            .replace(/((?:src|href)=["'](?:(?:note-runtime|experimental-reader|english-ui|settings)\.js|(?:style-new|styles\/site\/index)\.css))(?:\?[^"']*)?(["'])/g, '$1?v=20261123-7$2')
+            .replace(/(href=["']style-new\.css)(?:\?[^"']*)?(["'])/g, '$1?v=20261123-tech-book$2');
         let published = updated;
         // The browser decides whether to take a navigation snapshot before
         // deferred scripts run. Make the opt-in available with the first bytes of HTML.

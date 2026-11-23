@@ -1,8 +1,9 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 28 28">
   <title>Физика</title>
-  <rect x="1.5" y="1.5" width="29" height="29" rx="8" fill="#EDF3F8" stroke="#D4E0EA"/>
-  <g transform="translate(4 4)" fill="none" stroke="#4777A0" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-    <circle cx="5.2" cy="18.5" r="1.45" fill="#4777A0" stroke="none"/>
-    <path d="M5.2 18.5C8.1 9.7 13.2 5.25 20.3 6.2M16.8 4.4l3.5 1.8-2.7 2.85M8.2 20.5h11.5"/>
+  <rect width="28" height="28" rx="6" fill="#f8f8fc"/>
+  <g transform="translate(2 2)" color="#245ea9" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+    <ellipse cx="12" cy="12" rx="10" ry="3.8" transform="rotate(-40 12 12)"/>
+    <ellipse cx="12" cy="12" rx="10" ry="3.8" transform="rotate(40 12 12)"/>
+    <circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/>
   </g>
 </svg>

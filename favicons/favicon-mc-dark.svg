@@ -1,8 +1,8 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
-  <title>Матцентр — тёмная тема</title>
-  <rect x="1.5" y="1.5" width="29" height="29" rx="8" fill="#171A22" stroke="#303746"/>
-  <g transform="translate(4 4)" fill="none" stroke="#A2AED1" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round">
-    <rect x="4.5" y="4.5" width="6" height="6" rx="1.35"/><rect x="13.5" y="4.5" width="6" height="6" rx="1.35"/><rect x="4.5" y="13.5" width="6" height="6" rx="1.35"/><rect x="13.5" y="13.5" width="6" height="6" rx="1.35"/>
-    <path d="m14.85 16.45 1.35 1.35 2.55-3.05"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 28 28">
+  <title>МатЦентр</title>
+  <rect width="28" height="28" rx="6" fill="#191922"/>
+  <g transform="translate(2 2)" color="#a9b7fa" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="3.8" y="3.8" width="16.4" height="16.4" rx="1.5"/>
+    <path d="M4.3 19.7 19.7 4.3M4.3 4.3 12 12h8.2M12 12l4.1 4.1-4.1 4.1"/>
   </g>
 </svg>

@@ -1,7 +1,8 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
-  <title>Алгебра — тёмная тема</title>
-  <rect x="1.5" y="1.5" width="29" height="29" rx="8" fill="#201A13" stroke="#473824"/>
-  <g transform="translate(4 4)" fill="none" stroke="#D5A75B" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-    <path d="m5.25 8 7 9m0-9-7 9M15.5 7.45c.12-1.32 1.04-2.2 2.34-2.2 1.17 0 2.08.73 2.08 1.8 0 .9-.56 1.45-1.4 2.04l-3.02 2.06h4.55"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 28 28">
+  <title>Математика</title>
+  <rect width="28" height="28" rx="6" fill="#191922"/>
+  <g transform="translate(2 2)" color="#ffa58e" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M2.8 12.4h2.6l3 6.5 4.25-13.8h8.55"/>
+    <path d="m14.1 10.7 5 5.7m0-5.7-5 5.7"/>
   </g>
 </svg>

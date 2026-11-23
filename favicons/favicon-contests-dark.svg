@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 28 28">
+  <title>Олимпиады</title>
+  <rect width="28" height="28" rx="6" fill="#191922"/>
+  <g transform="translate(2 2)" color="#a6aaff" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="4" y="4" width="16" height="16" rx="3"/><path d="M4 10h16M10 10v10M15 10v10"/>
+  </g>
+</svg>

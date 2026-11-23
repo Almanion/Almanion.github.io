@@ -43,7 +43,7 @@ function onlinePage(page) {
         .replace(/<title>[\s\S]*?<\/title>/, '<title>' + definition.title + ' — Орбитальный курьер ' + releaseVersion() + '</title>')
         .replace(/<body\b([^>]*)>/, '<body$1 data-game-navigation="pages" data-game-entry="' + page + '" data-game-base="' + prefix + '" data-page="' + page + '">')
         .replace(/\b(href|src)="(src\/([^"]+))"/g, (_, attribute, file, name) => attribute + '="' + prefix + 'assets/' + name + '?v=' + assetVersion(file) + '"')
-        .replace('src="../../images/almanion-wordmark.svg"', 'src="' + prefix + '../../images/almanion-wordmark.svg"')
+        .replace('src="../../images/almanion-wordmark.svg', 'src="' + prefix + '../../images/almanion-wordmark.svg')
         .replace('href="../../index.html"', 'href="' + prefix + '../../index.html"');
     // The compatible hidden screens still have one canonical markup owner.
     html = html.replace(/<section\b[^>]*\bclass="[^"]*\bscreen\b[^"]*"[^>]*>/g, tag => {

@@ -15,11 +15,9 @@ for (const file of files) {
 }
 
 const logo = 'images/almanion-wordmark.svg';
-const wordmark = read(logo);
-const book = wordmark.match(/<path id="book-a"[^>]+\/>/)[0];
-const cut = wordmark.match(/<clipPath\b[\s\S]*?<\/clipPath>/)[0];
-for (const file of ['favicons/favicon.svg', 'favicons/favicon-dark.svg', 'favicons/app-icon.svg']) {
-    assert.ok(read(file).includes(book) && read(file).includes(cut), file + ': use the wordmark initial');
+const { buildFavicons } = require('../tools/build-favicons');
+for (const [name, expected] of Object.entries(buildFavicons())) {
+    assert.equal(read('favicons/' + name).replace(/\r\n/g, '\n'), expected, name + ': regenerate from the current artwork');
 }
 const pages = JSON.parse(read('content/subjects.json')).map(subject => subject.page);
 for (const file of [
@@ -29,7 +27,7 @@ for (const file of [
 ]) {
     const relative = path.posix.relative(path.posix.dirname(file), logo);
     const images = read(file).match(/<img\b[^>]+>/g) || [];
-    assert.equal(images.filter(tag => tag.includes('src="' + relative + '"') && tag.includes('alt="Almanion"')).length, 1, file);
+    assert.equal(images.filter(tag => tag.includes('src="' + relative + '?v=20261123-tech-book"') && tag.includes('alt="Almanion"')).length, 1, file);
 }
 const catalog = read('games/index.html');
 assert.match(catalog, /signal-frontier\/\?renderer=canvas/);

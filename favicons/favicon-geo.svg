@@ -1,8 +1,8 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 28 28">
   <title>Геометрия</title>
-  <rect x="1.5" y="1.5" width="29" height="29" rx="8" fill="#F1F0F8" stroke="#DDDAEC"/>
-  <g transform="translate(4 4)" fill="none" stroke="#68609A" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M4.5 19.5h15L7.7 5.2 4.5 19.5ZM4.9 15.5a4.1 4.1 0 0 1 4.05 4"/>
-    <circle cx="7.7" cy="5.2" r="1" fill="#68609A" stroke="none"/>
+  <rect width="28" height="28" rx="6" fill="#f8f8fc"/>
+  <g transform="translate(2 2)" color="#146973" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="12" cy="6.5" r="2.3"/>
+    <path d="M12 2.5v1.7M10.8 8.5 5.5 21m7.7-12.5L18.5 21M8.3 14.6a6.7 6.7 0 0 0 7.4 0"/>
   </g>
 </svg>

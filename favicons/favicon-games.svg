@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 28 28">
+  <title>Игры</title>
+  <rect width="28" height="28" rx="6" fill="#f8f8fc"/>
+  <g transform="translate(2 2)" color="#5147a5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="8.4" cy="5.2" r="2.6"/><path d="m9.25 7.7 1.85 5.4M6.6 11.4H5.3l-2.1 4v3.4a1.5 1.5 0 0 0 1.5 1.5h14.6a1.5 1.5 0 0 0 1.5-1.5v-3.4l-2.1-4h-5.2M3.2 15.4h17.6"/><path d="M15.9 13.25h1.65"/>
+  </g>
+</svg>

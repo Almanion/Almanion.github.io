@@ -822,6 +822,8 @@ body.experimental .stat-item {
 body.experimental.exp-graphite .subject-icon,
 body.experimental.exp-graphite .subject-icon svg { color: var(--exp-text-dim) !important; }
 body.experimental.exp-graphite .subject-card::before { background: var(--exp-text) !important; color: var(--exp-text) !important; }
+html[data-exp$="-light"] .almanion-wordmark { color-scheme: light; }
+html[data-exp$="-dark"] .almanion-wordmark { color-scheme: dark; }
 body.exp-graphite .almanion-wordmark { filter: grayscale(1); }
 
 /* =========================================================
