@@ -290,3 +290,21 @@ test('sun sets behind the ridge and the moon completes the orbit in both directi
     expect(sunrise[3].x).toBeLessThan(56);
     expect(sunrise[4]).toMatchObject({ x: 56, y: 9, moon: 0, twilight: 0 });
 });
+
+test('a second theme tap reverses the visible day/night arc', async ({ page }) => {
+    await page.emulateMedia({ colorScheme: 'light', reducedMotion: 'no-preference' });
+    await page.evaluate(() => openSettingsModal());
+    const sky = page.locator('.prefs-sky');
+    await page.locator('[data-exp-theme="dark"]').click();
+    const { before, after } = await sky.evaluate(async el => {
+        const phase = () => Number(getComputedStyle(el).getPropertyValue('--prefs-nightfall'));
+        while (phase() < .3) await new Promise(requestAnimationFrame);
+        const before = phase();
+        el.closest('#settingsModal').querySelector('[data-exp-theme="light"]').click();
+        return { before, after: phase() };
+    });
+    expect(before).toBeLessThan(.9);
+    expect(Math.abs(after - before)).toBeLessThan(.05);
+    await expect(sky.locator('.prefs-night')).toHaveCSS('opacity', '0');
+    await expect(page.locator('[data-exp-theme="light"]')).toHaveAttribute('aria-pressed', 'true');
+});

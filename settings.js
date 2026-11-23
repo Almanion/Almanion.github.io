@@ -198,7 +198,7 @@ let activeThemeTransition = null;
  * сотни отдельных transition у карточек и формул, а частые клики всегда
  * применяют последний выбор пользователя.
  */
-function animateThemeChange(update) {
+function animateThemeChange(update, livePreviewModal) {
     const reduceMotion = document.body.classList.contains('animations-off')
         || window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     if (reduceMotion) {
@@ -211,7 +211,8 @@ function animateThemeChange(update) {
         activeThemeTransition.skipTransition();
     }
 
-    if (typeof document.startViewTransition === 'function') {
+    // A document snapshot can freeze the SVG halfway through a sunrise in WebKit.
+    if (!livePreviewModal && typeof document.startViewTransition === 'function') {
         document.documentElement.classList.add('site-theme-transition');
         const transition = document.startViewTransition(update);
         activeThemeTransition = transition;
@@ -228,10 +229,10 @@ function animateThemeChange(update) {
     const veil = document.createElement('div');
     veil.className = 'site-theme-transition-veil';
     veil.style.backgroundColor = getComputedStyle(document.body).backgroundColor;
-    document.body.appendChild(veil);
+    (livePreviewModal || document.body).prepend(veil);
     update();
-    requestAnimationFrame(() => veil.classList.add('is-leaving'));
-    window.setTimeout(() => veil.remove(), 260);
+    const fade = veil.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 240, fill: 'forwards' });
+    fade.finished.then(() => veil.remove(), () => veil.remove());
 }
 
 function applyAnimationLevel(level) {
@@ -528,7 +529,7 @@ function bindPreferenceChoices(modal) {
             refreshSettingsControls();
             playSettingsPreview(modal);
             saveSettings();
-        });
+        }, expTheme ? modal : null);
     });
 }
 
