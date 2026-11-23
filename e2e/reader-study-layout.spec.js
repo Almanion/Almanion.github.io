@@ -308,9 +308,13 @@ test.describe('touch study', () => {
         const canvas = pad.locator('canvas');
         const reset = pad.getByRole('button', { name: 'Вернуть исходный вид черновика' });
         const undo = pad.getByRole('button', { name: 'Отменить штрих' });
-        await canvas.scrollIntoViewIfNeeded();
-        const box = await canvas.boundingBox();
-        const center = { x: box.x + box.width / 2, y: box.y + box.height / 2 };
+        let center;
+        async function locatePaper() {
+            await canvas.scrollIntoViewIfNeeded();
+            const box = await canvas.boundingBox();
+            center = { x: box.x + box.width / 2, y: box.y + box.height / 2 };
+        }
+        await locatePaper();
         const client = await page.context().newCDPSession(page);
         const point = (x, y, id = 1) => ({ x: center.x + x, y: center.y + y, id });
         const touch = (type, ...points) => client.send('Input.dispatchTouchEvent', { type, touchPoints: points });
@@ -359,7 +363,7 @@ test.describe('touch study', () => {
         await undo.tap();
         await expect(undo).toBeDisabled();
         expect(await opacity(-14, -12)).toBe(0);
-        await canvas.scrollIntoViewIfNeeded();
+        await locatePaper();
         const close = [point(-3, 0), point(3, 0, 2)];
         const wide = [point(-60, 0), point(60, 0, 2)];
         await movePair(close, wide);
@@ -369,6 +373,7 @@ test.describe('touch study', () => {
         await expect(undo).toBeDisabled();
         await expect(pad.getByRole('button', { name: 'Вернуть штрих' })).toBeEnabled();
         await reset.tap();
+        await locatePaper();
         await touch('touchStart', point(-22, 0));
         await touch('touchMove', point(-20, 0));
         await touch('touchStart', point(-20, 0), point(20, 0, 2));

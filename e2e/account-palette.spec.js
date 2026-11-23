@@ -37,16 +37,17 @@ test('graphite gives the wordmark and remarks neutral ink and keeps signed-in ac
         await expect(remark).toBeVisible();
         await expect.poll(() => remark.evaluate(el => getComputedStyle(el, '::before').color)).toBe(
             expTheme === 'light' ? 'rgb(98, 98, 108)' : 'rgb(161, 161, 170)');
-        const ratios = await actions.evaluateAll(buttons => {
+        const minimumContrast = () => actions.evaluateAll(buttons => {
+            if (buttons.length !== 3) return 0;
             const luminance = rgb => rgb.match(/[\d.]+/g).map(Number).slice(0, 3)
                 .map(x => x / 255).map(x => x <= .04045 ? x / 12.92 : ((x + .055) / 1.055) ** 2.4)
                 .reduce((sum, x, i) => sum + x * [.2126, .7152, .0722][i], 0);
-            return buttons.map(button => {
+            return Math.min(...buttons.map(button => {
                 const s = getComputedStyle(button);
                 const light = luminance(s.color), background = luminance(s.backgroundColor);
                 return (Math.max(light, background) + .05) / (Math.min(light, background) + .05);
-            });
+            }));
         });
-        for (const ratio of ratios) expect(ratio).toBeGreaterThanOrEqual(4.5);
+        await expect.poll(minimumContrast).toBeGreaterThanOrEqual(4.5);
     }
 });

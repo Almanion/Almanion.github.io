@@ -99,9 +99,11 @@ test('header subtitles and links have readable contrast in all reading themes', 
     await page.goto('/physics.html');
     await page.waitForFunction(() => typeof openSettingsModal === 'function');
     await page.addStyleTag({ content: '* { transition: none !important; animation: none !important; }' });
-    for (const theme of ['', 'dark-theme', 'experimental exp-prism', 'experimental exp-prism exp-dark', 'experimental exp-graphite', 'experimental exp-graphite exp-dark']) {
+    const themes = ['prism', 'graphite', 'sepia'].flatMap(expMode =>
+        ['light', 'dark'].map(expTheme => ({ expMode, expTheme })));
+    for (const theme of themes) {
         const ratios = await page.evaluate(async theme => {
-            document.body.className = theme;
+            AlmanionSettings.update({ ...theme, animationLevel: 'off' });
             await new Promise(resolve => requestAnimationFrame(resolve));
             const rgb = value => value.match(/[\d.]+/g).slice(0, 3).map(Number);
             const lum = color => color.map(x => x / 255).map(x => x <= .04045 ? x / 12.92 : ((x + .055) / 1.055) ** 2.4).reduce((sum, x, i) => sum + x * [.2126, .7152, .0722][i], 0);
@@ -114,7 +116,7 @@ test('header subtitles and links have readable contrast in all reading themes', 
             });
         }, theme);
         expect(ratios.length).toBeGreaterThan(0);
-        for (const ratio of ratios) expect(ratio, theme).toBeGreaterThanOrEqual(4.5);
+        for (const ratio of ratios) expect(ratio, theme.expMode + ' ' + theme.expTheme).toBeGreaterThanOrEqual(4.5);
     }
 });
 
