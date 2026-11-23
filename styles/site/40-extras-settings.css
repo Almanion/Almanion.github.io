@@ -666,38 +666,59 @@ body.new-year-mode .ny-toggle {
 }
 #settingsModal .prefs-preview:disabled { opacity: 1; cursor: default; }
 #settingsModal .prefs-preview:focus-visible { outline: 2px solid var(--accent-color); outline-offset: 2px; }
+/* One phase drives the orbit, horizon and light in either direction. */
+@property --prefs-nightfall {
+    syntax: "<number>";
+    inherits: true;
+    initial-value: 0;
+}
 #settingsModal .prefs-sky {
-    --sky-paper: #e7edff;
-    --sky-sun: #ecaf59;
-    --sky-cloud: #acbce6;
-    --sky-far: #a9b8ec;
-    --sky-near: #7989cc;
-    --sky-trail: #e8ecff;
-    --sky-moon: #f0eaff;
+    --prefs-nightfall: 0;
+    --night-light: calc(var(--prefs-nightfall) * 100%);
+    --sky-day: #e7edff; --sky-night: #252943;
+    --far-day: #a9b8ec; --far-night: #434b78;
+    --near-day: #7989cc; --near-night: #5d699c;
+    --trail-day: #e8ecff; --trail-night: #a8b3dc;
+    --sky-paper: color-mix(in oklab, var(--sky-day), var(--sky-night) var(--night-light));
+    --sky-far: color-mix(in oklab, var(--far-day), var(--far-night) var(--night-light));
+    --sky-near: color-mix(in oklab, var(--near-day), var(--near-night) var(--night-light));
+    --sky-trail: color-mix(in oklab, var(--trail-day), var(--trail-night) var(--night-light));
+    --sky-sun: #e9a84a; --sky-cloud: #acbce6; --sky-moon: #f0eaff; --sky-dusk: #efa487;
     width: 78px; height: auto;
     border-radius: 10px;
     overflow: hidden;
 }
 .exp-graphite #settingsModal .prefs-sky {
-    --sky-paper: #e8ebef; --sky-sun: #a9a390; --sky-cloud: #b7bdc4;
-    --sky-far: #b4bcc7; --sky-near: #798491; --sky-trail: #eef0f2;
+    --sky-day: #e8ebef; --sky-night: #282d35;
+    --far-day: #b4bcc7; --far-night: #414953;
+    --near-day: #798491; --near-night: #596470;
+    --trail-day: #eef0f2; --trail-night: #acb7c4;
+    --sky-sun: #969da5; --sky-cloud: #b7bdc4; --sky-moon: #edf0f3; --sky-dusk: #b9bdc5;
 }
 .exp-sepia #settingsModal .prefs-sky {
-    --sky-paper: #f3e6ce; --sky-far: #d3b994; --sky-near: #9e876a; --sky-cloud: #d0bfa3;
+    --sky-day: #f3e6ce; --sky-night: #332922;
+    --far-day: #d3b994; --far-night: #625043;
+    --near-day: #9e876a; --near-night: #8b6e56;
+    --trail-day: #f7ebd3; --trail-night: #cdb391;
+    --sky-cloud: #d0bfa3; --sky-moon: #f1dfbe; --sky-dusk: #d99764;
 }
-:is(.exp-dark, .dark-theme, .midnight-theme) #settingsModal .prefs-sky {
-    --sky-paper: #252943; --sky-far: #434b78; --sky-near: #5d699c; --sky-trail: #a8b3dc;
+:is(.exp-dark, .dark-theme, .midnight-theme) #settingsModal .prefs-sky { --prefs-nightfall: 1; }
+.prefs-day { opacity: calc(1 - var(--prefs-nightfall)); }
+.prefs-night { opacity: var(--prefs-nightfall); }
+.prefs-twilight { opacity: max(0, min(var(--prefs-nightfall) * 1.55, (1 - var(--prefs-nightfall)) * 1.55)); }
+.prefs-orbit, .prefs-luminary { transform-box: view-box; }
+.prefs-orbit {
+    transform-origin: 44px 31px;
+    transform: rotate(calc(-1turn * var(--prefs-nightfall)));
 }
-.exp-graphite.exp-dark #settingsModal .prefs-sky {
-    --sky-paper: #282d35; --sky-far: #414953; --sky-near: #596470; --sky-trail: #acb7c4;
+/* Counter-rotate the crescent and exchange the two shapes behind the ridge. */
+.prefs-luminary {
+    transform-origin: 56px 9px;
+    transform: rotate(calc(1turn * var(--prefs-nightfall)));
+    --moonlight: clamp(0, (var(--prefs-nightfall) - .45) * 10, 1);
 }
-.exp-sepia.exp-dark #settingsModal .prefs-sky {
-    --sky-paper: #332922; --sky-far: #625043; --sky-near: #8b6e56; --sky-trail: #cdb391;
-    --sky-moon: #f1dfbe;
-}
-.prefs-night { opacity: 0; }
-:is(.exp-dark, .dark-theme, .midnight-theme) .prefs-night { opacity: 1; }
-:is(.exp-dark, .dark-theme, .midnight-theme) .prefs-day { opacity: 0; }
+.prefs-sun { opacity: calc(1 - var(--moonlight)); }
+.prefs-moon { opacity: var(--moonlight); }
 #settingsModal .prefs-choices { position: relative; isolation: isolate; }
 #settingsModal .prefs-choices::before {
     content: '';
@@ -726,9 +747,6 @@ body.new-year-mode .ny-toggle {
         animation: prefs-starlight var(--scene-time) ease-in-out;
     }
     .animations-medium .prefs-preview.playing { --scene-time: 800ms; --cloud-drift: 3px; }
-    body:not(.animations-medium):not(.animations-off) .prefs-preview.playing .prefs-orb {
-        animation: prefs-orbit var(--scene-time) ease-in-out;
-    }
     body:not(.animations-medium):not(.animations-off) .prefs-preview.playing .prefs-ridge {
         animation: prefs-hills var(--scene-time) ease-in-out;
     }
@@ -739,13 +757,11 @@ body.new-year-mode .ny-toggle {
         stroke-dasharray: 16 105;
         animation: prefs-trail var(--scene-time) ease-in-out;
     }
-    body:not(.animations-off):not(.animations-medium) #settingsModal:not(.hidden) :is(.prefs-day,.prefs-night) {
-        transition: opacity 240ms ease, transform 340ms cubic-bezier(.2,.75,.25,1);
+    body:not(.animations-off) #settingsModal:not(.hidden) .prefs-sky {
+        /* Preserve the local orbit while the theme switch suppresses page-wide transitions. */
+        transition: --prefs-nightfall var(--orbit-duration, 2.4s) cubic-bezier(.4,0,.45,1) !important;
     }
-    body:not(:is(.exp-dark,.dark-theme,.midnight-theme,.animations-off,.animations-medium)) .prefs-night,
-    body:is(.exp-dark,.dark-theme,.midnight-theme):not(.animations-off):not(.animations-medium) .prefs-day {
-        transform: translateY(6px);
-    }
+    .animations-medium #settingsModal .prefs-sky { --orbit-duration: 1.35s; }
     body:not(.animations-off):not(.animations-medium) #settingsModal:not(.hidden) [data-exp-mode][aria-pressed="true"] svg {
         animation: prefs-facet-settle 300ms cubic-bezier(.2,.75,.25,1) both;
     }
@@ -771,9 +787,6 @@ body.new-year-mode .ny-toggle {
 @keyframes prefs-starlight {
     24% { opacity: .4; }
     63% { opacity: 1; }
-}
-@keyframes prefs-orbit {
-    45% { transform: translate(-7px, -3px); }
 }
 @keyframes prefs-hills {
     48% { transform: translateX(var(--hill-shift, 2px)); }

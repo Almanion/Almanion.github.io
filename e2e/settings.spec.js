@@ -244,3 +244,49 @@ test('landscape previews each motion level and replays by keyboard', async ({ pa
     await page.locator('#settingsDoneBtn').click();
     await expect(page.locator('.prefs-preview')).not.toHaveClass(/playing/);
 });
+
+test('sun sets behind the ridge and the moon completes the orbit in both directions', async ({ page }) => {
+    await page.emulateMedia({ colorScheme: 'light', reducedMotion: 'no-preference' });
+    await page.evaluate(() => openSettingsModal());
+    const scene = page.locator('.prefs-sky');
+    const readArc = () => scene.evaluate(async sky => {
+        const arc = sky.getAnimations().find(a => a.transitionProperty === '--prefs-nightfall');
+        if (!arc) throw new Error('No day/night transition');
+        arc.pause();
+        await arc.ready;
+        const elapsed = [0, .25, .5, .75, 1];
+        const orbit = sky.querySelector('.prefs-orbit');
+        const points = elapsed.map(part => {
+            arc.currentTime = arc.effect.getTiming().duration * part;
+            const matrix = new DOMMatrix(getComputedStyle(orbit).transform);
+            const offset = new DOMPoint(12, -22).matrixTransform(matrix);
+            return {
+                x: 44 + offset.x, y: 31 + offset.y,
+                moon: Number(getComputedStyle(sky.querySelector('.prefs-moon')).opacity),
+                twilight: Number(getComputedStyle(sky.querySelector('.prefs-twilight')).opacity)
+            };
+        });
+        arc.finish();
+        return points;
+    });
+    const switchTo = async theme => {
+        await page.locator(`[data-exp-theme="${theme}"]`).click();
+        await expect.poll(() => scene.evaluate(el => el.getAnimations().some(a => a.transitionProperty === '--prefs-nightfall'))).toBe(true);
+    };
+
+    await switchTo('dark');
+    const sunset = await readArc();
+    expect(sunset[0].moon).toBe(0);
+    expect(sunset[1].x).toBeLessThan(44);
+    expect(sunset[2].y).toBeGreaterThan(44);
+    expect(sunset[2].twilight).toBeGreaterThan(.3);
+    expect(sunset[3].x).toBeGreaterThan(56);
+    expect(sunset[4]).toMatchObject({ x: 56, y: 9, moon: 1, twilight: 0 });
+
+    await switchTo('light');
+    const sunrise = await readArc();
+    expect(sunrise[0].moon).toBe(1);
+    expect(sunrise[1].x).toBeGreaterThan(56);
+    expect(sunrise[3].x).toBeLessThan(56);
+    expect(sunrise[4]).toMatchObject({ x: 56, y: 9, moon: 0, twilight: 0 });
+});

@@ -348,15 +348,26 @@ function renderSettingsContents() {
                     <button class="prefs-preview" type="button" aria-label="Повторить анимацию" title="Повторить анимацию">
                         <svg class="prefs-sky" viewBox="0 0 88 48" aria-hidden="true" focusable="false">
                             <rect width="88" height="48" fill="var(--sky-paper)"/>
+                            <defs>
+                                <linearGradient id="prefsTwilight" x2="0" y2="1" gradientUnits="objectBoundingBox">
+                                    <stop stop-color="var(--sky-dusk)" stop-opacity="0"/>
+                                    <stop offset=".8" stop-color="var(--sky-dusk)"/>
+                                </linearGradient>
+                            </defs>
+                            <rect class="prefs-twilight" width="88" height="48" fill="url(#prefsTwilight)"/>
                             <g class="prefs-day">
-                                <circle class="prefs-orb" cx="65" cy="13" r="7" fill="var(--sky-sun)"/>
                                 <path class="prefs-cloud" d="M13 15h11m-3-4h10" fill="none" stroke="var(--sky-cloud)" stroke-width="2" stroke-linecap="round"/>
                             </g>
                             <g class="prefs-night">
-                                <path class="prefs-orb" d="M70 8a7 7 0 1 1-9-3 6 6 0 0 0 9 3Z" fill="var(--sky-moon)"/>
                                 <g class="prefs-stars" fill="var(--sky-moon)">
                                     <path d="m19 8 .7 2.2 2.3.8-2.3.8L19 14l-.8-2.2-2.2-.8 2.2-.8Z"/>
                                     <circle cx="35" cy="7" r=".8"/><circle cx="44" cy="14" r="1"/><circle cx="77" cy="17" r=".8"/>
+                                </g>
+                            </g>
+                            <g class="prefs-orbit">
+                                <g class="prefs-luminary">
+                                    <circle class="prefs-sun" cx="56" cy="9" r="6" fill="var(--sky-sun)"/>
+                                    <path class="prefs-moon" d="M58.2 3.1a6.4 6.4 0 1 0 3.9 8.1 5.6 5.6 0 0 1-3.9-8.1Z" fill="var(--sky-moon)"/>
                                 </g>
                             </g>
                             <path class="prefs-ridge" fill="var(--sky-far)" d="m-5 34 20-11q3-1 6 1l9 5 17-15q2-2 5 0l25 19 16-7v22H-5Z"/>
