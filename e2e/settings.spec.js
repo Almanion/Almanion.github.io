@@ -78,8 +78,9 @@ test('touch scrolling settings body does not drag or close the sheet', async ({ 
         const body = document.querySelector('.settings-modal-body');
         body.scrollTop = 400;
         for (const [type, y] of [['touchstart', 300], ['touchmove', 340], ['touchmove', 500], ['touchend', 500]]) {
-            body.dispatchEvent(new TouchEvent(type, { bubbles: true, cancelable: true,
-                touches: type === 'touchend' ? [] : [new Touch({ identifier: 1, target: body, clientX: 100, clientY: y })] }));
+            const event = new Event(type, { bubbles: true, cancelable: true });
+            Object.defineProperty(event, 'touches', { value: type === 'touchend' ? [] : [{ identifier: 1, clientX: 100, clientY: y }] });
+            body.dispatchEvent(event);
         }
     });
     await page.waitForTimeout(350);
@@ -158,7 +159,12 @@ for (const width of [390, 1366]) test(`switching note layout preserves reading p
     const current = page.locator('.topic.exp-reader-current');
     const topics = page.locator('.content-section > .topic[id]');
     const id = await topics.nth(3).getAttribute('id');
-    await page.evaluate(id => experimentalReader.goToId(id, { animate: false }), id);
+    await page.evaluate(async id => {
+        await document.fonts.ready;
+        const settled = new Promise(resolve => document.addEventListener('scrollend', resolve, { once: true }));
+        experimentalReader.goToId(id, { animate: false });
+        await settled;
+    }, id);
     await expect(current).toHaveAttribute('id', id);
     const chrome = () => page.locator('.note-reader-controls, .sidebar-header, .mobile-bottom-nav').evaluateAll(elements =>
         elements.map(el => { const s = getComputedStyle(el); return [s.display, s.backgroundColor, s.color, s.borderRadius, el.offsetWidth, el.offsetHeight]; }));
@@ -173,12 +179,18 @@ for (const width of [390, 1366]) test(`switching note layout preserves reading p
     await switchLayout('feed');
     await expect(page.locator('.content-section > .topic:visible')).toHaveCount(await topics.count());
     await expect(current).toHaveAttribute('id', id);
-    expect(Math.abs(await top() - oldTop)).toBeLessThan(4);
+    await expect.poll(async () => Math.abs(await top() - oldTop)).toBeLessThan(4);
     expect(await chrome()).toEqual(before);
     const other = topics.nth(5);
-    const distance = await other.evaluate(el => el.getBoundingClientRect().top - document.querySelector('.note-reader-controls').getBoundingClientRect().bottom + 120);
     await page.mouse.move(width - 40, 450);
-    await page.mouse.wheel(0, distance);
+    // Release the saved position with a real wheel event. Browsers cap a single wheel delta differently.
+    const previousY = await page.evaluate(() => scrollY);
+    await page.mouse.wheel(0, 80);
+    await expect.poll(() => page.evaluate(() => scrollY)).toBeGreaterThan(previousY);
+    await other.evaluate(el => {
+        const toolbar = document.querySelector('.note-reader-controls').getBoundingClientRect();
+        window.scrollBy({ top: el.getBoundingClientRect().top - toolbar.bottom + 120, behavior: 'instant' });
+    });
     const nextId = await other.getAttribute('id');
     await expect(current).toHaveAttribute('id', nextId);
     await expect(page.locator('.nav-link[aria-current="location"]')).toHaveAttribute('href', '#' + nextId);
@@ -186,7 +198,7 @@ for (const width of [390, 1366]) test(`switching note layout preserves reading p
     await switchLayout('sections');
     await expect(page.locator('.content-section > .topic:visible')).toHaveCount(1);
     await expect(current).toHaveAttribute('id', nextId);
-    expect(Math.abs(await top() - feedTop)).toBeLessThan(4);
+    await expect.poll(async () => Math.abs(await top() - feedTop)).toBeLessThan(4);
     await expect(page.locator('html')).toHaveAttribute('data-exp', 'sepia-light');
     await page.reload();
     await expect(page.locator('.topic.exp-reader-current')).toHaveAttribute('id', nextId);

@@ -135,7 +135,7 @@ test('published HTML must not reuse the old cached Matcenter runtime for printin
     await page.route('**/matcenter/runtime.js?v=20261014-print2',route=>route.fulfill({contentType:'application/javascript',
         body:'window.MatcenterRuntime={ensure:()=>Promise.reject(new Error("Stale cached runtime"))};'}));
     await page.goto('/matcenter.html?grade=grade-10'); await ready(page);
-    await expect(page.locator('script[src^="matcenter/runtime.js"]')).toHaveAttribute('src','matcenter/runtime.js?v=20261123-6');
+    await expect(page.locator('script[src^="matcenter/runtime.js"]')).toHaveAttribute('src','matcenter/runtime.js?v=20261123-7');
     await page.locator('#mcPrintButton').click();
     await expect(page.locator('#mcPrintDialog')).toBeVisible();
     expect(errors).toEqual([]);

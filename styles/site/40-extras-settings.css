@@ -651,7 +651,7 @@ body.new-year-mode .ny-toggle {
 }
 #settingsModal svg { width: 17px; height: 17px; flex: none; }
 /* The small landscape previews the theme while the rest of the sheet stays still. */
-#settingsModal > .site-theme-transition-veil { z-index: -1; }
+#settingsModal > .site-theme-transition-veil { position: absolute; inset: 0; z-index: -1; pointer-events: none; }
 .prefs-title { display: flex; align-items: center; min-width: 0; gap: 12px; }
 #settingsModal .prefs-preview {
     position: relative;

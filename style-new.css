@@ -1652,39 +1652,6 @@ body.animations-off.experimental .exp-reader-progress > span {
     }
 }
 
-/* Единый короткий переход между цветовыми темами. Снимки страницы
-   компонуются браузером, поэтому смена не запускает сотни CSS-transition. */
-html.site-theme-transition::view-transition-old(root) {
-    animation: siteThemeFadeOut 0.2s cubic-bezier(0.4, 0, 1, 1) both;
-}
-
-html.site-theme-transition::view-transition-new(root) {
-    animation: siteThemeFadeIn 0.24s cubic-bezier(0, 0, 0.2, 1) both;
-}
-
-@keyframes siteThemeFadeOut {
-    from { opacity: 1; }
-    to { opacity: 0; }
-}
-
-@keyframes siteThemeFadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
-}
-
-.site-theme-transition-veil {
-    position: fixed;
-    inset: 0;
-    z-index: 2147483647;
-    pointer-events: none;
-    opacity: 1;
-    transition: opacity 0.24s cubic-bezier(0, 0, 0.2, 1);
-}
-
-.site-theme-transition-veil.is-leaving {
-    opacity: 0;
-}
-
 body.experimental .settings-modal-heading p,
 body.experimental .settings-section-description,
 body.experimental .settings-subgroup-heading > small {
@@ -1710,15 +1677,6 @@ body.experimental .design-mode-option.active .settings-choice-dot {
 body.experimental .exp-subpanel {
     background: color-mix(in srgb, var(--exp-surface-2) 72%, transparent);
     border-color: var(--exp-border);
-}
-
-@media (prefers-reduced-motion: reduce) {
-    html.site-theme-transition::view-transition-old(root),
-    html.site-theme-transition::view-transition-new(root),
-    .site-theme-transition-veil {
-        animation: none !important;
-        transition: none !important;
-    }
 }
 
 .settings-modal-content,

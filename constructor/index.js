@@ -718,10 +718,10 @@
             doc.open();
             doc.write('<!DOCTYPE html><html lang="ru"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">' +
                 '<base href="' + escapeHtml(baseHref) + '">' +
-                '<link rel="stylesheet" href="styles/site/index.css?v=20261123-6">' +
+                '<link rel="stylesheet" href="styles/site/index.css?v=20261123-7">' +
                 '<link rel="stylesheet" href="styles/tokens.css?v=20260929-2">' +
                 '<link rel="stylesheet" href="styles/legacy-refresh.css?v=20260903-2">' +
-                '<link rel="stylesheet" href="style-new.css?v=20261123-4">' +
+                '<link rel="stylesheet" href="style-new.css?v=20261123-7">' +
                 '<link rel="stylesheet" href="styles/typography.css?v=20261123-4">' +
                 '<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">' +
                 '<link rel="stylesheet" href="constructor/preview.css?v=20260903-1">' +

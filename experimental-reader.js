@@ -407,7 +407,9 @@
         const controller = new AbortController();
         const observer = new ResizeObserver(align);
         let stableTimer;
+        let afterCloseFrame;
         function release() {
+            cancelAnimationFrame(afterCloseFrame);
             observer.disconnect();
             controller.abort();
             clearTimeout(stableTimer);
@@ -417,7 +419,7 @@
             const delta = topic.getBoundingClientRect().top - top;
             if (Math.abs(delta) > 1) window.scrollBy({ top: delta, behavior: 'instant' });
             clearTimeout(stableTimer);
-            stableTimer = setTimeout(release, 500);
+            if (!document.querySelector('#settingsModal[aria-hidden="false"]')) stableTimer = setTimeout(release, 500);
         }
         state.releaseLayoutAnchor = release;
         for (const type of ['wheel', 'touchstart', 'pointerdown', 'keydown']) {
@@ -425,6 +427,10 @@
                 if (!event.target.closest?.('#settingsModal')) release();
             }, { capture: true, passive: true, signal: controller.signal });
         }
+        // WebKit restores the viewport after the sheet relinquishes focus.
+        window.addEventListener('almanion-settings-closed', () => {
+            afterCloseFrame = requestAnimationFrame(align);
+        }, { once: true, signal: controller.signal });
         observer.observe(topic.closest('main') || topic.parentElement);
         align();
     }

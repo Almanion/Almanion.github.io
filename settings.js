@@ -190,49 +190,22 @@ function applyNoteScale(value) {
     document.body.dataset.noteScale = String(Math.round(scale * 100));
 }
 
-let themeTransitionGeneration = 0;
-let activeThemeTransition = null;
-
-/**
- * Меняет цветовую тему одним композитным cross-fade. Так браузер не запускает
- * сотни отдельных transition у карточек и формул, а частые клики всегда
- * применяют последний выбор пользователя.
- */
-function animateThemeChange(update, livePreviewModal) {
-    const reduceMotion = document.body.classList.contains('animations-off')
-        || window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if (reduceMotion) {
+function animateThemeChange(modal, update) {
+    modal.querySelector('.site-theme-transition-veil')?.remove();
+    if (document.body.classList.contains('animations-off') || matchMedia('(prefers-reduced-motion: reduce)').matches) {
         update();
         return;
     }
 
-    const generation = ++themeTransitionGeneration;
-    if (activeThemeTransition && typeof activeThemeTransition.skipTransition === 'function') {
-        activeThemeTransition.skipTransition();
-    }
-
-    // A document snapshot can freeze the SVG halfway through a sunrise in WebKit.
-    if (!livePreviewModal && typeof document.startViewTransition === 'function') {
-        document.documentElement.classList.add('site-theme-transition');
-        const transition = document.startViewTransition(update);
-        activeThemeTransition = transition;
-        transition.finished.catch(() => {}).finally(() => {
-            if (generation !== themeTransitionGeneration) return;
-            activeThemeTransition = null;
-            document.documentElement.classList.remove('site-theme-transition');
-        });
-        return;
-    }
-
-    const previousVeil = document.querySelector('.site-theme-transition-veil');
-    if (previousVeil) previousVeil.remove();
+    // Fade behind the sheet. A document snapshot can freeze the SVG and intercept the next tap.
     const veil = document.createElement('div');
     veil.className = 'site-theme-transition-veil';
+    veil.setAttribute('aria-hidden', 'true');
     veil.style.backgroundColor = getComputedStyle(document.body).backgroundColor;
-    (livePreviewModal || document.body).prepend(veil);
+    modal.prepend(veil);
     update();
     const fade = veil.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 240, fill: 'forwards' });
-    fade.finished.then(() => veil.remove(), () => veil.remove());
+    fade.onfinish = () => veil.remove();
 }
 
 function applyAnimationLevel(level) {
@@ -521,7 +494,7 @@ function bindPreferenceChoices(modal) {
             saveSettings();
             return;
         }
-        animateThemeChange(() => {
+        animateThemeChange(modal, () => {
             if (expTheme) siteSettings.expTheme = expTheme;
             if (expMode) siteSettings.expMode = expMode;
             siteSettings.expDark = window.AlmanionThemeBootstrap.normalize(siteSettings).expDark;
@@ -529,7 +502,7 @@ function bindPreferenceChoices(modal) {
             refreshSettingsControls();
             playSettingsPreview(modal);
             saveSettings();
-        }, expTheme ? modal : null);
+        });
     });
 }
 
@@ -575,7 +548,8 @@ function bindSettingsHandlers() {
         }
     });
     
-    modal.addEventListener('keydown', event => {
+    document.addEventListener('keydown', event => {
+        if (modal.inert) return;
         if (event.key === 'Escape') {
             event.preventDefault();
             closeSettingsModal();
@@ -649,7 +623,7 @@ function bindSettingsHandlers() {
 // ОТКРЫТИЕ/ЗАКРЫТИЕ МОДАЛЬНОГО ОКНА
 // ============================================
 
-function openSettingsModal() {
+function openSettingsModal(event) {
     const modal = document.getElementById('settingsModal');
     if (!modal || !modal.inert) return;
     refreshSettingsControls();
@@ -667,7 +641,7 @@ function openSettingsModal() {
     modal.querySelector('.settings-modal-body').scrollTop = 0;
 
     // Запоминаем элемент, с которого открыли — вернём фокус при закрытии
-    settingsModalReturnFocus = document.activeElement;
+    settingsModalReturnFocus = event?.currentTarget instanceof HTMLElement ? event.currentTarget : document.activeElement;
     // Фокус на первой кнопке внутри модалки
     const firstFocusable = modal.querySelector('#settingsDoneBtn');
     if (firstFocusable) firstFocusable.focus({ preventScroll: true });
@@ -689,6 +663,7 @@ function closeSettingsModal() {
         try { settingsModalReturnFocus.focus({ preventScroll: true }); } catch (_) {}
     }
     settingsModalReturnFocus = null;
+    window.dispatchEvent(new Event('almanion-settings-closed'));
 }
 
 // ============================================

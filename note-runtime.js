@@ -9,7 +9,7 @@
     let learningOpening = false;
     const versions = {
         experiments: 'experiment-notebook.js?v=20261014-1',
-        featureStyles: 'styles/site/features.css?v=20261123-6',
+        featureStyles: 'styles/site/features.css?v=20261123-7',
         bookmarksStyles: 'styles/bookmarks.css?v=20260920-2',
         editorStyles: 'styles/note-editor.css?v=20260929-2',
         readerToolsStyles: 'styles/reader-tools.css?v=20261002-2',
@@ -18,7 +18,7 @@
         printStyles: 'styles/print.css?v=20261121-4',
         filterStyles: 'styles/note-filter.css?v=20261123-4',
         filter: 'note-filter.js?v=20261121-4',
-        settings: 'settings.js?v=20261123-6',
+        settings: 'settings.js?v=20261123-7',
         searchText: 'search-text.js?v=20261121-2',
         search: 'search.js?v=20261122-4',
         print: 'print-export.js?v=20261123-4',
