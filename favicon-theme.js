@@ -1,7 +1,7 @@
 (function () {
     'use strict';
 
-    var ASSET_VERSION = '20261123-soft-book';
+    var ASSET_VERSION = '20261124-aligned-a';
     var iconSelector = 'link[rel~="icon"][type="image/svg+xml"]';
     var systemTheme = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)');
 

@@ -41,15 +41,15 @@ vm.runInNewContext(
 );
 
 assert.strictEqual(link.dataset.appliedFaviconTheme, 'light');
-assert.strictEqual(linkAttributes.href, 'favicons/favicon-ph.svg?v=20261123-soft-book');
+assert.strictEqual(linkAttributes.href, 'favicons/favicon-ph.svg?v=20261124-aligned-a');
 
 classes.add('exp-dark');
 mutationCallback();
 assert.strictEqual(link.dataset.appliedFaviconTheme, 'dark');
-assert.strictEqual(linkAttributes.href, 'favicons/favicon-ph-dark.svg?v=20261123-soft-book');
+assert.strictEqual(linkAttributes.href, 'favicons/favicon-ph-dark.svg?v=20261124-aligned-a');
 
 function expectIcon(suffix) {
-    assert.equal(linkAttributes.href, 'favicons/favicon-ph' + suffix + '.svg?v=20261123-soft-book');
+    assert.equal(linkAttributes.href, 'favicons/favicon-ph' + suffix + '.svg?v=20261124-aligned-a');
 }
 const root = context.document.documentElement.dataset;
 root.exp = 'graphite-dark';
@@ -72,7 +72,7 @@ assert.strictEqual(link.dataset.appliedFaviconTheme, 'dark');
 classes.delete('midnight-theme');
 mutationCallback();
 assert.strictEqual(link.dataset.appliedFaviconTheme, 'light');
-assert.strictEqual(linkAttributes.href, 'favicons/favicon-ph.svg?v=20261123-soft-book');
+assert.strictEqual(linkAttributes.href, 'favicons/favicon-ph.svg?v=20261124-aligned-a');
 
 // An open subject tab receives a palette change made on the homepage.
 root.exp = 'prism-light';
