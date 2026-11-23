@@ -42,7 +42,10 @@ assert.match(runtime, /account:\s*'account\.js\?v=20261018-1'/);
 assert.match(runtime, /bookmarks:\s*'bookmarks\.js\?v=20261122-4'/);
 assert.match(runtime, /bookmarksStyles:\s*'styles\/bookmarks\.css\?v=20260920-2'/);
 const matcenterRuntime = read(path.join('matcenter', 'runtime.js'));
-assert.match(matcenterRuntime, /settings:\s*'settings\.js\?v=20261002-1'/);
+const settingsAsset = /settings:\s*'(settings\.js\?v=[^']+)'/;
+assert.match(runtime, settingsAsset);
+assert.equal(matcenterRuntime.match(settingsAsset)?.[1], runtime.match(settingsAsset)[1],
+    'notes and Matcenter must load the same version of sync-aware settings');
 assert.match(matcenterRuntime, /analytics:\s*'firebase-analytics\.js\?v=20261009-4'/);
 assert.match(matcenterRuntime, /hints:\s*'matcenter\/70-hints\.js\?v=20260911-2'/);
 

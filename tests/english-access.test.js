@@ -66,7 +66,8 @@ assert.match(ui, /dataset\.uiLanguage !== 'en'/);
 assert.match(ui, /'Учить': 'Learn'/);
 assert.match(ui, /'\u041dастройки': 'Settings'/);
 assert.match(ui, /CONTENT_EXCLUSIONS = '[^']*\[lang="ru"\]/);
-assert.match(settings, /dataset\.uiLanguage === 'en'[\s\S]*?restore all settings to their defaults/);
+assert.match(settings, /id="prefsResetTitle">Вернуть настройки по умолчанию\?/);
+assert.match(ui, /'Вернуть настройки по умолчанию\?': 'Restore default settings\?'/);
 
 const normalizeSource = client.match(/function normalizeItems\(value\) \{[\s\S]*?\r?\n    \}(?=\r?\n\r?\n    function makeWordBlock)/);
 assert.ok(normalizeSource, 'normalizeItems could not be extracted for ordering test');
