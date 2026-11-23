@@ -652,9 +652,102 @@ body.new-year-mode .ny-toggle {
     font-weight: 700;
 }
 #settingsModal svg { width: 17px; height: 17px; flex: none; }
-.prefs-swatch { width: 15px; height: 15px; border-radius: 50%; border: 1px solid rgb(120 122 150 / 45%); }
-.prefs-swatch.prism { background: linear-gradient(125deg, #8297ea 48%, #c5acf0 50%); }
-.prefs-swatch.graphite { background: linear-gradient(125deg, #656b77 48%, #c7cbd3 50%); }
+/* The small landscape previews the theme while the rest of the sheet stays still. */
+.prefs-title { display: flex; align-items: center; min-width: 0; gap: 12px; }
+#settingsModal .prefs-sky {
+    --sky-paper: #e7edff;
+    --sky-sun: #ecaf59;
+    --sky-cloud: #acbce6;
+    --sky-far: #a9b8ec;
+    --sky-near: #7989cc;
+    --sky-trail: #e8ecff;
+    --sky-moon: #f0eaff;
+    width: 78px; height: auto;
+    border-radius: 10px;
+    overflow: hidden;
+}
+.exp-graphite #settingsModal .prefs-sky {
+    --sky-paper: #e8ebef; --sky-sun: #a9a390; --sky-cloud: #b7bdc4;
+    --sky-far: #b4bcc7; --sky-near: #798491; --sky-trail: #eef0f2;
+}
+.sepia-theme #settingsModal .prefs-sky {
+    --sky-paper: #f3e6ce; --sky-far: #d3b994; --sky-near: #9e876a; --sky-cloud: #d0bfa3;
+}
+:is(.exp-dark, .dark-theme, .midnight-theme) #settingsModal .prefs-sky {
+    --sky-paper: #252943; --sky-far: #434b78; --sky-near: #5d699c; --sky-trail: #a8b3dc;
+}
+.exp-graphite.exp-dark #settingsModal .prefs-sky {
+    --sky-paper: #282d35; --sky-far: #414953; --sky-near: #596470; --sky-trail: #acb7c4;
+}
+.prefs-night { opacity: 0; }
+:is(.exp-dark, .dark-theme, .midnight-theme) .prefs-night { opacity: 1; }
+:is(.exp-dark, .dark-theme, .midnight-theme) .prefs-day { opacity: 0; }
+#settingsModal .prefs-choices { position: relative; isolation: isolate; }
+#settingsModal .prefs-choices::before {
+    content: '';
+    position: absolute;
+    z-index: -1; pointer-events: none;
+    inset-block: 3px;
+    left: 3px;
+    width: calc((100% - 6px - (var(--prefs-count) - 1) * 2px) / var(--prefs-count));
+    box-sizing: border-box;
+    border: 1px solid var(--accent-color);
+    border-radius: 9px;
+    background: var(--bg-secondary);
+    transform: translateX(calc(var(--prefs-index, 0) * (100% + 2px)));
+}
+#settingsModal .prefs-choices button[aria-pressed="true"] { border-color: transparent; background: transparent; }
+@media (prefers-reduced-motion: no-preference) {
+    #settingsModal:not(.hidden) .prefs-choices::before,
+    #settingsModal:not(.hidden) #hoverToggle::before {
+        transition: transform 200ms cubic-bezier(.2,.75,.25,1);
+    }
+    #settingsModal:not(.hidden) .prefs-choices button { transition: color 140ms ease; }
+    body:not(.animations-off):not(.animations-medium) #settingsModal:not(.hidden) .prefs-sky {
+        animation: prefs-sky-enter 340ms cubic-bezier(.2,.75,.25,1) both;
+    }
+    body:not(.animations-off):not(.animations-medium) #settingsModal:not(.hidden) :is(.prefs-day,.prefs-night) {
+        transition: opacity 240ms ease, transform 340ms cubic-bezier(.2,.75,.25,1);
+    }
+    body:not(:is(.exp-dark,.dark-theme,.midnight-theme,.animations-off,.animations-medium)) .prefs-night,
+    body:is(.exp-dark,.dark-theme,.midnight-theme):not(.animations-off):not(.animations-medium) .prefs-day {
+        transform: translateY(6px);
+    }
+    body:not(.animations-off):not(.animations-medium) #settingsModal:not(.hidden) [data-exp-mode][aria-pressed="true"] svg {
+        animation: prefs-facet-settle 300ms cubic-bezier(.2,.75,.25,1) both;
+    }
+    body:not(.animations-off):not(.animations-medium) #settingsModal:not(.hidden) [data-design-mode][aria-pressed="true"] svg path:last-child {
+        stroke-dasharray: 42;
+        animation: prefs-lines-in 380ms ease-out both;
+    }
+    .animations-medium #settingsModal:not(.hidden) .prefs-choices::before { transition-duration: 120ms; }
+    .animations-off #settingsModal:not(.hidden) :is(.prefs-choices, #hoverToggle)::before,
+    .animations-off #settingsModal:not(.hidden) .prefs-choices button { transition: none; }
+}
+@keyframes prefs-facet-settle {
+    from { transform: rotate(-10deg) scale(.92); }
+    to { transform: none; }
+}
+@keyframes prefs-lines-in {
+    from { stroke-dashoffset: 42; }
+    to { stroke-dashoffset: 0; }
+}
+@keyframes prefs-sky-enter {
+    from { opacity: .45; transform: translateY(3px); }
+    to { opacity: 1; transform: none; }
+}
+@media (max-width: 600px) {
+    #settingsModal .prefs-sky { width: 63px; }
+    .prefs-title { gap: 9px; }
+}
+@media (max-width: 360px) {
+    #settingsModal #themeSection .prefs-choices::before { display: none; }
+    #settingsModal #themeSection button[aria-pressed="true"] { background: var(--bg-secondary); border-color: var(--accent-color); }
+}
+@media (forced-colors: active) {
+    #settingsModal .prefs-choices::before { display: none; }
+    #settingsModal .prefs-choices button[aria-pressed="true"] { border-color: Highlight; }
+}
 .prefs-marker { width: 22px; font: 600 12px/20px sans-serif; }
 .prefs-marker.ring { border-radius: 50%; border: 1px solid currentColor; }
 .prefs-marker.strike { text-decoration: line-through; }

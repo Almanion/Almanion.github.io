@@ -456,17 +456,40 @@ function renderSettingsContents() {
     const device = icon('<rect x="3" y="5" width="18" height="13" rx="2"/><path d="M9 21h6m-3-3v3"/>');
     const sun = icon('<circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.5 1.5m11 11L19 19M5 19l1.5-1.5m11-11L19 5"/>');
     const moon = icon('<path d="M20.5 14A8.8 8.8 0 0 1 10 3.5 9 9 0 1 0 20.5 14Z"/>');
+    const prism = icon('<path d="m12 3 9 16H3Z" fill="#a59af7" stroke="none"/><path d="m12 3 1 16h8Z" fill="#707de0" stroke="none"/><path d="m12 3-4 16H3Z" fill="#d3bbf6" stroke="none"/>');
+    const graphite = icon('<path d="m12 2 9 5v10l-9 5-9-5V7Z" fill="#8c94a5" stroke="none"/><path d="m3 7 9 5 9-5-9-5Z" fill="#c4c9d1" stroke="none"/><path d="M12 12v10l9-5V7Z" fill="#616978" stroke="none"/>');
+    const pages = icon('<path d="M6 4h12a1 1 0 0 1 1 1v12H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Z"/><path d="M8 20h13V8M8 8h7m-7 3h4"/>');
+    const feed = icon('<rect x="5" y="3" width="14" height="18" rx="2"/><path d="M8 7h8m-8 4h5m-5 4h8"/>');
     const row = (key, label, attribute, options) => `
         <div class="prefs-row">
             <h3 id="${key}">${label}</h3>
-            <div class="prefs-choices" role="group" aria-labelledby="${key}">
+            <div class="prefs-choices" role="group" aria-labelledby="${key}" style="--prefs-count: ${options.length}">
                 ${options.map(([value, text, preview = '']) => `<button type="button" ${attribute}="${value}" aria-pressed="false">${preview}<span>${text}</span></button>`).join('')}
             </div>
         </div>`;
     return `
         <div class="settings-modal-content">
             <header class="settings-modal-header">
-                <h2 id="settingsModalTitle">Настройки</h2>
+                <div class="prefs-title">
+                    <svg class="prefs-sky" viewBox="0 0 88 48" aria-hidden="true" focusable="false">
+                        <rect width="88" height="48" fill="var(--sky-paper)"/>
+                        <g class="prefs-day">
+                            <circle cx="65" cy="13" r="7" fill="var(--sky-sun)"/>
+                            <path d="M13 15h11m-3-4h10" fill="none" stroke="var(--sky-cloud)" stroke-width="2" stroke-linecap="round"/>
+                        </g>
+                        <g class="prefs-night">
+                            <path d="M70 8a7 7 0 1 1-9-3 6 6 0 0 0 9 3Z" fill="var(--sky-moon)"/>
+                            <g fill="var(--sky-moon)">
+                                <path d="m19 8 .7 2.2 2.3.8-2.3.8L19 14l-.8-2.2-2.2-.8 2.2-.8Z"/>
+                                <circle cx="35" cy="7" r=".8"/><circle cx="44" cy="14" r="1"/><circle cx="77" cy="17" r=".8"/>
+                            </g>
+                        </g>
+                        <path fill="var(--sky-far)" d="m0 31 15-8q3-1 6 1l9 5 17-15q2-2 5 0l25 19 11-5v20H0Z"/>
+                        <path fill="var(--sky-near)" d="M0 32q13 1 25 7 14-1 30-10t33-8v27H0Z"/>
+                        <path fill="none" stroke="var(--sky-trail)" stroke-width="1.3" stroke-linecap="round" d="M70 28q-7 3-14 5c-16 4 6 4-2 8l-14 7"/>
+                    </svg>
+                    <h2 id="settingsModalTitle">Настройки</h2>
+                </div>
                 <button type="button" id="settingsDoneBtn">Готово</button>
             </header>
             <div class="settings-modal-body">
@@ -489,13 +512,13 @@ function renderSettingsContents() {
                     <div id="expSubpanel">
                         ${row('prefsTheme', 'Тема', 'data-exp-theme', [['system', 'Авто', device], ['light', 'Светлая', sun], ['dark', 'Тёмная', moon]])}
                         ${row('prefsPalette', 'Палитра', 'data-exp-mode', [
-                            ['prism', 'Призма', '<i class="prefs-swatch prism" aria-hidden="true"></i>'],
-                            ['graphite', 'Графит', '<i class="prefs-swatch graphite" aria-hidden="true"></i>']
+                            ['prism', 'Призма', prism],
+                            ['graphite', 'Графит', graphite]
                         ])}
                     </div>
                     <div id="themeSection">${row('prefsClassicTheme', 'Тема', 'data-theme', [['light', 'Светлая'], ['dark', 'Тёмная'], ['sepia', 'Сепия'], ['midnight', 'Полночь']])}</div>
                     ${row('prefsMotion', 'Анимации', 'data-level', [['max', 'Полные'], ['medium', 'Умеренные'], ['off', 'Минимум']])}
-                    ${row('prefsLayout', 'Вид сайта', 'data-design-mode', [['new', 'По разделам'], ['legacy', 'Общая лента']])}
+                    ${row('prefsLayout', 'Вид сайта', 'data-design-mode', [['new', 'По разделам', pages], ['legacy', 'Общая лента', feed]])}
                     ${isMatcenterPage() ? row('prefsSolved', 'Отметка решённых задач', 'data-solved-animation', [
                         ['circle', 'Кольцо', '<i aria-hidden="true" class="prefs-marker ring">17</i>'],
                         ['strike', 'Зачёркивание', '<i aria-hidden="true" class="prefs-marker strike">17</i>']
@@ -543,9 +566,13 @@ function refreshSettingsControls() {
         level: siteSettings.animationLevel,
         solvedAnimation: siteSettings.matcenterSolvedAnimation
     };
-    modal.querySelectorAll('.prefs-choices button').forEach(button => {
-        const [key, value] = Object.entries(button.dataset)[0];
-        button.setAttribute('aria-pressed', String(selected[key] === value));
+    modal.querySelectorAll('.prefs-choices').forEach(group => {
+        [...group.children].forEach((button, index) => {
+            const [key, value] = Object.entries(button.dataset)[0];
+            const active = selected[key] === value;
+            button.setAttribute('aria-pressed', String(active));
+            if (active) group.style.setProperty('--prefs-index', index);
+        });
     });
     modal.querySelector('#expSubpanel').hidden = !siteSettings.experimental;
     modal.querySelector('#themeSection').hidden = siteSettings.experimental;

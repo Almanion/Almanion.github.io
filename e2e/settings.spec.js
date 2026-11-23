@@ -129,3 +129,23 @@ test('sync and confirmed reset update the open sheet in place', async ({ page })
     await page.keyboard.press('Escape');
     await expect(opener).toBeFocused();
 });
+
+test('theme illustration and choice highlights follow the active settings with reduced motion', async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce', colorScheme: 'dark' });
+    await page.evaluate(() => openSettingsModal());
+    const scene = page.locator('.prefs-sky');
+    await expect(scene.locator('.prefs-day')).toHaveCSS('opacity', '0');
+    await expect(scene.locator('.prefs-night')).toHaveCSS('opacity', '1');
+    await expect(scene).toHaveCSS('animation-name', 'none');
+    await page.locator('[data-exp-theme="light"]').click();
+    await expect(scene.locator('.prefs-day')).toHaveCSS('opacity', '1');
+    await expect(scene.locator('.prefs-night')).toHaveCSS('opacity', '0');
+    const highlight = await page.locator('[aria-labelledby="prefsTheme"]').evaluate(group => {
+        const style = getComputedStyle(group, '::before');
+        const offset = new DOMMatrix(style.transform).m41;
+        const active = group.querySelector('[aria-pressed="true"]');
+        return { actual: offset + parseFloat(style.left), expected: active.offsetLeft, duration: style.transitionDuration };
+    });
+    expect(Math.abs(highlight.actual - highlight.expected)).toBeLessThan(1);
+    expect(highlight.duration).toBe('0s');
+});

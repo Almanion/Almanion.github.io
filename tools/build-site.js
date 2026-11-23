@@ -249,9 +249,9 @@ function build(options) {
             .replace(/(src=["']home-motion\.js)(?:\?[^"']*)?(["'])/g, '$1?v=20261122-2$2')
             .replace(/(src=["']print-export\.js)(?:\?[^"']*)?(["'])/g, '$1?v=20261122-3$2')
             .replace(/((?:src|href)=["'](?:(?:script|search|bookmarks)\.js|styles\/site\/(?:reader|index)\.css))(?:\?[^"']*)?(["'])/g, '$1?v=20261122-4$2')
-            .replace(/(src=["'](?:note-runtime|english-ui|settings)\.js)(?:\?[^"']*)?(["'])/g, '$1?v=20261123-2$2')
+            .replace(/(src=["'](?:note-runtime|english-ui|settings)\.js)(?:\?[^"']*)?(["'])/g, '$1?v=20261123-3$2')
             .replace(/(href=["'](?:constructor\/index|styles\/home-dashboard)\.css)(?:\?[^"']*)?(["'])/g, '$1?v=20261123-1$2')
-            .replace(/(href=["']styles\/site\/index\.css)(?:\?[^"']*)?(["'])/g, '$1?v=20261123-2$2');
+            .replace(/(href=["']styles\/site\/index\.css)(?:\?[^"']*)?(["'])/g, '$1?v=20261123-3$2');
         let published = updated;
         // The browser decides whether to take a navigation snapshot before
         // deferred scripts run. Make the opt-in available with the first bytes of HTML.
