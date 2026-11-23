@@ -139,6 +139,7 @@
         'Палитра': 'Palette',
         'Авто': 'System',
         'Анимации': 'Motion',
+        'Повторить анимацию': 'Replay motion preview',
         'Полные': 'Full',
         'Умеренные': 'Moderate',
         'Минимум': 'Minimal',

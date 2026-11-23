@@ -216,3 +216,31 @@ test('a saved feed applies to older notes and leaves other site pages in the sam
     expect(await appearance()).toEqual(before);
     await expect(page.locator('html')).toHaveAttribute('data-exp', 'sepia-dark');
 });
+
+test('landscape previews each motion level and replays by keyboard', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 800 });
+    await page.emulateMedia({ reducedMotion: 'no-preference' });
+    await page.evaluate(() => openSettingsModal());
+    const preview = page.getByRole('button', { name: 'Повторить анимацию' });
+    const names = () => preview.evaluate(el => el.getAnimations({ subtree: true }).map(a => a.animationName));
+    await expect(page.locator('#settingsDoneBtn')).toBeFocused();
+    await expect.poll(names).toContain('prefs-trail');
+    await preview.evaluate(el => el.getAnimations({ subtree: true }).forEach(a => a.finish()));
+    await preview.focus();
+    await page.keyboard.press('Enter');
+    await expect.poll(names).toContain('prefs-trail');
+    await page.locator('[data-level="medium"]').click();
+    await expect.poll(names).toContain('prefs-cloud-drift');
+    expect(await names()).not.toContain('prefs-hills');
+    await page.locator('[data-level="off"]').click();
+    await expect(preview).toBeDisabled();
+    await expect.poll(names).toEqual([]);
+    await page.locator('[data-level="max"]').click();
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await expect(preview).toBeDisabled();
+    await expect.poll(names).toEqual([]);
+    await page.emulateMedia({ reducedMotion: 'no-preference' });
+    await expect(preview).toBeEnabled();
+    await page.locator('#settingsDoneBtn').click();
+    await expect(page.locator('.prefs-preview')).not.toHaveClass(/playing/);
+});

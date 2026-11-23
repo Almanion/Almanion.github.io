@@ -345,23 +345,29 @@ function renderSettingsContents() {
         <div class="settings-modal-content">
             <header class="settings-modal-header">
                 <div class="prefs-title">
-                    <svg class="prefs-sky" viewBox="0 0 88 48" aria-hidden="true" focusable="false">
-                        <rect width="88" height="48" fill="var(--sky-paper)"/>
-                        <g class="prefs-day">
-                            <circle cx="65" cy="13" r="7" fill="var(--sky-sun)"/>
-                            <path d="M13 15h11m-3-4h10" fill="none" stroke="var(--sky-cloud)" stroke-width="2" stroke-linecap="round"/>
-                        </g>
-                        <g class="prefs-night">
-                            <path d="M70 8a7 7 0 1 1-9-3 6 6 0 0 0 9 3Z" fill="var(--sky-moon)"/>
-                            <g fill="var(--sky-moon)">
-                                <path d="m19 8 .7 2.2 2.3.8-2.3.8L19 14l-.8-2.2-2.2-.8 2.2-.8Z"/>
-                                <circle cx="35" cy="7" r=".8"/><circle cx="44" cy="14" r="1"/><circle cx="77" cy="17" r=".8"/>
+                    <button class="prefs-preview" type="button" aria-label="Повторить анимацию" title="Повторить анимацию">
+                        <svg class="prefs-sky" viewBox="0 0 88 48" aria-hidden="true" focusable="false">
+                            <rect width="88" height="48" fill="var(--sky-paper)"/>
+                            <g class="prefs-day">
+                                <circle class="prefs-orb" cx="65" cy="13" r="7" fill="var(--sky-sun)"/>
+                                <path class="prefs-cloud" d="M13 15h11m-3-4h10" fill="none" stroke="var(--sky-cloud)" stroke-width="2" stroke-linecap="round"/>
                             </g>
-                        </g>
-                        <path fill="var(--sky-far)" d="m0 31 15-8q3-1 6 1l9 5 17-15q2-2 5 0l25 19 11-5v20H0Z"/>
-                        <path fill="var(--sky-near)" d="M0 32q13 1 25 7 14-1 30-10t33-8v27H0Z"/>
-                        <path fill="none" stroke="var(--sky-trail)" stroke-width="1.3" stroke-linecap="round" d="M70 28q-7 3-14 5c-16 4 6 4-2 8l-14 7"/>
-                    </svg>
+                            <g class="prefs-night">
+                                <path class="prefs-orb" d="M70 8a7 7 0 1 1-9-3 6 6 0 0 0 9 3Z" fill="var(--sky-moon)"/>
+                                <g class="prefs-stars" fill="var(--sky-moon)">
+                                    <path d="m19 8 .7 2.2 2.3.8-2.3.8L19 14l-.8-2.2-2.2-.8 2.2-.8Z"/>
+                                    <circle cx="35" cy="7" r=".8"/><circle cx="44" cy="14" r="1"/><circle cx="77" cy="17" r=".8"/>
+                                </g>
+                            </g>
+                            <path class="prefs-ridge" fill="var(--sky-far)" d="m-5 34 20-11q3-1 6 1l9 5 17-15q2-2 5 0l25 19 16-7v22H-5Z"/>
+                            <g class="prefs-foothill">
+                                <path fill="var(--sky-near)" d="M-5 32q17 1 30 7 14-1 30-10t38-8v27H-5Z"/>
+                                <defs><path id="prefsTrail" pathLength="100" d="M70 28q-7 3-14 5c-16 4 6 4-2 8l-14 7"/></defs>
+                                <use href="#prefsTrail" fill="none" stroke="var(--sky-trail)" stroke-width="1.3" stroke-linecap="round"/>
+                                <use class="prefs-trail-light" href="#prefsTrail" stroke="var(--sky-moon)" stroke-width="2.2" fill="none" opacity="0"/>
+                            </g>
+                        </svg>
+                    </button>
                     <h2 id="settingsModalTitle">Настройки</h2>
                 </div>
                 <button type="button" id="settingsDoneBtn">Готово</button>
@@ -447,6 +453,7 @@ function refreshSettingsControls() {
             if (active) group.style.setProperty('--prefs-index', index);
         });
     });
+    modal.querySelector('.prefs-preview').disabled = siteSettings.animationLevel === 'off' || matchMedia('(prefers-reduced-motion: reduce)').matches;
     const hover = modal.querySelector('#hoverToggle');
     if (hover) hover.checked = siteSettings.hoverEffects;
     const percent = String(Math.round(normalizeNoteScale(siteSettings.noteScale) * 100));
@@ -461,10 +468,26 @@ function refreshSettingsControls() {
     }
 }
 
+function playSettingsPreview(modal) {
+    const preview = modal.querySelector('.prefs-preview');
+    preview.classList.remove('playing');
+    if (preview.disabled || modal.inert) return;
+    // Restart the short scene even when the same choice was pressed again.
+    preview.getBoundingClientRect();
+    preview.classList.add('playing');
+}
+
 function bindPreferenceChoices(modal) {
+    const preview = modal.querySelector('.prefs-preview');
+    preview.addEventListener('click', () => playSettingsPreview(modal));
+    matchMedia('(prefers-reduced-motion: reduce)').addEventListener('change', refreshSettingsControls);
     modal.querySelector('.prefs-display').addEventListener('click', event => {
         const button = event.target.closest('.prefs-choices button');
-        if (!button || button.getAttribute('aria-pressed') === 'true') return;
+        if (!button) return;
+        if (button.getAttribute('aria-pressed') === 'true') {
+            if (button.dataset.level) playSettingsPreview(modal);
+            return;
+        }
         const { expTheme, expMode, readerLayout, level, solvedAnimation } = button.dataset;
         if (readerLayout) {
             siteSettings.readerLayout = readerLayout;
@@ -482,6 +505,7 @@ function bindPreferenceChoices(modal) {
                 applyMatcenterSolvedAnimation();
             }
             refreshSettingsControls();
+            if (level) playSettingsPreview(modal);
             saveSettings();
             return;
         }
@@ -491,6 +515,7 @@ function bindPreferenceChoices(modal) {
             siteSettings.expDark = window.AlmanionThemeBootstrap.normalize(siteSettings).expDark;
             applyExperimental();
             refreshSettingsControls();
+            playSettingsPreview(modal);
             saveSettings();
         });
     });
@@ -632,8 +657,9 @@ function openSettingsModal() {
     // Запоминаем элемент, с которого открыли — вернём фокус при закрытии
     settingsModalReturnFocus = document.activeElement;
     // Фокус на первой кнопке внутри модалки
-    const firstFocusable = modal.querySelector('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
+    const firstFocusable = modal.querySelector('#settingsDoneBtn');
     if (firstFocusable) firstFocusable.focus({ preventScroll: true });
+    playSettingsPreview(modal);
 }
 
 let settingsModalReturnFocus = null;
@@ -643,6 +669,7 @@ function closeSettingsModal() {
     if (!modal) return;
     modal.classList.add('hidden');
     modal.inert = true;
+    modal.querySelector('.prefs-preview').classList.remove('playing');
     modal.setAttribute('aria-hidden', 'true');
     document.body.classList.remove('modal-open');
     // Возвращаем фокус на исходный элемент (кнопка настроек)
