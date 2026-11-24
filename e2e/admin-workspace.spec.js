@@ -69,9 +69,11 @@ test('admin controls stay interactive after dialogs and list changes', async fun
     await page.locator('#adminRolesList .btn', { hasText: 'Изменить' }).click();
     await expect(page.locator('#adminRoleAccount')).toHaveValue('editor@example.com');
     await page.locator('#contestsAccessRole').check();
+    await page.locator('#forecastAccessRole').check();
     await page.locator('#adminRoleForm button[type="submit"]').click();
     await expect(page.locator('#adminRoleForm button[type="submit"]')).toBeEnabled();
     await expect(page.locator('#adminRolesList .admin-role-row').filter({ hasText: 'editor@example.com' })).toContainText('Контесты');
+    await expect(page.locator('#adminRolesList .admin-role-row').filter({ hasText: 'editor@example.com' })).toContainText('Прогнозы');
     await page.locator('#contestShareEnable').click();
     await expect(page.locator('#contestShareStatus')).toContainText('Включён');
     const firstLink = await page.locator('#contestShareUrl').inputValue();

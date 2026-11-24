@@ -63,6 +63,25 @@
     }
     initHomeSearch();
 
+    const wordmark = document.getElementById('homeWordmark');
+    if (wordmark) {
+        let presses = 0;
+        let lastPress = 0;
+        wordmark.addEventListener('click', function () {
+            const now = performance.now();
+            presses = now - lastPress <= 650 ? presses + 1 : 1;
+            lastPress = now;
+            if (presses === 3) {
+                presses = 0;
+                window.location.assign('physics-forecast.html');
+            }
+        });
+        wordmark.addEventListener('blur', function () { presses = 0; });
+        wordmark.addEventListener('keydown', function (event) {
+            if (event.repeat && (event.key === 'Enter' || event.key === ' ')) event.preventDefault();
+        });
+    }
+
     // Keep visual, reading and keyboard order aligned at each breakpoint.
     // This runs before the account scripts, not after idle personalization.
     var mobileLayout = window.matchMedia('(max-width: 768px)');

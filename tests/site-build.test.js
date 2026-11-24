@@ -36,6 +36,9 @@ assert.strictEqual(BuildSite.isPublishable('private-helper.js', config), false);
 assert.strictEqual(BuildSite.isPublishable('styles/site/index.css', config), true);
 assert.strictEqual(BuildSite.isPublishable('russian-ege.html', config), true);
 assert.strictEqual(BuildSite.isPublishable('content/physics/manifest.json', config), true);
+for (const asset of ['physics-forecast.html', 'physics-forecast-core.js', 'physics-forecast.js', 'styles/physics-forecast.css']) {
+    assert.equal(BuildSite.isPublishable(asset, config), true, asset);
+}
 assert.strictEqual(BuildSite.isPublishable('dead souls/text/chapter-1.txt', config), true);
 assert.strictEqual(BuildSite.isPublishable('games/orbital-courier/index.html', config), true);
 assert.strictEqual(BuildSite.isPublishable('games/orbital-courier/LICENSE.txt', config), true);

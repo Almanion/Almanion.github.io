@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="robots" content="noindex,nofollow,noarchive">
+    <title>Будет ли сегодня работа по физике? | Almanion</title>
+    <script src="theme-bootstrap.js?v=20261123-palettes"></script>
+    <link rel="icon" href="favicons/favicon-ph.svg?v=20261123-tech-book" type="image/svg+xml">
+    <script defer src="favicon-theme.js?v=20261124-aligned-a"></script>
+    <link rel="stylesheet" href="styles/site/index.css?v=20261002-1">
+    <link rel="stylesheet" href="styles/tokens.css?v=20260929-2">
+    <link rel="stylesheet" href="styles/buttons.css?v=20260929-2">
+    <link rel="stylesheet" href="style-new.css?v=20260929-2">
+    <link rel="stylesheet" href="styles/typography.css?v=20261002-1">
+    <link rel="stylesheet" href="styles/physics-forecast.css?v=1">
+</head>
+<body class="forecast-page" data-no-math>
+    <script>window.AlmanionThemeBootstrap.applyBody();</script>
+    <header class="sidebar-header forecast-header">
+        <a href="index.html" aria-label="На главную Almanion">
+            <img class="almanion-wordmark" src="images/almanion-wordmark.svg?v=20261124-aligned-a" width="96" height="20" alt="Almanion">
+        </a>
+        <span class="forecast-context">Физика · 10-1</span>
+        <div class="sidebar-header-buttons"></div>
+    </header>
+    <main class="forecast-shell">
+        <header class="forecast-hero">
+            <div class="forecast-hero-copy">
+                <p class="forecast-kicker" id="lessonDate">Прогноз класса 10-1</p>
+                <h1 id="lessonQuestion">Будет ли сегодня работа по физике?</h1>
+                <p class="forecast-definition">Работа — любое письменное задание, за которое выставляется оценка.</p>
+            </div>
+            <div class="forecast-scope" aria-hidden="true">
+                <svg viewBox="0 0 360 152" fill="none" preserveAspectRatio="xMidYMid meet">
+                    <defs>
+                        <pattern id="smallGrid" width="20" height="20" patternUnits="userSpaceOnUse"><path d="M20 0H0V20" stroke="currentColor" opacity=".16"/></pattern>
+                        <path id="wave" d="M-120 76q15 0 30-34t30 34 30 34 30-34 30-34 30 34 30 34 30-34 30-34 30 34 30 34 30-34 30-34 30 34 30 34 30-34 30-34 30 34 30 34 30-34"/>
+                        <clipPath id="scopeWindow"><rect x="1" y="1" width="358" height="150" rx="18"/></clipPath>
+                    </defs>
+                    <g clip-path="url(#scopeWindow)">
+                        <rect width="360" height="152" fill="url(#smallGrid)"/>
+                        <path d="M0 76h360M180 0v152" stroke="currentColor" opacity=".32" stroke-dasharray="2 6"/>
+                        <g class="forecast-trace"><use href="#wave" stroke="currentColor" stroke-width="2.6"/><use href="#wave" transform="translate(22 19) scale(1 .75)" stroke="currentColor" opacity=".34" stroke-width="1.6"/></g>
+                        <path d="M12 22v-9h9m318 0h9v9M12 130v9h9m318 0h9v-9" stroke="currentColor" opacity=".55"/>
+                    </g>
+                </svg>
+            </div>
+        </header>
+
+        <noscript>Для прогнозов включите JavaScript в браузере.</noscript>
+        <section class="forecast-gate forecast-panel" id="accessGate" aria-live="polite">
+            <h2 id="gateTitle">Проверяем доступ…</h2>
+            <p id="gateText">Подключаемся к аккаунту Almanion.</p>
+            <button type="button" class="forecast-primary" id="gateAction" hidden>Войти</button>
+        </section>
+        <p id="connectionNotice" class="forecast-notice" role="status" hidden>Связь с сервером потеряна. Для сделки нужно подключение.</p>
+        <div class="forecast-game" id="gameSurface" hidden>
+            <div class="forecast-toolbar">
+                <label>Урок <select id="lessonSelect" aria-label="Выбрать урок"></select></label>
+                <span class="forecast-state" id="roundState"></span>
+            </div>
+            <p id="emptyRound" class="forecast-panel" hidden>Пока нет назначенных уроков.</p>
+            <div id="roundBody" class="forecast-layout" hidden>
+                <section class="forecast-panel forecast-chart-card" aria-labelledby="chartTitle">
+                    <div class="forecast-section-head"><h2 id="chartTitle">Вероятность работы</h2>
+                        <div class="forecast-ranges" role="group" aria-label="Период графика"><button type="button" data-range="hour" aria-pressed="false">1 ч</button><button type="button" data-range="day" aria-pressed="false">День</button><button type="button" data-range="all" aria-pressed="true">Всё</button></div>
+                    </div>
+                    <div class="forecast-reading"><strong id="probability">—</strong><span id="complement"></span></div>
+                    <div class="forecast-plot"><div class="forecast-scale" aria-hidden="true"><span>100%</span><span>50%</span><span>0%</span></div>
+                    <svg id="probChart" viewBox="0 0 560 160" role="img" aria-label="История рыночной вероятности работы" preserveAspectRatio="none">
+                        <defs><linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1"><stop stop-color="currentColor" stop-opacity=".24"/><stop offset="1" stop-color="currentColor" stop-opacity=".015"/></linearGradient></defs>
+                        <path class="chart-grid" d="M5 9h548M5 80h548M5 151h548"/>
+                        <path id="chartArea" fill="url(#chartGradient)"/><path id="chartLine" fill="none" stroke="currentColor" stroke-width="2.5" vector-effect="non-scaling-stroke"/>
+                        <path id="chartHair" fill="none" stroke="currentColor" opacity=".45" stroke-dasharray="2 5"/>
+                        <circle id="chartDot" r="3.5" fill="currentColor"/>
+                    </svg></div>
+                    <div class="forecast-axis"><span id="chartStart"></span><span id="chartEnd"></span></div>
+                    <label class="forecast-chart-readout"><output id="chartReadout"></output><input id="chartCursor" type="range" min="0" max="100" value="100" aria-label="Посмотреть вероятность на графике по времени"></label>
+                </section>
+                <section class="forecast-panel forecast-ticket" aria-labelledby="ticketTitle">
+                    <div class="forecast-section-head"><h2 id="ticketTitle">Моя заявка</h2><span id="tradeStatus"></span></div>
+                    <p class="forecast-status" id="roundSummary"></p>
+                    <form id="tradeForm">
+                        <fieldset class="forecast-segments"><legend class="forecast-sr">Действие</legend>
+                            <label><input type="radio" name="action" value="buy" checked><span>Купить</span></label>
+                            <label><input type="radio" name="action" value="sell"><span>Продать</span></label>
+                        </fieldset>
+                        <fieldset class="forecast-options"><legend class="forecast-sr">Исход</legend>
+                            <label><input type="radio" name="side" value="yes" checked><span>Будет <b id="yesAsk">—</b></span></label>
+                            <label><input type="radio" name="side" value="no"><span>Не будет <b id="noAsk">—</b></span></label>
+                        </fieldset>
+                        <div class="forecast-inputs">
+                            <label>Тип заявки<select id="orderMode"><option value="market">По рынку</option><option value="limit">Своя цена</option></select></label>
+                            <label>Долей<input id="quantity" type="number" min="1" max="100" step="1" value="5" inputmode="numeric" required></label>
+                            <label id="limitField" hidden>Цена в сотых очка<input id="limitPrice" type="number" min="1" max="99" step="1" value="50" inputmode="numeric"></label>
+                        </div>
+                        <p class="forecast-quote" id="quotePreview" aria-live="polite"></p>
+                        <button type="submit" class="forecast-primary" id="placeOrder" disabled>Купить доли</button>
+                    </form>
+                    <p id="feedback" class="forecast-feedback" role="status"></p>
+                </section>
+                <section class="forecast-panel forecast-wallet" aria-labelledby="walletTitle">
+                    <h2 id="walletTitle">Мой портфель</h2>
+                    <dl><div><dt>Доступно на этом рынке</dt><dd id="walletCash">—</dd></div><div><dt>В заявках на покупку</dt><dd id="walletHeld">—</dd></div>
+                    <div><dt>Доли «Будет»</dt><dd id="walletYes">—</dd></div><div><dt>Доли «Не будет»</dt><dd id="walletNo">—</dd></div></dl>
+                    <p class="forecast-footnote" id="walletOutcome"></p>
+                </section>
+                <section class="forecast-panel forecast-book" aria-labelledby="bookTitle">
+                    <h2 id="bookTitle">Стакан заявок</h2>
+                    <p class="forecast-footnote">Цена и количество долей «Будет»</p>
+                    <div class="forecast-columns"><div><h3>Покупают</h3><ol id="bookBids"></ol></div><div><h3>Продают</h3><ol id="bookAsks"></ol></div></div>
+                </section>
+                <section class="forecast-panel forecast-orders"><h2>Мои открытые заявки</h2><div id="myOrders"></div></section>
+                <section class="forecast-panel forecast-history" aria-labelledby="historyTitle">
+                    <div class="forecast-section-head"><h2 id="historyTitle">История сделок</h2>
+                    <select id="historyScope" aria-label="Чьи сделки показать"><option value="mine">Мои</option><option value="all">Все</option></select></div>
+                    <div id="tradeHistory"></div><button id="moreTrades" class="forecast-secondary" type="button" hidden>Показать ещё</button>
+                </section>
+            </div>
+        </div>
+        <details class="forecast-panel forecast-rules">
+            <summary>Как устроен рынок</summary>
+            <div>
+                <p>При первом входе у каждого 100 бесплатных виртуальных очков на все уроки. Их нельзя покупать, передавать или обменивать на призы.</p>
+                <p>После урока доля верного исхода приносит 1 очко, другого — 0. Например, пять долей «Будет» по 0,40 стоят 2 очка. Если работа была, выплата составит 5 очков, прибыль — 3. До закрытия доли можно продать.</p>
+                <p>Заявка «По рынку» исполняется целиком по доступным ценам в пределах показанной котировки. В режиме «Своя цена» остаток ждёт встречной заявки. Лучшие цены идут первыми, при равной цене первой исполняется более ранняя заявка. Продать можно только свои свободные доли.</p>
+                <p>Доли «Будет» и «Не будет» образуют пару стоимостью 1 очко. Поэтому покупка «Не будет» по 0,40 соответствует предложению «Будет» по 0,60. В начале на каждой стороне стоят виртуальные заявки на 10 долей по 0,49, 25 по 0,45 и 50 по 0,35.</p>
+                <p>График показывает середину между лучшими ценами покупки и продажи «Будет». Если разница больше 0,10 или одна сторона пуста, берём цену последней сделки. Это оценка участников. Коэффициент выплаты равен 1 / цене покупки.</p>
+                <p>Перед уроком ведущий закрывает торги. В конце дня по Москве они также останавливаются автоматически. При отмене урока все его сделки финансово аннулируются. До подведения итога прибыль этого рынка можно использовать только внутри него.</p>
+            </div>
+        </details>
+        <details class="forecast-panel forecast-admin" id="ownerTools" hidden>
+            <summary>Управление уроками</summary>
+            <form id="createRound"><label for="newDay">Дата урока</label><input type="date" id="newDay" required><button type="submit" class="forecast-secondary">Открыть прогноз</button></form>
+            <div id="manageRound" hidden>
+                <h3 id="manageTitle">Выбранный урок</h3>
+                <div class="forecast-manager-actions">
+                    <button type="button" class="forecast-secondary" data-command="lock">Закрыть приём</button>
+                    <button type="button" class="forecast-secondary" data-command="yes">Работа была</button>
+                    <button type="button" class="forecast-secondary" data-command="no">Работы не было</button>
+                    <button type="button" class="forecast-secondary" data-command="void">Отменить урок</button>
+                </div>
+                <div class="forecast-confirm" id="confirmAction" hidden>
+                    <p id="confirmText"></p>
+                    <button type="button" class="forecast-primary" id="confirmGo">Подтвердить</button>
+                    <button type="button" class="forecast-secondary" id="confirmBack">Назад</button>
+                </div>
+            </div>
+            <p class="forecast-feedback" id="adminFeedback" role="status"></p>
+        </details>
+    </main>
+    <script defer src="https://www.gstatic.com/firebasejs/12.18.0/firebase-app-compat.js"></script>
+    <script defer src="https://www.gstatic.com/firebasejs/12.18.0/firebase-database-compat.js"></script>
+    <script defer src="https://www.gstatic.com/firebasejs/12.18.0/firebase-auth-compat.js"></script>
+    <script defer src="firebase-config.js?v=20260903-3"></script>
+    <script defer src="data-sync.js?v=20260908-1"></script>
+    <script defer src="kc-storage.js?v=20260911-1"></script>
+    <script defer src="script.js?v=20260906-1"></script>
+    <script defer src="settings.js?v=20261009-1"></script>
+    <script defer src="account.js?v=20260908-1"></script>
+    <script defer src="physics-forecast-core.js?v=1"></script>
+    <script defer src="physics-forecast.js?v=1"></script>
+</body>
+</html>

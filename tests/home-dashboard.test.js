@@ -65,7 +65,7 @@ assert.match(client, /home-quick-editor\.js\?v=20260920-2/,
 assert.match(editor, /const MAX_ITEMS = 5/);
 assert.match(editor, /dashboard\(\)[\s\S]*?api\.saveSelection\(draft\)/,
     'the lazy editor must save through the account-aware dashboard controller');
-assert.ok(shell.includes('/styles/home-dashboard.css'));
+assert.ok(shell.includes('/' + dashboardStyle[0].slice(6, -1)), 'precache the stylesheet actually requested by the homepage');
 assert.ok(shell.includes('/home-dashboard.js'));
 assert.ok(shell.includes('/home-quick-editor.js'));
 
