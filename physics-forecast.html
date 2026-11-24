@@ -13,7 +13,7 @@
     <link rel="stylesheet" href="styles/buttons.css?v=20260929-2">
     <link rel="stylesheet" href="style-new.css?v=20260929-2">
     <link rel="stylesheet" href="styles/typography.css?v=20261002-1">
-    <link rel="stylesheet" href="styles/physics-forecast.css?v=1">
+    <link rel="stylesheet" href="styles/physics-forecast.css?v=2">
 </head>
 <body class="forecast-page" data-no-math>
     <script>window.AlmanionThemeBootstrap.applyBody();</script>
@@ -34,6 +34,11 @@
             <div class="forecast-scope" aria-hidden="true">
                 <svg viewBox="0 0 360 152" fill="none" preserveAspectRatio="xMidYMid meet">
                     <defs>
+                        <filter id="forecast-dark-ink" color-interpolation-filters="sRGB">
+                            <feComponentTransfer>
+                                <feFuncR type="table" tableValues=".94 .5 1"/><feFuncG type="table" tableValues=".94 .5 1"/><feFuncB type="table" tableValues=".96 .5 1"/>
+                            </feComponentTransfer>
+                        </filter>
                         <pattern id="smallGrid" width="20" height="20" patternUnits="userSpaceOnUse"><path d="M20 0H0V20" stroke="currentColor" opacity=".16"/></pattern>
                         <path id="wave" d="M-120 76q15 0 30-34t30 34 30 34 30-34 30-34 30 34 30 34 30-34 30-34 30 34 30 34 30-34 30-34 30 34 30 34 30-34 30-34 30 34 30 34 30-34"/>
                         <clipPath id="scopeWindow"><rect x="1" y="1" width="358" height="150" rx="18"/></clipPath>
