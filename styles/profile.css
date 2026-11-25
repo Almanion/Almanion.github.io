@@ -91,10 +91,12 @@
 #profileMonogram { width: 6rem; text-transform: uppercase; }
 .profile-shapes, .profile-covers { display: flex; flex-wrap: wrap; gap: 6px; }
 :is(.profile-shapes,.profile-covers) .profile-choice-face { display: inline-flex; align-items: center; gap: 7px; width: auto; min-height: 44px; height: auto; padding: 8px 11px; font-size: .88rem; }
-.profile-choice [data-shape] { width: 15px; height: 15px; border: 1.5px solid currentColor; }
-.profile-choice [data-shape="circle"] { border-radius: 50%; }
-.profile-choice [data-shape="tile"] { border-radius: 3px; }
-.profile-choice [data-shape="pebble"] { border-radius: 45% 55% 30% 65%; }
+.profile-choice [data-shape] {
+    width: 15px;
+    height: 15px;
+    border: 1.5px solid currentColor;
+    border-radius: var(--profile-avatar-radius, 50%);
+}
 .profile-choice [data-cover] { display: inline-flex; width: 26px; height: 14px; overflow: hidden; color: var(--text-secondary); border: 1px solid var(--border-color); border-radius: 3px; background: var(--bg-tertiary); }
 .profile-choice [data-cover] svg { display: block; width: 100%; height: 100%; }
 .profile-choice [data-cover] svg :is(path, ellipse, circle) { vector-effect: non-scaling-stroke; }

@@ -938,20 +938,41 @@ body:not(.no-hover) .kc-answer-remember:hover { background: var(--success-color)
 [data-profile-color="coral"] { --profile-pigment: #d37a5c; }
 [data-profile-color="sky"] { --profile-pigment: #56a6b9; }
 [data-profile-color="slate"] { --profile-pigment: #828c9f; }
-.profile-mark[data-profile-shape="tile"] { border-radius: 25%; }
-.profile-mark[data-profile-shape="pebble"] { border-radius: 45% 60% 38% 56%; }
+:is(.profile-mark[data-profile-shape="tile"], .profile-choice [data-shape="tile"]) { --profile-avatar-radius: 25%; }
+:is(.profile-mark[data-profile-shape="pebble"], .profile-choice [data-shape="pebble"]) { --profile-avatar-radius: 45% 60% 38% 56%; }
 .profile-mark {
     display: inline-grid;
     place-items: center;
+    aspect-ratio: 1;
     flex-shrink: 0;
-    border-radius: 50%;
+    border-radius: var(--profile-avatar-radius, 50%);
     color: color-mix(in srgb, var(--text-primary) 65%, var(--profile-pigment));
     background: color-mix(in srgb, var(--profile-pigment) 24%, var(--bg-secondary));
     font-weight: 720;
     line-height: 1;
 }
-.account-btn .profile-mark { width: 100%; height: 100%; font-size: .9rem; }
-.profile-mark svg, .account-btn .profile-mark svg { width: 55%; height: 55%; }
+/* Experimental headers set their button fills with !important. The mark supplies the signed-in surface. */
+#accountBtn.signed-in {
+    background: transparent !important;
+    border-color: transparent;
+    box-shadow: none;
+}
+#accountBtn.signed-in > .profile-mark {
+    width: min(100%, 38px);
+    height: auto;
+    font-size: .9rem;
+}
+@media (hover: hover) {
+    #accountBtn.signed-in:hover > .profile-mark {
+        background-color: color-mix(in srgb, var(--profile-pigment) 32%, var(--bg-secondary));
+    }
+}
+#accountBtn.signed-in:focus-visible { outline: none; }
+#accountBtn.signed-in:focus-visible > .profile-mark {
+    outline: 2px solid var(--accent-color);
+    outline-offset: 2px;
+}
+.profile-mark svg, #accountBtn > .profile-mark svg { width: 55%; height: 55%; }
 .account-identity-mark .profile-mark { width: 52px; height: 52px; font-size: 1.5rem; }
 .account-identity { display: flex; align-items: center; gap: 12px; margin: 4px 24px 20px 0; text-align: left; }
 .account-identity > div { min-width: 0; }
