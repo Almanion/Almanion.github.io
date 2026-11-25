@@ -49,6 +49,15 @@ function fixture(options = {}) {
     assert.deepEqual(sent, { success: true, retryAfter: 60 });
     assert.equal(f.mail[0].to, f.users.a.email);
     assert.match(f.code(), /^0\d{5}$/);
+    const { body, htmlBody, inlineImages } = f.mail[0];
+    assert.ok(body.split('\n').includes(f.code()));
+    assert.match(htmlBody, new RegExp('<span class="mail-digits"[^>]*>' + f.code() + '</span>'));
+    for (const name of ['almanionLight', 'almanionDark']) {
+        assert.ok(htmlBody.includes('src="cid:' + name + '"'));
+        assert.equal(inlineImages[name].contentType, 'image/png');
+        assert.equal(inlineImages[name].bytes.toString('ascii', 1, 4), 'PNG');
+    }
+    assert.notDeepEqual(inlineImages.almanionLight.bytes, inlineImages.almanionDark.bytes);
     assert.equal(f.confirm(f.code(), 'b').reason, 'expired');
     assert.equal(f.send().retryAfter, 60);
     assert.deepEqual(f.confirm(f.code()), { success: true, verified: true });

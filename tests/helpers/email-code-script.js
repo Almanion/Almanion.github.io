@@ -7,6 +7,7 @@ const crypto = require('node:crypto');
 const { execFileSync } = require('node:child_process');
 const script = fs.readFileSync(path.join(__dirname, '../../apps-script.gs'), 'utf8');
 const senderScript = fs.readFileSync(path.join(__dirname, '../../tools/account-mailer/Code.gs'), 'utf8');
+const senderWordmark = fs.readFileSync(path.join(__dirname, '../../tools/account-mailer/Wordmark.gs'), 'utf8');
 
 function propertyStore(initial) {
     const data = new Map(Object.entries(initial));
@@ -29,6 +30,8 @@ function mailScript({ transport, projectId = 'almanion-rules-test', now = Date.n
             computeDigest: (algorithm, value) => crypto.createHash(algorithm).update(value).digest(),
             base64EncodeWebSafe: bytes => Buffer.from(bytes).toString('base64url'),
             computeHmacSha256Signature: (value, key) => Array.from(crypto.createHmac('sha256', key).update(value).digest()),
+            base64Decode: value => Buffer.from(value, 'base64'),
+            newBlob: (bytes, contentType, name) => ({ bytes, contentType, name }),
             getUuid: crypto.randomUUID
         },
         ContentService: { createTextOutput: text => ({ setMimeType: () => text }), MimeType: { JSON: 'json' } }
@@ -38,7 +41,9 @@ function mailScript({ transport, projectId = 'almanion-rules-test', now = Date.n
         Session: { getEffectiveUser: () => ({ getEmail: () => sender }) },
         MailApp: { getRemainingDailyQuota: quota, sendEmail: message => (deliver || (m => mail.push(m)))(message) }
     };
-    vm.runInNewContext(senderScript, relay, { filename: 'account-mailer/Code.gs' });
+    vm.createContext(relay);
+    vm.runInContext(senderWordmark, relay, { filename: 'account-mailer/Wordmark.gs' });
+    vm.runInContext(senderScript, relay, { filename: 'account-mailer/Code.gs' });
     const postToMailer = envelope => JSON.parse(relay.doPost({ postData: { contents: JSON.stringify(envelope) } }));
     const globals = { ...shared,
         PropertiesService: propertyStore({ FIREBASE_WEB_API_KEY: 'local', FIREBASE_PROJECT_ID: projectId,
