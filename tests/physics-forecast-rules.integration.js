@@ -105,6 +105,61 @@ const M = require('../physics-forecast-core');
             await assertSucceeds(at(owner).update(action));
         }
         assert.equal((await at(b).child('rounds/' + second.head.id + '/phase').once('value')).val(), 'open');
-        console.log('Forecast rules: registered trading, owner-only custom events, isolated same-day markets and settlement passed.');
+        const book = at(owner);
+        async function acceptMarketChange(ref, change) {
+            const { kind, day } = change['events/' + change.head.id];
+            await assertSucceeds(ref.update(change)).catch(cause => {
+                throw new Error('Expected acceptance: ' + kind + ' for ' + day + ', entry ' + change.head.n, { cause });
+            });
+        }
+        const close = Math.ceil((Date.now() + 5000) / 60000) * 60000;
+        const eventEnd = M.endOfDay(M.dayKey(close + 120000));
+        const names = { yes:'Север', no:'Юг', third:'Восток', fourth:'Запад' };
+        async function advanced(actor, kind, fields = {}) {
+            const head = (await book.child('head').get()).val(), next = book.child('events').push().key;
+            const day = fields.day || next, n = head.n + 1;
+            const event = { n, at:{'.sv':'timestamp'}, day, actor, kind, ...fields };
+            const changes = { head:{ id:next, n, v:3 }, ['events/'+next]:event, ['lastBy/'+actor]:next };
+            if (kind === 'order') Object.assign(event, { mode:'market', side:'fourth', action:'buy', qty:1, limit:99, totalLimit:99, expires:Date.now()+30000 }, fields);
+            else {
+                const previous = (await book.child('rounds/'+day).get()).val();
+                changes['rounds/'+day] = { phase:kind === 'deadline' ? 'open' : kind, last:next,
+                    endAt:event.endAt ?? previous.endAt, eventEnd:event.eventEnd ?? previous.eventEnd ?? previous.endAt };
+            }
+            return changes;
+        }
+        const open = { question:'Какой вариант победит?', eventEnd, endAt:close+120000, answers:names };
+        for (const answers of [{yes:'А'}, {yes:'a', no:'A'}, {...names, third:'Запад'}, {...names, no:'  '},
+            {...names, no:'два\nслова'}, {...names, extra:'Пятый'}, {yes:'А',no:'Б',fourth:'Г'}]) {
+            await assertFails(book.update(await advanced(M.OWNER, 'open', {...open, answers})));
+        }
+        await assertFails(book.update(await advanced(M.OWNER, 'open', {...open, endAt:close+1})));
+        await assertFails(book.update(await advanced(M.OWNER, 'open', {...open, endAt:eventEnd+60000})));
+        const four = await advanced(M.OWNER, 'open', open), fourId = four.head.id;
+        await acceptMarketChange(book, four);
+        const order4 = await advanced('b', 'order', {day:fourId});
+        await assertFails(at(b).update({...order4, head:{...order4.head, v:2}}));
+        await acceptMarketChange(at(b), order4);
+        await assertFails(at(siteAdmin).update(await advanced('site-admin','deadline',{day:fourId,endAt:close})));
+        const modify = await advanced(M.OWNER, 'deadline', {day:fourId,endAt:close});
+        const altered = structuredClone(modify); altered['rounds/'+fourId].endAt += 60000;
+        await assertFails(book.update(altered));
+        await acceptMarketChange(book, modify);
+        const three = await advanced(M.OWNER,'open',{...open, answers:{yes:'Первый',no:'Второй',third:'Третий'}});
+        await acceptMarketChange(book, three);
+        const voter = at(db('three-player'));
+        await assertFails(voter.update(await advanced('three-player','order',{day:three.head.id,side:'fourth'})));
+        await acceptMarketChange(voter, await advanced('three-player','order',{day:three.head.id,side:'third'}));
+        await acceptMarketChange(book, await advanced(M.OWNER,'lock',{day:three.head.id}));
+        await assertFails(book.update(await advanced(M.OWNER,'fourth',{day:three.head.id})));
+        // Leave every client idle until the actual emulator clock passes the cutoff.
+        await new Promise(resolve => setTimeout(resolve, Math.max(0, close + 100 - Date.now())));
+        await assertFails(at(b).update(await advanced('b','order',{day:fourId})));
+        await assertFails(book.update(await advanced(M.OWNER,'deadline',{day:fourId,endAt:eventEnd})));
+        if (M.dayKey(Date.now()) === M.dayKey(eventEnd-1)) {
+            await assertSucceeds(book.update(await advanced(M.OWNER,'fourth',{day:fourId})));
+            await assertFails(book.update(await advanced(M.OWNER,'yes',{day:fourId})));
+        }
+        console.log('Forecast rules passed owner deadlines, server-clock expiry, immutable answers and declared winners.');
     } finally { await env.cleanup(); }
 })().catch(e => { console.error(e); process.exitCode=1; });

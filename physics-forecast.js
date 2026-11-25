@@ -20,11 +20,11 @@
         return Number.isSafeInteger(cents) ? cents : NaN;
     }
     const ledger = window.ForecastLedger;
-    const { date, phases } = ledger;
-    const labels = { yes: 'Да', no: 'Нет' };
+    const { date, phaseLabel } = ledger;
+    let renderedMarket = '';
     let engine = M.create(), readLedger = ledger.createReader(), selectedId = '', user = null, connected = false, offset = 0, ready = false, busy = false;
     let epoch = 0, clock = 0, connectionTimer, feedOff, pendingSnapshot, historyLimit = 12, ticket = null;
-    let firstPaint = true, renderedToday = '';
+    let firstPaint = true, renderedToday = '', nextClose = Infinity;
     let buyQuantity = '5';
     const api = window.AlmanionAccount;
     const now = () => Date.now() + offset;
@@ -67,6 +67,7 @@
         $('eventPicker').hidden = true;
         $('roundState').textContent = '';
         $('roundState').removeAttribute('data-state');
+        $('marketDeadline').hidden = true;
         renderHeading(null);
         $('gateTitle').textContent = title;
         $('gateText').textContent = body;
@@ -93,6 +94,7 @@
         feedOff = undefined;
         epoch++; ready = busy = false; selectedId = ''; readLedger = ledger.createReader(); engine = M.create(); ticket = pendingSnapshot = null;
         chart.reset();
+        renderedMarket = '';
         resetDraft();
         $('forecastAdminLink').href = 'admin.html#forecasts';
         $('feedback').textContent = $('orderFeedback').textContent = '';
@@ -130,15 +132,36 @@
         subscribe();
     }
 
+    const suffix = side => side[0].toUpperCase() + side.slice(1);
+    function buildAnswerControls(m) {
+        if (renderedMarket === m.id) return;
+        renderedMarket = m.id;
+        const choices = $('tradeAnswers'), balances = $('walletBalances');
+        for (const label of choices.querySelectorAll('label')) label.remove();
+        for (const row of balances.querySelectorAll('[data-holding]')) row.remove();
+        for (const side of m.sides) {
+            const name = m.answers[side], label = node('label'), radio = node('input'), content = node('span'), price = node('b');
+            label.dataset.side = side;
+            radio.type = 'radio'; radio.name = 'side'; radio.value = side; radio.defaultChecked = side === m.sides[0];
+            price.id = side + 'Ask'; content.append(node('span', name), price); label.append(radio, content); choices.append(label);
+            const holding = node('div'), value = node('dd'), quantity = node('span'), sell = node('button', 'Продать');
+            const reserved = node('dd', '', 'forecast-reserve');
+            holding.dataset.holding = side; quantity.id = 'wallet' + suffix(side); reserved.id = 'held' + suffix(side);
+            sell.type = 'button'; sell.dataset.sell = side; sell.setAttribute('aria-label', 'Продать доли «' + name + '»');
+            value.append(quantity, sell); holding.append(node('dt', 'Доли «' + name + '»'), value, reserved); balances.append(holding);
+        }
+        $('bookSide').replaceChildren(...m.sides.map(side => new Option(m.answers[side], side)));
+    }
+
     function renderBook(m, phase) {
         $('publicOrders').hidden = phase !== 'open';
         if (phase !== 'open') return;
-        const sides = [['bookBids', 'bid'], ['bookAsks', 'ask']];
+        const selected = $('bookSide').value, lanes = [['bookBids', 'bid'], ['bookAsks', 'ask']];
         let largest = 0;
-        const books = sides.map(([id, side]) => {
+        const books = lanes.map(([id, lane]) => {
             const levels = new Map();
-            for (const order of M.ranked(m, side)) {
-                const price = M.yesPrice(order);
+            for (const order of M.ranked(m, lane, selected)) {
+                const price = M.quotePrice(order, selected);
                 const total = (levels.get(price) || 0) + order.qty;
                 levels.set(price, total);
                 largest = Math.max(largest, total);
@@ -147,13 +170,19 @@
         });
         for (const { id, levels } of books) {
             const rows = Array.from(levels, ([price, qty]) => {
-                const row = node('li');
+                const row = node('tr'), quantity = node('td'), bar = node('span', undefined, 'forecast-depth');
+                bar.setAttribute('aria-hidden', 'true');
                 row.style.setProperty('--depth', (100 * qty / largest).toFixed(1) + '%');
-                row.append(node('b', points(price)), node('span', shares(qty)));
+                quantity.append(bar, node('span', fmt.format(qty)));
+                row.append(node('td', priceInput(price)), quantity);
                 return row;
             });
             const empty = id === 'bookBids' ? 'Пока нет покупателей' : 'Пока нет продавцов';
-            $(id).replaceChildren(...(rows.length ? rows : [node('li', empty, 'forecast-book-empty')]));
+            if (!rows.length) {
+                const row = node('tr'), cell = node('td', empty, 'forecast-book-empty');
+                cell.colSpan = 2; row.append(cell); rows.push(row);
+            }
+            $(id).replaceChildren(...rows);
         }
     }
 
@@ -163,9 +192,9 @@
             const isMaker = t.maker === user.uid;
             const side = isMaker ? t.makerSide : t.side;
             const action = isMaker ? t.makerAction : t.action;
-            const price = side === 'yes' ? t.yesPrice : 100 - t.yesPrice;
+            const price = isMaker ? t.makerPrice : t.price;
             const row = node('div', undefined, 'forecast-row');
-            const info = node('div'); info.append(node('b', (action === 'buy' ? 'Покупка' : 'Продажа') + ' · ' + labels[side]),
+            const info = node('div'); info.append(node('b', (action === 'buy' ? 'Покупка' : 'Продажа') + ' · ' + m.answers[side]),
                 node('small', stampFmt.format(t.at) + ' · ' + t.qty + ' × ' + amount(price)));
             row.append(info, node('strong', amount(price * t.qty) + ' оч.')); return row;
         });
@@ -187,9 +216,8 @@
     }
 
     function bestPrice(m, action, side) {
-        const lane = (side === 'yes') === (action === 'buy') ? 'ask' : 'bid';
-        const best = M.ranked(m, lane)[0];
-        return best ? (side === 'yes' ? M.yesPrice(best) : 100 - M.yesPrice(best)) : null;
+        const best = M.ranked(m, action === 'buy' ? 'ask' : 'bid', side)[0];
+        return best ? M.quotePrice(best, side) : null;
     }
 
     function freeShares(m, side, at) {
@@ -198,7 +226,8 @@
 
     function suggestPrice() {
         const { action, side } = $('tradeForm').elements;
-        $('limitPrice').value = priceInput(bestPrice(market(), action.value, side.value) ?? 50);
+        const m = market();
+        $('limitPrice').value = priceInput(bestPrice(m, action.value, side.value) ?? Math.round(m.marks[side.value]));
     }
 
     function prepareSale(side) {
@@ -250,7 +279,7 @@
         if (buy && plan.filled) {
             const factor = fmt.format(100 * plan.filled / plan.cash);
             const payout = plan.left ? 'За купленные доли при «' : 'Выплата при «';
-            rows.push(quoteRow(payout + labels[order.side] + '» · ×' + factor, points(plan.filled * 100)));
+            rows.push(quoteRow(payout + market().answers[order.side] + '» · ×' + factor, points(plan.filled * 100)));
         } else if (!buy && !plan.left) {
             rows.push(quoteRow('Останется свободных долей', String(free - plan.filled)));
         }
@@ -278,7 +307,7 @@
         const { error } = plan;
         let message = plan.message || M.errors[error];
         if (error === 'depth') {
-            const side = '«' + labels[order.side] + '»', buy = order.action === 'buy';
+            const side = '«' + market().answers[order.side] + '»', buy = order.action === 'buy';
             if (bestPrice(market(), order.action, order.side) === null) {
                 message = 'Сейчас никто не ' + (buy ? 'продаёт' : 'покупает') + ' доли ' + side + '.';
             } else if (maxQty > 0) {
@@ -294,7 +323,7 @@
         $('explainDepth').disabled = false;
         $('showOrders').hidden = error !== 'reserved' && error !== 'own';
         $('buyInstead').hidden = error !== 'empty';
-        $('buyInstead').textContent = 'Купить «' + labels[order.side] + '»';
+        $('buyInstead').textContent = 'Купить «' + market().answers[order.side] + '»';
         $('quoteActions').hidden = !Array.from($('quoteActions').children).some(control => !control.hidden);
     }
 
@@ -326,7 +355,7 @@
         $('sizeLabel').textContent = byBudget ? 'Сумма покупки' : 'Количество долей';
         const saleBalance = maxQty > 0 && maxQty < free ? 'Свободно ' + free + ' · за раз до ' + maxQty : 'Свободно ' + free + ' из ' + own;
         $('sizeAvailable').textContent = buy ? 'Доступно ' + points(balance) : saleBalance;
-        for (const side of ['yes','no']) {
+        for (const side of m.sides) {
             const price = open ? bestPrice(m, order.action, side) : null;
             const label = $(side + 'Ask');
             label.textContent = price === null ? (buy ? 'Нет продавцов' : 'Нет покупателей') : points(price);
@@ -338,7 +367,7 @@
         $('quoteActions').hidden = true;
         if (!open) { preview.replaceChildren(); return; }
         if (emptySale) {
-            const message = own ? 'Все доли «' + labels[order.side] + '» уже выставлены на продажу.' : 'У тебя пока нет долей «' + labels[order.side] + '».';
+            const message = own ? 'Все доли «' + market().answers[order.side] + '» уже выставлены на продажу.' : 'У тебя пока нет долей «' + market().answers[order.side] + '».';
             showQuoteError({ error: own ? 'reserved' : 'empty', message }, order, byBudget, maxValue, maxQty);
             return;
         }
@@ -351,7 +380,7 @@
         ticket = order;
         submit.disabled = disabled;
         if (!busy) submit.textContent = (plan.left ? 'Выставить заявку' : buy ? 'Купить' : 'Продать') +
-            (plan.left ? ' · ' : ' ') + shares(order.qty, !plan.left) + ' «' + labels[order.side] + '»';
+            (plan.left ? ' · ' : ' ') + shares(order.qty, !plan.left) + ' «' + market().answers[order.side] + '»';
         showEstimate(order, plan, free);
     }
 
@@ -359,21 +388,21 @@
         const pos = M.position(m, user.uid), reserve = M.held(m, user.uid, now());
         $('walletCash').textContent = amount(M.available(engine, user.uid, selectedId, now())) + ' оч.';
         $('walletHeld').textContent = amount(reserve.cash) + ' оч.';
-        $('walletYes').textContent = String(pos.yes); $('walletNo').textContent = String(pos.no);
-        for (const side of ['yes', 'no']) {
-            const held = $(side === 'yes' ? 'heldYes' : 'heldNo');
+        for (const side of m.sides) {
+            $('wallet' + suffix(side)).textContent = String(pos[side]);
+            const held = $('held' + suffix(side));
             held.textContent = 'В продаже ' + reserve[side] + ' из ' + pos[side];
             held.hidden = !reserve[side];
             const sellButton = document.querySelector('[data-sell="' + side + '"]');
             sellButton.hidden = phase !== 'open' || pos[side] <= reserve[side];
             sellButton.disabled = busy || !connected;
         }
-        const paid = phase === 'yes' || phase === 'no';
+        const paid = m.sides.includes(phase);
         $('walletOutcome').textContent = phase === 'void' ? 'Все сделки по этому событию аннулированы.' : paid
             ? 'Выплата ' + pos[phase] + ' оч. · результат по событию ' + amount(pos.cash + pos[phase] * 100) + ' оч.' : '';
         const rows = m.orders.filter(o => phase === 'open' && o.actor === user.uid).map(o => {
             const row = node('div', undefined, 'forecast-row'), info = node('div');
-            info.append(node('b', (o.action === 'buy' ? 'Покупка' : 'Продажа') + ' · ' + labels[o.side]), node('small', shares(o.qty) + ' по ' + points(o.limit)));
+            info.append(node('b', (o.action === 'buy' ? 'Покупка' : 'Продажа') + ' · ' + m.answers[o.side]), node('small', shares(o.qty) + ' по ' + points(o.limit)));
             const cancel = node('button', 'Снять заявку', 'forecast-secondary'); cancel.type = 'button'; cancel.disabled = busy || !connected || phase !== 'open';
             cancel.addEventListener('click', () => send({ kind: 'cancel', day: selectedId, target: o.id })); row.append(info, cancel); return row;
         });
@@ -398,17 +427,27 @@
         }
         const m = market();
         renderedToday = M.dayKey(at);
+        nextClose = Infinity;
+        for (const item of markets) {
+            if (item.phase === 'open' && item.endAt > at) nextClose = Math.min(nextClose, item.endAt);
+        }
         ledger.fillPicker($('lessonSelect'), markets, selectedId, at);
         $('lessonSelect').disabled = busy;
         $('eventPicker').hidden = !markets.length;
         renderHeading(m);
         $('emptyRound').hidden = !!m; $('roundBody').hidden = !m;
         const phase = m ? M.status(m, at) : '';
-        guide.setMarket(m?.id, m ? phase : 'empty');
-        $('roundState').textContent = phases[phase] || ''; $('roundState').dataset.state = phase;
+        guide.setMarket(m, m ? phase : 'empty');
+        $('roundState').textContent = phaseLabel(m, phase); $('roundState').dataset.state = phase;
+        $('marketDeadline').hidden = !m || phase !== 'open';
+        if (phase === 'open') {
+            $('marketDeadline').dateTime = new Date(m.endAt).toISOString();
+            $('marketDeadline').textContent = 'До ' + ledger.cutoff(m.endAt, m.date);
+        }
         if (user.uid === M.OWNER) $('forecastAdminLink').href = 'admin.html' + (m ? '?event=' + encodeURIComponent(m.id) : '') + '#forecasts';
         if (!m) { chart.reset(); return; }
-        $('roundSummary').textContent = phase === 'open' ? '' : phase === 'lock' ? 'Торги закрыты. Ждём итог события.' : phases[phase] + '.';
+        buildAnswerControls(m);
+        $('roundSummary').textContent = phase === 'open' ? '' : phase === 'lock' ? 'Торги закрыты. Ждём итог события.' : phaseLabel(m, phase) + '.';
         chart.update(m, connected); renderTicket(); renderBook(m, phase); renderAccount(m, phase); renderHistory(m);
         updateJumps();
         if (firstPaint) { firstPaint = false; $('gameSurface').classList.add('forecast-enter'); }
@@ -431,7 +470,7 @@
             if (!result || result.error) throw Error(M.errors[result?.error] || 'Не удалось подтвердить действие.');
             if (command.kind === 'cancel') feedback.textContent = 'Заявка снята.';
             else {
-                const outcome = ' «' + labels[command.side] + '»';
+                const outcome = ' «' + engine.markets.get(command.day).answers[command.side] + '»';
                 const parts = [];
                 if (result.filled) parts.push((command.action === 'buy' ? 'Покупка' : 'Продажа') + ' · ' + shares(result.filled) + outcome + ' за ' + points(result.cash));
                 if (result.left) parts.push('В открытой заявке ' + shares(result.left) + outcome + ' по ' + points(command.limit));
@@ -458,6 +497,7 @@
         resetDraft(); $('orderFeedback').textContent = ''; notice(''); paint();
     }
     $('lessonSelect').addEventListener('change', e => selectMarket(e.target.value));
+    $('bookSide').addEventListener('change', () => renderBook(market(), M.status(market(), now())));
     $('tradeForm').addEventListener('input', e => {
         if (!['budget','quantity','limitPrice'].includes(e.target.id)) return;
         if (e.target.id === 'quantity' && $('tradeForm').elements.action.value === 'buy') buyQuantity = e.target.value;
@@ -466,8 +506,8 @@
     $('tradeForm').addEventListener('change', e => {
         const { action, side } = $('tradeForm').elements;
         if (e.target.name === 'action' && action.value === 'sell') {
-            const other = side.value === 'yes' ? 'no' : 'yes', at = now(), m = market();
-            prepareSale(!freeShares(m, side.value, at) && freeShares(m, other, at) ? other : side.value);
+            const at = now(), m = market();
+            prepareSale(freeShares(m, side.value, at) ? side.value : m.sides.find(id => freeShares(m, id, at)) || side.value);
         } else if (e.target.name === 'side' && action.value === 'sell') {
             prepareSale(side.value);
         } else if (e.target.id === 'buyUnit') {
@@ -483,6 +523,10 @@
             if (e.target.name === 'action') $('quantity').value = buyQuantity;
             if (execution.value === 'limit') suggestPrice();
         } else return;
+        if (e.target.name === 'side' || e.target.name === 'action') {
+            $('bookSide').value = side.value;
+            renderBook(market(), M.status(market(), now()));
+        }
         notice(''); renderTicket();
     });
     function setSize(value) {
@@ -507,13 +551,14 @@
         if (execution.value === 'limit') suggestPrice();
         notice(''); renderTicket(); $('tradeForm').querySelector('[name="action"]:checked').focus();
     });
-    for (const button of document.querySelectorAll('[data-sell]')) {
-        button.addEventListener('click', () => {
-            execution.value = 'market'; prepareSale(button.dataset.sell); notice(''); renderTicket();
-            $('ticketTitle').focus({ preventScroll: true });
-            $('tradeTicket').scrollIntoView({ block: 'start' });
-        });
-    }
+    $('walletBalances').addEventListener('click', event => {
+        const button = event.target.closest('[data-sell]');
+        if (!button || button.disabled) return;
+        execution.value = 'market'; prepareSale(button.dataset.sell); notice(''); renderTicket();
+        $('bookSide').value = button.dataset.sell; renderBook(market(), M.status(market(), now()));
+        $('ticketTitle').focus({ preventScroll: true });
+        $('tradeTicket').scrollIntoView({ block: 'start' });
+    });
     $('tradeForm').addEventListener('submit', e => { e.preventDefault(); if (ticket) send({ ...ticket }); });
     $('moreTrades').addEventListener('click', () => { historyLimit += 24; renderHistory(market()); });
     if (!api?.database || !api.auth) { gate('Не удалось подключиться', 'Для входа нужен доступ к серверу аккаунтов.', 'retry'); return; }
@@ -523,7 +568,7 @@
     function tick() {
         if (!ready || document.hidden) return;
         const at = now(), m = market();
-        if (M.dayKey(at) !== renderedToday || (m && M.status(m, at) !== $('roundState').dataset.state)) paint();
+        if (at >= nextClose || M.dayKey(at) !== renderedToday || (m && M.status(m, at) !== $('roundState').dataset.state)) paint();
         else chart.tick(at);
     }
     clock = window.setInterval(tick, 1000);

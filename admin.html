@@ -13,7 +13,7 @@
     <link rel="stylesheet" href="style-new.css?v=20260929-2">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="styles/typography.css?v=20261002-1">
-    <link rel="stylesheet" href="styles/physics-forecast.css?v=9">
+    <link rel="stylesheet" href="styles/physics-forecast.css?v=20261125-outcomes">
     <link rel="stylesheet" href="styles/admin.css?v=20261125-forecasts">
 </head>
 <body class="admin-page">
@@ -35,7 +35,7 @@
 <button id="tab-users" class="admin-nav-item" role="tab" type="button" aria-controls="view-users" aria-selected="false" tabindex="-1" data-admin-view="users"><span class="eic eic-users" aria-hidden="true"></span><span class="admin-nav-full">Пользователи</span><span class="admin-nav-short">Аккаунты</span></button>
 <button id="tab-analytics" class="admin-nav-item" role="tab" type="button" aria-controls="view-analytics" aria-selected="false" tabindex="-1" data-admin-view="analytics" aria-label="Статистика"><span class="eic eic-calendar" aria-hidden="true"></span><span class="admin-nav-full">Статистика</span><span class="admin-nav-short">Отчёты</span></button>
 <button id="tab-polls" class="admin-nav-item" role="tab" type="button" aria-controls="view-polls" aria-selected="false" tabindex="-1" data-admin-view="polls"><span class="eic eic-chat" aria-hidden="true"></span><span>Опросы</span></button>
-<button id="tab-forecasts" class="admin-nav-item" role="tab" type="button" aria-controls="view-forecasts" aria-selected="false" tabindex="-1" data-admin-view="forecasts" aria-label="Управление прогнозами" hidden><svg class="admin-forecast-icon" viewBox="0 0 20 20" aria-hidden="true"><path d="M3 4v12h14M5 12h3V9h4V6h5"/></svg><span class="admin-nav-full">Управление прогнозами</span><span class="admin-nav-short">Прогнозы</span></button>
+<button id="tab-forecasts" class="admin-nav-item" role="tab" type="button" aria-controls="view-forecasts" aria-selected="false" tabindex="-1" data-admin-view="forecasts" aria-label="Прогнозы" hidden><svg class="admin-forecast-icon" viewBox="0 0 20 20" aria-hidden="true"><path d="M3 4v12h14M5 12h3V9h4V6h5"/></svg><span class="admin-nav-full">Прогнозы</span><span class="admin-nav-short">Прогнозы</span></button>
 <button id="tab-data" class="admin-nav-item" role="tab" type="button" aria-controls="view-data" aria-selected="false" tabindex="-1" data-admin-view="data"><span class="eic eic-gear" aria-hidden="true"></span><span>Данные</span></button></div><a class="admin-nav-home" href="index.html">← Открыть сайт</a></nav>
         <main class="admin-main">
             <section class="admin-view" id="view-overview" role="tabpanel" aria-labelledby="tab-overview" tabindex="0"><div class="admin-view-heading"><h1 tabindex="-1">Обзор</h1><span class="admin-date" id="adminDate"></span></div><div class="stats-grid">
@@ -245,7 +245,7 @@
             </div>
         </div></section>
             <section class="admin-view" id="view-forecasts" role="tabpanel" aria-labelledby="tab-forecasts" tabindex="0" hidden>
-                <div class="admin-view-heading"><h1 tabindex="-1">Управление прогнозами</h1><a id="forecastMarketLink" class="btn btn-outline btn-sm" href="physics-forecast.html">К прогнозам ↗</a></div>
+                <div class="admin-view-heading"><h1 tabindex="-1">Прогнозы</h1><a id="forecastMarketLink" class="btn btn-outline btn-sm" href="physics-forecast.html">К прогнозам ↗</a></div>
                 <div class="forecast-shell admin-forecast-shell">
                     <div class="admin-forecast-loading"><p id="forecastLoadStatus" role="status">Загружаем прогнозы…</p><button class="forecast-secondary" type="button" id="forecastRetry" hidden>Повторить</button></div>
                     <div id="forecastWorkspace" hidden>
@@ -265,10 +265,15 @@
                                 <h3 id="manageTitle"></h3>
                                 <p class="forecast-footnote" id="manageStatus"></p>
                                 <p class="forecast-definition" id="manageCriteria" hidden></p>
+                                <details class="forecast-deadline-editor" id="editDeadline" hidden>
+                                    <summary>Изменить время закрытия</summary>
+                                    <form id="deadlineForm">
+                                        <label>Закрыть торги по Москве<input type="datetime-local" id="manageDeadline" required step="60"></label>
+                                        <button type="submit" class="forecast-secondary">Сохранить время</button>
+                                    </form>
+                                </details>
                                 <div class="forecast-manager-actions">
                                     <button type="button" class="forecast-secondary" data-command="lock">Закрыть торги</button>
-                                    <button type="button" class="forecast-secondary" data-command="yes">Итог «Да»</button>
-                                    <button type="button" class="forecast-secondary" data-command="no">Итог «Нет»</button>
                                     <button type="button" class="forecast-secondary" data-command="void">Отменить с возвратом очков</button>
                                 </div>
                                 <div class="forecast-confirm" id="confirmAction" hidden>
@@ -291,8 +296,13 @@
                                             <button type="button" data-offset="0">Сегодня</button><button type="button" data-offset="1">Завтра</button>
                                         </div>
                                     </div>
+                                    <label>Закрыть торги в день события, мск <small>По умолчанию в конце дня</small><input type="time" id="newTime" step="60"></label>
                                     <label class="forecast-field-wide">Вопрос<input type="text" id="eventQuestion" required placeholder="Например, выиграет ли 10-1 матч?"></label>
-                                    <label class="forecast-field-wide">Что считается ответом «Да» <small>Необязательно</small><textarea id="newCriteria" rows="2"></textarea></label>
+                                    <fieldset class="forecast-answer-editor forecast-event-fields" id="answerEditor">
+                                        <legend>Варианты ответа</legend>
+                                        <button type="button" class="forecast-secondary" id="addAnswer">+ Вариант</button>
+                                    </fieldset>
+                                    <label class="forecast-field-wide">Как определить итог <small>Необязательно</small><textarea id="newCriteria" rows="2"></textarea></label>
                                 </fieldset>
                                 <button type="submit" class="forecast-primary">Открыть прогноз</button>
                             </form>
@@ -325,11 +335,11 @@
     <script src="firebase-config.js?v=20260903-3"></script>
     <script src="admin-dialogs.js?v=20261118-workspace"></script>
     <script src="admin-app.js?v=20261118-workspace"></script>
-    <script src="physics-forecast-core.js?v=4"></script>
-    <script src="physics-forecast-ledger.js?v=1"></script>
-    <script src="physics-forecast-chart.js?v=5"></script>
-    <script src="physics-forecast-admin.js?v=3"></script>
-    <script src="admin-forecasts.js?v=1"></script>
+    <script src="physics-forecast-core.js?v=20261125-outcomes"></script>
+    <script src="physics-forecast-ledger.js?v=20261125-outcomes"></script>
+    <script src="physics-forecast-chart.js?v=20261125-outcomes"></script>
+    <script src="physics-forecast-admin.js?v=20261125-outcomes"></script>
+    <script src="admin-forecasts.js?v=20261125-outcomes"></script>
     <script src="admin-dashboard.js?v=20261125-forecasts"></script>
 </body>
 </html>

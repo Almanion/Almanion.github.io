@@ -3,13 +3,16 @@
     const M = window.PhysicsForecast;
     const dayFormat = new Intl.DateTimeFormat('ru-RU', { day: 'numeric', month: 'long', weekday: 'short', timeZone: 'Europe/Moscow' });
     const date = day => dayFormat.format(M.endOfDay(day) - M.DAY);
-    const phases = { open: 'Торги открыты', lock: 'Торги закрыты', yes: 'Итог «Да»', no: 'Итог «Нет»', void: 'Прогноз отменён' };
-    const groups = { open: 0, lock: 1, yes: 2, no: 2, void: 2 };
+    const time = new Intl.DateTimeFormat('ru-RU', { timeZone: 'Europe/Moscow', hour: '2-digit', minute: '2-digit' });
+    const cutoff = (at, eventDate) => (M.dayKey(at) === eventDate ? '' : date(M.dayKey(at)) + ', ') + time.format(at) + ' мск';
+    const phaseLabel = (market, phase) => ({ open: 'Торги открыты', lock: 'Торги закрыты', void: 'Прогноз отменён' })[phase]
+        || (market?.answers[phase] ? 'Итог «' + market.answers[phase] + '»' : '');
+    const groupFor = phase => phase === 'open' ? 0 : phase === 'lock' ? 1 : 2;
     const pickerVersions = new WeakMap();
 
     function orderedMarkets(engine, at) {
         return [...engine.markets.values()].sort((a, b) => {
-            const first = groups[M.status(a, at)], second = groups[M.status(b, at)];
+            const first = groupFor(M.status(a, at)), second = groupFor(M.status(b, at));
             return first - second || (first === 2 ? b.endAt - a.endAt : a.endAt - b.endAt)
                 || b.openedAt - a.openedAt || a.id.localeCompare(b.id);
         });
@@ -24,8 +27,8 @@
                 return group;
             });
             for (const market of markets) {
-                const phase = M.status(market, at), group = groups[phase];
-                const suffix = group === 2 ? ' · ' + phases[phase] : '';
+                const phase = M.status(market, at), group = groupFor(phase);
+                const suffix = group === 2 ? ' · ' + phaseLabel(market, phase) : '';
                 sections[group].append(new Option(date(market.date) + ' · ' + market.question + suffix, market.id));
             }
             select.replaceChildren(...sections.filter(group => group.childElementCount));
@@ -53,9 +56,9 @@
         };
     }
 
-    async function append({ database, actor, command, engine, now, active }) {
+    async function append({ database, actor, command, now, active }) {
         const admin = !['order', 'cancel'].includes(command.kind);
-        if (admin && (actor !== M.OWNER || !['open', 'lock', 'yes', 'no', 'void'].includes(command.kind))) throw Error(M.errors.invalid);
+        if (admin && (actor !== M.OWNER || !['open', 'deadline', 'lock', 'void', ...M.SIDE_IDS].includes(command.kind))) throw Error(M.errors.invalid);
         const root = database.ref('physicsForecast');
         const id = root.child('events').push().key;
         if (command.kind === 'open') command = { ...command, day: id };
@@ -73,11 +76,17 @@
             const n = (head?.n || 0) + 1;
             const event = { ...command, actor, n, at: firebase.database.ServerValue.TIMESTAMP };
             const patch = { head: { n, id }, ['events/' + id]: event, ['lastBy/' + actor]: id };
-            if (head?.v === 2 || command.kind === 'open') patch.head.v = 2;
+            if (head?.v === 3 || command.eventEnd !== undefined || command.answers || command.kind === 'deadline') patch.head.v = 3;
+            else if (head?.v === 2 || command.kind === 'open') patch.head.v = 2;
             if (admin) {
-                const endAt = command.endAt ?? engine.markets.get(command.day)?.endAt;
-                if (!endAt) throw Error(M.errors.invalid);
-                patch['rounds/' + command.day] = { last: id, phase: command.kind, endAt };
+                const creating = command.kind === 'open';
+                const previous = creating ? null : (await root.child('rounds/' + command.day).get()).val();
+                checkSession();
+                if (!creating && !previous) throw Error(M.errors.invalid);
+                const endAt = command.endAt ?? previous?.endAt;
+                const eventEnd = command.eventEnd ?? previous?.eventEnd ?? (command.kind === 'deadline' ? previous?.endAt : null);
+                const phase = command.kind === 'deadline' ? 'open' : command.kind;
+                patch['rounds/' + command.day] = { last: id, phase, endAt, ...(eventEnd ? { eventEnd } : {}) };
             } else event.expires = expires;
             try { await root.update(patch); }
             catch {
@@ -85,6 +94,10 @@
                 if ((await root.child('events/' + id).get()).exists()) return confirmed();
                 const latest = (await root.child('head').get()).val();
                 if ((latest?.n || 0) >= n) continue;
+                if (!admin || command.kind === 'deadline') {
+                    const round = (await root.child('rounds/' + command.day).get()).val();
+                    if (round && (round.phase !== 'open' || now() >= round.endAt)) throw Error(M.errors.closed);
+                }
                 if (!admin) {
                     const previous = (await root.child('lastBy/' + actor).get()).val();
                     const at = previous && (await root.child('events/' + previous + '/at').get()).val();
@@ -101,5 +114,5 @@
         throw Error('Рынок изменился. Проверь состояние и попробуй ещё раз.');
     }
 
-    window.ForecastLedger = { date, phases, orderedMarkets, fillPicker, createReader, append };
+    window.ForecastLedger = { date, time, cutoff, phaseLabel, orderedMarkets, fillPicker, createReader, append };
 }());

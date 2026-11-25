@@ -167,4 +167,73 @@ function fixture() {
     }
     assert.ok(f.m.trades.length>100);
 }
-console.log('Physics market: complementary shares, collateral conservation, FIFO, partial fills, price protection, void and replay passed.');
+{
+    const eventEnd = M.endOfDay(day), start = M.deadline(day, '08:00'), cutoff = M.deadline(day, '09:00');
+    assert.equal(M.deadline(day, '00:00'), eventEnd - M.DAY);
+    assert.equal(M.deadline(day, ''), eventEnd);
+    assert.ok(Number.isNaN(M.deadline(day, '24:01')));
+    for (const answers of [null, {}, { yes: 'Один' }, { yes: 'А', no: 'а' }, { yes: 'А', no: 'Б', fourth: 'Г' },
+        { yes: 'А', no: ' ', third: 'В' }, { yes: 'А', no: 'Б', extra: 'В' }]) assert.equal(M.validAnswers(answers), false);
+
+    for (const count of [2, 3, 4]) {
+        const sides = M.SIDE_IDS.slice(0, count);
+        const answers = Object.fromEntries(sides.map((id, i) => [id, ['Север', 'Юг', 'Восток', 'Запад'][i]]));
+        for (const winner of [...sides, 'void']) {
+            const key = '00000000000000000123', state = M.create(), log = [];
+            let at = start;
+            function add(kind, fields = {}, actor = M.OWNER) {
+                const n = state.n + 1, id = n === 1 ? key : 'entry-' + n;
+                const e = { kind, actor, at, day: key, n, ...fields };
+                log.push([id, e]); return M.apply(state, e, id);
+            }
+            function order(side, actor, action, qty, limit, mode = 'market') {
+                return add('order', { side, action, qty, limit, mode }, actor);
+            }
+            assert.deepEqual(add('open', { question: 'Кто победит?', eventEnd, endAt: cutoff, answers }), {});
+            const m = state.markets.get(key);
+            assert.equal(m.date, day);
+            for (const side of sides) assert.ok(Math.abs(m.series[side][0].p - 100 / count) < 1e-10);
+            const last = sides.at(-1), ask = M.quotePrice(M.ranked(m, 'ask', last)[0], last);
+            assert.equal(order(last, 'reader', 'buy', 4, 99).cash, 4 * ask);
+            assert.equal(order(last, 'reader', 'sell', 5, 1).error, 'shares');
+            // Resting sale inside the spread. Other outcomes in a three-/four-way book cannot fill it.
+            const middle = ask - 1;
+            assert.equal(order(last, 'reader', 'sell', 2, middle, 'limit').left, 2);
+            if (count > 2) {
+                assert.equal(order(sides[0], 'peer', 'buy', 2, middle, 'limit').left, 2);
+                assert.equal(M.held(m, 'reader', at)[last], 2);
+            }
+            assert.equal(order(last, 'peer', 'buy', 2, middle).cash, middle * 2);
+            assert.equal(M.position(m, 'reader')[last], 2);
+            const probSum = sides.reduce((v, side) => v + m.series[side].at(-1).p, 0);
+            assert.ok(Math.abs(probSum - 100) < 1e-10);
+            for (const side of sides) {
+                const total = [...m.positions.values()].reduce((sum, p) => sum + p.cash + 100 * p[side], 0);
+                assert.equal(total, 0, 'Collateral must cover exactly one winner');
+            }
+            assert.equal(order(last, 'reader', 'buy', 8, 1, 'limit').left, 8);
+            assert.equal(M.held(m, 'reader', at).cash, 8);
+            assert.equal(add('deadline', { endAt: start }).error, 'invalid');
+            assert.equal(add('deadline', { endAt: cutoff + 1 }).error, 'invalid');
+            assert.equal(add('deadline', { endAt: cutoff + 60000 }, 'peer').error, 'invalid');
+            assert.deepEqual(add('deadline', { endAt: cutoff + 60000 }), {});
+            at = cutoff;
+            assert.equal(M.status(m, at), 'open');
+            at += 60000;
+            assert.equal(M.status(m, at - 1), 'open');
+            assert.equal(M.status(m, at), 'lock');
+            assert.equal(order(last, 'reader', 'buy', 1, 99).error, 'closed');
+            assert.equal(M.held(m, 'reader', at).cash, 0);
+            assert.equal(add('deadline', { endAt: eventEnd }).error, 'invalid');
+            if (count < 4) assert.equal(add(M.SIDE_IDS[count]).error, 'invalid');
+            assert.deepEqual(add(winner), {});
+            const profit = winner === 'void' ? 0 : -4 * ask + 2 * middle + (last === winner ? 200 : 0);
+            assert.equal(M.available(state, 'reader', key, at), M.INITIAL + profit);
+            assert.equal(add('void').error, 'invalid');
+            const replay = M.create();
+            for (const [id, e] of log) M.apply(replay, e, id);
+            assert.deepEqual(replay, state);
+        }
+    }
+}
+console.log('Forecast market passed binary and multi-outcome matching, collateral, payouts, deadlines and replay.');

@@ -15,7 +15,7 @@
         const now = () => Date.now() + offset;
         const isOwner = () => currentUser()?.uid === M.OWNER;
         const chart = window.createPhysicsForecastChart(now);
-        const form = window.createForecastAdmin({ now, formatDate: ledger.date, phaseLabel: ledger.phases, selectMarket, send });
+        const form = window.createForecastAdmin({ now, formatDate: ledger.date, phaseLabel: ledger.phaseLabel, selectMarket, send });
 
         function selectMarket(id) {
             if (!engine.markets.has(id)) return;
@@ -41,8 +41,8 @@
                 const main = document.createElement('div'), amount = document.createElement('div');
                 const title = document.createElement('strong'), parties = document.createElement('span');
                 const value = document.createElement('strong'), moment = document.createElement('time');
-                const price = (trade.side === 'yes' ? trade.yesPrice : 100 - trade.yesPrice) / 100;
-                title.textContent = (trade.action === 'buy' ? 'Покупка' : 'Продажа') + ' · ' + (trade.side === 'yes' ? 'Да' : 'Нет');
+                const price = trade.price / 100;
+                title.textContent = (trade.action === 'buy' ? 'Покупка' : 'Продажа') + ' · ' + market.answers[trade.side];
                 parties.textContent = actorName(trade.taker) + ' · ' + actorName(trade.maker);
                 value.textContent = trade.qty + ' × ' + numbers.format(price) + ' оч.';
                 moment.dateTime = new Date(trade.at).toISOString();
@@ -111,7 +111,7 @@
                 const result = engine.receipts.get(id);
                 if (!result || result.error) throw Error(M.errors[result?.error] || 'Сервер не подтвердил действие.');
                 if (command.kind === 'open') { form.resetForm(); selectMarket(day); }
-                feedback.textContent = command.kind === 'open' ? 'Прогноз открыт.' : ledger.phases[command.kind] + '.';
+                feedback.textContent = command.kind === 'open' ? 'Прогноз открыт.' : command.kind === 'deadline' ? 'Время закрытия изменено.' : ledger.phaseLabel(engine.markets.get(day), command.kind) + '.';
             } catch (error) {
                 if (current()) feedback.textContent = error.message || 'Не удалось подтвердить действие.';
             } finally {
@@ -172,7 +172,7 @@
             interval = setInterval(() => {
                 if (!initialized || document.hidden) return;
                 const at = now(), minute = Math.floor(at / 60000);
-                // Status changes at Moscow midnight, even without another journal entry.
+                // Deadlines are aligned to minutes on the server clock.
                 if (minute !== lastMinute) { lastMinute = minute; paint(); }
                 else chart.tick(at);
             }, 1000);

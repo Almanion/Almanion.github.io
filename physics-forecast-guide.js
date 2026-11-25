@@ -21,7 +21,7 @@
         const body = guide.querySelector('.forecast-guide-body'), card = tour.querySelector('.forecast-tour-card');
         const ring = tour.querySelector('.forecast-tour-focus'), mainLink = document.querySelector('[data-market-guide="start"]');
         const start = byId('startMarketTour'), next = byId('nextMarketTour'), back = byId('backMarketTour');
-        let market = null, phase = '', index = 0, frame = 0, returnTop = 0, trigger = mainLink;
+        let market = null, phase = '', winner = '', index = 0, frame = 0, returnTop = 0, trigger = mainLink;
 
         function openGuide(button) {
             trigger = button;
@@ -46,14 +46,12 @@
 
         const steps = [
             ['eventPicker', 'Выбери событие', 'В «Событиях» можно открыть другой прогноз или посмотреть исход завершённого.'],
-            ['probChart', 'Посмотри вероятность', 'Выбери «Да» или «Нет». Проведи по графику или передвинь ползунок, чтобы увидеть оценку в выбранный момент.'],
+            ['probChart', 'Посмотри вероятность', 'Выбери вариант ответа над графиком. Проведи по графику или передвинь ползунок, чтобы увидеть оценку в выбранный момент.'],
             ['ticketChoices', 'Купи или продай доли', 'Выбери действие и исход. Можно совершить сделку сразу или задать свою цену. Перед подтверждением увидишь расчёт.'],
             ['portfolio', 'Проверь свой портфель', 'Здесь твои свободные очки и доли. Ниже можно снять открытую заявку и посмотреть свои сделки.']
         ];
         const finished = { lock: 'Торги закрыты. Владелец объявит исход здесь.',
-            void: 'Событие отменено. Очки за сделки по нему возвращены.',
-            yes: 'Итог — «Да». За каждую оставшуюся долю «Да» начислено 1 очко.',
-            no: 'Итог — «Нет». За каждую оставшуюся долю «Нет» начислено 1 очко.' };
+            void: 'Событие отменено. Очки за сделки по нему возвращены.' };
 
         function positionStep() {
             if (!tour.open) return;
@@ -87,7 +85,7 @@
         }
         function showStep() {
             const [target, title, text] = steps[index];
-            const result = target === 'ticketChoices' && finished[phase];
+            const result = target === 'ticketChoices' && (finished[phase] || (winner && 'Итог — «' + winner + '». За каждую оставшуюся долю «' + winner + '» начислено 1 очко.'));
             byId('tourProgress').textContent = 'Шаг ' + (index + 1) + ' из ' + steps.length;
             byId('tourTitle').textContent = result ? 'Проверь итог' : title;
             const ownerHint = target === 'eventPicker' && !byId('forecastAdminLink').hidden ? ' Кнопка «Админ-панель» откроет управление этим событием.' : '';
@@ -126,10 +124,15 @@
 
         if (firstVisit()) openGuide(mainLink);
         return {
-            setMarket(id, status) {
+            setMarket(event, status) {
+                const id = event?.id;
+                if (market !== id) {
+                    const example = event?.answers[event.sides[0]] || 'Да';
+                    for (const label of guide.querySelectorAll('[data-example-answer]')) label.textContent = example;
+                }
                 if (tour.open && market !== id) tour.close();
                 const phaseChanged = status !== phase;
-                market = id; phase = status;
+                market = id; phase = status; winner = event?.answers[status] || '';
                 start.hidden = !id;
                 const availability = byId('guideAvailability');
                 availability.textContent = !id && status === 'guest' ? 'Обзор доступен после входа.'

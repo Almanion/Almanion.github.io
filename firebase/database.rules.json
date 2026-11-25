@@ -62,9 +62,9 @@
       ".read": "auth != null && auth.token.firebase.sign_in_provider !== 'anonymous' && auth.uid !== '@liquidity'",
       "head": {
         ".write": "auth != null && auth.token.firebase.sign_in_provider !== 'anonymous' && auth.uid !== '@liquidity' && newData.exists()",
-        ".validate": "newData.hasChildren(['n','id']) && !root.child('physicsForecast/events').child(newData.child('id').val()).exists() && newData.parent().child('events').child(newData.child('id').val()).child('n').val() === newData.child('n').val() && (newData.child('v').exists() === (data.child('v').exists() || newData.parent().child('events').child(newData.child('id').val()).child('question').exists()))",
+        ".validate": "newData.hasChildren(['n','id']) && !root.child('physicsForecast/events').child(newData.child('id').val()).exists() && newData.parent().child('events').child(newData.child('id').val()).child('n').val() === newData.child('n').val() && ((data.child('v').val() === 3 || newData.parent().child('events').child(newData.child('id').val()).child('eventEnd').exists() || newData.parent().child('events').child(newData.child('id').val()).child('answers').exists() || newData.parent().child('events').child(newData.child('id').val()).child('kind').val() === 'deadline') ? newData.child('v').val() === 3 : (newData.child('v').val() === ((data.child('v').exists() || newData.parent().child('events').child(newData.child('id').val()).child('question').exists()) ? 2 : null)))",
         "v": {
-          ".validate": "newData.val() === 2"
+          ".validate": "newData.val() === 2 || newData.val() === 3"
         },
         "n": {
           ".validate": "newData.isNumber() && newData.val() === (data.exists() ? data.val() + 1 : 1)"
@@ -82,7 +82,7 @@
         ],
         "$id": {
           ".write": "auth != null && auth.token.firebase.sign_in_provider !== 'anonymous' && auth.uid !== '@liquidity' && !data.exists() && newData.exists()",
-          ".validate": "newData.hasChildren(['n','actor','at','day','kind']) && newData.parent().parent().child('head/id').val() === $id && newData.parent().parent().child('head/n').val() === newData.child('n').val() && newData.parent().parent().child('lastBy').child(auth.uid).val() === $id && ((newData.child('kind').val() === 'order' || newData.child('kind').val() === 'cancel') ? (root.child('physicsForecast/rounds').child(newData.child('day').val()).child('phase').val() === 'open' && root.child('physicsForecast/rounds').child(newData.child('day').val()).child('endAt').val() > now && newData.child('expires').exists() && (newData.child('kind').val() === 'order' ? (newData.hasChildren(['mode','action','side','qty','limit']) && (newData.child('mode').val() !== 'market' || newData.child('totalLimit').exists())) : newData.child('target').exists())) : (auth.uid === '2M2ZdLQcJAhluPjUVFNJ6MyQrdH2' && newData.parent().parent().child('rounds').child(newData.child('day').val()).child('last').val() === $id && newData.parent().parent().child('rounds').child(newData.child('day').val()).child('phase').val() === newData.child('kind').val() && (newData.child('kind').val() !== 'open' || newData.child('endAt').val() === newData.parent().parent().child('rounds').child(newData.child('day').val()).child('endAt').val())))",
+          ".validate": "newData.hasChildren(['n','actor','at','day','kind']) && newData.parent().parent().child('head/id').val() === $id && newData.parent().parent().child('head/n').val() === newData.child('n').val() && newData.parent().parent().child('lastBy').child(auth.uid).val() === $id && ((newData.child('kind').val() === 'order' || newData.child('kind').val() === 'cancel') ? (root.child('physicsForecast/rounds').child(newData.child('day').val()).child('phase').val() === 'open' && root.child('physicsForecast/rounds').child(newData.child('day').val()).child('endAt').val() > now && newData.child('expires').exists() && (newData.child('kind').val() === 'order' ? (newData.hasChildren(['mode','action','side','qty','limit']) && (newData.child('mode').val() !== 'market' || newData.child('totalLimit').exists())) : newData.child('target').exists())) : (auth.uid === '2M2ZdLQcJAhluPjUVFNJ6MyQrdH2' && newData.parent().parent().child('rounds').child(newData.child('day').val()).child('last').val() === $id))",
           "n": {
             ".validate": "newData.isNumber()"
           },
@@ -102,16 +102,16 @@
             ".validate": "newData.val() === now"
           },
           "kind": {
-            ".validate": "newData.val().matches(/^(open|lock|yes|no|void|order|cancel)$/)"
+            ".validate": "newData.isString() && newData.val().matches(/^(open|deadline|lock|yes|no|third|fourth|void|order|cancel)$/)"
           },
           "endAt": {
-            ".validate": "newData.parent().child('kind').val() === 'open' && newData.isNumber()"
+            ".validate": "(newData.parent().child('kind').val() === 'open' || newData.parent().child('kind').val() === 'deadline') && newData.isNumber()"
           },
           "expires": {
             ".validate": "(newData.parent().child('kind').val() === 'order' || newData.parent().child('kind').val() === 'cancel') && newData.isNumber() && newData.val() >= now && newData.val() <= now + 60000"
           },
           "side": {
-            ".validate": "newData.parent().child('kind').val() === 'order' && (newData.val() === 'yes' || newData.val() === 'no')"
+            ".validate": "newData.parent().child('kind').val() === 'order' && (newData.val() === 'yes' || newData.val() === 'no' || ((newData.val() === 'third' || newData.val() === 'fourth') && root.child('physicsForecast/events').child(newData.parent().child('day').val()).child('answers').child(newData.val()).exists()))"
           },
           "action": {
             ".validate": "newData.parent().child('kind').val() === 'order' && (newData.val() === 'buy' || newData.val() === 'sell')"
@@ -133,6 +133,15 @@
           },
           "$other": {
             ".validate": false
+          },
+          "eventEnd": {
+            ".validate": "newData.parent().child('kind').val() === 'open' && newData.parent().child('question').exists() && newData.isNumber() && newData.val() % 86400000 === 75600000 && newData.val() <= now + 2764800000"
+          },
+          "answers": {
+            ".validate": "newData.parent().child('kind').val() === 'open' && newData.parent().child('question').exists() && newData.hasChildren(['yes','no']) && newData.child('yes').val().toLowerCase() !== newData.child('no').val().toLowerCase() && (!newData.child('third').exists() || (newData.child('third').val().toLowerCase() !== newData.child('yes').val().toLowerCase() && newData.child('third').val().toLowerCase() !== newData.child('no').val().toLowerCase())) && (!newData.child('fourth').exists() || (newData.child('third').exists() && newData.child('fourth').val().toLowerCase() !== newData.child('yes').val().toLowerCase() && newData.child('fourth').val().toLowerCase() !== newData.child('no').val().toLowerCase() && newData.child('fourth').val().toLowerCase() !== newData.child('third').val().toLowerCase()))",
+            "$side": {
+              ".validate": "$side.matches(/^(yes|no|third|fourth)$/) && newData.isString() && newData.val().length <= 40 && newData.val().matches(/^[^ ](.*[^ ])?$/) && !newData.val().contains('\\n') && !newData.val().contains('\\r') && !newData.val().contains('\\t') && !newData.val().contains('  ')"
+            }
           }
         }
       },
@@ -145,7 +154,7 @@
       "rounds": {
         "$day": {
           ".write": "auth != null && auth.uid === '2M2ZdLQcJAhluPjUVFNJ6MyQrdH2' && newData.exists()",
-          ".validate": "newData.hasChildren(['endAt','phase','last']) && (!data.exists() || newData.child('last').val() !== data.child('last').val()) && newData.child('last').val() === newData.parent().parent().child('head/id').val() && newData.parent().parent().child('events').child(newData.child('last').val()).child('day').val() === $day && newData.parent().parent().child('events').child(newData.child('last').val()).child('kind').val() === newData.child('phase').val() && (!data.exists() ? newData.child('phase').val() === 'open' : ((newData.child('phase').val() === 'lock' && data.child('phase').val() === 'open') || (newData.child('phase').val() === 'void' && (data.child('phase').val() === 'lock' || data.child('phase').val() === 'open')) || ((newData.child('phase').val() === 'yes' || newData.child('phase').val() === 'no') && now >= data.child('endAt').val() - 86400000 && (data.child('phase').val() === 'lock' || (data.child('phase').val() === 'open' && now >= data.child('endAt').val())))))",
+          ".validate": "newData.hasChildren(['endAt','phase','last']) && newData.child('last').val() !== data.child('last').val() && newData.child('last').val() === newData.parent().parent().child('head/id').val() && newData.parent().parent().child('events').child(newData.child('last').val()).child('day').val() === $day && newData.child('phase').val() === (newData.parent().parent().child('events').child(newData.child('last').val()).child('kind').val() === 'deadline' ? 'open' : newData.parent().parent().child('events').child(newData.child('last').val()).child('kind').val()) && newData.child('eventEnd').val() === (!data.exists() ? newData.parent().parent().child('events').child(newData.child('last').val()).child('eventEnd').val() : (!data.child('eventEnd').exists() && newData.parent().parent().child('events').child(newData.child('last').val()).child('kind').val() === 'deadline' ? data.child('endAt').val() : data.child('eventEnd').val())) && (!data.exists() ? newData.parent().parent().child('events').child(newData.child('last').val()).child('kind').val() === 'open' : ((newData.parent().parent().child('events').child(newData.child('last').val()).child('kind').val() === 'deadline' && data.child('phase').val() === 'open' && now < data.child('endAt').val()) || (newData.parent().parent().child('events').child(newData.child('last').val()).child('kind').val() === 'lock' && data.child('phase').val() === 'open') || (newData.parent().parent().child('events').child(newData.child('last').val()).child('kind').val() === 'void' && (data.child('phase').val() === 'lock' || data.child('phase').val() === 'open')) || ((newData.parent().parent().child('events').child(newData.child('last').val()).child('kind').val() === 'yes' || newData.parent().parent().child('events').child(newData.child('last').val()).child('kind').val() === 'no' || ((newData.parent().parent().child('events').child(newData.child('last').val()).child('kind').val() === 'third' || newData.parent().parent().child('events').child(newData.child('last').val()).child('kind').val() === 'fourth') && root.child('physicsForecast/events').child($day).child('answers').child(newData.parent().parent().child('events').child(newData.child('last').val()).child('kind').val()).exists())) && now >= (data.child('eventEnd').exists() ? data.child('eventEnd').val() : data.child('endAt').val()) - 86400000 && (data.child('phase').val() === 'lock' || (data.child('phase').val() === 'open' && now >= data.child('endAt').val()))))) && ((newData.parent().parent().child('events').child(newData.child('last').val()).child('kind').val() === 'open' || newData.parent().parent().child('events').child(newData.child('last').val()).child('kind').val() === 'deadline') ? (newData.child('endAt').val() === newData.parent().parent().child('events').child(newData.child('last').val()).child('endAt').val() && newData.child('endAt').val() > now && newData.child('endAt').val() <= now + 2764800000 && (newData.child('eventEnd').exists() ? newData.child('endAt').val() <= newData.child('eventEnd').val() : newData.child('endAt').val() % 86400000 === 75600000)) : newData.child('endAt').val() === data.child('endAt').val())",
           "last": {
             ".validate": "newData.isString() && newData.val().matches(/^[-_a-zA-Z0-9]{20}$/)"
           },
@@ -153,10 +162,13 @@
             ".validate": "newData.isString()"
           },
           "endAt": {
-            ".validate": "newData.isNumber() && (data.exists() ? data.val() === newData.val() : (newData.val() > now && newData.val() <= now + 2764800000 && newData.val() % 86400000 === 75600000))"
+            ".validate": "newData.isNumber() && newData.val() % 60000 === 0"
           },
           "$other": {
             ".validate": false
+          },
+          "eventEnd": {
+            ".validate": "newData.isNumber() && newData.val() % 86400000 === 75600000"
           }
         }
       }

@@ -72,7 +72,6 @@
         return { bottom, top: bottom + span, step };
     }
 
-    const sideNames = { yes: 'Да', no: 'Нет' };
     const pad = 10;
 
     // Use the original timestamps. Within a crowded pixel column keep both extrema and its endpoints.
@@ -97,7 +96,7 @@
         return path + 'H' + x(end).toFixed(1);
     }
 
-    function tradeVolume(trades, start, end, width) {
+    function tradeVolume(trades, start, end, width, side) {
         const count = end === start ? 1 : clamp(Math.floor(width / 12), 1, 120);
         const bins = Array(count).fill(0);
         const indexAt = at => clamp(Math.floor((at - start) / Math.max(1, end - start) * count), 0, count - 1);
@@ -109,6 +108,7 @@
         }
         let total = 0;
         for (let i = low; i < trades.length && trades[i].at <= end; i++) {
+            if (side && trades[i].side !== side) continue;
             bins[indexAt(trades[i].at)] += trades[i].qty;
             total += trades[i].qty;
         }
@@ -126,6 +126,7 @@
                         <button type="button" data-chart-side="yes" aria-pressed="true">Да</button>
                         <button type="button" data-chart-side="no" aria-pressed="false">Нет</button>
                     </div>
+                    <select id="chartSideSelect" aria-label="Исход на графике" hidden></select>
                 </div>
                 <button type="button" id="chartExpand" aria-label="Развернуть график" title="Развернуть график" aria-haspopup="dialog" aria-expanded="false" aria-controls="chartDialog">
                     <svg viewBox="0 0 20 20" aria-hidden="true"><path class="expand-icon" d="M4 8V4h4m4 0h4v4m0 4v4h-4m-4 0H4v-4"/><path class="collapse-icon" d="M3 7h4V3m6 0v4h4m0 6h-4v4m-6 0v-4H3"/></svg>
@@ -185,7 +186,7 @@
         const axis = el('chartAxis'), previousPoint = el('chartPrev'), nextPoint = el('chartNext');
         const compact = matchMedia('(max-width: 759px), (orientation: landscape) and (max-width: 1024px) and (max-height: 540px)');
         const reduced = matchMedia('(prefers-reduced-motion: reduce)');
-        const priceForSide = yes => side === 'yes' ? yes : 100 - yes;
+        const sideSelect = el('chartSideSelect');
         let market = null, online = false, lastSeen = 0, range = 'all', side = 'yes', frame = null, inView = true;
         let pinnedAt = null, hoverAt = null, pointer = null, previousPrice = null, previousTrades = 0, reveal = true;
         let scheduledReading = 0;
@@ -214,6 +215,7 @@
         function selectSide(next) {
             cancelTransitions();
             side = next; card.dataset.side = next; previousPrice = null; reveal = true;
+            sideSelect.value = next;
             for (const button of sides) button.setAttribute('aria-pressed', String(button.dataset.chartSide === next));
         }
 
@@ -276,14 +278,14 @@
             if (!frame) return;
             const { start, end, x, y, h, w, volume, barPaths, live } = frame;
             const inspected = hoverAt ?? pinnedAt, at = clamp(inspected ?? end, start, end);
-            const price = priceForSide(market.chart[pointAt(market.chart, at)].p);
+            const line = market.series[side], price = line[pointAt(line, at)].p;
             const position = inspected === null || start === end ? 100 : 100 * (at - start) / (end - start);
             const sameDay = window.PhysicsForecast.dayKey(at) === window.PhysicsForecast.dayKey(end);
             const timeText = (sameDay ? seconds : dated).format(at);
             const qty = volume ? volume.bins[volume.indexAt(at)] : 0;
             slider.value = String(position);
             slider.style.setProperty('--cursor-position', position + '%');
-            slider.setAttribute('aria-valuetext', timeText + ' по Москве, «' + sideNames[side] + '» ' + percent(price) + (statistics ? ', объём за интервал ' + fmt.format(qty) : ''));
+            slider.setAttribute('aria-valuetext', timeText + ' по Москве, «' + market.answers[side] + '» ' + percent(price) + (statistics ? ', объём за интервал ' + fmt.format(qty) : ''));
             el('chartReadout').textContent = timeText + ' мск' + (inspected === null ? '' : ' · ' + percent(price));
             el('chartState').textContent = inspected !== null ? 'История' : live ? 'Сейчас' : !online ? 'Нет связи' : 'Последняя цена';
             el('chartState').dataset.state = inspected === null && live ? 'live' : 'idle';
@@ -297,7 +299,7 @@
             const px = x(at), py = y(price);
             el('chartHair').setAttribute('d', 'M' + px + ' 3V' + (h - 2));
             el('chartDot').setAttribute('cx', px); el('chartDot').setAttribute('cy', py);
-            tip.children[0].textContent = sideNames[side] + ' · ' + percent(price);
+            tip.children[0].textContent = market.answers[side] + ' · ' + percent(price);
             tip.children[1].textContent = timeText + ' мск';
             if (statistics) {
                 el('chartActiveVolume').setAttribute('d', barPaths[volume.indexAt(at)]);
@@ -311,16 +313,16 @@
 
         function draw(at) {
             if (!market || !svg.clientWidth || !svg.clientHeight) return;
-            const points = market.chart;
+            const points = market.series[side];
             const latest = Math.max(market.openedAt, Math.min(online ? Math.max(at, points.at(-1).at) : lastSeen, market.closedAt ?? market.endAt));
             const span = rangeSpans[range];
             const end = pinnedAt === null ? latest : Math.min(latest, pinnedAt + span);
             const start = Math.max(market.openedAt, end - span);
             const first = pointAt(points, start), last = pointAt(points, end);
-            const lastPrice = priceForSide(points[last].p), current = priceForSide(points[pointAt(points, latest)].p);
-            let low = priceForSide(points[first].p), high = low;
+            const lastPrice = points[last].p, current = points[pointAt(points, latest)].p;
+            let low = points[first].p, high = low;
             for (let i = first + 1; i <= last; i++) {
-                const p = priceForSide(points[i].p);
+                const p = points[i].p;
                 low = Math.min(low, p); high = Math.max(high, p);
             }
             const { bottom, top, step } = scaleFor(low, high);
@@ -328,7 +330,7 @@
             const band = statistics ? clamp(h * .12, 16, 32) : 0, floor = h - band - 12;
             const x = t => end === start ? right : pad + plotWidth * (t - start) / (end - start);
             const y = p => pad + (top - p) / (top - bottom) * (floor - pad);
-            const volume = statistics ? tradeVolume(market.trades, start, end, plotWidth) : null;
+            const volume = statistics ? tradeVolume(market.trades, start, end, plotWidth, market.sides.length > 2 ? side : null) : null;
             const live = online && market.phase === 'open' && at < market.endAt;
             const barPaths = [];
             frame = { start, end, x, y, h, w, volume, live, barPaths };
@@ -362,7 +364,7 @@
                 if (align === 'middle') timeGrid += 'M' + (pad + plotWidth * fraction) + ' ' + pad + 'V' + floor;
             });
             el('chartTimeGrid').setAttribute('d', timeGrid);
-            const path = stepPath(points, first, last, x, p => y(priceForSide(p)), start, end, plotWidth);
+            const path = stepPath(points, first, last, x, y, start, end, plotWidth);
             el('chartLine').setAttribute('d', path);
             el('chartArea').setAttribute('d', path + 'V' + floor + 'H' + x(start) + 'Z');
             el('chartGuide').setAttribute('d', 'M' + pad + ' ' + y(lastPrice) + 'H' + right);
@@ -377,13 +379,13 @@
                 el('chartVolumes').setAttribute('d', barPaths.join(''));
             }
             svg.dataset.live = String(live && end === latest);
-            svg.setAttribute('aria-label', market.question + ' Вероятность «' + sideNames[side] + '» в конце графика ' + percent(lastPrice) + '. Шкала от ' + percent(bottom) + ' до ' + percent(top) + '.');
+            svg.setAttribute('aria-label', market.question + ' Вероятность «' + market.answers[side] + '» в конце графика ' + percent(lastPrice) + '. Шкала от ' + percent(bottom) + ' до ' + percent(top) + '.');
             el('chartPriceTag').textContent = percent(lastPrice); el('chartPriceTag').style.top = y(lastPrice) + 'px';
             el('probability').textContent = percent(current);
             if (statistics) {
                 el('chartLow').textContent = percent(low); el('chartHigh').textContent = percent(high);
                 el('chartVolume').textContent = fmt.format(volume.total);
-                const delta = lastPrice - priceForSide(points[first].p);
+                const delta = lastPrice - points[first].p;
                 el('chartDelta').hidden = !delta;
                 el('chartDelta').dataset.direction = delta > 0 ? 'up' : 'down';
                 el('chartDelta').textContent = (delta > 0 ? '+' : '−') + fmt.format(Math.abs(delta)) + ' п. п.';
@@ -406,7 +408,7 @@
                         el('probability').animate?.(frames, { duration: 220, easing: 'ease-out' });
                         if (motion === 'full' && last > first) {
                             const change = el('chartChange');
-                            change.setAttribute('d', 'M' + x(points[last].at) + ' ' + y(priceForSide(points[last - 1].p)) + 'V' + y(current) + 'H' + right);
+                            change.setAttribute('d', 'M' + x(points[last].at) + ' ' + y(points[last - 1].p) + 'V' + y(current) + 'H' + right);
                             change.animate?.([{ opacity: .75 }, { opacity: 0 }], { duration: 550, easing: 'ease-out' });
                         }
                     }
@@ -419,10 +421,18 @@
         }
 
         function update(next, connected) {
-            if (market?.id !== next.id) reset();
+            if (market?.id !== next.id) {
+                reset();
+                const compactChoices = next.sides.length === 2 && next.sides.every(id => next.answers[id].length <= 12);
+                sides[0].parentElement.hidden = !compactChoices;
+                sideSelect.hidden = compactChoices;
+                sideSelect.replaceChildren(...next.sides.map(id => new Option(next.answers[id], id)));
+                for (const button of sides) button.textContent = next.answers[button.dataset.chartSide];
+            }
             const at = clock();
-            if (connected || online) lastSeen = Math.max(at, next.chart.at(-1).at);
-            else if (!lastSeen) lastSeen = next.chart.at(-1).at;
+            const lastMark = next.series[side].at(-1).at;
+            if (connected || online) lastSeen = Math.max(at, lastMark);
+            else if (!lastSeen) lastSeen = lastMark;
             market = next; online = connected; draw(at);
         }
         function tick(at) { if (frame?.live && inView) draw(at); }
@@ -437,6 +447,7 @@
         for (const button of sides) button.addEventListener('click', () => {
             if (button.dataset.chartSide !== side) { selectSide(button.dataset.chartSide); draw(clock()); }
         });
+        sideSelect.addEventListener('change', () => { selectSide(sideSelect.value); draw(clock()); });
         function pin(at, announce = true) {
             hoverAt = null; pinnedAt = at;
             if (at === null) draw(clock()); else readPoint();
@@ -444,7 +455,7 @@
         }
         function step(forward) {
             if (!frame) return;
-            const at = adjacentTime(market.chart, frame.start, frame.end, pinnedAt ?? frame.end, forward);
+            const at = adjacentTime(market.series[side], frame.start, frame.end, pinnedAt ?? frame.end, forward);
             if (at !== null) pin(forward && at === frame.end ? null : at);
         }
         previousPoint.addEventListener('click', () => step(false));

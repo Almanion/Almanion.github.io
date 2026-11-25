@@ -15,7 +15,7 @@
     <link rel="stylesheet" href="styles/buttons.css?v=20260929-2">
     <link rel="stylesheet" href="style-new.css?v=20260929-2">
     <link rel="stylesheet" href="styles/typography.css?v=20261002-1">
-    <link rel="stylesheet" href="styles/physics-forecast.css?v=9">
+    <link rel="stylesheet" href="styles/physics-forecast.css?v=20261125-outcomes">
 </head>
 <body class="forecast-page" data-no-math>
     <script>window.AlmanionThemeBootstrap.applyBody();</script>
@@ -38,6 +38,7 @@
             <div class="forecast-event-meta">
                 <p class="forecast-kicker" id="lessonDate">Класс 10-1</p>
                 <span class="forecast-state" id="roundState"></span>
+                <time id="marketDeadline" hidden></time>
             </div>
             <h1 id="lessonQuestion">Прогнозы класса</h1>
             <p class="forecast-definition" id="eventCriteria" hidden></p>
@@ -87,9 +88,7 @@
                                 <label><input type="radio" name="action" value="buy" checked><span>Купить</span></label>
                                 <label><input type="radio" name="action" value="sell"><span>Продать</span></label>
                             </fieldset>
-                            <fieldset class="forecast-options"><legend>Лучшая цена за долю</legend>
-                                <label><input type="radio" name="side" value="yes" checked><span><span>Да</span> <b id="yesAsk">—</b></span></label>
-                                <label><input type="radio" name="side" value="no"><span><span>Нет</span> <b id="noAsk">—</b></span></label>
+                            <fieldset class="forecast-options" id="tradeAnswers"><legend>Лучшая цена за долю</legend>
                             </fieldset>
                         </div>
                         <label class="forecast-limit" id="limitField" hidden><span id="limitLabel">Цена за долю, оч.</span><input id="limitPrice" type="text" inputmode="decimal" value="0,50" autocomplete="off"></label>
@@ -120,9 +119,7 @@
                 </section>
                 <section class="forecast-panel forecast-wallet" id="portfolio" aria-labelledby="walletTitle" tabindex="-1">
                     <h2 id="walletTitle">Мой портфель</h2>
-                    <dl><div><dt>Свободные очки</dt><dd id="walletCash">—</dd></div><div><dt>В заявках на покупку</dt><dd id="walletHeld">—</dd></div>
-                    <div><dt>Доли «Да»</dt><dd><span id="walletYes">—</span><button type="button" data-sell="yes" aria-label="Продать доли «Да»" hidden>Продать</button></dd><dd class="forecast-reserve" id="heldYes" hidden></dd></div>
-                    <div><dt>Доли «Нет»</dt><dd><span id="walletNo">—</span><button type="button" data-sell="no" aria-label="Продать доли «Нет»" hidden>Продать</button></dd><dd class="forecast-reserve" id="heldNo" hidden></dd></div></dl>
+                    <dl id="walletBalances"><div><dt>Свободные очки</dt><dd id="walletCash">—</dd></div><div><dt>В заявках на покупку</dt><dd id="walletHeld">—</dd></div></dl>
                     <p class="forecast-footnote" id="walletOutcome"></p>
                 </section>
                 <section class="forecast-panel forecast-orders"><h2 id="orderListTitle" tabindex="-1">Мои открытые заявки</h2><div id="myOrders"></div><p class="forecast-feedback" id="orderFeedback" role="status"></p></section>
@@ -131,8 +128,11 @@
                     <div id="tradeHistory"></div><button id="moreTrades" class="forecast-secondary" type="button" hidden>Показать ещё</button>
                 </section>
                 <section class="forecast-panel forecast-book" id="publicOrders" aria-labelledby="bookTitle">
-                    <h2 id="bookTitle">Предложения по «Да»</h2>
-                    <div class="forecast-columns"><div><h3>Покупают</h3><ol id="bookBids"></ol></div><div><h3>Продают</h3><ol id="bookAsks"></ol></div></div>
+                    <div class="forecast-book-heading"><h2 id="bookTitle">Предложения</h2><select id="bookSide" aria-label="Исход в списке предложений"></select></div>
+                    <div class="forecast-columns">
+                        <table><caption>Покупают</caption><thead><tr><th scope="col">Цена, оч.</th><th scope="col">Доли</th></tr></thead><tbody id="bookBids"></tbody></table>
+                        <table><caption>Продают</caption><thead><tr><th scope="col">Цена, оч.</th><th scope="col">Доли</th></tr></thead><tbody id="bookAsks"></tbody></table>
+                    </div>
                 </section>
             </div>
         </div>
@@ -143,10 +143,10 @@
                 <form method="dialog"><button type="submit" aria-label="Закрыть правила"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><path d="m5 5 10 10M15 5 5 15"/></svg></button></form>
             </header>
             <div class="forecast-guide-body">
-                <p>На старте у тебя <strong>100 виртуальных очков</strong> на все события. Доля верного исхода принесёт 1 очко, другого — 0.</p>
+                <p>На старте у тебя <strong>100 виртуальных очков</strong> на все события. В прогнозе от двух до четырёх вариантов. Каждая доля победившего варианта принесёт 1 очко, остальные — 0.</p>
                 <div class="forecast-guide-example">
-                    <strong>5 долей «Да» по 0,40</strong>
-                    <dl><div><dt>Стоимость</dt><dd>2 очка</dd></div><div><dt>Если «Да»</dt><dd>5 очков</dd></div><div><dt>Прибыль при «Да»</dt><dd>+3 очка</dd></div></dl>
+                    <strong>5 долей «<span data-example-answer>Да</span>» по 0,40</strong>
+                    <dl><div><dt>Стоимость</dt><dd>2 очка</dd></div><div><dt>Если «<span data-example-answer>Да</span>»</dt><dd>5 очков</dd></div><div><dt>Прибыль при верном прогнозе</dt><dd>+3 очка</dd></div></dl>
                 </div>
                 <dl class="forecast-guide-modes">
                     <dt>Сразу</dt><dd>Весь объём по доступным ценам. Если долей мало, сделка не пройдёт.</dd>
@@ -159,11 +159,12 @@
                 </details>
                 <details>
                     <summary>Откуда берётся процент на графике?</summary>
-                    <p>При лучших ценах «Да» 0,48 и 0,52 график покажет середину — 50%. Если разница больше 0,10 или одна сторона пуста, берётся цена последней сделки.</p>
+                    <p>Между ценами покупки 0,48 и продажи 0,52 середина — 0,50. Если разрыв больше 0,10 или одна сторона пуста, берём цену последней сделки по варианту. До первой сделки сохраняем предыдущую оценку.</p>
+                    <p>Для трёх и четырёх вариантов делим оценку каждого на сумму всех оценок. Так их вероятности вместе дают 100%.</p>
                 </details>
                 <details>
                     <summary>Когда подводят итог?</summary>
-                    <p>Торги закроются в конце дня события по Москве или раньше по решению владельца. Он объявит исход. До итога прибыль доступна внутри события. При отмене очки вернутся.</p>
+                    <p>Время закрытия указано у вопроса по Москве. В этот момент заявки снимаются. Владелец может закрыть торги раньше и отдельно объявляет победивший вариант. При отмене прогноза очки вернутся.</p>
                     <p>Очки нельзя купить, передать или обменять на призы.</p>
                 </details>
             </div>
@@ -196,10 +197,10 @@
     <script defer src="script.js?v=20260906-1"></script>
     <script defer src="settings.js?v=20261009-1"></script>
     <script defer src="account.js?v=20260908-1"></script>
-    <script defer src="physics-forecast-core.js?v=4"></script>
-    <script defer src="physics-forecast-chart.js?v=5"></script>
-    <script defer src="physics-forecast-ledger.js?v=1"></script>
-    <script defer src="physics-forecast-guide.js?v=1"></script>
-    <script defer src="physics-forecast.js?v=7"></script>
+    <script defer src="physics-forecast-core.js?v=20261125-outcomes"></script>
+    <script defer src="physics-forecast-chart.js?v=20261125-outcomes"></script>
+    <script defer src="physics-forecast-ledger.js?v=20261125-outcomes"></script>
+    <script defer src="physics-forecast-guide.js?v=20261125-outcomes"></script>
+    <script defer src="physics-forecast.js?v=20261125-outcomes"></script>
 </body>
 </html>
