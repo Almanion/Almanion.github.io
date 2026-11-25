@@ -68,6 +68,7 @@
             disabled = busy || !connected;
             if (!initialized) {
                 panel.open = !current;
+                creating = !current;
                 initialized = true;
             }
             const today = M.dayKey(now());
@@ -128,7 +129,9 @@
             template.value = '';
             question.value = current.question; criteria.value = current.criteria;
             question.setCustomValidity('');
-            date.value = M.dayKey(Math.min(Math.max(now() + M.DAY, current.endAt), now() + 31 * M.DAY));
+            const tomorrow = now() + M.DAY;
+            const next = M.dayKey(Math.max(tomorrow, current.endAt));
+            date.value = next > date.max ? M.dayKey(tomorrow) : next;
             syncDate(); date.focus();
         });
         form.addEventListener('submit', e => {
