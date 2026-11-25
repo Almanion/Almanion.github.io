@@ -1583,8 +1583,9 @@ body:is(.exp-graphite, .exp-sepia) #view-forecasts { --yes: var(--ink); --no: va
 .admin-forecast-metrics > div + div { border-inline-start: 1px solid var(--rule); }
 .admin-forecast-metrics dt { color: var(--quiet); font-size: .86rem; }
 .admin-forecast-metrics dd { margin: 5px 0 0; font-size: clamp(1.4rem, 2.8vw, 2rem); font-weight: 650; line-height: 1.1; font-variant-numeric: tabular-nums; }
-.admin-forecast-picker { display: grid; gap: 5px; min-width: 0; color: var(--quiet); font-size: .87rem; font-weight: 600; }
+.admin-forecast-picker { display: grid; gap: 5px; min-width: 0; overflow-x: clip; color: var(--quiet); font-size: .87rem; font-weight: 600; }
 #forecastPicker { width: 100%; text-overflow: ellipsis; }
+#forecastPicker:focus-visible { outline-offset: -2px; }
 #forecastMarketLink { width: auto; min-height: 44px; color: var(--signal); text-decoration: none; }
 #forecastTape { display: grid; list-style: none; margin: 12px 0 0; padding: 0; }
 #forecastTape:empty { display: none; }
@@ -1604,6 +1605,7 @@ body:is(.exp-graphite, .exp-sepia) #view-forecasts { --yes: var(--ink); --no: va
     .admin-forecast-metrics dt { font-size: .76rem; }
 }
 @media (max-width: 374px) {
+    body.admin-page .admin-nav-item { font-size: 10px; }
     .admin-forecast-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .admin-forecast-metrics > div { margin: 0; padding: 12px; }
     .admin-forecast-metrics > div:nth-child(3) { border-inline-start: 0; }

@@ -222,13 +222,14 @@ test('owner manages multiple events, sees reconciled statistics and preserves ev
     await mockClass(page,'owner'); await page.goto('/admin.html#forecasts');
     const picker=page.locator('#forecastPicker'), title=page.locator('#manageTitle');
     await expect(title).toHaveText(M.physics.question);
-    const legacy=await picker.inputValue(), match='Выиграет ли 10-1 у 10-2 в пятницу?', club='Состоится ли математический кружок?';
+    const legacy=await picker.inputValue(), match='Выиграет ли сборная 10-1 товарищеский матч у сборной 10-2 в пятницу после занятий?', club='Состоится ли математический кружок?';
     const create=page.getByRole('button',{name:'Открыть прогноз',exact:true});
     await page.locator('#showCreate').click();
     await page.locator('#eventTemplate').selectOption({label:'Школьный матч'});
     await page.locator('#eventQuestion').fill(match);
     await page.locator('#newCriteria').fill('Победа по итоговому счёту.');
     await create.click(); await expect(title).toHaveText(match);
+    expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1)).toBe(true);
     const first=await picker.inputValue();
     expect(first).not.toBe(legacy);
     await page.locator('#forecastMarketLink').click();
