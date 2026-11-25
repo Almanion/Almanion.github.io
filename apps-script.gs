@@ -432,11 +432,14 @@ function editEmailChallenge(key, edit) {
 
 function verificationApi(action, payload, privileged) {
   const properties = PropertiesService.getScriptProperties();
-  const apiKey = properties.getProperty('FIREBASE_WEB_API_KEY');
-  if (privileged) payload.targetProjectId = properties.getProperty('FIREBASE_PROJECT_ID') || 'almanion-70120';
-  const response = UrlFetchApp.fetch('https://identitytoolkit.googleapis.com/v1/accounts:' + action + '?key=' + encodeURIComponent(apiKey), {
+  const project = properties.getProperty('FIREBASE_PROJECT_ID') || 'almanion-70120';
+  const base = 'https://identitytoolkit.googleapis.com/v1/';
+  const url = privileged
+    ? base + 'projects/' + encodeURIComponent(project) + '/accounts:' + action
+    : base + 'accounts:' + action + '?key=' + encodeURIComponent(properties.getProperty('FIREBASE_WEB_API_KEY'));
+  const response = UrlFetchApp.fetch(url, {
     method: 'post', contentType: 'application/json', muteHttpExceptions: true,
-    headers: privileged ? { Authorization: 'Bearer ' + ScriptApp.getOAuthToken() } : {},
+    headers: privileged ? { Authorization: 'Bearer ' + ScriptApp.getOAuthToken(), 'X-Goog-User-Project': project } : {},
     payload: JSON.stringify(payload)
   });
   if (response.getResponseCode() !== 200) throw new Error('Identity service unavailable');

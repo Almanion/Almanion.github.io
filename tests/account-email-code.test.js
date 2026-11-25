@@ -13,8 +13,10 @@ function fixture(options = {}) {
             const body = JSON.parse(req.payload);
             switch (url.pathname) {
             case '/v1/accounts:lookup': return { status: users[body.idToken] ? 200 : 400, body: { users: [users[body.idToken]] } };
-            case '/v1/accounts:sendOobCode': {
+            case '/v1/projects/almanion-rules-test/accounts:sendOobCode': {
                 assert.equal(req.headers.Authorization, 'Bearer owner');
+                assert.equal(req.headers['X-Goog-User-Project'], 'almanion-rules-test');
+                assert.equal(url.search, '');
                 assert.equal(body.returnOobLink, true);
                 assert.equal(body.requestType, 'VERIFY_EMAIL');
                 const token = 'test-action-' + nextAction++;
