@@ -17,6 +17,9 @@ const M = require('../physics-forecast-core');
             await context.database().ref('adminRoles').update({
                 a:null, b:{forecastAccess:false}, 'site-admin':{siteAdmin:true, forecastAccess:true}
             });
+            await context.database().ref('accountDirectory/balance-player').set({
+                email:'balance-player@example.test', displayName:'Balance player', lastSeen:Date.now()
+            });
         });
         let idCounter = 0;
         function patch(actor, n, kind, overrides = {}) {
@@ -160,6 +163,44 @@ const M = require('../physics-forecast-core');
             await assertSucceeds(book.update(await advanced(M.OWNER,'fourth',{day:fourId})));
             await assertFails(book.update(await advanced(M.OWNER,'yes',{day:fourId})));
         }
-        console.log('Forecast rules passed owner deadlines, server-clock expiry, immutable answers and declared winners.');
+        async function balanceChange(actor, fields = {}) {
+            const next = book.child('events').push().key;
+            const { n: previous } = (await book.child('head').get()).val();
+            const n = previous + 1;
+            const event = { n, at:{'.sv':'timestamp'}, actor, kind:'balance', uid:'balance-player',
+                amount:0, expected:M.INITIAL, expires:Date.now()+30000, ...fields };
+            return { head:{ id:next, n, v:4 }, ['events/'+next]:event, ['lastBy/'+actor]:next };
+        }
+        for (const [source, uid] of [[a,'a'], [siteAdmin,'site-admin'], [db(M.OWNER,'anonymous'), M.OWNER]]) {
+            await assertFails(at(source).update(await balanceChange(uid)));
+        }
+        for (const fields of [
+            { uid:'@liquidity' }, { uid:'not-registered' }, { uid:null },
+            { amount:-1 }, { amount:100000001 }, { amount:2.5 }, { amount:null },
+            { expected:-1 }, { expected:1.5 }, { expected:null },
+            { expires:null }, { expires:Date.now()-1000 }, { expires:Date.now()+120000 }, { day:fourId }
+        ]) {
+            await assertFails(book.update(await balanceChange(M.OWNER, fields)));
+        }
+        const rounds = (await book.child('rounds').get()).val();
+        const adjustment = await balanceChange(M.OWNER);
+        await assertFails(book.update({ ...adjustment, head:{ ...adjustment.head, v:3 } }));
+        await assertSucceeds(book.update(adjustment));
+        assert.equal((await book.child('events/'+adjustment.head.id+'/amount').get()).val(), 0);
+        assert.deepEqual((await book.child('rounds').get()).val(), rounds);
+        await assertFails(book.child('events/'+adjustment.head.id+'/amount').set(2000));
+        await assertFails(book.child('events/'+adjustment.head.id).remove());
+        // Trading participants can predate the account directory.
+        await assertSucceeds(book.update(await balanceChange(M.OWNER,{uid:'a', amount:100000000})));
+        await assertSucceeds(book.update(await balanceChange(M.OWNER,{uid:M.OWNER, amount:50})));
+        const after = await advanced(M.OWNER,'open',open);
+        await assertFails(book.update(after));
+        after.head.v = 4;
+        await assertSucceeds(book.update(after));
+        const newOrder = await advanced('balance-player','order',{day:after.head.id});
+        await assertFails(at(db('balance-player')).update(newOrder));
+        newOrder.head.v = 4;
+        await assertSucceeds(at(db('balance-player')).update(newOrder));
+        console.log('Forecast rules passed deadlines and immutable, owner-only balance adjustments.');
     } finally { await env.cleanup(); }
 })().catch(e => { console.error(e); process.exitCode=1; });

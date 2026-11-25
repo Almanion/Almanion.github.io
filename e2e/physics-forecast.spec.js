@@ -3,21 +3,24 @@ const { test, expect } = require('@playwright/test');
 const M = require('../physics-forecast-core');
 test.use({ serviceWorkers: 'block' });
 
-async function mockClass(page, who = 'classmate', firstVisit = false) {
+async function mockClass(page, who = 'classmate', firstVisit = false, accounts = {}) {
     await page.route('https://www.gstatic.com/firebasejs/**', route => route.fulfill({ contentType:'application/javascript', body:'' }));
     await page.route('**/account.js*', route => route.fulfill({ contentType:'application/javascript', body:'' }));
-    await page.addInitScript(fixture, { who, owner: M.OWNER, firstVisit });
+    await page.addInitScript(fixture, { who, owner: M.OWNER, firstVisit, accounts });
 }
-function fixture({ who, owner, firstVisit }) {
+function fixture({ who, owner, firstVisit, accounts }) {
     if (!firstVisit) localStorage.setItem('almanion:forecast:guide-seen:v1', '1');
     const clock = Date.now(), d = new Date(clock + 10800000).toISOString().slice(0,10);
     const id = '00000000000000000000';
     const saved = sessionStorage.getItem('forecast-test-data');
-    const data = { '.info': { connected:true, serverTimeOffset:0 }, physicsForecast: saved ? JSON.parse(saved) : {
+    const data = { accountDirectory: accounts, '.info': { connected:true, serverTimeOffset:0 }, physicsForecast: saved ? JSON.parse(saved) : {
         events:{[id]:{day:d,n:1,at:clock-160000,actor:owner,kind:'open',endAt:Date.parse(d+'T00:00:00+03:00')+86400000}},
         rounds:{[d]:{last:id,phase:'open',endAt:Date.parse(d+'T00:00:00+03:00')+86400000}},head:{id,n:1}} };
     const listeners = new Map(), sessions = new Set();
-    function value(path) { return path.split('/').filter(Boolean).reduce((obj,k)=>obj?.[k],data) ?? null; }
+    function value(path) {
+        if (path.startsWith('accountDirectory') && auth.currentUser?.uid !== owner) return null;
+        return path.split('/').filter(Boolean).reduce((obj,k)=>obj?.[k],data) ?? null;
+    }
     function snap(path) { const val = structuredClone(value(path)); return { val:()=>val, exists:()=>val!==null,
         forEach:cb=>Object.entries(val || {}).sort((a,b)=>a[1].n-b[1].n).forEach(([key,v])=>cb({key,val:()=>v})) }; }
     function emit(path) { listeners.get(path)?.forEach(cb => cb(snap(path))); }
@@ -502,6 +505,62 @@ test('offline management disables confirmation and a cancelled forecast refunds 
     await page.locator('#forecastMarketLink').click();
     await expect(page.locator('#placeOrder')).toBeDisabled();
     await expect(page.locator('#walletCash')).toHaveText('100 оч.');
+});
+
+test('owner sets available points on mobile while an existing order remains funded', async ({ page }) => {
+    await page.setViewportSize({ width:390, height:844 });
+    await mockClass(page, 'owner', false, {
+        classmate: { displayName:'Саша', email:'classmate@example.test' },
+        newcomer: { displayName:'Аня', email:'newcomer@example.test' }
+    });
+    await page.goto('/physics-forecast.html');
+    await page.evaluate(() => window.changeForecastAccount({ uid:'classmate', isAnonymous:false }));
+    await expect(page.locator('#walletCash')).toHaveText('100 оч.');
+    await page.locator('#buyUnit').selectOption('shares');
+    await page.locator('#orderMode label:has([value=limit])').click();
+    await page.locator('#limitPrice').fill('0,25');
+    await page.locator('#quantity').fill('10');
+    await page.locator('#placeOrder').click();
+    await expect(page.locator('#walletCash')).toHaveText('97,5 оч.');
+
+    await page.goto('/admin.html#forecasts');
+    await page.locator('#forecastBalances summary').click();
+    const search = page.locator('#forecastBalanceSearch');
+    const list = page.locator('#forecastBalanceList');
+    await search.fill('newcomer@example.test');
+    await expect(list.locator('li')).toHaveCount(1);
+    await expect(list).toContainText('Аня');
+    await expect(list).toContainText('100');
+    await search.fill('classmate@example.test');
+    await expect(list.locator('li')).toHaveCount(1);
+    await expect(list).toContainText('Саша');
+    await expect(list).toContainText('97,5');
+    await expect(list).toContainText('2,5');
+    await list.getByRole('button', { name:'Изменить баланс Саша' }).click();
+    await page.locator('#forecastBalanceAmount').fill('0');
+    await page.locator('#forecastBalanceSave').click();
+    const dialog = page.getByRole('dialog', { name:'Изменить баланс?' });
+    await expect(dialog).toContainText('Саша');
+    await dialog.getByRole('button', { name:'Подтвердить', exact:true }).click();
+    await expect(page.locator('#forecastBalanceFeedback')).toContainText('Доступно 0 оч.');
+    const command = await page.evaluate(() => {
+        const { head, events } = JSON.parse(sessionStorage.getItem('forecast-test-data'));
+        return { version:head.v, command:events[head.id] };
+    });
+    expect(command.version).toBe(4);
+    expect(command.command).toMatchObject({ actor:M.OWNER, kind:'balance', uid:'classmate', amount:0, expected:9750 });
+    expect(command.command).not.toHaveProperty('day');
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true);
+
+    await page.locator('#forecastMarketLink').click();
+    await page.evaluate(() => window.changeForecastAccount({ uid:'classmate', isAnonymous:false }));
+    await expect(page.locator('#walletCash')).toHaveText('0 оч.');
+    await expect(page.locator('#forecastAdminLink')).toBeHidden();
+    await expect(page.locator('#forecastBalances')).toHaveCount(0);
+    await expect(page.getByText('Балансы участников', { exact:true })).toHaveCount(0);
+    await expect(page.locator('#myOrders')).toContainText('10 долей');
+    await page.locator('#myOrders').getByRole('button', { name:'Снять заявку' }).click();
+    await expect(page.locator('#walletCash')).toHaveText('2,5 оч.');
 });
 
 test('a peer trade moves the live chart while a historical reading stays pinned; reconnect resumes the live clock', async ({ page }) => {

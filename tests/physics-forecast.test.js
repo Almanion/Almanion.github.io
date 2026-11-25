@@ -6,7 +6,7 @@ function fixture() {
     const state = M.create(), log = [];
     let at = M.endOfDay(day) - 2 * M.DAY + 500;
     function add(command, actor = M.OWNER, key = day) {
-        const event = { ...command, actor, day: key, n: state.n + 1, at: ++at };
+        const event = { ...command, actor, ...(command.kind === 'balance' ? {} : { day: key }), n: state.n + 1, at: ++at };
         const id = 'r' + event.n;
         log.push([id, event]);
         return { ...M.apply(state, event, id), id };
@@ -16,6 +16,31 @@ function fixture() {
     }
     add({ kind: 'open', endAt: M.endOfDay(day) });
     return { state, log, add, order, m: state.markets.get(day), time(value) { at = value; } };
+}
+{
+    const f = fixture(), { state, m } = f;
+    const reserve = f.order('reader', 'yes', 'buy', 10, 25);
+    assert.equal(reserve.left, 10);
+    const adjustment = { kind: 'balance', uid: 'reader', amount: 0, expected: M.INITIAL - 250 };
+    assert.equal(f.add(adjustment, 'reader').error, 'invalid');
+    assert.equal(f.add({ ...adjustment, expected: M.INITIAL }).error, 'balanceChanged');
+    const { before, after } = f.add(adjustment);
+    assert.deepEqual([before, after], [9750, 0]);
+    assert.equal(M.available(state, 'reader', day), 0);
+    assert.equal(M.available(state, 'another', day), M.INITIAL);
+    assert.equal(M.held(m, 'reader').cash, 250);
+    assert.equal(f.order('reader', 'yes', 'buy', 1, 51, 'market').error, 'cash');
+    assert.equal(f.add({ kind: 'cancel', target: reserve.id }, 'reader').error, undefined);
+    assert.equal(M.available(state, 'reader', day), 250);
+
+    assert.equal(f.add({ ...adjustment, expected: 250, amount: 15049 }).error, undefined);
+    assert.equal(f.order('reader', 'yes', 'buy', 1, 51, 'market').cash, 51);
+    const row = M.standings(state, 'live').find(player => player.uid === 'reader');
+    assert.equal(row.settled, 15049);
+    assert.equal(row.live, 15049);
+    const replayed = M.create();
+    f.log.forEach(([id, entry]) => M.apply(replayed, entry, id));
+    assert.deepEqual(replayed, state);
 }
 {
     const state = M.create(), entries = [];

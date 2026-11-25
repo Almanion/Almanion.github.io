@@ -58,7 +58,11 @@
 
     async function append({ database, actor, command, now, active }) {
         const admin = !['order', 'cancel'].includes(command.kind);
-        if (admin && (actor !== M.OWNER || !['open', 'deadline', 'lock', 'void', ...M.SIDE_IDS].includes(command.kind))) throw Error(M.errors.invalid);
+        const balance = command.kind === 'balance';
+        if (admin && (actor !== M.OWNER || !['open', 'deadline', 'lock', 'void', 'balance', ...M.SIDE_IDS].includes(command.kind))) {
+            throw Error(M.errors.invalid);
+        }
+        if (balance && !M.validBalanceChange(command)) throw Error(M.errors.invalid);
         const root = database.ref('physicsForecast');
         const id = root.child('events').push().key;
         if (command.kind === 'open') command = { ...command, day: id };
@@ -76,9 +80,10 @@
             const n = (head?.n || 0) + 1;
             const event = { ...command, actor, n, at: firebase.database.ServerValue.TIMESTAMP };
             const patch = { head: { n, id }, ['events/' + id]: event, ['lastBy/' + actor]: id };
-            if (head?.v === 3 || command.eventEnd !== undefined || command.answers || command.kind === 'deadline') patch.head.v = 3;
+            if (head?.v === 4 || balance) patch.head.v = 4;
+            else if (head?.v === 3 || command.eventEnd !== undefined || command.answers || command.kind === 'deadline') patch.head.v = 3;
             else if (head?.v === 2 || command.kind === 'open') patch.head.v = 2;
-            if (admin) {
+            if (admin && !balance) {
                 const creating = command.kind === 'open';
                 const previous = creating ? null : (await root.child('rounds/' + command.day).get()).val();
                 checkSession();

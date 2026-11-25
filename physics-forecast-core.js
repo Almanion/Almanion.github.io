@@ -3,6 +3,7 @@
 
     const DAY = 86400000;
     const INITIAL = 10000; // Integer hundredths of a point throughout the exchange.
+    const MAX_BALANCE = 100000000;
     const MAX_QTY = 100;
     const OWNER = '2M2ZdLQcJAhluPjUVFNJ6MyQrdH2';
     const MAKER = '@liquidity';
@@ -46,7 +47,7 @@
     }
 
     function create() {
-        return { markets: new Map(), receipts: new Map(), n: 0 };
+        return { markets: new Map(), participants: new Set(), adjustments: new Map(), receipts: new Map(), n: 0 };
     }
 
     function emptyPosition(market) {
@@ -68,8 +69,12 @@
         return reserved;
     }
 
+    function startingBalance(state, uid) {
+        return INITIAL + (state.adjustments.get(uid) ?? 0);
+    }
+
     function available(state, uid, marketId, at) {
-        let cash = INITIAL;
+        let cash = startingBalance(state, uid);
         for (const market of state.markets.values()) {
             if (market.phase === 'void') continue;
             const pos = position(market, uid);
@@ -126,7 +131,8 @@
                 if (uid === MAKER) continue;
                 let player = players.get(uid);
                 if (!player) {
-                    player = { uid, settled: INITIAL, live: INITIAL };
+                    const balance = startingBalance(state, uid);
+                    player = { uid, settled: balance, live: balance };
                     players.set(uid, player);
                 }
                 if (market.phase === 'void') continue;
@@ -203,8 +209,25 @@
         shares: 'Недостаточно свободных долей для продажи.', depth: 'Не хватает встречных заявок по этой цене. Уменьшите количество или задайте свою цену.',
         own: 'На пути исполнения ваша встречная заявка. Сначала снимите её.',
         limit: 'У вас уже 20 открытых заявок на это событие.', requote: 'Цена изменилась. Проверьте котировку и подтвердите заново.',
-        missing: 'Эта заявка уже исполнена или снята.', invalid: 'Действие недоступно.'
+        missing: 'Эта заявка уже исполнена или снята.', invalid: 'Действие недоступно.',
+        balanceChanged: 'Баланс изменился. Проверь текущую сумму и подтверди заново.'
     };
+
+    function validBalanceChange({ uid, amount, expected }) {
+        return typeof uid === 'string' && /^[-_a-zA-Z0-9]{1,128}$/.test(uid)
+            && Number.isSafeInteger(amount) && amount >= 0 && amount <= MAX_BALANCE
+            && Number.isSafeInteger(expected) && expected >= 0;
+    }
+
+    function changeBalance(state, event) {
+        if (event.actor !== OWNER || event.day !== undefined || !validBalanceChange(event)) return { error: 'invalid' };
+        const before = available(state, event.uid, undefined, event.at);
+        if (before !== event.expected) return { error: 'balanceChanged' };
+        const adjustment = startingBalance(state, event.uid) - INITIAL + event.amount - before;
+        if (!Number.isSafeInteger(adjustment)) return { error: 'invalid' };
+        state.adjustments.set(event.uid, adjustment);
+        return { before, after: event.amount };
+    }
 
     function preview(state, e, now) {
         const market = state.markets.get(e.day);
@@ -278,9 +301,12 @@
     function apply(state, e, id) {
         if (e.n !== state.n + 1) throw new Error('Разрыв журнала рынка');
         state.n = e.n;
+        if (e.kind === 'order' || e.kind === 'cancel') state.participants.add(e.actor);
         const market = state.markets.get(e.day);
         let receipt = { error: 'invalid' };
-        if (e.kind === 'open' && e.actor === OWNER && !market) {
+        if (e.kind === 'balance') {
+            receipt = changeBalance(state, e);
+        } else if (e.kind === 'open' && e.actor === OWNER && !market) {
             const details = eventDetails(e, id);
             if (details) {
                 state.markets.set(e.day, openMarket(e, details));
@@ -307,9 +333,9 @@
         state.receipts.set(id, receipt);
         return receipt;
     }
-    const api = { DAY, OWNER, MAKER, INITIAL, MAX_QTY, physics, QUESTION_LIMIT, CRITERIA_LIMIT, SIDE_IDS, DEFAULT_ANSWERS, ANSWER_LIMIT,
+    const api = { DAY, OWNER, MAKER, INITIAL, MAX_BALANCE, MAX_QTY, physics, QUESTION_LIMIT, CRITERIA_LIMIT, SIDE_IDS, DEFAULT_ANSWERS, ANSWER_LIMIT,
         dayKey, endOfDay, deadline, validDeadline, validAnswers, create, status, held, position, available,
-        ranked, quotePrice, midpoint, standings, preview, maxOrderSize, apply, errors };
+        ranked, quotePrice, midpoint, standings, preview, maxOrderSize, validBalanceChange, apply, errors };
     if (typeof module === 'object' && module.exports) module.exports = api;
     else root.PhysicsForecast = api;
 }(globalThis));

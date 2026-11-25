@@ -14,7 +14,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="styles/typography.css?v=20261002-1">
     <link rel="stylesheet" href="styles/physics-forecast.css?v=20261125-outcomes">
-    <link rel="stylesheet" href="styles/admin.css?v=20261125-forecasts">
+    <link rel="stylesheet" href="styles/admin.css?v=20261125-balances">
 </head>
 <body class="admin-page">
 <script>window.AlmanionThemeBootstrap.applyBody();</script>
@@ -255,6 +255,31 @@
                             <div><dt title="Уникальные участники с исполненными сделками">Участники</dt><dd id="forecastTraders">—</dd></div>
                             <div><dt>Сделки</dt><dd id="forecastFills">—</dd></div>
                         </dl>
+                        <details class="forecast-panel admin-forecast-balances" id="forecastBalances">
+                            <summary>Балансы участников</summary>
+                            <label class="admin-balance-field" for="forecastBalanceSearch">
+                                Найти участника
+                                <input id="forecastBalanceSearch" type="search" placeholder="Имя, почта или UID" autocomplete="off">
+                            </label>
+                            <form class="admin-balance-editor" id="forecastBalanceEditor" aria-labelledby="forecastBalanceAccount" hidden>
+                                <div class="admin-balance-editor-title">
+                                    <h3 id="forecastBalanceAccount"></h3>
+                                    <p id="forecastBalanceCurrent"></p>
+                                </div>
+                                <label class="admin-balance-field" for="forecastBalanceAmount">
+                                    Новый доступный баланс, оч.
+                                    <input id="forecastBalanceAmount" type="text" inputmode="decimal" autocomplete="off" maxlength="20" required>
+                                </label>
+                                <div class="admin-balance-actions">
+                                    <button type="button" class="forecast-secondary" id="forecastBalanceCancel">Отмена</button>
+                                    <button type="submit" class="forecast-primary" id="forecastBalanceSave">Сохранить</button>
+                                </div>
+                            </form>
+                            <p class="forecast-feedback" id="forecastBalanceFeedback" role="status"></p>
+                            <p class="forecast-footnote" id="forecastBalanceStatus" role="status"></p>
+                            <ul id="forecastBalanceList" class="admin-balance-list" aria-label="Балансы участников"></ul>
+                            <button type="button" id="forecastMoreBalances" class="forecast-secondary" hidden>Показать ещё</button>
+                        </details>
                         <label class="admin-forecast-picker" id="forecastPickerLabel">Событие<select id="forecastPicker"></select></label>
                         <section class="forecast-panel forecast-admin" id="ownerTools" aria-label="Действия с событием" hidden>
                             <div class="forecast-admin-switch" role="group" aria-label="Действия владельца">
@@ -335,11 +360,11 @@
     <script src="firebase-config.js?v=20260903-3"></script>
     <script src="admin-dialogs.js?v=20261118-workspace"></script>
     <script src="admin-app.js?v=20261118-workspace"></script>
-    <script src="physics-forecast-core.js?v=20261125-outcomes"></script>
-    <script src="physics-forecast-ledger.js?v=20261125-outcomes"></script>
+    <script src="physics-forecast-core.js?v=20261125-balances"></script>
+    <script src="physics-forecast-ledger.js?v=20261125-balances"></script>
     <script src="physics-forecast-chart.js?v=20261125-outcomes"></script>
     <script src="physics-forecast-admin.js?v=20261125-outcomes"></script>
-    <script src="admin-forecasts.js?v=20261125-outcomes"></script>
+    <script src="admin-forecasts.js?v=20261125-balances"></script>
     <script src="admin-dashboard.js?v=20261125-forecasts"></script>
 </body>
 </html>

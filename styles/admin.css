@@ -1594,6 +1594,41 @@ body:is(.exp-graphite, .exp-sepia) #view-forecasts { --yes: var(--ink); --no: va
 #forecastTape li > div:last-child { text-align: right; font-variant-numeric: tabular-nums; }
 #forecastTape span, #forecastTape time { font-size: .8rem; color: var(--quiet); }
 #forecastMoreTrades { margin-top: 10px; }
+#view-forecasts .admin-forecast-balances { grid-column: 1 / -1; min-width: 0; padding: 0 clamp(14px, 2.2vw, 24px); }
+#view-forecasts .admin-forecast-balances[open] { padding-bottom: 16px; }
+.admin-forecast-balances > summary { min-height: 56px; }
+.admin-forecast-balances > summary::after { flex: none; }
+.admin-balance-field { display: grid; gap: 4px; min-width: 0; color: var(--quiet); font-size: .86rem; font-weight: 600; }
+.admin-balance-field input { width: 100%; font: inherit; font-size: 1rem; font-weight: 400; }
+.admin-balance-editor {
+    display: flex; flex-wrap: wrap; align-items: end; gap: 12px 16px; margin-top: 12px;
+    padding: 12px; border: 1px solid var(--rule); border-radius: 10px; background: var(--inset);
+}
+.admin-balance-editor-title { flex: 1 1 12rem; min-width: 0; overflow-wrap: anywhere; }
+.admin-balance-editor-title h3 { margin: 0; font-size: .98rem; }
+.admin-balance-editor-title p { margin: 4px 0 0; font-size: .85rem; color: var(--quiet); }
+.admin-balance-editor .admin-balance-field { flex: 1 1 10rem; }
+.admin-balance-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.admin-forecast-balances p:empty, .admin-balance-list:empty { display: none; }
+.admin-balance-list { list-style: none; display: grid; padding: 0; margin: 12px 0 0; }
+.admin-balance-list li {
+    display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; gap: 6px clamp(10px, 2vw, 20px);
+    border-top: 1px solid var(--rule); padding-block: 10px;
+}
+.admin-balance-identity { min-width: 0; overflow-wrap: anywhere; }
+.admin-balance-identity small { display: block; color: var(--quiet); }
+.admin-balance-list dl { display: grid; grid-template-columns: repeat(2, minmax(5.3rem, auto)); gap: 12px; margin: 0; }
+.admin-balance-list dt { font-size: .76rem; color: var(--quiet); }
+.admin-balance-list dd { margin: 0; font-weight: 650; font-variant-numeric: tabular-nums; }
+@container (max-width: 550px) {
+    .admin-balance-list li {
+        grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "identity action" "values action";
+    }
+    .admin-balance-list .admin-balance-identity { grid-area: identity; }
+    .admin-balance-list dl { grid-area: values; grid-template-columns: repeat(2, minmax(0, auto)); gap: 6px 12px; }
+    .admin-balance-list dd { font-size: .83rem; overflow-wrap: anywhere; }
+    .admin-balance-list button { grid-area: action; }
+}
 @container (min-width: 740px) {
     #forecastWorkspace { grid-template-columns: minmax(250px, .76fr) minmax(0, 1.24fr); align-items: start; }
     .admin-forecast-metrics, .admin-forecast-picker, #forecastWorkspace:has(#forecastEventData[hidden]) #ownerTools { grid-column: 1 / -1; }
