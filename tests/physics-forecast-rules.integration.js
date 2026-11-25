@@ -7,12 +7,16 @@ const M = require('../physics-forecast-core');
 (async function () {
     const env = await initializeTestEnvironment({ projectId:'almanion-rules-test', database:{ rules:fs.readFileSync('firebase/database.rules.json','utf8') } });
     try {
-        const db = uid => env.authenticatedContext(uid, { email:uid + '@example.test', firebase:{ sign_in_provider:'password' } }).database();
-        const owner = db(M.OWNER), a = db('a'), b = db('b'), other = db('stranger');
+        const db = (uid, provider = 'password') => env.authenticatedContext(uid, { firebase:{ sign_in_provider:provider } }).database();
+        const owner = db(M.OWNER), a = db('a'), b = db('b', 'google.com');
+        const siteAdmin = db('site-admin'), player = db('new-player');
+        const guests = [env.unauthenticatedContext().database(), db('guest', 'anonymous')];
         const day = M.dayKey(Date.now()), endAt = M.endOfDay(day);
         await env.withSecurityRulesDisabled(async context => {
             await context.database().ref('physicsForecast').remove();
-            await context.database().ref('adminRoles').update({'a/forecastAccess':true,'b/forecastAccess':true});
+            await context.database().ref('adminRoles').update({
+                a:null, b:{forecastAccess:false}, 'site-admin':{siteAdmin:true, forecastAccess:true}
+            });
         });
         let idCounter = 0;
         function patch(actor, n, kind, overrides = {}) {
@@ -27,12 +31,12 @@ const M = require('../physics-forecast-core');
             return updates;
         }
         const at = source => source.ref('physicsForecast');
-        await assertFails(at(other).once('value'));
-        await assertFails(at(env.unauthenticatedContext().database()).once('value'));
-        await assertFails(a.ref('adminRoles/a/forecastAccess').set(true));
+        for (const db of guests) await assertFails(at(db).once('value'));
         await assertFails(at(a).update(patch('a',1,'open')));
+        await assertFails(at(siteAdmin).update(patch('site-admin',1,'open')));
         await assertSucceeds(at(owner).update(patch(M.OWNER,1,'open')));
-        await assertSucceeds(at(a).child('events').once('value'));
+        for (const db of [a, b, siteAdmin]) await assertSucceeds(at(db).child('events').orderByChild('n').once('value'));
+        for (const db of guests) await assertFails(at(db).update(patch('guest',2,'order')));
         await assertFails(at(a).child('wallet/a').set(1000000));
         await assertFails(at(a).update(patch('b',2,'order')));
         await assertFails(at(a).update(patch('a',2,'order',{qty:-1})));
@@ -47,15 +51,22 @@ const M = require('../physics-forecast-core');
         const loser = concurrent[0].status === 'rejected' ? 'a' : 'b';
         await assertSucceeds(at(loser === 'a'?a:b).update(patch(loser,3,'order')));
         await assertFails(at(a).child('events/' + x.head.id + '/limit').set(1));
-        await assertFails(at(a).update(patch('a',4,'lock')));
-        await assertFails(at(owner).update(patch(M.OWNER,4,'yes')));
-        await assertSucceeds(at(owner).update(patch(M.OWNER,4,'lock')));
-        await assertFails(at(owner).update(patch(M.OWNER,5,'order')));
-        await assertSucceeds(at(owner).update(patch(M.OWNER,5,'yes')));
-        await assertFails(at(owner).update(patch(M.OWNER,6,'void')));
+        const order = patch('new-player',4,'order',{mode:'limit',limit:25});
+        delete order['events/' + order.head.id].totalLimit;
+        await assertSucceeds(at(player).update(order));
+        await new Promise(resolve => setTimeout(resolve, 550)); // The ledger limits each player to two writes per second.
+        const cancel = {target:order.head.id, expires:Date.now()+30000};
+        await assertFails(at(a).update(patch('a',5,'cancel',cancel)));
+        await assertSucceeds(at(player).update(patch('new-player',5,'cancel',cancel)));
+        await assertFails(at(a).update(patch('a',6,'lock')));
+        await assertFails(at(siteAdmin).update(patch('site-admin',6,'void')));
+        await assertFails(at(owner).update(patch(M.OWNER,6,'yes')));
+        await assertSucceeds(at(owner).update(patch(M.OWNER,6,'lock')));
+        await assertFails(at(owner).update(patch(M.OWNER,7,'order')));
+        for (const kind of ['yes','no','void']) await assertFails(at(siteAdmin).update(patch('site-admin',7,kind)));
+        await assertSucceeds(at(owner).update(patch(M.OWNER,7,'yes')));
+        await assertFails(at(owner).update(patch(M.OWNER,8,'void')));
         await assertFails(at(owner).child('events').remove());
-        await env.withSecurityRulesDisabled(c => c.database().ref('adminRoles/a/forecastAccess').set(false));
-        await assertFails(at(a).child('events').once('value'));
-        console.log('Physics market rules: membership, immutable sequence, concurrent appends, locked trading and final settlement passed.');
+        console.log('Physics market rules: registered trading, guest restrictions, owner-only lesson management and settlement passed.');
     } finally { await env.cleanup(); }
 })().catch(e => { console.error(e); process.exitCode=1; });

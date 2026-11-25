@@ -13,7 +13,7 @@
     const confirmations = { lock: 'Закрыть торги и снять все оставшиеся заявки?', yes: 'Подтвердить, что работа была, и начислить выплаты?',
         no: 'Подтвердить, что работы не было, и начислить выплаты?', void: 'Отменить этот рынок и полностью вернуть его участникам очки?' };
     let engine = M.create(), ids = [], day = '', user = null, connected = false, offset = 0, ready = false, busy = false;
-    let epoch = 0, clock = 0, connectionTimer, roleOff, feedOff, pendingSnapshot, adminCommand, range = 'all', historyLimit = 12, ticket = null;
+    let epoch = 0, clock = 0, connectionTimer, feedOff, pendingSnapshot, adminCommand, range = 'all', historyLimit = 12, ticket = null;
     let chartData = null, firstPaint = true;
     const api = window.AlmanionAccount;
     const now = () => Date.now() + offset;
@@ -71,13 +71,7 @@
         for (const id of ['tradeHistory', 'myOrders', 'bookAsks', 'bookBids', 'lessonSelect']) $(id).replaceChildren();
     }
 
-    function subscribe(allowed) {
-        if (!allowed) {
-            clearMarket();
-            gate('Доступ для класса 10-1', 'Владелец сайта может добавить твой аккаунт в админ-панели.');
-            return;
-        }
-        if (feedOff) return;
+    function subscribe() {
         gate('Загружаем рынок…', 'Получаем заявки и сделки класса.');
         const session = epoch;
         connectionTimer = setTimeout(() => {
@@ -98,17 +92,13 @@
     }
 
     function activate(account) {
-        if (roleOff) roleOff();
-        roleOff = undefined;
         clearMarket();
         user = account && !account.isAnonymous ? account : null;
-        if (!user) { gate('Войди, чтобы открыть рынок', 'Игра доступна участникам класса 10-1 через аккаунт Almanion.', 'login'); return; }
-        if (user.uid === M.OWNER) { subscribe(true); return; }
-        gate('Проверяем доступ…', 'Подключаемся к аккаунту Almanion.');
-        const uid = user.uid, ref = api.database.ref('adminRoles/' + uid + '/forecastAccess');
-        const check = snap => { if (user?.uid === uid) subscribe(snap.val() === true); };
-        roleOff = () => ref.off('value', check);
-        ref.on('value', check, () => { if (user?.uid === uid) subscribe(false); });
+        if (!user) {
+            gate('Войди, чтобы открыть рынок', 'Для участия нужен аккаунт Almanion.', 'login');
+            return;
+        }
+        subscribe();
     }
 
     function drawChart(m) {
@@ -279,6 +269,7 @@
     async function send(command) {
         if (busy || !ready || !user || !connected) return;
         const admin = !['order','cancel'].includes(command.kind);
+        if (admin && user.uid !== M.OWNER) return;
         const actor = user.uid, session = epoch;
         const root = api.database.ref('physicsForecast');
         const id = root.child('events').push().key;

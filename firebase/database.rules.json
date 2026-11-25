@@ -59,9 +59,9 @@
     },
 
     "physicsForecast": {
-      ".read": "auth != null && auth.token.firebase.sign_in_provider !== 'anonymous' && auth.uid !== '@liquidity' && (auth.uid === '2M2ZdLQcJAhluPjUVFNJ6MyQrdH2' || root.child('adminRoles').child(auth.uid).child('forecastAccess').val() === true)",
+      ".read": "auth != null && auth.token.firebase.sign_in_provider !== 'anonymous' && auth.uid !== '@liquidity'",
       "head": {
-        ".write": "auth != null && auth.token.firebase.sign_in_provider !== 'anonymous' && auth.uid !== '@liquidity' && (auth.uid === '2M2ZdLQcJAhluPjUVFNJ6MyQrdH2' || root.child('adminRoles').child(auth.uid).child('forecastAccess').val() === true) && newData.exists()",
+        ".write": "auth != null && auth.token.firebase.sign_in_provider !== 'anonymous' && auth.uid !== '@liquidity' && newData.exists()",
         ".validate": "newData.hasChildren(['n','id']) && !root.child('physicsForecast/events').child(newData.child('id').val()).exists() && newData.parent().child('events').child(newData.child('id').val()).child('n').val() === newData.child('n').val()",
         "n": {
           ".validate": "newData.isNumber() && newData.val() === (data.exists() ? data.val() + 1 : 1)"
@@ -78,7 +78,7 @@
           "n"
         ],
         "$id": {
-          ".write": "auth != null && auth.token.firebase.sign_in_provider !== 'anonymous' && auth.uid !== '@liquidity' && (auth.uid === '2M2ZdLQcJAhluPjUVFNJ6MyQrdH2' || root.child('adminRoles').child(auth.uid).child('forecastAccess').val() === true) && !data.exists() && newData.exists()",
+          ".write": "auth != null && auth.token.firebase.sign_in_provider !== 'anonymous' && auth.uid !== '@liquidity' && !data.exists() && newData.exists()",
           ".validate": "newData.hasChildren(['n','actor','at','day','kind']) && newData.parent().parent().child('head/id').val() === $id && newData.parent().parent().child('head/n').val() === newData.child('n').val() && newData.parent().parent().child('lastBy').child(auth.uid).val() === $id && ((newData.child('kind').val() === 'order' || newData.child('kind').val() === 'cancel') ? (root.child('physicsForecast/rounds').child(newData.child('day').val()).child('phase').val() === 'open' && root.child('physicsForecast/rounds').child(newData.child('day').val()).child('endAt').val() > now && newData.child('expires').exists() && (newData.child('kind').val() === 'order' ? (newData.hasChildren(['mode','action','side','qty','limit']) && (newData.child('mode').val() !== 'market' || newData.child('totalLimit').exists())) : newData.child('target').exists())) : (auth.uid === '2M2ZdLQcJAhluPjUVFNJ6MyQrdH2' && newData.parent().parent().child('rounds').child(newData.child('day').val()).child('last').val() === $id && newData.parent().parent().child('rounds').child(newData.child('day').val()).child('phase').val() === newData.child('kind').val() && (newData.child('kind').val() !== 'open' || newData.child('endAt').val() === newData.parent().parent().child('rounds').child(newData.child('day').val()).child('endAt').val())))",
           "n": {
             ".validate": "newData.isNumber()"
@@ -129,7 +129,7 @@
       },
       "lastBy": {
         "$uid": {
-          ".write": "auth != null && auth.token.firebase.sign_in_provider !== 'anonymous' && auth.uid !== '@liquidity' && (auth.uid === '2M2ZdLQcJAhluPjUVFNJ6MyQrdH2' || root.child('adminRoles').child(auth.uid).child('forecastAccess').val() === true) && auth.uid === $uid && newData.exists() && newData.val() !== data.val()",
+          ".write": "auth != null && auth.token.firebase.sign_in_provider !== 'anonymous' && auth.uid !== '@liquidity' && auth.uid === $uid && newData.exists() && newData.val() !== data.val()",
           ".validate": "newData.isString() && newData.val().matches(/^[-_a-zA-Z0-9]{20}$/) && newData.val() === newData.parent().parent().child('head/id').val() && newData.parent().parent().child('events').child(newData.val()).child('actor').val() === auth.uid && (auth.uid === '2M2ZdLQcJAhluPjUVFNJ6MyQrdH2' || !data.exists() || root.child('physicsForecast/events').child(data.val()).child('at').val() + 500 <= now)"
         }
       },
