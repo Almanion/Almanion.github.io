@@ -51,7 +51,12 @@
                 if (!link.hidden && $(link.hash.slice(1)).getBoundingClientRect().top <= edge) active = link;
             }
             const bottom = document.scrollingElement.scrollHeight - scrollY - innerHeight;
-            if (bottom <= 2 && scrollY > 0) active = jumpLinks.at(-1);
+            if (bottom <= 2 && scrollY > 0) {
+                const destination = jumpLinks.find(link => !link.hidden && link.hash === location.hash);
+                const target = destination && $(destination.hash.slice(1)).getBoundingClientRect();
+                active = target && target.bottom >= edge && target.top < innerHeight * .6
+                    ? destination : jumpLinks.at(-1);
+            }
             for (const link of jumpLinks) {
                 if (link === active) link.setAttribute('aria-current', 'location');
                 else link.removeAttribute('aria-current');
@@ -72,6 +77,7 @@
     phone.addEventListener('change', arrangePanels);
     window.addEventListener('scroll', updateJumps, { passive: true });
     window.addEventListener('resize', updateJumps);
+    window.addEventListener('hashchange', updateJumps);
     window.visualViewport?.addEventListener('resize', updateDockForKeyboard);
     document.addEventListener('focusin', updateDockForKeyboard);
     document.addEventListener('focusout', () => requestAnimationFrame(updateDockForKeyboard));

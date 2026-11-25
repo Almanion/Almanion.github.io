@@ -422,6 +422,14 @@ test.describe('market navigation on a narrow phone', () => {
         expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(320);
         await dockIsReachable();
 
+        // The last two sections can share a screen and the same maximum scroll offset.
+        await page.setViewportSize({ width:412, height:843 });
+        await portfolio.tap();
+        await expect(portfolio).toHaveAttribute('aria-current', 'location');
+        await offers.tap();
+        await expect(page.locator('#bookTitle')).toBeInViewport();
+        await expect(offers).toHaveAttribute('aria-current', 'location');
+
         await chart.tap();
         await expect(page.locator('#chartTitle')).toBeInViewport();
         await page.clock.fastForward(M.DAY);
