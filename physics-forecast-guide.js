@@ -21,6 +21,7 @@
         const body = guide.querySelector('.forecast-guide-body'), card = tour.querySelector('.forecast-tour-card');
         const ring = tour.querySelector('.forecast-tour-focus'), mainLink = document.querySelector('[data-market-guide="start"]');
         const start = byId('startMarketTour'), next = byId('nextMarketTour'), back = byId('backMarketTour');
+        const phone = matchMedia('(max-width: 759px), (orientation: landscape) and (max-width: 1024px) and (max-height: 540px) and (pointer: coarse)');
         let market = null, phase = '', winner = '', index = 0, frame = 0, returnTop = 0, trigger = mainLink;
 
         function openGuide(button) {
@@ -50,6 +51,12 @@
             ['ticketChoices', 'Купи или продай доли', 'Выбери действие и исход. Можно совершить сделку сразу или задать свою цену. Перед подтверждением увидишь расчёт.'],
             ['portfolio', 'Проверь свой портфель', 'Здесь твои свободные очки и доли. Ниже можно снять открытую заявку и посмотреть свои сделки.']
         ];
+        const phoneSteps = [
+            'Открой список, чтобы сменить событие или посмотреть его итог.',
+            'Выбери исход над графиком. Коснись линии и проведи по ней, чтобы посмотреть прошлые значения.',
+            'Выбери «Купить» или «Продать» и нужный исход. Перед отправкой проверь расчёт.',
+            'Здесь твои очки и доли. Ниже — открытые заявки и история сделок.'
+        ];
         const finished = { lock: 'Торги закрыты. Владелец объявит исход здесь.',
             void: 'Событие отменено. Очки за сделки по нему возвращены.' };
 
@@ -57,13 +64,12 @@
             if (!tour.open) return;
             const target = byId(steps[index][0]);
             const viewport = tour.getBoundingClientRect();
-            const short = viewport.width >= 510 && viewport.height <= 440;
+            const short = viewport.width >= 510 && (viewport.height <= 440 || phone.matches && viewport.height <= 540 && viewport.width > viewport.height);
             let rect = target.getBoundingClientRect();
             const onLeft = short && rect.left > viewport.width / 2;
             tour.toggleAttribute('data-card-left', onLeft);
             const panel = card.getBoundingClientRect();
-            const nav = document.querySelector('.forecast-jumps');
-            const top = viewport.top + (index > 0 ? nav.offsetHeight : 0) + 10;
+            const top = viewport.top + 10;
             const covered = rect.right > panel.left && rect.left < panel.right;
             const bottom = !short && covered ? panel.top - 10 : viewport.bottom - 8;
             if (rect.bottom > bottom || rect.top < top) {
@@ -89,7 +95,7 @@
             byId('tourProgress').textContent = 'Шаг ' + (index + 1) + ' из ' + steps.length;
             byId('tourTitle').textContent = result ? 'Проверь итог' : title;
             const ownerHint = target === 'eventPicker' && !byId('forecastAdminLink').hidden ? ' Кнопка «Админ-панель» откроет управление этим событием.' : '';
-            byId('tourText').textContent = (result || text) + ownerHint;
+            byId('tourText').textContent = (result || (phone.matches ? phoneSteps[index] : text)) + ownerHint;
             back.disabled = index === 0;
             next.textContent = index === steps.length - 1 ? 'Готово' : 'Дальше';
             positionStep();
@@ -118,7 +124,7 @@
             restoreFocus();
         });
         window.addEventListener('scroll', scheduleLayout, { passive: true });
-        window.addEventListener('resize', scheduleLayout);
+        window.addEventListener('resize', () => { if (tour.open) showStep(); });
         window.visualViewport?.addEventListener('resize', scheduleLayout);
         if (window.ResizeObserver) new ResizeObserver(scheduleLayout).observe(card);
 

@@ -169,7 +169,7 @@ body.forecast-page .forecast-header.sidebar-header {
 .forecast-state[data-state="no"] { --status-ink: var(--no); }
 .forecast-state:empty, .forecast-status:empty, .forecast-footnote:empty, .forecast-feedback:empty { display: none; }
 .forecast-layout { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; align-items: stretch; }
-.forecast-jumps { display: none; }
+.forecast-jumps, .forecast-mobile-only { display: none; }
 .forecast-panel {
     min-width: 0; padding: clamp(19px, 2vw, 27px);
     border: 1px solid var(--rule); border-radius: 16px; background: var(--surface);
@@ -218,6 +218,8 @@ body.forecast-page .forecast-header.sidebar-header {
 .forecast-chart-card[data-side="third"] { --plot-color: var(--third); }
 .forecast-chart-card[data-side="fourth"] { --plot-color: var(--fourth); }
 #marketDeadline { color: var(--quiet); font-size: .82rem; font-variant-numeric: tabular-nums; }
+.forecast-chart-choice { display: contents; }
+#chartSideLabel { display: none; }
 #chartSideSelect { min-width: 0; max-width: 100%; min-height: 44px; padding: 5px 28px 5px 9px; font-size: .88rem; }
 .forecast-chart-heading { min-width: 0; }
 .forecast-chart-card .forecast-chart-head { display: grid; grid-template-columns: minmax(0, 1fr) auto; }
@@ -335,6 +337,7 @@ body.forecast-page .forecast-header.sidebar-header {
 
 .forecast-ticket { container-type: inline-size; scroll-margin-block-start: 12px; }
 .forecast-ticket form { display: grid; gap: 12px; }
+.forecast-ticket-fields { display: contents; }
 .forecast-ticket .forecast-section-head { flex-wrap: nowrap; }
 #ticketChoices { display: grid; gap: 12px; }
 #orderMode { display: inline-flex; gap: 2px; padding: 2px; border: 0; border-radius: 8px; background: var(--inset); }
@@ -449,6 +452,7 @@ body.forecast-page .forecast-header.sidebar-header {
 #orderListTitle { scroll-margin-block-start: 15px; }
 .forecast-book { container-type: inline-size; }
 .forecast-book-heading { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 12px; }
+.forecast-book-choice { min-width: 0; max-width: 100%; }
 .forecast-book-heading select { width: auto; min-width: 0; max-width: 100%; min-height: 44px; font-size: .87rem; }
 .forecast-columns { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 9rem), 1fr)); align-items: start; gap: 14px; margin-top: 14px; max-height: 22rem; overflow: auto; }
 .forecast-columns table { --lane: var(--yes); width: 100%; min-width: 0; table-layout: fixed; border-collapse: collapse; font-variant-numeric: tabular-nums; }
@@ -509,11 +513,6 @@ html:has(#marketGuide[open], #marketTour[open], #forecastRanking[open], #forecas
 .rank-explainer summary { display: list-item; padding-block: 12px; cursor: pointer; color: var(--ink); }
 .rank-explainer p { margin: 2px 0 10px; line-height: 1.5; }
 #rankMore { width: 100%; margin-top: 10px; min-height: 44px; }
-@media (max-width: 420px) {
-    #forecastRanking { width: calc(100% - 16px); max-height: calc(100dvh - 16px); }
-    .rank-person { flex-wrap: wrap; gap: 3px 6px; }
-    .rank-person > :nth-child(2) { flex: 1 1 min-content; }
-}
 .forecast-guide-head { display: flex; align-items: center; justify-content: space-between; flex: none; gap: 10px; padding: 11px 14px 11px 22px; border-bottom: 1px solid var(--rule); }
 .forecast-guide-head h2 { margin: 0; color: var(--ink); font-size: 1.28rem; line-height: 1.2; letter-spacing: -.025em; }
 .forecast-guide-head h2:focus { outline: 0; }
@@ -652,32 +651,8 @@ body:has(#marketTour[open]) .forecast-shell { padding-bottom: max(50vh, 220px); 
     }
 }
 @media (max-width: 759px) {
-    .forecast-shell { width: min(calc(100% - 24px), 620px); padding-bottom: 38px; }
-    body.forecast-page .forecast-header.sidebar-header { min-height: 52px; padding: 4px 12px; gap: 10px; }
-    .forecast-header img { width: 100px; }
-    .forecast-context { font-size: .77rem; padding-inline-start: 10px; }
-    .forecast-hero { padding: 15px 2px 18px; }
-    .forecast-hero h1 { margin-top: 7px; font-size: clamp(1.9rem, 6.2vw, 2.55rem); }
-    .forecast-kicker { font-size: .71rem; }
-    .forecast-definition { font-size: .84rem; }
-    .forecast-event-meta { gap: 4px 7px; }
-    .forecast-state { padding: 4px 7px; font-size: .72rem; }
-    #eventPicker { min-height: 44px; padding-inline: 9px; gap: 5px; }
-    #forecastEvents {
-        inset: auto 0 0; width: min(100%, 38rem); margin-inline: auto;
-        max-height: min(34rem, calc(100vh - 16px));
-        max-height: min(34rem, calc(100dvh - max(16px, env(safe-area-inset-top))));
-        border-radius: 16px 16px 0 0; border-bottom: 0;
-    }
-    .forecast-event-list { padding-bottom: max(12px, env(safe-area-inset-bottom)); }
-    .forecast-layout { gap: 10px; }
-    .forecast-jumps { position: sticky; top: 0; z-index: 3; display: flex; gap: 2px; padding: 2px; border: 1px solid var(--rule); border-radius: 10px; background: var(--surface); }
-    .forecast-jumps a { display: flex; justify-content: center; align-items: center; flex: 1; min-height: 44px; gap: 6px; border-radius: 7px; color: var(--quiet); font-weight: 620; font-size: .82rem; text-decoration: none; }
-    .forecast-jumps a[aria-current] { color: var(--ink); background: var(--inset); }
-    .forecast-jumps svg { width: 16px; height: 16px; }
-    #marketChart, #tradeTicket, #portfolio, #orderListTitle { scroll-margin-block-start: 56px; }
-    .forecast-panel { padding: 16px; border-radius: 12px; }
-    .forecast-panel h2 { font-size: 1.13rem; }
+    .forecast-hero { padding: 12px 0 14px; }
+    .forecast-hero h1 { font-size: clamp(1.65rem, 6.2vw, 2.55rem); }
     .forecast-chart-heading, .forecast-chart-head { gap: 8px; }
     .forecast-chart-controls { display: flex; flex-wrap: wrap; margin: 6px 0; gap: 3px 6px; }
     .forecast-reading { flex: 1 1 min-content; min-width: min-content; gap: 3px 6px; }
@@ -686,9 +661,8 @@ body:has(#marketTour[open]) .forecast-shell { padding-bottom: max(50vh, 220px); 
     .forecast-plot { min-height: clamp(192px, 57vw, 278px); margin-inline: -4px; }
     .forecast-axis { margin-inline: 6px calc(var(--axis-width) + 6px); }
     .forecast-chart-sides button, .forecast-ranges button { min-width: 44px; min-height: 44px; padding-inline: 6px; }
-    #chartExpand, #orderMode, #chartCursor, #chartReturn, .forecast-presets button, .forecast-recovery button, .forecast-recovery a, .forecast-wallet [data-sell] { min-height: 44px; }
+    #chartExpand, #chartCursor, #chartReturn { min-height: 44px; }
     #chartExpand { min-width: 44px; }
-    #orderMode label > span, .forecast-segments label > span { min-height: 44px; }
     .forecast-chart-stats { margin-top: 8px; padding-top: 10px; }
     .forecast-gate { grid-template-columns: auto 1fr; grid-template-areas: "symbol heading" "symbol message" "button button"; gap: 5px 10px; }
     .forecast-gate button { margin-top: 8px; }
@@ -697,17 +671,87 @@ body:has(#marketTour[open]) .forecast-shell { padding-bottom: max(50vh, 220px); 
     .forecast-event-fields { grid-template-columns: minmax(0, 1fr); }
     .forecast-admin form > .forecast-primary { width: 100%; }
     .forecast-shell details[open] { padding-bottom: 16px; }
-    #marketGuide {
-        inset: auto 0 0; width: min(100%, 38rem); max-width: 100%; max-height: calc(100dvh - max(12px, env(safe-area-inset-top)));
-        margin: 0 auto; border-radius: 16px 16px 0 0; border-bottom: 0;
-    }
-    .forecast-guide-head { padding: 7px max(12px, env(safe-area-inset-right)) 7px max(16px, env(safe-area-inset-left)); }
-    .forecast-guide-body { padding: 14px max(16px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left)); }
-    .forecast-guide-body details[open] { padding-bottom: 12px; }
-    .forecast-guide-footer { padding: 8px max(12px, env(safe-area-inset-right)) max(10px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left)); }
-    .forecast-tour-card { inset: auto max(8px, env(safe-area-inset-right)) max(8px, env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-left)); width: auto; max-width: 32rem; margin-inline: auto; padding: 8px 14px 12px; }
 }
-@media (min-width: 510px) and (max-height: 440px) {
+@media (max-width: 759px), (orientation: landscape) and (max-width: 1024px) and (max-height: 540px) and (pointer: coarse) {
+    :is(#forecastEvents, #marketGuide, #forecastRanking) {
+        --sheet-left: max(14px, env(safe-area-inset-left));
+        --sheet-right: max(14px, env(safe-area-inset-right));
+        --sheet-bottom: max(12px, env(safe-area-inset-bottom));
+        inset: auto 0 0; width: min(100%, 38rem); max-width: 100%;
+        max-height: calc(100vh - 12px);
+        max-height: min(40rem, calc(100dvh - max(12px, env(safe-area-inset-top))));
+        margin: 0 auto; border-radius: 18px 18px 0 0; border-bottom: 0;
+    }
+    #forecastEvents { max-height: min(34rem, calc(100dvh - max(12px, env(safe-area-inset-top)))); }
+    .forecast-guide-head { padding: 6px var(--sheet-right) 6px var(--sheet-left); }
+    .forecast-guide-head h2 { font-size: 1.18rem; }
+    .forecast-guide-head button { flex: none; }
+    .forecast-guide-head button:focus-visible { outline-offset: -4px; }
+    .forecast-guide-body { padding: 12px var(--sheet-right) 14px var(--sheet-left); }
+    .forecast-guide-example { margin-block: 10px 14px; }
+    .forecast-guide-example dl { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .forecast-guide-body details[open] { padding-bottom: 12px; }
+    .forecast-guide-footer { flex-wrap: wrap; align-items: stretch; gap: 6px 8px; padding: 8px var(--sheet-right) var(--sheet-bottom) var(--sheet-left); }
+    .forecast-guide-footer > span { flex: 1 1 100%; }
+    .forecast-guide-footer > button { flex: 1; min-width: 0; min-height: 44px; padding-inline: 9px; }
+    #startMarketTour { flex: 1.35; }
+    .forecast-event-list, .rank-scroll { padding: 12px var(--sheet-right) var(--sheet-bottom) var(--sheet-left); }
+    .forecast-event-group h3 { position: sticky; top: -12px; z-index: 1; margin: 0; padding: 9px 8px 7px; background: var(--surface); }
+    .forecast-event-choice { scroll-margin-block-start: 32px; }
+    .forecast-shell .forecast-event-choice { min-height: 56px; }
+    .rank-mine { margin-block: 10px 8px; }
+    .rank-table-head, .rank-row { grid-template-columns: 1.65rem minmax(0, 1fr) max-content; padding-inline: 2px; }
+    .rank-person { flex-wrap: nowrap; gap: 6px; line-height: 1.3; }
+    .rank-person > :first-child { flex: none; }
+    .rank-person > :first-child:empty { display: none; }
+    .rank-person > :nth-child(2) { min-width: 0; }
+    .rank-score { text-align: end; }
+    .rank-explainer summary { display: flex; min-height: 44px; }
+    .rank-explainer summary::after { flex: none; }
+
+    .forecast-tour-card {
+        display: grid; grid-template-rows: auto minmax(0, 1fr) auto;
+        inset: auto max(8px, env(safe-area-inset-right)) max(8px, env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-left));
+        width: auto; max-width: 32rem; max-height: min(55%, calc(100% - 20px));
+        margin-inline: auto; padding: 4px 12px 10px; overflow: hidden;
+    }
+    .forecast-tour-card > [aria-live] { overflow-y: auto; overscroll-behavior: contain; }
+    .forecast-tour-card h2 { font-size: 1.10rem; }
+    .forecast-tour-card p { font-size: .88rem; }
+    .forecast-tour-actions { margin-top: 8px; }
+    .forecast-tour-actions button { min-height: 44px; }
+    body:has(#marketTour[open]) .forecast-jumps { visibility: hidden; }
+
+    html:has(.forecast-page #accountOverlay:not(.hidden)) { overflow: hidden; }
+    .forecast-page #accountOverlay.auth-overlay {
+        inset: var(--forecast-account-top, 0px) 0 auto; height: 100vh; height: var(--forecast-account-height, 100dvh);
+        align-items: flex-end; padding: 0;
+    }
+    .forecast-page #accountOverlay .account-modal {
+        width: min(100%, 37rem); max-width: none;
+        max-height: calc(100% - max(8px, env(safe-area-inset-top)));
+        padding: 8px max(14px, env(safe-area-inset-right)) max(12px, env(safe-area-inset-bottom)) max(14px, env(safe-area-inset-left));
+        border-radius: 18px 18px 0 0 !important; border-bottom: 0;
+        overscroll-behavior: contain; scroll-padding-block: 8px;
+    }
+    .forecast-page #accountOverlay .account-modal:has(#accForm) :is(.auth-icon, .account-or) { display: none; }
+    .forecast-page #accountOverlay .account-modal:has(#accForm)::before { display: none; }
+    .forecast-page #accountOverlay .account-modal #accTitle {
+        display: flex; align-items: center; min-height: 44px; margin: 0 0 8px;
+        padding-inline-end: 52px; text-align: start; font-size: 1.2rem;
+    }
+    .forecast-page #accountOverlay .account-modal #accTitle:focus { outline: none; }
+    .forecast-page #accountOverlay .kc-close {
+        position: sticky; inset: 0 auto auto;
+        display: flex; width: 44px; height: 44px;
+        margin-inline-start: auto; margin-block-end: -44px;
+    }
+    .forecast-page #accountOverlay .account-identity { padding-inline-end: 40px; }
+    .forecast-page #accountOverlay .account-google-btn { min-height: 44px; margin-bottom: 12px; }
+    .forecast-page #accountOverlay .account-link { width: 100%; min-height: 44px; margin-top: 2px; }
+    .forecast-page #accountOverlay #accForm input { font-size: max(16px, 1em); min-height: 44px; }
+}
+@media (min-width: 510px) and (max-height: 440px), (orientation: landscape) and (min-width: 510px) and (max-width: 1024px) and (max-height: 540px) and (pointer: coarse) {
     .forecast-tour-card { inset: auto max(8px, env(safe-area-inset-right)) max(6px, env(safe-area-inset-bottom)) auto; width: min(44%, 19rem); margin: 0; padding: 6px 12px 10px; }
     #marketTour[data-card-left] .forecast-tour-card { inset-inline: max(8px, env(safe-area-inset-left)) auto; }
     .forecast-tour-actions { margin-top: 8px; }
@@ -715,15 +759,142 @@ body:has(#marketTour[open]) .forecast-shell { padding-bottom: max(50vh, 220px); 
 @media (max-width: 365px) {
     .forecast-header:has(.forecast-admin-link:not([hidden])) img { width: 80px; }
     .forecast-admin-link svg { display: none; }
-    .forecast-shell { width: calc(100% - 16px); }
-    body.forecast-page .forecast-header.sidebar-header { gap: 7px; }
-    .forecast-panel { padding-inline: 12px; }
     .forecast-reading { gap: 3px; }
     .forecast-reading strong { font-size: 2.35rem; }
     #chartDelta { padding-inline: 4px; font-size: .68rem; }
     .forecast-ranges { gap: 0; }
     .forecast-ranges button { padding-inline: 4px; }
-    .forecast-options label > span { padding-inline: 8px; }
+}
+
+@media (max-width: 759px), (orientation: landscape) and (max-width: 1024px) and (max-height: 540px) and (pointer: coarse) {
+    body.forecast-page .forecast-header.sidebar-header {
+        min-height: 54px; padding-block: max(4px, env(safe-area-inset-top)) 4px;
+        padding-inline: max(12px, env(safe-area-inset-left)) max(12px, env(safe-area-inset-right)); gap: 8px;
+    }
+    .forecast-header img { width: 100px; }
+    .forecast-context { font-size: .75rem; padding-inline-start: 8px; }
+    .forecast-header .sidebar-header-buttons > :is(.account-btn, .settings-button-sidebar) { width: 44px; height: 44px; }
+    .forecast-shell {
+        --phone-gutter: 10px;
+        width: auto; max-width: 640px; padding-block-end: 24px;
+        padding-inline: max(var(--phone-gutter), env(safe-area-inset-left)) max(var(--phone-gutter), env(safe-area-inset-right));
+    }
+    .forecast-shell:has(#forecastJumps:not([hidden])) { padding-block-end: calc(88px + env(safe-area-inset-bottom)); }
+    html:has(.forecast-page #forecastJumps:not([hidden])) { scroll-padding-block-end: calc(76px + env(safe-area-inset-bottom)); }
+    .forecast-mobile-only { display: revert; }
+    .forecast-hero:has(#eventPicker:not([hidden])) { display: grid; }
+    .forecast-hero:has(#eventPicker:not([hidden])) .forecast-hero-actions {
+        display: grid; grid-template-columns: minmax(0, 1.3fr) repeat(2, minmax(0, 1fr)); grid-row: 1; margin: 0 0 13px;
+    }
+    .forecast-hero-actions { gap: 5px; }
+    .forecast-hero-actions .forecast-guide-link, #eventPicker {
+        justify-content: center; gap: 5px; padding-inline: 8px;
+        border: 1px solid var(--rule); border-radius: 10px; background: var(--surface);
+        color: var(--ink); font-size: .82rem; line-height: 1.2;
+    }
+    #eventPicker { background: var(--selection); }
+    .forecast-guide-link svg, #eventPicker svg:first-child { width: 16px; height: 16px; color: var(--signal); }
+    #eventPicker .forecast-event-chevron { margin-inline-start: auto; }
+    .forecast-guide-label { display: none; }
+    .forecast-event-meta { gap: 5px 8px; }
+    .forecast-kicker, #marketDeadline { font-size: .76rem; }
+    .forecast-state { padding: 3px 7px; font-size: .74rem; }
+    .forecast-definition { max-width: none; margin-block-start: 7px; font-size: .875rem; }
+    #eventCriteria:not([data-expanded]):has(+ #criteriaToggle:not([hidden])) {
+        display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden;
+    }
+    #criteriaToggle {
+        width: fit-content; padding: 0 4px; border: 0; background: none; color: var(--signal);
+        font-size: .83rem; font-weight: 650;
+    }
+    .forecast-layout { display: flex; flex-direction: column; gap: 12px; }
+    .forecast-panel { padding: clamp(12px, 3.65vw, 18px); border-radius: 14px; }
+    .forecast-panel h2 { font-size: 1.16rem; }
+    #marketChart, #tradeTicket, #portfolio, #orderListTitle, #historyTitle, #publicOrders { scroll-margin-block-start: 12px; }
+    .forecast-layout .forecast-panel[tabindex]:focus { outline: 2px solid var(--rule); outline-offset: -2px; }
+    .forecast-jumps {
+        position: fixed; z-index: 8; inset: auto max(8px, env(safe-area-inset-right)) max(7px, env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-left));
+        display: flex; gap: 2px; max-width: 620px; margin-inline: auto; padding: 3px;
+        border: 1px solid var(--rule); border-radius: 15px; background: var(--surface); box-shadow: 0 4px 24px rgb(9 13 33 / 22%);
+    }
+    .forecast-jumps a {
+        display: flex; flex: 1 1 0; min-width: 0; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
+        min-height: 51px; padding: 2px; border-radius: 11px;
+        color: var(--quiet); font-size: clamp(.65rem, 2.65vw, .78rem); font-weight: 650; line-height: 1.16; text-align: center; text-decoration: none;
+        overflow-wrap: anywhere; -webkit-tap-highlight-color: transparent;
+    }
+    .forecast-jumps a[aria-current] { color: var(--signal); background: var(--selection); }
+    .forecast-jumps a:focus-visible { outline: 2px solid var(--signal); outline-offset: -2px; }
+    .forecast-jumps svg { width: 19px; height: 19px; }
+    .forecast-jumps[data-keyboard] { visibility: hidden; }
+
+    #orderMode label > span, .forecast-segments label > span { min-height: 44px; white-space: nowrap; }
+    .forecast-ticket form, #ticketChoices { gap: 10px; }
+    .forecast-ticket .forecast-section-head { flex-wrap: wrap; gap: 5px 8px; }
+    .forecast-options { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+    .forecast-options:has([data-side="third"]) label { grid-column: 1 / -1; }
+    .forecast-options label > span {
+        display: grid; grid-template-columns: 8px minmax(0, 1fr) max-content;
+        min-height: 46px; padding: 5px 8px; gap: 5px;
+    }
+    .forecast-options b { grid-column: 3; max-width: 10ch; }
+    .forecast-options .forecast-price-empty { max-width: 7ch; }
+    .forecast-options:has([data-side="third"]) .forecast-price-empty { max-width: 11ch; }
+    #tradeTicket { scroll-margin-block-start: 7px; }
+    .forecast-limit input { min-width: 5rem; text-align: center; }
+    .forecast-size-entry select, .forecast-book-heading select { font-size: 1rem; }
+    .forecast-presets button, .forecast-recovery :is(button, a), .forecast-wallet [data-sell] { min-height: 44px; }
+    .forecast-quote { padding: 10px; border: 1px solid var(--rule); border-radius: 10px; background: var(--selection); }
+    #placeOrder { min-height: 48px; line-height: 1.25; }
+    #placeOrder::after { display: none; }
+    .forecast-book-heading { gap: 5px 8px; }
+    .forecast-book-choice {
+        position: relative; display: inline-flex; align-items: center; gap: 10px;
+        min-height: 44px; padding: 6px 10px; border: 1px solid var(--rule); border-radius: 9px;
+        background: var(--inset); color: var(--ink); overflow-wrap: anywhere; overflow: hidden;
+    }
+    .forecast-book-choice[data-long] { width: 100%; justify-content: space-between; }
+    .forecast-book-choice::after {
+        content: ""; flex: none; width: 7px; height: 7px; margin-inline-end: 3px;
+        border: solid var(--quiet); border-width: 0 1.5px 1.5px 0; transform: translateY(-2px) rotate(45deg);
+    }
+    .forecast-book-choice:focus-within { outline: 2px solid var(--signal); }
+    .forecast-book-choice select { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; }
+    .forecast-columns { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-top: 9px; max-height: none; overflow: visible; }
+    .forecast-columns :is(th, td) { padding-block: 7px; }
+    .forecast-book:not([data-expanded]) .forecast-columns tbody tr:nth-child(n + 7) { display: none; }
+    #moreBookLevels { width: 100%; margin-top: 6px; }
+
+    .forecast-wallet dl { gap: 10px; margin-block-start: 12px; }
+    .forecast-wallet dl div { padding-inline-start: 9px; }
+    .forecast-wallet [data-holding] { padding-block: 4px; }
+    .forecast-wallet [data-holding]:has([data-sell]:not([hidden]), .forecast-reserve:not([hidden])) { grid-column: 1 / -1; }
+    .forecast-wallet [data-holding] dd:has([data-sell]:not([hidden])) { justify-content: space-between; }
+    .forecast-wallet [data-holding] dd:not(.forecast-reserve) { margin-block-start: 0; }
+    .forecast-portfolio-jumps {
+        display: grid; grid-template-columns: 1fr 1.25fr; gap: 6px;
+        margin-block-start: 12px; padding-block-start: 10px; border-top: 1px solid var(--rule);
+    }
+    .forecast-portfolio-jumps a {
+        display: flex; align-items: center; flex-wrap: wrap; justify-content: space-between; gap: 3px 6px; min-height: 44px; padding: 5px 7px;
+        border-radius: 8px; background: var(--inset); color: var(--ink); font-size: .8rem; font-weight: 620;
+        line-height: 1.25; text-decoration: none;
+    }
+    .forecast-portfolio-jumps span { color: var(--signal); font-family: var(--number-font); }
+    .forecast-row > div { flex: 1 1 8rem; min-width: 0; }
+}
+@media (max-width: 380px) {
+    .forecast-header .forecast-context { display: none; }
+    .forecast-hero:has(#eventPicker:not([hidden])) .forecast-guide-link { padding-inline: 4px; }
+    #eventPicker { padding-inline: 6px; }
+}
+@media (orientation: landscape) and (max-width: 1024px) and (max-height: 540px) and (pointer: coarse) {
+    .forecast-jumps a { flex-direction: row; gap: 5px; min-height: 44px; }
+}
+@media (orientation: landscape) and (min-width: 640px) and (max-width: 1024px) and (max-height: 540px) and (pointer: coarse) {
+    .forecast-ticket form { grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; gap: 14px; }
+    .forecast-ticket-fields { display: grid; gap: 8px; }
+    .forecast-ticket .forecast-quote { margin: 0; }
 }
 /* Keep the inspected value above the finger and give touch controls their full hit area. */
 @media (max-width: 759px), (orientation: landscape) and (max-width: 1024px) and (max-height: 540px) {
@@ -756,6 +927,32 @@ body:has(#marketTour[open]) .forecast-shell { padding-bottom: max(50vh, 220px); 
     #chartDialog .forecast-chart-head { position: sticky; top: 0; z-index: 2; background: var(--surface); }
     #chartDialog .forecast-plot { flex: 1; height: auto; min-height: 145px; }
     #chartDialogQuestion { margin-bottom: 5px; }
+    .forecast-page .forecast-chart-choice {
+        position: relative; display: flex; flex: 1 1 100%; align-items: center; gap: 9px;
+        min-width: 0; min-height: 44px; padding: 6px 9px; border: 1px solid var(--rule);
+        border-radius: 8px; background: var(--inset); color: var(--plot-color); overflow: hidden;
+    }
+    .forecast-page .forecast-chart-choice::after {
+        content: ""; flex: none; width: 7px; height: 7px; margin-inline-start: auto;
+        border-right: 1.5px solid; border-bottom: 1.5px solid; transform: translateY(-2px) rotate(45deg);
+    }
+    .forecast-page .forecast-chart-choice:focus-within { outline: 2px solid var(--signal); outline-offset: 2px; }
+    .forecast-page .forecast-chart-head:has(.forecast-chart-choice:not([hidden])) { align-items: start; }
+    .forecast-page #chartSideLabel { display: block; font-size: .88rem; line-height: 1.24; font-weight: 620; overflow-wrap: anywhere; }
+    .forecast-page #chartSideSelect { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; font-size: 16px; }
+    .forecast-page .forecast-reading strong { font-size: clamp(1.95rem, 8.4vw, 2.7rem); }
+    .forecast-page .forecast-chart-readout {
+        min-height: 50px; margin-bottom: 2px; border: 1px solid transparent;
+        background: color-mix(in srgb, var(--inset) 72%, var(--surface));
+    }
+    .forecast-page .forecast-chart-readout[data-inspecting] { border-color: color-mix(in srgb, var(--plot-color) 32%, var(--rule)); }
+    .forecast-page .forecast-chart-readout .forecast-tooltip b { font: 650 .8rem var(--font-sans); }
+    .forecast-page .forecast-chart-readout .forecast-tooltip span { font-size: .78rem; }
+    .forecast-page #chartReturn { border-radius: 6px; }
+    .forecast-page #chartCursor::-webkit-slider-runnable-track { height: 4px; }
+    .forecast-page #chartCursor::-webkit-slider-thumb { width: 20px; height: 20px; margin-top: -8px; }
+    .forecast-page #chartCursor::-moz-range-track, .forecast-page #chartCursor::-moz-range-progress { height: 4px; }
+    .forecast-page #chartCursor::-moz-range-thumb { width: 20px; height: 20px; }
 }
 
 @media (orientation: landscape) and (max-width: 1024px) and (max-height: 540px) {

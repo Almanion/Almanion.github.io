@@ -29,7 +29,7 @@ function installAccountStub({ persistenceFailure = false } = {}) {
     authFactory.Auth = { Persistence: { LOCAL: 'local', SESSION: 'session', NONE: 'none' } };
     authFactory.GoogleAuthProvider = function () { this.setCustomParameters = () => {}; };
     window.firebaseConfig = {};
-    window.firebase = { apps: [{}], auth: authFactory, database: () => ({ ref: () => ({ off() {} }) }) };
+    window.firebase = { apps: [{}], auth: authFactory, database: () => ({ ref: () => ({ on() {}, off() {} }) }) };
 }
 
 async function openAccount(page, options = {}) {
@@ -48,6 +48,33 @@ async function openAccount(page, options = {}) {
 }
 
 test.use({ serviceWorkers: 'block' });
+
+test('forecast login on a phone waits for an input tap and fits above the keyboard', async ({ page }) => {
+    await page.setViewportSize({ width: 320, height: 568 });
+    await page.route('**/*', route => new URL(route.request().url()).hostname === '127.0.0.1' ? route.continue() : route.abort());
+    await page.addInitScript(installAccountStub);
+    await page.addInitScript(() => localStorage.setItem('almanion:forecast:guide-seen:v1', '1'));
+    await page.goto('/physics-forecast.html');
+    await page.locator('#gateAction').click();
+    await expect(page.locator('#accTitle')).toBeFocused();
+    const password = page.locator('#accPass');
+    await password.click();
+    await expect(password).toBeFocused();
+    // Model the part of the viewport left above a soft keyboard.
+    await page.evaluate(() => {
+        Object.defineProperties(visualViewport, { offsetTop: { value: 36 }, height: { value: 250 } });
+        visualViewport.dispatchEvent(new Event('resize'));
+    });
+    await expect.poll(() => page.locator('#accountOverlay').evaluate(overlay => {
+        const frame = overlay.getBoundingClientRect();
+        const active = document.activeElement.getBoundingClientRect();
+        const close = overlay.querySelector('#accClose').getBoundingClientRect();
+        return frame.top === 36 && frame.height === 250 && active.top >= frame.top
+            && active.bottom <= frame.bottom && close.top >= frame.top && close.bottom <= frame.bottom;
+    })).toBe(true);
+    await page.locator('#accClose').click();
+    await expect(page.getByRole('dialog', { name: 'Вход в аккаунт' })).toBeHidden();
+});
 
 test('recovery validates the email, deduplicates pending requests and returns to login', async ({ page }) => {
     await openAccount(page);

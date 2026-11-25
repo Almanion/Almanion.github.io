@@ -193,6 +193,28 @@
     }
 
     // ---------- Окно входа ----------
+    const forecastPhone = document.body?.classList.contains('forecast-page') && matchMedia(
+        '(max-width: 759px), (orientation: landscape) and (max-width: 1024px) and (max-height: 540px) and (pointer: coarse)'
+    );
+
+    function followForecastAccountViewport(overlay) {
+        const viewport = window.visualViewport;
+        if (!forecastPhone || !viewport) return;
+        const resize = () => {
+            overlay.style.setProperty('--forecast-account-top', viewport.offsetTop + 'px');
+            overlay.style.setProperty('--forecast-account-height', viewport.height + 'px');
+            const field = document.activeElement;
+            if (!forecastPhone.matches || !overlay.contains(field) || !field.matches('input')) return;
+            const modal = field.closest('.account-modal');
+            const bounds = modal.getBoundingClientRect(), input = field.getBoundingClientRect();
+            if (input.bottom + 12 > bounds.bottom) modal.scrollTop += input.bottom + 12 - bounds.bottom;
+            else if (input.top - 12 < bounds.top) modal.scrollTop -= bounds.top - input.top + 12;
+        };
+        viewport.addEventListener('resize', resize);
+        viewport.addEventListener('scroll', resize, { passive: true });
+        resize();
+    }
+
     function ensureOverlay() {
         let ov = document.getElementById('accountOverlay');
         if (ov) return ov;
@@ -208,6 +230,7 @@
         ov.setAttribute('aria-hidden', 'true');
         document.body.appendChild(ov);
         initSwipeClose(ov);
+        followForecastAccountViewport(ov);
         return ov;
     }
     function hideOverlay() {
@@ -262,12 +285,21 @@
         const ov = ensureOverlay();
         let mode = registerMode ? 'register' : 'login';
         let rememberedEmail = '';
+        function focusForm() {
+            if (!forecastPhone?.matches) {
+                ov.querySelector('#accEmail').focus();
+                return;
+            }
+            const heading = ov.querySelector('#accTitle');
+            heading.tabIndex = -1;
+            heading.focus({ preventScroll: true });
+        }
         function changeMode(nextMode) {
             if (authBusy) return;
             rememberedEmail = ov.querySelector('#accEmail').value;
             mode = nextMode;
             render();
-            ov.querySelector('#accEmail').focus();
+            focusForm();
         }
         function render() {
             const resetMode = mode === 'reset';
@@ -352,8 +384,8 @@
         render();
         ov.classList.remove('hidden');
         ov.setAttribute('aria-hidden', 'false');
-        const email = ov.querySelector('#accEmail');
-        if (email) setTimeout(function () { try { email.focus(); } catch (_) {} }, 0);
+        if (forecastPhone?.matches) focusForm();
+        else setTimeout(function () { try { focusForm(); } catch (_) {} }, 0);
     }
 
     const PASSWORD_RESET_COMPLETE = 'Если для этой почты доступно восстановление пароля, письмо со ссылкой будет отправлено. Проверьте входящие и папку «Спам». Если вы входили через Google, используйте кнопку «Войти через Google».';

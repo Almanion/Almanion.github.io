@@ -126,7 +126,10 @@
                         <button type="button" data-chart-side="yes" aria-pressed="true">Да</button>
                         <button type="button" data-chart-side="no" aria-pressed="false">Нет</button>
                     </div>
-                    <select id="chartSideSelect" aria-label="Исход на графике" hidden></select>
+                    <span class="forecast-chart-choice" hidden>
+                        <span id="chartSideLabel" aria-hidden="true"></span>
+                        <select id="chartSideSelect" aria-label="Исход на графике"></select>
+                    </span>
                 </div>
                 <button type="button" id="chartExpand" aria-label="Развернуть график" title="Развернуть график" aria-haspopup="dialog" aria-expanded="false" aria-controls="chartDialog">
                     <svg viewBox="0 0 20 20" aria-hidden="true"><path class="expand-icon" d="M4 8V4h4m4 0h4v4m0 4v4h-4m-4 0H4v-4"/><path class="collapse-icon" d="M3 7h4V3m6 0v4h4m0 6h-4v4m-6 0v-4H3"/></svg>
@@ -184,14 +187,16 @@
         const periodButtons = [...card.querySelectorAll('[data-range]')], sides = [...card.querySelectorAll('[data-chart-side]')];
         const returnButton = el('chartReturn'), strip = el('chartStrip');
         const axis = el('chartAxis'), previousPoint = el('chartPrev'), nextPoint = el('chartNext');
+        const probability = el('probability'), sideLabel = el('chartSideLabel');
         const compact = matchMedia('(max-width: 759px), (orientation: landscape) and (max-width: 1024px) and (max-height: 540px)');
         const reduced = matchMedia('(prefers-reduced-motion: reduce)');
         const sideSelect = el('chartSideSelect');
         let market = null, online = false, lastSeen = 0, range = 'all', side = 'yes', frame = null, inView = true;
-        let pinnedAt = null, hoverAt = null, pointer = null, previousPrice = null, previousTrades = 0, reveal = true;
+        let pinnedAt = null, pinnedEnd = null, hoverAt = null, pointer = null, previousPrice = null, previousTrades = 0, reveal = true;
         let scheduledReading = 0;
         spacer.className = 'forecast-chart-space';
         spacer.setAttribute('aria-hidden', 'true');
+        const mobileChart = () => !statistics && compact.matches;
 
         function motionLevel() {
             const mode = document.documentElement.dataset.pageMotion, classes = document.body.classList;
@@ -208,7 +213,7 @@
 
         function selectRange(next) {
             cancelTransitions();
-            range = next; pinnedAt = hoverAt = null; reveal = true;
+            range = next; pinnedAt = pinnedEnd = hoverAt = null; reveal = true;
             for (const button of periodButtons) button.setAttribute('aria-pressed', String(button.dataset.range === next));
         }
 
@@ -216,6 +221,7 @@
             cancelTransitions();
             side = next; card.dataset.side = next; previousPrice = null; reveal = true;
             sideSelect.value = next;
+            sideLabel.textContent = sideSelect.selectedOptions[0]?.textContent ?? '';
             for (const button of sides) button.setAttribute('aria-pressed', String(button.dataset.chartSide === next));
         }
 
@@ -276,13 +282,16 @@
 
         function readPoint() {
             if (!frame) return;
-            const { start, end, x, y, h, w, volume, barPaths, live } = frame;
+            const { start, end, x, y, h, w, volume, barPaths, live, current } = frame;
             const inspected = hoverAt ?? pinnedAt, at = clamp(inspected ?? end, start, end);
             const line = market.series[side], price = line[pointAt(line, at)].p;
             const position = inspected === null || start === end ? 100 : 100 * (at - start) / (end - start);
             const sameDay = window.PhysicsForecast.dayKey(at) === window.PhysicsForecast.dayKey(end);
             const timeText = (sameDay ? seconds : dated).format(at);
             const qty = volume ? volume.bins[volume.indexAt(at)] : 0;
+            const mobile = mobileChart();
+            const headline = percent(mobile && inspected !== null ? price : current);
+            if (probability.textContent !== headline) probability.textContent = headline;
             slider.value = String(position);
             slider.style.setProperty('--cursor-position', position + '%');
             slider.setAttribute('aria-valuetext', timeText + ' по Москве, «' + market.answers[side] + '» ' + percent(price) + (statistics ? ', объём за интервал ' + fmt.format(qty) : ''));
@@ -299,7 +308,7 @@
             const px = x(at), py = y(price);
             el('chartHair').setAttribute('d', 'M' + px + ' 3V' + (h - 2));
             el('chartDot').setAttribute('cx', px); el('chartDot').setAttribute('cy', py);
-            tip.children[0].textContent = market.answers[side] + ' · ' + percent(price);
+            tip.children[0].textContent = mobile ? 'История' : market.answers[side] + ' · ' + percent(price);
             tip.children[1].textContent = timeText + ' мск';
             if (statistics) {
                 el('chartActiveVolume').setAttribute('d', barPaths[volume.indexAt(at)]);
@@ -316,7 +325,9 @@
             const points = market.series[side];
             const latest = Math.max(market.openedAt, Math.min(online ? Math.max(at, points.at(-1).at) : lastSeen, market.closedAt ?? market.endAt));
             const span = rangeSpans[range];
-            const end = pinnedAt === null ? latest : Math.min(latest, pinnedAt + span);
+            // Keep a point and its time window steady while a phone user reads or drags the history.
+            const frozenEnd = mobileChart() ? pointer?.end ?? pinnedEnd : null;
+            const end = Math.min(latest, frozenEnd ?? (pinnedAt === null ? latest : pinnedAt + span));
             const start = Math.max(market.openedAt, end - span);
             const first = pointAt(points, start), last = pointAt(points, end);
             const lastPrice = points[last].p, current = points[pointAt(points, latest)].p;
@@ -333,7 +344,7 @@
             const volume = statistics ? tradeVolume(market.trades, start, end, plotWidth, market.sides.length > 2 ? side : null) : null;
             const live = online && market.phase === 'open' && at < market.endAt;
             const barPaths = [];
-            frame = { start, end, x, y, h, w, volume, live, barPaths };
+            frame = { start, end, x, y, h, w, volume, live, barPaths, current };
             previousPoint.hidden = nextPoint.hidden = last === first;
             const returnLabel = live ? 'К текущей цене' : 'К последней цене';
             if (returnButton.getAttribute('aria-label') !== returnLabel || !returnButton.title) {
@@ -381,7 +392,6 @@
             svg.dataset.live = String(live && end === latest);
             svg.setAttribute('aria-label', market.question + ' Вероятность «' + market.answers[side] + '» в конце графика ' + percent(lastPrice) + '. Шкала от ' + percent(bottom) + ' до ' + percent(top) + '.');
             el('chartPriceTag').textContent = percent(lastPrice); el('chartPriceTag').style.top = y(lastPrice) + 'px';
-            el('probability').textContent = percent(current);
             if (statistics) {
                 el('chartLow').textContent = percent(low); el('chartHigh').textContent = percent(high);
                 el('chartVolume').textContent = fmt.format(volume.total);
@@ -398,14 +408,14 @@
                         ? [{ opacity: .2, clipPath: 'inset(0 95% 0 0)' }, { opacity: 1, clipPath: 'inset(0)' }]
                         : [{ opacity: .65 }, { opacity: 1 }];
                     el('chartSeries').animate?.(frames, { duration: motion === 'full' ? 380 : 160, easing: 'ease-out' });
-                } else if (live && latest === end) {
+                } else if (live && latest === end && !(mobileChart() && (pinnedAt !== null || hoverAt !== null))) {
                     if (previousPrice !== null && current !== previousPrice) {
                         const frames = [{ opacity: .62 }, { opacity: 1 }];
                         if (motion === 'full') {
                             frames[0].transform = current > previousPrice ? 'translateY(4px)' : 'translateY(-4px)';
                             frames[1].transform = 'translateY(0)';
                         }
-                        el('probability').animate?.(frames, { duration: 220, easing: 'ease-out' });
+                        probability.animate?.(frames, { duration: 220, easing: 'ease-out' });
                         if (motion === 'full' && last > first) {
                             const change = el('chartChange');
                             change.setAttribute('d', 'M' + x(points[last].at) + ' ' + y(points[last - 1].p) + 'V' + y(current) + 'H' + right);
@@ -425,8 +435,9 @@
                 reset();
                 const compactChoices = next.sides.length === 2 && next.sides.every(id => next.answers[id].length <= 12);
                 sides[0].parentElement.hidden = !compactChoices;
-                sideSelect.hidden = compactChoices;
+                sideSelect.parentElement.hidden = compactChoices;
                 sideSelect.replaceChildren(...next.sides.map(id => new Option(next.answers[id], id)));
+                sideLabel.textContent = sideSelect.selectedOptions[0]?.textContent ?? '';
                 for (const button of sides) button.textContent = next.answers[button.dataset.chartSide];
             }
             const at = clock();
@@ -450,6 +461,7 @@
         sideSelect.addEventListener('change', () => { selectSide(sideSelect.value); draw(clock()); });
         function pin(at, announce = true) {
             hoverAt = null; pinnedAt = at;
+            pinnedEnd = at === null ? null : frame.end;
             if (at === null) draw(clock()); else readPoint();
             if (announce) el('chartAnnouncement').textContent = el('chartState').textContent + '. ' + slider.getAttribute('aria-valuetext');
         }
@@ -478,7 +490,8 @@
         svg.addEventListener('pointerdown', event => {
             if (!event.isPrimary) { releasePointer(); return; }
             if (!frame || event.button !== 0) return;
-            pointer = { x: event.clientX, y: event.clientY, id: event.pointerId, dragging: false };
+            pointer = { x: event.clientX, y: event.clientY, id: event.pointerId, dragging: false,
+                end: event.pointerType === 'mouse' ? null : frame.end };
             if (svg.setPointerCapture && event.isTrusted) svg.setPointerCapture(event.pointerId);
         });
         svg.addEventListener('pointermove', event => {

@@ -345,6 +345,202 @@ test.describe('registered player on a phone', () => {
     });
 });
 
+test.describe('market navigation on a narrow phone', () => {
+    test.use({ hasTouch:true, isMobile:true, viewport:{ width:320, height:568 } });
+
+    test('the dock stays reachable through buying, selling, cancelling and browsing offers', async ({ page }) => {
+        await page.clock.install({ time:new Date('2026-11-26T06:00:00Z') });
+        await mockClass(page);
+        await page.goto('/physics-forecast.html');
+
+        const dock = page.getByRole('navigation', { name:'Разделы прогноза' });
+        const chart = dock.getByRole('link', { name:'График', exact:true });
+        const trade = dock.getByRole('link', { name:'Сделка', exact:true });
+        const offers = dock.getByRole('link', { name:'Цены', exact:true });
+        const portfolio = dock.getByRole('link', { name:'Портфель', exact:true });
+        const portfolioLinks = page.getByRole('navigation', { name:'Разделы портфеля' });
+        const dockIsReachable = async () => {
+            await expect(dock).toBeInViewport({ ratio:.95 });
+            await expect.poll(() => dock.evaluate(element => {
+                const { top, bottom } = element.getBoundingClientRect();
+                const controls = [...element.querySelectorAll('a')].filter(link => link.getClientRects().length);
+                return top >= innerHeight - 110 && bottom <= innerHeight + 1 &&
+                    controls.every(link => link.getBoundingClientRect().height >= 44);
+            })).toBe(true);
+        };
+
+        await expect(dock.getByRole('link')).toHaveCount(4);
+        await dockIsReachable();
+        await trade.tap();
+        await expect(page.locator('#ticketTitle')).toBeInViewport();
+        await expect(trade).toHaveAttribute('aria-current', 'location');
+        const submitClearsDock = () => page.locator('#placeOrder').evaluate(button => {
+            const rect = button.getBoundingClientRect();
+            const dock = document.getElementById('forecastJumps').getBoundingClientRect();
+            return rect.top >= 0 && rect.bottom <= dock.top;
+        });
+        await expect.poll(submitClearsDock).toBe(true);
+        await page.setViewportSize({ width:844, height:390 });
+        await chart.tap();
+        await trade.tap();
+        await expect.poll(submitClearsDock).toBe(true);
+        await page.setViewportSize({ width:320, height:568 });
+        await page.locator('#budget').fill('0,51');
+        expect(await page.locator('#budget').evaluate(element => parseFloat(getComputedStyle(element).fontSize))).toBeGreaterThanOrEqual(16);
+        await page.locator('#placeOrder').tap();
+        await expect(page.locator('#walletYes')).toHaveText('1');
+        await dockIsReachable();
+
+        await portfolio.tap();
+        await expect(page.locator('#walletTitle')).toBeInViewport();
+        await page.locator('[data-sell="yes"]').tap();
+        await expect(page.locator('#ticketTitle')).toBeInViewport();
+        await expect(page.locator('#tradeForm [name="action"]:checked')).toHaveValue('sell');
+        await page.locator('#orderMode label:has([value=limit])').tap();
+        await page.locator('#limitPrice').fill('0,95');
+        await page.locator('#quantity').fill('1');
+        await page.locator('#placeOrder').tap();
+        await expect(page.locator('#myOrders')).toContainText('1 доля по 0,95 оч.');
+        await dockIsReachable();
+
+        await portfolio.tap();
+        await expect(page.locator('#walletTitle')).toBeInViewport();
+        await expect(page.locator('#walletOrderCount')).toHaveText('1');
+        await portfolioLinks.getByRole('link', { name:/^Мои заявки/ }).tap();
+        await expect(page.locator('#orderListTitle')).toBeInViewport();
+        await page.locator('#myOrders').getByRole('button', { name:'Снять заявку' }).tap();
+        await expect(page.locator('#orderFeedback')).toHaveText('Заявка снята.');
+        await portfolio.tap();
+        await expect(page.locator('#walletOrderCount')).toHaveText('0');
+        await portfolioLinks.getByRole('link', { name:/^История сделок/ }).tap();
+        await expect(page.locator('#historyTitle')).toBeInViewport();
+        await expect(page.locator('#tradeHistory')).toContainText('Покупка · Да');
+        await offers.tap();
+        await expect(page.locator('#bookTitle')).toBeInViewport();
+        await expect(offers).toHaveAttribute('aria-current', 'location');
+        await expect(page.locator('#bookAsks tr')).toHaveCount(3);
+        expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(320);
+        await dockIsReachable();
+
+        await chart.tap();
+        await expect(page.locator('#chartTitle')).toBeInViewport();
+        await page.clock.fastForward(M.DAY);
+        await expect(page.locator('#roundState')).toHaveText('Торги закрыты');
+        await expect(offers).toBeHidden();
+        await expect(page.locator('#publicOrders')).toBeHidden();
+        await dockIsReachable();
+    });
+
+    test('offers show the best levels first and let the reader expand the remaining prices', async ({ page }) => {
+        await mockClass(page);
+        await page.goto('/physics-forecast.html');
+        await expect(page.locator('#bookBids tr')).toHaveCount(3);
+
+        await page.evaluate(async () => {
+            const at = Date.now(), day = PhysicsForecast.dayKey(at);
+            const db = window.AlmanionAccount.database.ref('physicsForecast');
+            const patches = {};
+            let id;
+            for (let n = 2; n <= 6; n++) {
+                id = String(n).padStart(20, '0');
+                patches['events/' + id] = { n, at, day, actor:'another-player', kind:'order', mode:'limit',
+                    action:'buy', side:'yes', qty:1, limit:10 + n };
+            }
+            patches.head = { id, n:6 };
+            await db.update(patches);
+        });
+
+        await page.locator('#forecastJumps').getByRole('link', { name:'Цены', exact:true }).tap();
+        const disclosure = page.locator('#moreBookLevels');
+        const prices = page.locator('#bookBids tr:visible td:first-child');
+        await expect(prices).toHaveText(['0,49', '0,45', '0,35', '0,16', '0,15', '0,14']);
+        await disclosure.tap();
+        await expect(disclosure).toHaveAttribute('aria-expanded', 'true');
+        await expect(prices).toHaveText(['0,49', '0,45', '0,35', '0,16', '0,15', '0,14', '0,13', '0,12']);
+        await disclosure.tap();
+        await expect(disclosure).toHaveAttribute('aria-expanded', 'false');
+        await expect(prices).toHaveCount(6);
+    });
+
+    test('a long question, its terms and four named outcomes are readable without side scrolling', async ({ page }) => {
+        await mockClass(page);
+        const event = '00000000000000000002';
+        await page.goto('/physics-forecast.html?event=' + event);
+        await expect(page.locator('#walletCash')).toHaveText('100 оч.');
+
+        const question = 'Какая сборная получит первое место в товарищеском матче учебного корпуса в конце следующей недели?';
+        const criteria = 'Считаются результаты основного времени и дополнительных раундов. ' +
+            'Официальный результат объявят после проверки протокола организаторами. ' +
+            'Если встречу перенесут на другую дату, этот прогноз будет отменён.';
+        const answers = { yes:'Сборная северного учебного корпуса', no:'Сборная южного учебного корпуса',
+            third:'Объединённая команда выпускников', fourth:'Гости из соседнего учебного корпуса' };
+        await page.evaluate(async ({ event, question, criteria, answers }) => {
+            const at = Date.now(), end = PhysicsForecast.endOfDay(PhysicsForecast.dayKey(at));
+            const db = window.AlmanionAccount.database.ref('physicsForecast');
+            await db.update({ ['events/' + event]:{ n:2, at, day:event, endAt:end, eventEnd:end,
+                actor:PhysicsForecast.OWNER, kind:'open', question, criteria, answers }, head:{ id:event, n:2 } });
+        }, { event, question, criteria, answers });
+
+        await page.locator('#eventPicker').tap();
+        await page.locator('#forecastEvents').getByRole('button', { name:new RegExp(question.replace('?', '\\?')) }).tap();
+        await expect(page.locator('#lessonQuestion')).toHaveText(question);
+        const terms = page.locator('#eventCriteria'), toggle = page.locator('#criteriaToggle');
+        const compactHeight = (await terms.boundingBox()).height;
+        await toggle.tap();
+        await expect(toggle).toHaveAttribute('aria-expanded', 'true');
+        expect((await terms.boundingBox()).height).toBeGreaterThan(compactHeight * 1.5);
+        await toggle.tap();
+        await expect(toggle).toHaveAttribute('aria-expanded', 'false');
+
+        await page.locator('#forecastJumps').getByRole('link', { name:'Сделка' }).tap();
+        const choices = page.locator('#tradeAnswers label');
+        await expect(choices).toHaveCount(4);
+        await choices.last().tap();
+        await expect(page.locator('#tradeAnswers :checked')).toHaveValue('fourth');
+        const outcomeRowsFit = await choices.evaluateAll(labels => labels.every(label => {
+            const card = label.getBoundingClientRect();
+            const name = label.querySelector('input + span > span');
+            const price = label.querySelector('b');
+            return name.getBoundingClientRect().right <= price.getBoundingClientRect().left + 1 &&
+                card.left >= 0 && card.right <= innerWidth + 1;
+        }));
+        expect(outcomeRowsFit).toBe(true);
+        expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(320);
+    });
+
+    test('the ranked nickname, score and close button fit after a trade', async ({ page }) => {
+        await mockClass(page);
+        await page.goto('/physics-forecast.html');
+        await page.locator('#budget').fill('7,85');
+        await page.locator('#placeOrder').tap();
+        await expect(page.locator('#walletYes')).toHaveText('15');
+
+        const nickname = 'ЧествующийДлинныйПсевдоним';
+        await page.evaluate(name => setRankProfile('classmate', { nickname:name }, true), nickname);
+        const open = page.locator('#rankOpen');
+        await open.tap();
+        const rating = page.getByRole('dialog', { name:'Рейтинг прогнозов' });
+        const row = rating.locator('.rank-row.is-mine');
+        const close = rating.getByRole('button', { name:'Закрыть рейтинг' });
+        await expect(row.getByText(nickname, { exact:true })).toBeVisible();
+        await expect(row.locator('.rank-score')).toHaveText('100');
+        await rating.getByRole('button', { name:'С открытыми долями', exact:true }).tap();
+        await expect(row.locator('.rank-score')).toHaveText('100,4');
+        expect(await row.evaluate(element => {
+            const name = element.querySelector('.rank-person');
+            const score = element.querySelector('.rank-score');
+            return name.getBoundingClientRect().right <= score.getBoundingClientRect().left &&
+                element.scrollWidth <= element.clientWidth + 1;
+        })).toBe(true);
+
+        await page.setViewportSize({ width:568, height:320 });
+        await expect(close).toBeInViewport({ ratio:1 });
+        await close.tap();
+        await expect(rating).toBeHidden();
+        await expect(open).toBeFocused();
+    });
+});
+
 test('an anonymous session can sign in on the market page and signing out hides the market', async ({ page }) => {
     await mockClass(page, 'anonymous');
     await page.goto('/physics-forecast.html');
@@ -830,6 +1026,33 @@ test.describe('touch chart', () => {
         await expect(tip).toBeHidden();
         await expect(page.locator('#chartState')).toHaveText('Сейчас');
         await expect(next).toBeDisabled();
+    });
+
+    test('phone chart keeps the selected probability and time window stable during a peer trade', async ({ page }) => {
+        await page.setViewportSize({ width: 320, height: 568 });
+        await page.clock.install({ time: new Date('2026-11-26T11:00:00Z') });
+        await mockClass(page);
+        await page.goto('/physics-forecast.html');
+        const plot = page.locator('#probChart'), probability = page.locator('#probability');
+        await expect(probability).toHaveText('50%');
+        await plot.tap({ position: { x: 40, y: 70 } });
+        const tip = page.locator('#chartTip'), hair = page.locator('#chartHair'), line = page.locator('#chartLine');
+        await expect(tip).toBeVisible();
+        const at = await tip.locator('span').innerText(), path = await line.getAttribute('d'), cursor = await hair.getAttribute('d');
+        await page.clock.runFor(5000);
+        await page.evaluate(async () => {
+            const root = window.AlmanionAccount.database.ref('physicsForecast');
+            const id = root.child('events').push().key, at = Date.now(), day = window.PhysicsForecast.dayKey(at);
+            await root.update({ head: { id, n: 2 }, ['events/' + id]: { kind: 'order', actor: 'second-player',
+                day, n: 2, at, side: 'yes', action: 'buy', mode: 'market', qty: 15, limit: 55, totalLimit: 785 } });
+        });
+        await expect(probability).toHaveText('50%');
+        await expect(tip.locator('span')).toHaveText(at);
+        await expect(line).toHaveAttribute('d', path);
+        await expect(hair).toHaveAttribute('d', cursor);
+        await page.locator('#chartReturn').tap();
+        await expect(tip).toBeHidden();
+        await expect(probability).toHaveText('52%');
     });
 
     test('opens from the mobile shortcuts and allows inspecting a point and returning to now', async ({ page }) => {

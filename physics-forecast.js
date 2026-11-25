@@ -35,28 +35,46 @@
     let eventListVersion = '';
     const execution = $('tradeForm').elements.execution;
     const market = () => engine.markets.get(selectedId);
-    const jumpLinks = [...document.querySelectorAll('.forecast-jumps a')];
-    const phone = matchMedia('(max-width: 759px)');
+    const jumpBar = $('forecastJumps'), jumpLinks = [...jumpBar.querySelectorAll('a')];
+    const phone = matchMedia('(max-width: 759px), (orientation: landscape) and (max-width: 1024px) and (max-height: 540px) and (pointer: coarse)');
+    const book = $('publicOrders'), moreBookLevels = $('moreBookLevels');
+    const bookJump = jumpBar.querySelector('a[href="#publicOrders"]');
     let jumpFrame = 0;
     function updateJumps() {
-        if (!phone.matches || jumpFrame) return;
+        if (!phone.matches || jumpBar.hidden || jumpFrame) return;
         jumpFrame = requestAnimationFrame(() => {
             jumpFrame = 0;
-            if ($('roundBody').hidden || $('gameSurface').hidden || $('chartDialog').open) return;
-            const edge = jumpLinks[0].parentElement.getBoundingClientRect().bottom + 14;
+            if (jumpBar.hidden || $('chartDialog').open) return;
+            const edge = Math.min(100, innerHeight * .24);
             let active = jumpLinks[0];
             for (const link of jumpLinks) {
-                const rect = $(link.hash.slice(1)).getBoundingClientRect();
-                if (rect.top <= edge) active = rect.bottom >= edge ? link : null;
+                if (!link.hidden && $(link.hash.slice(1)).getBoundingClientRect().top <= edge) active = link;
             }
+            const bottom = document.scrollingElement.scrollHeight - scrollY - innerHeight;
+            if (bottom <= 2 && scrollY > 0) active = jumpLinks.at(-1);
             for (const link of jumpLinks) {
                 if (link === active) link.setAttribute('aria-current', 'location');
                 else link.removeAttribute('aria-current');
             }
         });
     }
+    function arrangePanels() {
+        if (phone.matches) $('portfolio').before(book);
+        else $('roundBody').append(book);
+        updateJumps();
+    }
+    function updateDockForKeyboard() {
+        const typing = document.activeElement?.matches('#budget, #quantity, #limitPrice');
+        const keyboard = window.visualViewport && innerHeight - window.visualViewport.height > 120;
+        jumpBar.toggleAttribute('data-keyboard', Boolean(typing && keyboard));
+    }
+    arrangePanels();
+    phone.addEventListener('change', arrangePanels);
     window.addEventListener('scroll', updateJumps, { passive: true });
     window.addEventListener('resize', updateJumps);
+    window.visualViewport?.addEventListener('resize', updateDockForKeyboard);
+    document.addEventListener('focusin', updateDockForKeyboard);
+    document.addEventListener('focusout', () => requestAnimationFrame(updateDockForKeyboard));
     function node(tag, text, cls) {
         const element = document.createElement(tag);
         if (text !== undefined) element.textContent = text;
@@ -151,6 +169,7 @@
     window.addEventListener('resize', positionEventDialog);
 
     function gate(title, body, action) {
+        jumpBar.hidden = true;
         $('rankOpen').hidden = true;
         guide.setMarket(null, action === 'login' ? 'guest' : 'loading');
         $('accessGate').hidden = false;
@@ -189,7 +208,7 @@
         chart.reset();
         ranking.reset();
         renderedMarket = '';
-        resetDraft();
+        resetDraft(); expandBook(false); toggleCriteria(false);
         $('forecastAdminLink').href = 'admin.html#forecasts';
         $('feedback').textContent = $('orderFeedback').textContent = '';
         if (eventDialog.open) eventDialog.close();
@@ -251,9 +270,13 @@
     }
 
     function renderBook(m, phase) {
-        $('publicOrders').hidden = phase !== 'open';
+        book.hidden = phase !== 'open';
+        bookJump.hidden = book.hidden;
         if (phase !== 'open') return;
         const selected = $('bookSide').value, lanes = [['bookBids', 'bid'], ['bookAsks', 'ask']];
+        const label = m.answers[selected];
+        $('bookSideLabel').textContent = label;
+        $('bookSideLabel').parentElement.toggleAttribute('data-long', label.length > 12);
         let largest = 0;
         const books = lanes.map(([id, lane]) => {
             const levels = new Map();
@@ -281,6 +304,13 @@
             }
             $(id).replaceChildren(...rows);
         }
+        moreBookLevels.hidden = books.every(({ levels }) => levels.size <= 6);
+    }
+
+    function expandBook(expanded) {
+        book.toggleAttribute('data-expanded', expanded);
+        moreBookLevels.setAttribute('aria-expanded', String(expanded));
+        moreBookLevels.textContent = expanded ? 'Свернуть уровни цен' : 'Все уровни цен';
     }
 
     function renderHistory(m) {
@@ -297,6 +327,7 @@
         });
         $('tradeHistory').replaceChildren(...(rows.length ? rows : [node('p', 'В этом прогнозе у тебя пока нет сделок.', 'forecast-footnote')]));
         $('moreTrades').hidden = trades.length <= historyLimit;
+        $('walletTradeCount').textContent = fmt.format(trades.length);
     }
 
     function resetDraft() {
@@ -508,6 +539,7 @@
             cancel.addEventListener('click', () => send({ kind: 'cancel', day: selectedId, target: o.id })); row.append(info, cancel); return row;
         });
         $('myOrders').replaceChildren(...(rows.length ? rows : [node('p', 'У тебя нет заявок в ожидании сделки.', 'forecast-footnote')]));
+        $('walletOrderCount').textContent = fmt.format(rows.length);
     }
 
     function renderHeading(m) {
@@ -516,6 +548,7 @@
         $('lessonDate').textContent = m ? date(m.date) + ' · 10-1' : 'Класс 10-1';
         $('eventCriteria').textContent = m?.criteria || '';
         $('eventCriteria').hidden = !m?.criteria;
+        $('criteriaToggle').hidden = (m?.criteria?.length || 0) <= 118;
     }
 
     function paint() {
@@ -540,7 +573,7 @@
             else renderEventList(markets, at);
         }
         renderHeading(m);
-        $('emptyRound').hidden = !!m; $('roundBody').hidden = !m;
+        $('emptyRound').hidden = !!m; $('roundBody').hidden = !m; jumpBar.hidden = !m;
         const phase = m ? M.status(m, at) : '';
         guide.setMarket(m, m ? phase : 'empty');
         $('roundState').textContent = phaseLabel(m, phase); $('roundState').dataset.state = phase;
@@ -555,7 +588,13 @@
         $('roundSummary').textContent = phase === 'open' ? '' : phase === 'lock' ? 'Торги закрыты. Ждём итог события.' : phaseLabel(m, phase) + '.';
         chart.update(m, connected); renderTicket(); renderBook(m, phase); renderAccount(m, phase); renderHistory(m);
         updateJumps();
-        if (firstPaint) { firstPaint = false; $('gameSurface').classList.add('forecast-enter'); }
+        if (firstPaint) {
+            firstPaint = false; $('gameSurface').classList.add('forecast-enter');
+            const anchor = $(location.hash.slice(1));
+            if (phone.matches && anchor && !anchor.closest('[hidden]') && $('roundBody').contains(anchor)) {
+                requestAnimationFrame(() => anchor.scrollIntoView({ block: 'start' }));
+            }
+        }
     }
 
     async function send(command) {
@@ -599,9 +638,19 @@
             url.searchParams.set('event', key);
             history.replaceState(history.state, '', url);
         }
-        resetDraft(); $('orderFeedback').textContent = ''; notice(''); paint();
+        resetDraft(); expandBook(false); toggleCriteria(false);
+        $('orderFeedback').textContent = ''; notice(''); paint();
     }
-    $('bookSide').addEventListener('change', () => renderBook(market(), M.status(market(), now())));
+    function toggleCriteria(expanded) {
+        $('criteriaToggle').setAttribute('aria-expanded', String(expanded));
+        $('criteriaToggle').textContent = expanded ? 'Свернуть условия' : 'Читать условия';
+        $('eventCriteria').toggleAttribute('data-expanded', expanded);
+    }
+    $('criteriaToggle').addEventListener('click', () => toggleCriteria(!$('eventCriteria').hasAttribute('data-expanded')));
+    $('bookSide').addEventListener('change', () => {
+        expandBook(false); renderBook(market(), M.status(market(), now()));
+    });
+    moreBookLevels.addEventListener('click', () => expandBook(!book.hasAttribute('data-expanded')));
     $('tradeForm').addEventListener('input', e => {
         if (!['budget','quantity','limitPrice'].includes(e.target.id)) return;
         if (e.target.id === 'quantity' && $('tradeForm').elements.action.value === 'buy') buyQuantity = e.target.value;

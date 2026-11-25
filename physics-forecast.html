@@ -15,7 +15,7 @@
     <link rel="stylesheet" href="styles/buttons.css?v=20260929-2">
     <link rel="stylesheet" href="style-new.css?v=20260929-2">
     <link rel="stylesheet" href="styles/typography.css?v=20261002-1">
-    <link rel="stylesheet" href="styles/physics-forecast.css?v=20261126-events">
+    <link rel="stylesheet" href="styles/physics-forecast.css?v=20261126-phone-layout">
 </head>
 <body class="forecast-page" data-no-math>
     <script>window.AlmanionThemeBootstrap.applyBody();</script>
@@ -42,6 +42,7 @@
             </div>
             <h1 id="lessonQuestion">Прогнозы класса</h1>
             <p class="forecast-definition" id="eventCriteria" hidden></p>
+            <button type="button" class="forecast-mobile-only" id="criteriaToggle" aria-controls="eventCriteria" aria-expanded="false" hidden>Читать условия</button>
             <div class="forecast-hero-actions">
                 <button id="eventPicker" type="button" aria-haspopup="dialog" aria-controls="forecastEvents" aria-expanded="false" hidden>
                     <svg viewBox="0 0 20 20" aria-hidden="true"><rect x="3" y="4" width="14" height="13" rx="2"/><path d="M6.5 2.5v3M13.5 2.5v3M3 8.5h14"/></svg>
@@ -52,9 +53,9 @@
                     <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" aria-hidden="true"><path d="M2.5 16.5v-6h5v6m0 0v-12h5v12m0 0v-8h5v8h-15Z"/></svg>
                     Рейтинг
                 </button>
-                <button type="button" class="forecast-guide-link" data-market-guide="start" aria-haspopup="dialog" aria-controls="marketGuide">
+                <button type="button" class="forecast-guide-link" data-market-guide="start" aria-label="Как устроен рынок" aria-haspopup="dialog" aria-controls="marketGuide">
                     <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="10" cy="10" r="7.4"/><path stroke-linecap="round" d="M7.9 7.9a2.1 2.1 0 0 1 4.2.1c0 1.6-2.1 1.7-2.1 3.2m0 2.5v.05"/></svg>
-                    Как устроен рынок
+                    <span class="forecast-guide-label">Как устроен рынок</span><span class="forecast-mobile-only">Правила</span>
                 </button>
             </div>
         </header>
@@ -70,11 +71,6 @@
         <div class="forecast-game" id="gameSurface" hidden>
             <p id="emptyRound" class="forecast-panel" hidden>Открытых и завершённых прогнозов пока нет.</p>
             <div id="roundBody" class="forecast-layout" hidden>
-                <nav class="forecast-jumps" aria-label="Разделы прогноза">
-                    <a href="#marketChart" aria-current="location"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 15V5m0 10h14M5 12l4-4 3 2 5-6"/></svg>График</a>
-                    <a href="#tradeTicket"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 7h13l-3-3m4 9H4l3 3"/></svg>Сделка</a>
-                    <a href="#portfolio"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 6h14v10H3zM7 6V4h6v2m-10 4c4 2 10 2 14 0"/></svg>Портфель</a>
-                </nav>
                 <section class="forecast-panel forecast-chart-card" id="marketChart" aria-labelledby="chartTitle" tabindex="-1">
                 </section>
                 <section class="forecast-panel forecast-ticket" id="tradeTicket" aria-labelledby="ticketTitle" tabindex="-1">
@@ -95,28 +91,30 @@
                             <fieldset class="forecast-options" id="tradeAnswers"><legend>Лучшая цена за долю</legend>
                             </fieldset>
                         </div>
-                        <label class="forecast-limit" id="limitField" hidden><span id="limitLabel">Цена за долю, оч.</span><input id="limitPrice" type="text" inputmode="decimal" value="0,50" autocomplete="off"></label>
-                        <div class="forecast-size" id="sizeFields">
-                            <div class="forecast-size-head"><label id="sizeLabel" for="budget">Лимит покупки</label><span id="sizeAvailable"></span></div>
-                            <div class="forecast-size-entry">
-                                <input id="budget" type="text" inputmode="decimal" value="5" autocomplete="off" aria-describedby="sizeAvailable">
-                                <input id="quantity" type="number" min="1" max="100" step="1" value="5" inputmode="numeric" aria-describedby="sizeAvailable" hidden>
-                                <select id="buyUnit" aria-label="Единица покупки"><option value="points">Очки</option><option value="shares">Доли</option></select>
-                                <span id="sellUnit" hidden>долей</span>
+                        <div class="forecast-ticket-fields">
+                            <label class="forecast-limit" id="limitField" hidden><span id="limitLabel">Цена за долю, оч.</span><input id="limitPrice" type="text" inputmode="decimal" value="0,50" autocomplete="off"></label>
+                            <div class="forecast-size" id="sizeFields">
+                                <div class="forecast-size-head"><label id="sizeLabel" for="budget">Лимит покупки</label><span id="sizeAvailable"></span></div>
+                                <div class="forecast-size-entry">
+                                    <input id="budget" type="text" inputmode="decimal" value="5" autocomplete="off" aria-describedby="sizeAvailable">
+                                    <input id="quantity" type="number" min="1" max="100" step="1" value="5" inputmode="numeric" aria-describedby="sizeAvailable" hidden>
+                                    <select id="buyUnit" aria-label="Единица покупки"><option value="points">Очки</option><option value="shares">Доли</option></select>
+                                    <span id="sellUnit" hidden>долей</span>
+                                </div>
+                                <div class="forecast-presets" id="sizePresets" role="group" aria-label="Быстрый выбор суммы или количества">
+                                    <button type="button" data-size="0"></button><button type="button" data-size="1"></button><button type="button" data-size="2"></button><button type="button" data-size="3"></button>
+                                </div>
                             </div>
-                            <div class="forecast-presets" id="sizePresets" role="group" aria-label="Быстрый выбор суммы или количества">
-                                <button type="button" data-size="0"></button><button type="button" data-size="1"></button><button type="button" data-size="2"></button><button type="button" data-size="3"></button>
+                            <div class="forecast-quote" id="quotePreview" aria-live="polite" aria-atomic="true"></div>
+                            <div class="forecast-recovery" id="quoteActions" hidden>
+                                <button type="button" id="useCapacity" hidden></button>
+                                <button type="button" id="useLimit" hidden>Задать свою цену</button>
+                                <button type="button" id="buyInstead" hidden></button>
+                                <a href="#orderListTitle" id="showOrders" hidden>К открытым заявкам</a>
+                                <button type="button" class="forecast-inline-help" id="explainDepth" data-market-guide="orders" aria-haspopup="dialog" aria-controls="marketGuide" hidden>Почему нет заявок?</button>
                             </div>
+                            <button type="submit" class="forecast-primary" id="placeOrder" disabled>Купить доли</button>
                         </div>
-                        <div class="forecast-quote" id="quotePreview" aria-live="polite" aria-atomic="true"></div>
-                        <div class="forecast-recovery" id="quoteActions" hidden>
-                            <button type="button" id="useCapacity" hidden></button>
-                            <button type="button" id="useLimit" hidden>Задать свою цену</button>
-                            <button type="button" id="buyInstead" hidden></button>
-                            <a href="#orderListTitle" id="showOrders" hidden>К открытым заявкам</a>
-                            <button type="button" class="forecast-inline-help" id="explainDepth" data-market-guide="orders" aria-haspopup="dialog" aria-controls="marketGuide" hidden>Почему нет заявок?</button>
-                        </div>
-                        <button type="submit" class="forecast-primary" id="placeOrder" disabled>Купить доли</button>
                     </form>
                     <a class="forecast-portfolio-link" id="closedPortfolio" href="#portfolio" hidden>Мой портфель ↓</a>
                     <p id="feedback" class="forecast-feedback" role="status"></p>
@@ -125,21 +123,38 @@
                     <h2 id="walletTitle">Мой портфель</h2>
                     <dl id="walletBalances"><div><dt>Свободные очки</dt><dd id="walletCash">—</dd></div><div><dt>В заявках на покупку</dt><dd id="walletHeld">—</dd></div></dl>
                     <p class="forecast-footnote" id="walletOutcome"></p>
+                    <nav class="forecast-mobile-only forecast-portfolio-jumps" aria-label="Разделы портфеля">
+                        <a href="#orderListTitle">Мои заявки <span id="walletOrderCount"></span></a>
+                        <a href="#historyTitle">История сделок <span id="walletTradeCount"></span></a>
+                    </nav>
                 </section>
                 <section class="forecast-panel forecast-orders"><h2 id="orderListTitle" tabindex="-1">Мои открытые заявки</h2><div id="myOrders"></div><p class="forecast-feedback" id="orderFeedback" role="status"></p></section>
                 <section class="forecast-panel forecast-history" aria-labelledby="historyTitle">
-                    <div class="forecast-section-head"><h2 id="historyTitle">Мои сделки</h2></div>
+                    <div class="forecast-section-head"><h2 id="historyTitle" tabindex="-1">Мои сделки</h2></div>
                     <div id="tradeHistory"></div><button id="moreTrades" class="forecast-secondary" type="button" hidden>Показать ещё</button>
                 </section>
-                <section class="forecast-panel forecast-book" id="publicOrders" aria-labelledby="bookTitle">
-                    <div class="forecast-book-heading"><h2 id="bookTitle">Предложения</h2><select id="bookSide" aria-label="Исход в списке предложений"></select></div>
-                    <div class="forecast-columns">
+                <section class="forecast-panel forecast-book" id="publicOrders" aria-labelledby="bookTitle" tabindex="-1">
+                    <div class="forecast-book-heading">
+                        <h2 id="bookTitle">Предложения</h2>
+                        <span class="forecast-book-choice">
+                            <span id="bookSideLabel" class="forecast-mobile-only" aria-hidden="true"></span>
+                            <select id="bookSide" aria-label="Исход в списке предложений"></select>
+                        </span>
+                    </div>
+                    <div class="forecast-columns" id="forecastBookLevels">
                         <table><caption>Покупают</caption><thead><tr><th scope="col">Цена, оч.</th><th scope="col">Доли</th></tr></thead><tbody id="bookBids"></tbody></table>
                         <table><caption>Продают</caption><thead><tr><th scope="col">Цена, оч.</th><th scope="col">Доли</th></tr></thead><tbody id="bookAsks"></tbody></table>
                     </div>
+                    <button type="button" class="forecast-mobile-only forecast-secondary" id="moreBookLevels" aria-expanded="false" aria-controls="forecastBookLevels" hidden>Все уровни цен</button>
                 </section>
             </div>
         </div>
+        <nav class="forecast-jumps" id="forecastJumps" aria-label="Разделы прогноза" hidden>
+            <a href="#marketChart" aria-current="location"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 15V5m0 10h14M5 12l4-4 3 2 5-6"/></svg>График</a>
+            <a href="#tradeTicket"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 7h13l-3-3m4 9H4l3 3"/></svg>Сделка</a>
+            <a href="#publicOrders"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3.5 5h13m-13 5h9m-9 5h6m5 0h2.5"/></svg>Цены</a>
+            <a href="#portfolio"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 6h14v10H3zM7 6V4h6v2m-10 4c4 2 10 2 14 0"/></svg>Портфель</a>
+        </nav>
         <dialog id="chartDialog" aria-labelledby="chartDialogQuestion chartTitle"></dialog>
         <dialog id="marketGuide" aria-labelledby="marketGuideTitle">
             <header class="forecast-guide-head">
@@ -229,12 +244,12 @@
     <script defer src="kc-storage.js?v=20260911-1"></script>
     <script defer src="script.js?v=20260906-1"></script>
     <script defer src="settings.js?v=20261009-1"></script>
-    <script defer src="account.js?v=20260908-1"></script>
+    <script defer src="account.js?v=20261126-forecast-phone"></script>
     <script defer src="physics-forecast-core.js?v=20261126-liquidity"></script>
-    <script defer src="physics-forecast-chart.js?v=20261125-outcomes"></script>
+    <script defer src="physics-forecast-chart.js?v=20261126-phone-layout"></script>
     <script defer src="physics-forecast-ledger.js?v=20261126-liquidity"></script>
-    <script defer src="physics-forecast-guide.js?v=20261125-outcomes"></script>
-    <script defer src="physics-forecast-ranking.js"></script>
-    <script defer src="physics-forecast.js?v=20261126-events"></script>
+    <script defer src="physics-forecast-guide.js?v=20261126-phone-layout"></script>
+    <script defer src="physics-forecast-ranking.js?v=20261126-phone-layout"></script>
+    <script defer src="physics-forecast.js?v=20261126-phone-layout"></script>
 </body>
 </html>

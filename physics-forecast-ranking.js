@@ -2,6 +2,7 @@ window.createForecastRanking = function (account, amount) {
     'use strict';
     const byId = id => document.getElementById(id);
     const dialog = byId('forecastRanking'), list = byId('rankRows');
+    const opener = byId('rankOpen');
     const modes = [...dialog.querySelectorAll('[data-rank-mode]')];
     const pageSize = 25;
     const watched = new Map();
@@ -94,7 +95,7 @@ window.createForecastRanking = function (account, amount) {
         rows = [];
         byId('rankMine').textContent = '';
     }
-    byId('rankOpen').addEventListener('click', () => {
+    opener.addEventListener('click', () => {
         if (!user || !state || dialog.open) return;
         limit = pageSize;
         dialog.showModal();
@@ -106,7 +107,11 @@ window.createForecastRanking = function (account, amount) {
         const r = dialog.getBoundingClientRect();
         if (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) dialog.close();
     });
-    dialog.addEventListener('close', () => { if (!dialog.open) release(); });
+    dialog.addEventListener('close', () => {
+        if (dialog.open) return;
+        release();
+        if (user && !opener.hidden) opener.focus({ preventScroll: true });
+    });
     for (const button of modes) button.addEventListener('click', () => { mode = button.dataset.rankMode; refresh(); });
     byId('rankMore').addEventListener('click', () => { limit += pageSize; render(); });
     return {
