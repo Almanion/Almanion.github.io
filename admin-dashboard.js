@@ -699,7 +699,7 @@
             byId('adminRoleForm').reset();
             byId('adminRoleSelection').textContent = '';
             byId('adminRolesSection').classList.remove('is-editing');
-            showAdminToast(enabledRoleNames.length ? 'Роли пользователя сохранены' : 'Все дополнительные роли отозваны');
+            showAdminToast(siteAdmin || matcenterAdmin || contentEditor || dutyEditor || tourEditor || englishAccess || contestsAccess ? 'Роли пользователя сохранены' : 'Все дополнительные роли отозваны');
             await loadRoleManager(user);
         } catch (error) {
             if (current !== dashboardGeneration) return;
