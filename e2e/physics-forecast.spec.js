@@ -462,7 +462,7 @@ test.describe('market navigation on a narrow phone', () => {
         await expect(prices).toHaveCount(6);
     });
 
-    test('a long question, its terms and four named outcomes are readable without side scrolling', async ({ page }) => {
+    for (const count of [2, 4]) test('a long question and ' + count + ' named outcomes are readable without side scrolling', async ({ page }) => {
         await mockClass(page);
         const event = '00000000000000000002';
         await page.goto('/physics-forecast.html?event=' + event);
@@ -472,8 +472,10 @@ test.describe('market navigation on a narrow phone', () => {
         const criteria = 'Считаются результаты основного времени и дополнительных раундов. ' +
             'Официальный результат объявят после проверки протокола организаторами. ' +
             'Если встречу перенесут на другую дату, этот прогноз будет отменён.';
-        const answers = { yes:'Сборная северного учебного корпуса', no:'Сборная южного учебного корпуса',
-            third:'Объединённая команда выпускников', fourth:'Гости из соседнего учебного корпуса' };
+        const names = ['Сборная северного учебного корпуса', 'Сборная южного учебного корпуса',
+            'Объединённая команда выпускников', 'Гости из соседнего учебного корпуса'];
+        const sides = M.SIDE_IDS.slice(0, count);
+        const answers = Object.fromEntries(sides.map((id, index) => [id, names[index]]));
         await page.evaluate(async ({ event, question, criteria, answers }) => {
             const at = Date.now(), end = PhysicsForecast.endOfDay(PhysicsForecast.dayKey(at));
             const db = window.AlmanionAccount.database.ref('physicsForecast');
@@ -494,14 +496,15 @@ test.describe('market navigation on a narrow phone', () => {
 
         await page.locator('#forecastJumps').getByRole('link', { name:'Сделка' }).tap();
         const choices = page.locator('#tradeAnswers label');
-        await expect(choices).toHaveCount(4);
+        await expect(choices).toHaveCount(count);
         await choices.last().tap();
-        await expect(page.locator('#tradeAnswers :checked')).toHaveValue('fourth');
+        await expect(page.locator('#tradeAnswers :checked')).toHaveValue(sides.at(-1));
         const outcomeRowsFit = await choices.evaluateAll(labels => labels.every(label => {
             const card = label.getBoundingClientRect();
             const name = label.querySelector('input + span > span');
             const price = label.querySelector('b');
-            return name.getBoundingClientRect().right <= price.getBoundingClientRect().left + 1 &&
+            return name.getBoundingClientRect().width > card.width * .55 &&
+                name.getBoundingClientRect().right <= price.getBoundingClientRect().left + 1 &&
                 card.left >= 0 && card.right <= innerWidth + 1;
         }));
         expect(outcomeRowsFit).toBe(true);

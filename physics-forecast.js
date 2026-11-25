@@ -253,6 +253,7 @@
         if (renderedMarket === m.id) return;
         renderedMarket = m.id;
         const choices = $('tradeAnswers'), balances = $('walletBalances');
+        choices.toggleAttribute('data-compact', m.sides.length === 2 && m.sides.every(side => m.answers[side].length <= 5));
         for (const label of choices.querySelectorAll('label')) label.remove();
         for (const row of balances.querySelectorAll('[data-holding]')) row.remove();
         for (const side of m.sides) {

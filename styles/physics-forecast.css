@@ -832,14 +832,14 @@ body:has(#marketTour[open]) .forecast-shell { padding-bottom: max(50vh, 220px); 
     .forecast-ticket form, #ticketChoices { gap: 10px; }
     .forecast-ticket .forecast-section-head { flex-wrap: wrap; gap: 5px 8px; }
     .forecast-options { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
-    .forecast-options:has([data-side="third"]) label { grid-column: 1 / -1; }
+    .forecast-options:not([data-compact]) label { grid-column: 1 / -1; }
     .forecast-options label > span {
         display: grid; grid-template-columns: 8px minmax(0, 1fr) max-content;
         min-height: 46px; padding: 5px 8px; gap: 5px;
     }
     .forecast-options b { grid-column: 3; max-width: 10ch; }
     .forecast-options .forecast-price-empty { max-width: 7ch; }
-    .forecast-options:has([data-side="third"]) .forecast-price-empty { max-width: 11ch; }
+    .forecast-options:not([data-compact]) .forecast-price-empty { max-width: 11ch; }
     #tradeTicket { scroll-margin-block-start: 7px; }
     .forecast-limit input { min-width: 5rem; text-align: center; }
     .forecast-size-entry select, .forecast-book-heading select { font-size: 1rem; }
