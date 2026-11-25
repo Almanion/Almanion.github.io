@@ -43,6 +43,103 @@ function fixture() {
     assert.deepEqual(replayed, state);
 }
 {
+    const start = M.endOfDay(day) - M.DAY + 100;
+    for (const count of [2, 3, 4]) {
+        const state = M.create(), log = [];
+        const key = 'abcdefghijklmnopqrst';
+        function add(command, actor = M.OWNER, id = 'event-' + (state.n + 1)) {
+            const event = { ...command, day: key, actor, n: state.n + 1, at: start + state.n };
+            log.push([id, event]);
+            return M.apply(state, event, id);
+        }
+        const sides = M.SIDE_IDS.slice(0, count);
+        const answers = Object.fromEntries(sides.map((side, i) => [side, 'Исход ' + (i + 1)]));
+        assert.deepEqual(add({ kind:'open', question:'Какой исход?', answers, endAt:M.endOfDay(day), liquidity:1 }, M.OWNER, key), {});
+        const market = state.markets.get(key), side = sides[0];
+        const depth = () => M.ranked(market, 'ask', side).reduce((sum, order) => sum + order.qty, 0);
+        const buy = qty => ({ kind:'order', action:'buy', side, mode:'market', qty, limit:99 });
+        function verifyCollateral() {
+            for (const [uid, pos] of market.positions) {
+                const reserved = M.held(market, uid, start);
+                if (uid === M.MAKER) assert(M.INITIAL + pos.cash - reserved.cash >= 0);
+                for (const outcome of sides) assert(pos[outcome] >= reserved[outcome]);
+            }
+            for (const outcome of sides) {
+                const aggregate = [...market.positions.values()].reduce((sum, pos) => sum + pos.cash + 100 * pos[outcome], 0);
+                assert.equal(aggregate, 0);
+                const bid = M.ranked(market, 'bid', outcome)[0], ask = M.ranked(market, 'ask', outcome)[0];
+                if (bid && ask) assert(M.quotePrice(bid, outcome) < M.quotePrice(ask, outcome));
+            }
+        }
+        const initial = count === 2 ? 85 : 50;
+        assert.equal(depth(), initial);
+        assert.equal(add(buy(initial + 1), 'reader').error, 'depth');
+        assert.equal(depth(), initial, 'A rejected order does not refresh quotes');
+        const first = add(buy(initial), 'reader');
+        assert.equal(first.filled, initial);
+        assert.equal(first.cash, { 2:5135, 3:2090, 4:1690 }[count]);
+        assert.equal(depth(), 20);
+        assert.equal(market.liquidity.extraSets, 20);
+        assert.equal(market.trades.reduce((sum, trade) => sum + trade.qty, 0), initial);
+        verifyCollateral();
+
+        assert.equal(add(buy(20), 'reader').filled, 20);
+        assert.equal(add(buy(1), 'reader').error, 'depth');
+        assert.equal(add({ ...buy(20), action:'sell', limit:1 }, 'reader').filled, 20);
+        assert.equal(depth(), 20, 'Returned stock can be quoted after the minting cap');
+        assert.equal(market.liquidity.extraSets, 20);
+        assert.equal(add(buy(1), 'reader').filled, 1);
+        verifyCollateral();
+
+        add({ kind:'lock' });
+        assert.equal(depth(), 0);
+        assert.deepEqual(add({ kind:side }), {});
+        assert.equal(M.available(state, 'reader', key, start), M.INITIAL + M.position(market, 'reader').cash + 100 * M.position(market, 'reader')[side]);
+        const replay = M.create();
+        log.forEach(([id, record]) => M.apply(replay, record, id));
+        assert.deepEqual(replay, state);
+    }
+}
+{
+    const old = fixture(), { state, m } = old;
+    assert.equal(old.order('reader', 'yes', 'buy', 85, 65, 'market').filled, 85);
+    assert.equal(old.order('reader', 'yes', 'buy', 1, 99, 'market').error, 'depth');
+    assert.equal(old.add({ kind:'liquidity' }, 'reader').error, 'invalid');
+    const oldFills = structuredClone(m.trades), before = { date:m.date, endAt:m.endAt, phase:m.phase };
+    assert.deepEqual(old.add({ kind:'liquidity' }).error, undefined);
+    assert.deepEqual(m.trades, oldFills);
+    assert.deepEqual({ date:m.date, endAt:m.endAt, phase:m.phase }, before);
+    assert.equal(old.order('reader', 'yes', 'buy', 1, 99, 'market').filled, 1);
+    assert.equal(old.add({ kind:'liquidity' }).error, 'invalid');
+
+    const blocked = fixture();
+    blocked.order('reader', 'yes', 'buy', 85, 65, 'market');
+    blocked.order('peer', 'yes', 'buy', 5, 99);
+    blocked.add({ kind:'liquidity' });
+    assert.equal(M.ranked(blocked.m, 'ask', 'yes').length, 0, 'A refill cannot cross a resting order');
+    assert.equal(blocked.m.liquidity.extraSets, 0);
+}
+{
+    const state = M.create();
+    const key = 'abcdefghijklmnopqrst', start = M.endOfDay(day) - M.DAY + 1;
+    function add(command, actor = M.OWNER, id = 'event-' + (state.n + 1)) {
+        return M.apply(state, { ...command, day:key, actor, n:state.n + 1, at:start + state.n }, id);
+    }
+    const answers = { yes:'Первый', no:'Второй', third:'Третий' };
+    add({ kind:'open', question:'Какой исход?', answers, endAt:M.endOfDay(day) }, M.OWNER, key);
+    for (const side of ['no', 'third']) {
+        const order = { kind:'order', side, mode:'market' };
+        assert.equal(add({ ...order, action:'buy', qty:50, limit:99 }, side).filled, 50);
+        assert.equal(add({ ...order, action:'sell', qty:49, limit:1 }, side).filled, 49);
+        assert.equal(add({ ...order, action:'sell', mode:'limit', qty:1, limit:22 }, side).left, 1);
+    }
+    assert.equal(add({ kind:'order', side:'yes', mode:'market', action:'buy', qty:50, limit:99 }, 'reader').filled, 50);
+    assert.deepEqual(add({ kind:'liquidity' }), {});
+    const market = state.markets.get(key);
+    const cheapest = market.sides.map(side => M.quotePrice(M.ranked(market, 'ask', side)[0], side));
+    assert.deepEqual(cheapest, [56, 22, 22], 'A refill cannot discount a complete set below its guaranteed payout');
+}
+{
     const state = M.create(), entries = [];
     const at = M.endOfDay(day) - M.DAY + 100;
     const match = '00000000000000000001', club = '00000000000000000002';

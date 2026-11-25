@@ -201,6 +201,62 @@ const M = require('../physics-forecast-core');
         await assertFails(at(db('balance-player')).update(newOrder));
         newOrder.head.v = 4;
         await assertSucceeds(at(db('balance-player')).update(newOrder));
-        console.log('Forecast rules passed deadlines and immutable, owner-only balance adjustments.');
+
+        async function liquidityChange(actor, day, fields = {}) {
+            const id = book.child('events').push().key;
+            const { n: previous } = (await book.child('head').get()).val();
+            const n = previous + 1;
+            const event = { n, at:{'.sv':'timestamp'}, actor, day, kind:'liquidity', expires:Date.now()+30000, ...fields };
+            return { head:{ id, n, v:5 }, ['events/'+id]:event, ['lastBy/'+actor]:id };
+        }
+        for (const [source, actor] of [[a,'a'], [siteAdmin,'site-admin'], [db(M.OWNER,'anonymous'), M.OWNER]]) {
+            await assertFails(at(source).update(await liquidityChange(actor, after.head.id)));
+        }
+        for (const day of [first.head.id, three.head.id, fourId, '00000000000000000999']) {
+            await assertFails(book.update(await liquidityChange(M.OWNER, day)));
+        }
+        for (const fields of [
+            { liquidity:1 }, { amount:M.INITIAL }, { endAt:eventEnd },
+            { expires:null }, { expires:Date.now()-1000 }, { expires:Date.now()+120000 }
+        ]) {
+            await assertFails(book.update(await liquidityChange(M.OWNER, after.head.id, fields)));
+        }
+        const activation = await liquidityChange(M.OWNER, after.head.id);
+        const roundsBeforeActivation = (await book.child('rounds').get()).val();
+        await assertFails(book.update({ ...activation, head:{ ...activation.head, v:4 } }));
+        await assertFails(book.update({ ...activation, ['rounds/'+after.head.id]:{
+            ...roundsBeforeActivation[after.head.id], last:activation.head.id
+        } }));
+        await assertSucceeds(book.update(activation));
+        assert.deepEqual((await book.child('rounds').get()).val(), roundsBeforeActivation);
+        await assertFails(book.child('events/'+activation.head.id+'/day').set(second.head.id));
+
+        const futureEnd = M.endOfDay(M.dayKey(Date.now() + M.DAY));
+        const upgradedOpen = { question:'Ликвидный рынок', eventEnd:futureEnd, endAt:futureEnd, answers:names };
+        for (const liquidity of [false, true, '1', 0, 2]) {
+            const invalid = await advanced(M.OWNER, 'open', { ...upgradedOpen, liquidity });
+            invalid.head.v = 5;
+            await assertFails(book.update(invalid));
+        }
+        for (const [source, actor] of [[a,'a'], [siteAdmin,'site-admin']]) {
+            const denied = await advanced(actor, 'open', { ...upgradedOpen, liquidity:1 });
+            denied.head.v = 5;
+            await assertFails(at(source).update(denied));
+        }
+        const upgraded = await advanced(M.OWNER, 'open', { ...upgradedOpen, liquidity:1 });
+        upgraded.head.v = 4;
+        await assertFails(book.update(upgraded));
+        upgraded.head.v = 5;
+        await assertSucceeds(book.update(upgraded));
+        assert.equal((await book.child('events/'+upgraded.head.id+'/liquidity').get()).val(), 1);
+        await assertFails(book.child('events/'+upgraded.head.id+'/liquidity').remove());
+        await assertFails(book.update(await liquidityChange(M.OWNER, upgraded.head.id)));
+        const nextOrder = await advanced('liquidity-player', 'order', { day:upgraded.head.id });
+        const lastPlayer = at(db('liquidity-player'));
+        nextOrder.head.v = 4;
+        await assertFails(lastPlayer.update(nextOrder));
+        nextOrder.head.v = 5;
+        await assertSucceeds(lastPlayer.update(nextOrder));
+        console.log('Forecast rules passed deadlines, immutable balance adjustments and owner-only liquidity upgrades.');
     } finally { await env.cleanup(); }
 })().catch(e => { console.error(e); process.exitCode=1; });

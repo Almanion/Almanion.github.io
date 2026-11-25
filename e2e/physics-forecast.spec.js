@@ -94,6 +94,11 @@ for (const [count, width] of [[2, 320], [3, 390], [4, 1280]]) {
         expect(await inputs.nth(1).evaluate(input => input.validity.customError)).toBe(true);
         await inputs.nth(1).fill(labels[1]); await open.click();
         await expect(page.locator('#manageStatus')).toContainText('10:15 мск');
+        const created = await page.evaluate(() => {
+            const { head, events } = JSON.parse(sessionStorage.getItem('forecast-test-data'));
+            return { version:head.v, liquidity:events[head.id].liquidity };
+        });
+        expect(created).toEqual({ version:5, liquidity:1 });
         await page.locator('#editDeadline summary').click();
         await page.locator('#manageDeadline').fill('2026-11-26T09:02');
         await page.getByRole('button', { name:'Сохранить время' }).click();
@@ -454,6 +459,52 @@ test('a 67-point buying limit shows the actual cost and empty offers after the a
     await expect(quote).toContainText('Сейчас никто не продаёт доли «Нет».');
     await expect(submit).toBeDisabled();
     await expect(page.locator('#useLimit')).toBeVisible();
+});
+
+test('owner can replenish an exhausted legacy market and its existing round and trades stay intact', async ({ page }) => {
+    await page.clock.install({ time:new Date('2026-11-26T06:00:02Z') });
+    await mockClass(page, 'owner');
+    const switchToParticipant = () => page.evaluate(() => window.changeForecastAccount({ uid:'classmate', isAnonymous:false }));
+    const savedLedger = () => page.evaluate(() => JSON.parse(sessionStorage.getItem('forecast-test-data')));
+    const buyNo = page.locator('#tradeAnswers label:has(input[value=no])');
+    const submit = page.locator('#placeOrder');
+
+    await page.goto('/physics-forecast.html');
+    await switchToParticipant();
+    await buyNo.click();
+    await page.getByLabel('Лимит покупки').fill('67');
+    await expect(submit).toHaveText('Купить 85 долей «Нет»');
+    await submit.click();
+    await expect(page.locator('#walletNo')).toHaveText('85');
+    await expect(page.locator('#quotePreview')).toHaveText('Сейчас никто не продаёт доли «Нет».');
+    const before = await savedLedger();
+    const day = M.dayKey(Date.parse('2026-11-26T06:00:02Z'));
+
+    await page.goto('/admin.html#forecasts');
+    const enable = page.locator('[data-command="liquidity"]');
+    await expect(enable).toBeVisible();
+    await enable.click();
+    await expect(page.locator('#confirmText')).toContainText('пополнение');
+    expect((await savedLedger()).head).toEqual(before.head);
+    await page.locator('#confirmGo').click();
+    await expect(page.locator('#adminFeedback')).toHaveText('Пополнение долей включено.');
+    await expect(enable).toBeHidden();
+    const enabled = await savedLedger();
+    expect(enabled.head.v).toBe(5);
+    expect(enabled.events[enabled.head.id]).toMatchObject({ kind:'liquidity', day, actor:M.OWNER });
+    expect(enabled.rounds).toEqual(before.rounds);
+    expect(enabled.events).toMatchObject(before.events);
+
+    await page.locator('#forecastMarketLink').click();
+    await switchToParticipant();
+    await expect(page.locator('#walletNo')).toHaveText('85');
+    await buyNo.click();
+    await page.locator('#buyUnit').selectOption('shares');
+    await page.locator('#quantity').fill('1');
+    await expect(submit).toHaveText('Купить 1 долю «Нет»');
+    await submit.click();
+    await expect(page.locator('#walletNo')).toHaveText('86');
+    expect((await savedLedger()).head.v).toBe(5);
 });
 
 test('selling the selected holding respects reservations, supports half or all and never trades until confirmed', async ({ page }) => {

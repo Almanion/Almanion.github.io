@@ -8,6 +8,7 @@
         { label: 'Школьный матч', question: 'Выиграет ли 10-1 матч?', criteria: 'Ответ «Да» — победа 10-1 по официальному результату матча.' }
     ];
     const confirmations = {
+        liquidity: 'Включить пополнение заявок на продажу из резерва площадки?',
         lock: 'Закрыть торги и снять оставшиеся заявки?',
         void: 'Отменить прогноз и вернуть очки за все сделки по нему?'
     };
@@ -93,6 +94,7 @@
         }
         function canApply(kind, phase) {
             if (!current) return false;
+            if (kind === 'liquidity') return phase === 'open' && !current.liquidity;
             if (kind === 'lock') return phase === 'open';
             if (kind === 'void') return phase === 'open' || phase === 'lock';
             return current.sides.includes(kind) && phase === 'lock' && now() >= current.eventEnd - M.DAY;
@@ -138,7 +140,8 @@
             const status = phase === 'lock' && now() < current.eventEnd - M.DAY ? 'Итог можно указать в день события' : phaseLabel(current, phase);
             $('manageStatus').textContent = formatDate(current.date) + ' · ' + status + (phase === 'open' ? ' до ' + window.ForecastLedger.cutoff(current.endAt, current.date) : '');
             for (const button of commands()) {
-                button.hidden = !canApply(button.dataset.command, phase);
+                const kind = button.dataset.command;
+                button.hidden = !canApply(kind, phase) || (kind === 'liquidity' && disabled);
                 button.disabled = disabled;
             }
             if (pending && (pending.day !== current.id || !canApply(pending.kind, phase))) dismiss();
@@ -213,7 +216,7 @@
             }
             const same = markets.find(m => m.phase !== 'void' && m.date === date.value && clean(m.question).toLowerCase() === title.toLowerCase());
             if (same) { selectMarket(same.id); $('adminFeedback').textContent = 'Прогноз с этим вопросом на эту дату уже есть.'; return; }
-            send({ kind: 'open', question: title, ...(condition ? { criteria: condition } : {}), eventEnd, endAt, answers });
+            send({ kind: 'open', question: title, ...(condition ? { criteria: condition } : {}), eventEnd, endAt, answers, liquidity: 1 });
         });
         editTime.addEventListener('input', () => editTime.setCustomValidity(''));
         $('deadlineForm').addEventListener('submit', event => {

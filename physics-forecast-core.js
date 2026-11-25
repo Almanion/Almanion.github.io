@@ -5,6 +5,9 @@
     const INITIAL = 10000; // Integer hundredths of a point throughout the exchange.
     const MAX_BALANCE = 100000000;
     const MAX_QTY = 100;
+    const REFILL_THRESHOLD = 10;
+    const REFILL_DEPTH = 20;
+    const MAX_EXTRA_SETS = 20;
     const OWNER = '2M2ZdLQcJAhluPjUVFNJ6MyQrdH2';
     const MAKER = '@liquidity';
     const SIDE_IDS = ['yes', 'no', 'third', 'fourth'];
@@ -162,9 +165,10 @@
     }
 
     function eventDetails(e, id) {
-        if (!(e.endAt > e.at)) return null;
+        if (!(e.endAt > e.at) || (e.liquidity !== undefined && e.liquidity !== 1)) return null;
         // The original ledger used the Moscow calendar date as the market key.
-        if (e.endAt === endOfDay(e.day) && e.question === undefined && e.criteria === undefined && e.answers === undefined && e.eventEnd === undefined)
+        if (e.endAt === endOfDay(e.day) && e.question === undefined && e.criteria === undefined && e.answers === undefined
+            && e.eventEnd === undefined && e.liquidity === undefined)
             return { date: e.day, ...physics };
         if (e.day !== id || !/^[-_a-zA-Z0-9]{20}$/.test(id) || !validText(e.question, QUESTION_LIMIT)
             || (e.criteria !== undefined && !validText(e.criteria, CRITERIA_LIMIT))
@@ -180,6 +184,7 @@
         const market = { id: e.day, ...details, answers, sides, series, marks: {}, lastPrices: {},
             openedAt: e.at, eventEnd: e.eventEnd ?? e.endAt, endAt: e.endAt, phase: 'open', orders: [],
             positions: new Map(), trades: [], closedAt: null };
+        if (e.liquidity === 1) market.liquidity = { extraSets: 0 };
         function seed(side, action, limit, qty) {
             market.orders.push({ id: 'seed-' + side + limit, actor: MAKER, side, action, limit, qty, priority: 0 });
         }
@@ -201,6 +206,52 @@
         }
         recordMark(market, e.at);
         return market;
+    }
+
+    function refillPrice(market, side) {
+        const seedCenter = 100 / market.sides.length;
+        const bid = ranked(market, 'bid', side)[0];
+        const bidFloor = bid ? quotePrice(bid, side) + 1 : 1;
+        const last = market.lastPrices[side] ?? Math.round(seedCenter);
+        const price = Math.max(bidFloor, Math.ceil(seedCenter) + 1, Math.min(99, last + 2));
+        let otherPrices = 0;
+        for (const other of market.sides) {
+            if (other === side) continue;
+            const ask = ranked(market, 'ask', other)[0];
+            if (!ask) return price;
+            otherPrices += quotePrice(ask, other);
+        }
+        // The new quote must not offer a complete set for less than its payout.
+        return Math.max(price, 100 - otherPrices);
+    }
+
+    function refillAsks(market, event) {
+        if (!market.liquidity) return;
+        const inventory = position(market, MAKER);
+        for (const side of market.sides) {
+            const depth = ranked(market, 'ask', side).reduce((sum, offer) => sum + offer.qty, 0);
+            if (depth >= REFILL_THRESHOLD) continue;
+            const limit = refillPrice(market, side);
+            if (limit > 99) continue;
+            const required = REFILL_DEPTH - depth;
+            const reserved = held(market, MAKER, event.at);
+            const stock = inventory[side] - reserved[side];
+            if (stock < required && event.kind !== 'cancel') {
+                // Each complete set costs one point and covers exactly one winning payout.
+                const freeCash = INITIAL + inventory.cash - reserved.cash;
+                const sets = Math.max(0, Math.min(required - stock, MAX_EXTRA_SETS - market.liquidity.extraSets,
+                    Math.floor(freeCash / 100)));
+                if (sets) {
+                    inventory.cash -= 100 * sets;
+                    for (const outcome of market.sides) inventory[outcome] += sets;
+                    market.positions.set(MAKER, inventory);
+                    market.liquidity.extraSets += sets;
+                }
+            }
+            const qty = Math.min(required, inventory[side] - reserved[side]);
+            if (qty > 0) market.orders.push({ id: 'refill-' + event.n + '-' + side, actor: MAKER, side,
+                action: 'sell', limit, qty, priority: event.n });
+        }
     }
 
     const errors = {
@@ -294,6 +345,7 @@
         market.orders = market.orders.filter(o => o.qty > 0);
         if (plan.left) market.orders.push({ id, actor: e.actor, side: e.side, action: e.action,
             limit: e.limit, qty: plan.left, priority: e.n });
+        if (plan.filled) refillAsks(market, e);
         recordMark(market, e.at);
         return { filled: plan.filled, left: plan.left, cash: plan.cash };
     }
@@ -318,7 +370,17 @@
             else if (e.kind === 'cancel' && phase === 'open') {
                 const index = market.orders.findIndex(o => o.id === e.target && o.actor === e.actor);
                 if (index < 0) receipt = { error: 'missing' };
-                else { market.orders.splice(index, 1); recordMark(market, e.at); receipt = {}; }
+                else {
+                    market.orders.splice(index, 1);
+                    refillAsks(market, e);
+                    recordMark(market, e.at);
+                    receipt = {};
+                }
+            } else if (e.actor === OWNER && e.kind === 'liquidity' && phase === 'open' && !market.liquidity) {
+                market.liquidity = { extraSets: 0 };
+                refillAsks(market, e);
+                recordMark(market, e.at);
+                receipt = {};
             } else if (e.actor === OWNER && e.kind === 'deadline' && phase === 'open' && validDeadline(e.endAt, e.at, market.eventEnd)) {
                 market.endAt = e.endAt;
                 receipt = {};

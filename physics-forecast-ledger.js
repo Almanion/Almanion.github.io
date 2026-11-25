@@ -59,7 +59,8 @@
     async function append({ database, actor, command, now, active }) {
         const admin = !['order', 'cancel'].includes(command.kind);
         const balance = command.kind === 'balance';
-        if (admin && (actor !== M.OWNER || !['open', 'deadline', 'lock', 'void', 'balance', ...M.SIDE_IDS].includes(command.kind))) {
+        const liquidity = command.kind === 'liquidity';
+        if (admin && (actor !== M.OWNER || !['open', 'deadline', 'lock', 'void', 'balance', 'liquidity', ...M.SIDE_IDS].includes(command.kind))) {
             throw Error(M.errors.invalid);
         }
         if (balance && !M.validBalanceChange(command)) throw Error(M.errors.invalid);
@@ -80,10 +81,11 @@
             const n = (head?.n || 0) + 1;
             const event = { ...command, actor, n, at: firebase.database.ServerValue.TIMESTAMP };
             const patch = { head: { n, id }, ['events/' + id]: event, ['lastBy/' + actor]: id };
-            if (head?.v === 4 || balance) patch.head.v = 4;
+            if (head?.v === 5 || liquidity || command.liquidity === 1) patch.head.v = 5;
+            else if (head?.v === 4 || balance) patch.head.v = 4;
             else if (head?.v === 3 || command.eventEnd !== undefined || command.answers || command.kind === 'deadline') patch.head.v = 3;
             else if (head?.v === 2 || command.kind === 'open') patch.head.v = 2;
-            if (admin && !balance) {
+            if (admin && !balance && !liquidity) {
                 const creating = command.kind === 'open';
                 const previous = creating ? null : (await root.child('rounds/' + command.day).get()).val();
                 checkSession();
@@ -99,7 +101,7 @@
                 if ((await root.child('events/' + id).get()).exists()) return confirmed();
                 const latest = (await root.child('head').get()).val();
                 if ((latest?.n || 0) >= n) continue;
-                if (!admin || command.kind === 'deadline') {
+                if (!admin || liquidity || command.kind === 'deadline') {
                     const round = (await root.child('rounds/' + command.day).get()).val();
                     if (round && (round.phase !== 'open' || now() >= round.endAt)) throw Error(M.errors.closed);
                 }

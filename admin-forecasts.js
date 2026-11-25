@@ -7,6 +7,11 @@
     const timestamp = new Intl.DateTimeFormat('ru-RU', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Moscow' });
     const points = amount => numbers.format(amount / 100) + ' оч.';
     const balancePageSize = 24;
+    const successMessages = {
+        open: 'Прогноз открыт.',
+        deadline: 'Время закрытия изменено.',
+        liquidity: 'Пополнение долей включено.'
+    };
 
     window.createAdminForecasts = function ({ database, currentUser, accountName }) {
         const picker = byId('forecastPicker'), feedback = byId('adminFeedback'), workspace = byId('forecastWorkspace');
@@ -279,8 +284,7 @@
                 if (!result || result.error) throw Error(M.errors[result?.error] || 'Сервер не подтвердил действие.');
                 if (command.kind === 'open') { form.resetForm(); selectMarket(day); }
                 targetFeedback.textContent = command.kind === 'balance' ? 'Баланс обновлён. Доступно ' + points(result.after) :
-                    command.kind === 'open' ? 'Прогноз открыт.' : command.kind === 'deadline' ? 'Время закрытия изменено.' :
-                        ledger.phaseLabel(engine.markets.get(day), command.kind) + '.';
+                    successMessages[command.kind] || ledger.phaseLabel(engine.markets.get(day), command.kind) + '.';
                 return true;
             } catch (error) {
                 if (current()) targetFeedback.textContent = error.message || 'Не удалось подтвердить действие.';
