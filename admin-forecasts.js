@@ -14,7 +14,7 @@
         const balances = byId('forecastBalances'), balanceSearch = byId('forecastBalanceSearch');
         const balanceList = byId('forecastBalanceList'), balanceStatus = byId('forecastBalanceStatus'), moreBalances = byId('forecastMoreBalances');
         const balanceEditor = byId('forecastBalanceEditor'), balanceAmount = byId('forecastBalanceAmount');
-        const balanceAccount = byId('forecastBalanceAccount'), balanceCurrent = byId('forecastBalanceCurrent');
+        const balanceAccount = byId('forecastBalanceAccount'), balanceDetail = byId('forecastBalanceIdentity'), balanceCurrent = byId('forecastBalanceCurrent');
         const balanceFeedback = byId('forecastBalanceFeedback'), balanceSave = byId('forecastBalanceSave'), balanceCancel = byId('forecastBalanceCancel');
         const subscriptions = [];
         let active = false, initialized = false, connected = false, busy = false, generation = 0;
@@ -109,7 +109,8 @@
             if (editingUid) {
                 const { name, detail } = balanceIdentity(editingUid);
                 const { available, reserved } = balancesFor(editingUid, at);
-                balanceAccount.textContent = name === detail ? name : name + ' · ' + detail;
+                balanceAccount.textContent = name;
+                balanceDetail.textContent = name === detail ? '' : detail;
                 balanceCurrent.textContent = 'Доступно ' + points(available) + ' · В заявках ' + points(reserved);
                 balanceAmount.disabled = balanceCancel.disabled = busy;
                 balanceSave.disabled = busy || !connected;
@@ -126,7 +127,7 @@
             balanceAmount.setCustomValidity('');
             balanceEditor.reset();
             balanceEditor.hidden = true;
-            balanceAccount.textContent = balanceCurrent.textContent = '';
+            balanceAccount.textContent = balanceDetail.textContent = balanceCurrent.textContent = '';
             if (restoreFocus) (balanceButton(uid) || balanceSearch).focus();
         }
 
@@ -161,7 +162,7 @@
                 { title: 'Изменить баланс?', confirmLabel: 'Подтвердить', danger: amount < expected });
             if (session !== generation || !active || !isOwner()) return;
             confirmingBalance = false;
-            if (!confirmed) return;
+            if (!confirmed || editingUid !== uid) return;
             if (!connected) { balanceFeedback.textContent = 'Нет связи. Повторите после подключения.'; return; }
             if (await send({ kind: 'balance', uid, amount, expected }) && session === generation && editingUid === uid) {
                 closeBalanceEditor(true);
@@ -172,7 +173,12 @@
             balanceFeedback.textContent = '';
         });
         balanceCancel.addEventListener('click', () => { closeBalanceEditor(true); balanceFeedback.textContent = ''; });
-        balanceSearch.addEventListener('input', () => { balanceLimit = balancePageSize; renderBalances(); });
+        balanceSearch.addEventListener('input', () => {
+            if (editingUid && !busy) closeBalanceEditor(false);
+            if (!busy) balanceFeedback.textContent = '';
+            balanceLimit = balancePageSize;
+            renderBalances();
+        });
         moreBalances.addEventListener('click', () => {
             const index = balanceLimit;
             balanceLimit += balancePageSize;
