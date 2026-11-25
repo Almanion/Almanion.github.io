@@ -7,6 +7,11 @@
     const OWNER = '2M2ZdLQcJAhluPjUVFNJ6MyQrdH2';
     const MAKER = '@liquidity';
     const sides = ['yes', 'no'];
+    const physics = {
+        question: 'Будет ли работа по физике?',
+        criteria: 'Работа — любое письменное задание, за которое выставляется оценка.'
+    };
+    const QUESTION_LIMIT = 160, CRITERIA_LIMIT = 400;
     const moscow = new Intl.DateTimeFormat('sv-SE', { timeZone: 'Europe/Moscow', year: 'numeric', month: '2-digit', day: '2-digit' });
     const dayKey = time => moscow.format(new Date(time));
 
@@ -35,7 +40,7 @@
         return reserved;
     }
 
-    function available(state, uid, day, at) {
+    function available(state, uid, marketId, at) {
         let cash = INITIAL;
         for (const market of state.markets.values()) {
             if (market.phase === 'void') continue;
@@ -44,7 +49,7 @@
             else {
                 const free = pos.cash - held(market, uid, at).cash;
                 // Profits still subject to cancellation can only fund this same market.
-                cash += market.day === day ? free : Math.min(0, free);
+                cash += market.id === marketId ? free : Math.min(0, free);
             }
         }
         return cash;
@@ -77,10 +82,26 @@
         if (p !== null && p !== market.chart.at(-1)?.p) market.chart.push({ at, p });
     }
 
-    function openMarket(e) {
-        const market = { day: e.day, openedAt: e.at, endAt: e.endAt, phase: 'open', orders: [],
+    function validText(value, limit) {
+        return typeof value === 'string' && value.length > 0 && value.length <= limit
+            && !value.startsWith(' ') && !value.endsWith(' ') && !/[\r\n\t]/.test(value);
+    }
+
+    function eventDetails(e, id) {
+        if (!(e.endAt > e.at)) return null;
+        // The original ledger used the Moscow calendar date as the market key.
+        if (e.endAt === endOfDay(e.day) && e.question === undefined && e.criteria === undefined)
+            return { date: e.day, ...physics };
+        if (e.day !== id || !/^[-_a-zA-Z0-9]{20}$/.test(id) || !validText(e.question, QUESTION_LIMIT)
+            || (e.criteria !== undefined && !validText(e.criteria, CRITERIA_LIMIT))
+            || !Number.isSafeInteger(e.endAt) || e.endAt > e.at + 32 * DAY || e.endAt % DAY !== 21 * 3600000) return null;
+        return { date: dayKey(e.endAt - DAY), question: e.question, criteria: e.criteria || '' };
+    }
+
+    function openMarket(e, details) {
+        const market = { id: e.day, ...details, openedAt: e.at, endAt: e.endAt, phase: 'open', orders: [],
             positions: new Map(), trades: [], chart: [], closedAt: null };
-        // Fully funded openings: 2 * (10*49 + 25*45 + 50*35) = 67.30 points per lesson.
+        // Fully funded openings: 2 * (10*49 + 25*45 + 50*35) = 67.30 points per market.
         for (const [price, qty] of [[49, 10], [45, 25], [35, 50]]) {
             for (const side of sides) market.orders.push({ id: 'seed-' + side + price, actor: MAKER,
                 side, action: 'buy', limit: price, qty, priority: 0 });
@@ -94,7 +115,7 @@
         price: 'Цена доли должна быть от 1 до 99 сотых очка.', cash: 'Недостаточно свободных очков.',
         shares: 'Недостаточно свободных долей для продажи.', depth: 'Не хватает встречных заявок по этой цене. Уменьшите количество или задайте свою цену.',
         own: 'На пути исполнения ваша встречная заявка. Сначала снимите её.',
-        limit: 'У вас уже 20 открытых заявок на этот урок.', requote: 'Цена изменилась. Проверьте котировку и подтвердите заново.',
+        limit: 'У вас уже 20 открытых заявок на это событие.', requote: 'Цена изменилась. Проверьте котировку и подтвердите заново.',
         missing: 'Эта заявка уже исполнена или снята.', invalid: 'Действие недоступно.'
     };
 
@@ -172,9 +193,12 @@
         state.n = e.n;
         const market = state.markets.get(e.day);
         let receipt = { error: 'invalid' };
-        if (e.kind === 'open' && e.actor === OWNER && !market && e.endAt === endOfDay(e.day) && e.endAt > e.at) {
-            state.markets.set(e.day, openMarket(e));
-            receipt = {};
+        if (e.kind === 'open' && e.actor === OWNER && !market) {
+            const details = eventDetails(e, id);
+            if (details) {
+                state.markets.set(e.day, openMarket(e, details));
+                receipt = {};
+            }
         } else if (market) {
             const phase = status(market, e.at);
             if (e.kind === 'order') receipt = match(state, market, e, id);
@@ -193,7 +217,7 @@
         state.receipts.set(id, receipt);
         return receipt;
     }
-    const api = { DAY, OWNER, INITIAL, MAX_QTY, dayKey, endOfDay, create, status, held, position, available,
+    const api = { DAY, OWNER, INITIAL, MAX_QTY, physics, QUESTION_LIMIT, CRITERIA_LIMIT, dayKey, endOfDay, create, status, held, position, available,
         ranked, yesPrice, midpoint, preview, maxOrderSize, apply, errors };
     if (typeof module === 'object' && module.exports) module.exports = api;
     else root.PhysicsForecast = api;

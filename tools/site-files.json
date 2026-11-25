@@ -70,6 +70,7 @@
     "physics-forecast.js",
     "physics-forecast-core.js",
     "physics-forecast-chart.js",
+    "physics-forecast-admin.js",
     "physics.html",
     "poll.js",
     "planner.html",

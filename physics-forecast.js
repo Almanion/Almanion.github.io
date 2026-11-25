@@ -21,18 +21,20 @@
         return Number.isSafeInteger(cents) ? cents : NaN;
     }
     const date = day => dayFmt.format(M.endOfDay(day) - M.DAY);
-    const labels = { yes: 'Будет', no: 'Не будет' };
-    const phases = { open: 'Торги открыты', lock: 'Торги закрыты', yes: 'Работа была', no: 'Работы не было', void: 'Урок отменён' };
-    const confirmations = { lock: 'Закрыть торги и снять все оставшиеся заявки?', yes: 'Подтвердить, что работа была, и начислить выплаты?',
-        no: 'Подтвердить, что работы не было, и начислить выплаты?', void: 'Отменить этот рынок и полностью вернуть его участникам очки?' };
-    let engine = M.create(), ids = [], day = '', user = null, connected = false, offset = 0, ready = false, busy = false;
-    let epoch = 0, clock = 0, connectionTimer, feedOff, pendingSnapshot, adminCommand, historyLimit = 12, ticket = null;
+    const labels = { yes: 'Да', no: 'Нет' };
+    const phases = { open: 'Торги открыты', lock: 'Торги закрыты', yes: 'Итог «Да»', no: 'Итог «Нет»', void: 'Прогноз отменён' };
+    const groupNames = ['Открытые', 'Ждут итога', 'Завершённые'];
+    const phaseGroup = { open: 0, lock: 1, yes: 2, no: 2, void: 2 };
+    let engine = M.create(), ids = [], selectedId = '', user = null, connected = false, offset = 0, ready = false, busy = false;
+    let epoch = 0, clock = 0, connectionTimer, feedOff, pendingSnapshot, historyLimit = 12, ticket = null;
+    let pickerSignature = '';
     let firstPaint = true, renderedToday = '';
     let buyQuantity = '5';
     const api = window.AlmanionAccount;
     const now = () => Date.now() + offset;
     const chart = window.createPhysicsForecastChart(now);
-    const market = () => engine.markets.get(day);
+    const market = () => engine.markets.get(selectedId);
+    const adminPanel = window.createForecastAdmin({ now, formatDate: date, phaseLabel: phases, selectMarket, send });
     const jumpLinks = [...document.querySelectorAll('.forecast-jumps a')];
     const phone = matchMedia('(max-width: 759px)');
     let jumpFrame = 0;
@@ -64,8 +66,7 @@
     function gate(title, body, action) {
         $('accessGate').hidden = false;
         $('gameSurface').hidden = $('ownerTools').hidden = $('connectionNotice').hidden = true;
-        $('lessonQuestion').textContent = 'Будет ли сегодня работа по физике?';
-        $('lessonDate').textContent = 'Прогноз класса 10-1';
+        renderHeading(null);
         $('gateTitle').textContent = title;
         $('gateText').textContent = body;
         const button = $('gateAction');
@@ -90,10 +91,6 @@
             ids.push(id);
         }
         ready = true;
-        if (!engine.markets.has(day)) {
-            const days = [...engine.markets.keys()].sort();
-            day = days.find(key => key >= M.dayKey(now())) || days.at(-1) || '';
-        }
         paint();
     }
 
@@ -101,11 +98,10 @@
         clearTimeout(connectionTimer);
         if (feedOff) feedOff();
         feedOff = undefined;
-        epoch++; ready = busy = false; day = ''; ids = []; engine = M.create(); ticket = pendingSnapshot = adminCommand = null;
+        epoch++; ready = busy = false; selectedId = pickerSignature = ''; ids = []; engine = M.create(); ticket = pendingSnapshot = null;
         chart.reset();
         resetDraft();
-        $('confirmAction').hidden = true;
-        $('ownerTools').open = false;
+        adminPanel.reset();
         $('feedback').textContent = $('orderFeedback').textContent = $('adminFeedback').textContent = '';
         for (const id of ['tradeHistory', 'myOrders', 'bookAsks', 'bookBids', 'lessonSelect']) $(id).replaceChildren();
     }
@@ -167,7 +163,7 @@
                 node('small', stampFmt.format(t.at) + ' · ' + t.qty + ' × ' + amount(price)));
             row.append(info, node('strong', amount(price * t.qty) + ' оч.')); return row;
         });
-        $('tradeHistory').replaceChildren(...(rows.length ? rows : [node('p', mine ? 'На этом уроке у тебя пока нет сделок.' : 'Первой сделки пока не было.', 'forecast-footnote')]));
+        $('tradeHistory').replaceChildren(...(rows.length ? rows : [node('p', mine ? 'В этом прогнозе у тебя пока нет сделок.' : 'Первой сделки пока не было.', 'forecast-footnote')]));
         $('moreTrades').hidden = trades.length <= historyLimit;
     }
 
@@ -180,7 +176,7 @@
     function draftOrder() {
         const { action, side } = $('tradeForm').elements;
         const mode = $('orderMode').value;
-        return { kind: 'order', day, actor: user.uid, action: action.value, side: side.value, mode,
+        return { kind: 'order', day: selectedId, actor: user.uid, action: action.value, side: side.value, mode,
             limit: mode === 'limit' ? readPoints($('limitPrice').value) : action.value === 'buy' ? 99 : 1 };
     }
 
@@ -291,7 +287,7 @@
         const at = now(), order = draftOrder(), buy = order.action === 'buy';
         const open = M.status(m, at) === 'open', disabled = !open || !connected || busy;
         const byBudget = buy && $('buyUnit').value === 'points';
-        const free = freeShares(m, order.side, at), balance = M.available(engine, user.uid, day, at);
+        const free = freeShares(m, order.side, at), balance = M.available(engine, user.uid, selectedId, at);
         const emptySale = !buy && !free, own = M.position(m, user.uid)[order.side];
         const maxQty = open && !emptySale ? M.maxOrderSize(engine, order, at, byBudget ? balance : Infinity) : 0;
         let maxValue = maxQty;
@@ -340,7 +336,7 @@
 
     function renderAccount(m, phase) {
         const pos = M.position(m, user.uid), reserve = M.held(m, user.uid, now());
-        $('walletCash').textContent = amount(M.available(engine, user.uid, day, now())) + ' оч.';
+        $('walletCash').textContent = amount(M.available(engine, user.uid, selectedId, now())) + ' оч.';
         $('walletHeld').textContent = amount(reserve.cash) + ' оч.';
         $('walletYes').textContent = String(pos.yes); $('walletNo').textContent = String(pos.no);
         for (const side of ['yes', 'no']) {
@@ -352,56 +348,68 @@
             sellButton.disabled = busy || !connected;
         }
         const paid = phase === 'yes' || phase === 'no';
-        $('walletOutcome').textContent = phase === 'void' ? 'Все сделки этого урока аннулированы.' : paid
-            ? 'Выплата ' + pos[phase] + ' оч. · результат урока ' + amount(pos.cash + pos[phase] * 100) + ' оч.' : '';
+        $('walletOutcome').textContent = phase === 'void' ? 'Все сделки по этому событию аннулированы.' : paid
+            ? 'Выплата ' + pos[phase] + ' оч. · результат по событию ' + amount(pos.cash + pos[phase] * 100) + ' оч.' : '';
         const rows = m.orders.filter(o => phase === 'open' && o.actor === user.uid).map(o => {
             const row = node('div', undefined, 'forecast-row'), info = node('div');
             info.append(node('b', (o.action === 'buy' ? 'Покупка' : 'Продажа') + ' · ' + labels[o.side]), node('small', o.qty + ' дол. по ' + amount(o.limit)));
             const cancel = node('button', 'Снять', 'forecast-secondary'); cancel.type = 'button'; cancel.disabled = busy || !connected || phase !== 'open';
-            cancel.addEventListener('click', () => send({ kind: 'cancel', day, target: o.id })); row.append(info, cancel); return row;
+            cancel.addEventListener('click', () => send({ kind: 'cancel', day: selectedId, target: o.id })); row.append(info, cancel); return row;
         });
         $('myOrders').replaceChildren(...(rows.length ? rows : [node('p', 'Активных заявок нет.', 'forecast-footnote')]));
     }
 
-    function renderAdmin(m, phase) {
-        const owner = user.uid === M.OWNER;
-        $('ownerTools').hidden = !owner;
-        if (!owner) return;
-        const today = M.dayKey(now());
-        $('newDay').min = today; $('newDay').max = M.dayKey(now() + 31 * M.DAY);
-        if (!$('newDay').value) $('newDay').value = today;
-        $('createRound').querySelector('button').disabled = busy || !connected;
-        $('manageRound').hidden = !m || !['open','lock'].includes(phase);
-        if (!m) return;
-        $('manageTitle').textContent = 'Урок · ' + date(day);
-        for (const button of document.querySelectorAll('[data-command]')) {
-            const cmd = button.dataset.command;
-            button.hidden = cmd === 'lock' ? phase !== 'open' : cmd !== 'void' && (phase !== 'lock' || now() < m.endAt - M.DAY);
-            button.disabled = busy || !connected;
+    function renderHeading(m) {
+        $('lessonQuestion').textContent = m?.question || 'Прогнозы класса';
+        $('lessonQuestion').toggleAttribute('data-long', (m?.question.length || 0) > 70);
+        $('lessonDate').textContent = m ? date(m.date) + ' · 10-1' : 'Класс 10-1';
+        $('eventCriteria').textContent = m?.criteria || '';
+        $('eventCriteria').hidden = !m?.criteria;
+    }
+
+    function orderedMarkets(at) {
+        return [...engine.markets.values()].sort((a, b) => {
+            const first = phaseGroup[M.status(a, at)], second = phaseGroup[M.status(b, at)];
+            return first - second || (first === 2 ? b.endAt - a.endAt : a.endAt - b.endAt)
+                || b.openedAt - a.openedAt || a.id.localeCompare(b.id);
+        });
+    }
+
+    function renderPicker(markets, at) {
+        const select = $('lessonSelect');
+        const signature = markets.map(m => m.id + ':' + M.status(m, at)).join('|');
+        if (signature !== pickerSignature) {
+            const groups = groupNames.map(label => { const group = node('optgroup'); group.label = label; return group; });
+            for (const m of markets) {
+                const phase = M.status(m, at), index = phaseGroup[phase];
+                const suffix = index === 2 ? ' · ' + phases[phase] : '';
+                groups[index].append(new Option(date(m.date) + ' · ' + m.question + suffix, m.id));
+            }
+            select.replaceChildren(...groups.filter(group => group.childElementCount));
+            pickerSignature = signature;
         }
-        $('confirmGo').disabled = busy || !connected;
+        select.value = selectedId; select.disabled = busy;
+        $('eventPicker').hidden = !markets.length;
     }
 
     function paint() {
         if (!ready || !user) return;
         $('accessGate').hidden = true; $('gameSurface').hidden = false; $('connectionNotice').hidden = connected;
-        const m = market(), today = M.dayKey(now());
-        renderedToday = today;
-        const days = [...engine.markets.keys()].sort().reverse();
-        const select = $('lessonSelect');
-        if (select.length !== days.length || days.some((d, index) => select.options[index].value !== d)) {
-            select.replaceChildren(...days.map(d => { const o = node('option', date(d)); o.value = d; return o; }));
+        const at = now(), markets = orderedMarkets(at);
+        if (!engine.markets.has(selectedId)) {
+            const requested = new URLSearchParams(location.search).get('event');
+            selectedId = engine.markets.has(requested) ? requested : markets[0]?.id || '';
         }
-        select.value = day; select.disabled = busy;
+        const m = market();
+        renderedToday = M.dayKey(at);
+        renderPicker(markets, at);
+        renderHeading(m);
         $('emptyRound').hidden = !!m; $('roundBody').hidden = !m;
-        const phase = m ? M.status(m, now()) : '';
+        const phase = m ? M.status(m, at) : '';
         $('roundState').textContent = phases[phase] || ''; $('roundState').dataset.state = phase;
-        renderAdmin(m, phase);
+        adminPanel.render(user.uid === M.OWNER, m, markets, busy, connected);
         if (!m) { chart.reset(); return; }
-        const when = day === today ? 'сегодня ' : day === M.dayKey(now() + M.DAY) ? 'завтра ' : '';
-        $('lessonQuestion').textContent = 'Будет ли ' + when + 'работа по физике?';
-        $('lessonDate').textContent = date(day) + ' · 10-1';
-        $('roundSummary').textContent = phase === 'open' ? '' : phase === 'lock' ? 'Ждём итог урока.' : phases[phase] + '.';
+        $('roundSummary').textContent = phase === 'open' ? '' : phase === 'lock' ? 'Ждём итог события.' : phases[phase] + '.';
         chart.update(m, connected); renderTicket(); renderBook(m, phase); renderAccount(m, phase); renderHistory(m);
         updateJumps();
         if (firstPaint) { firstPaint = false; $('gameSurface').classList.add('forecast-enter'); }
@@ -414,6 +422,8 @@
         const actor = user.uid, session = epoch;
         const root = api.database.ref('physicsForecast');
         const id = root.child('events').push().key;
+        // The existing ledger field is named "day". New markets use their opening event's ID.
+        if (command.kind === 'open') command = { ...command, day: id };
         const expires = Math.floor(now()) + 30000;
         busy = true; pendingSnapshot = null;
         const feedback = $(admin ? 'adminFeedback' : command.kind === 'cancel' ? 'orderFeedback' : 'feedback');
@@ -426,8 +436,10 @@
                 const n = (head?.n || 0) + 1;
                 const e = { ...command, actor, n, at: firebase.database.ServerValue.TIMESTAMP };
                 const patch = { head: { n, id }, ['events/' + id]: e, ['lastBy/' + actor]: id };
+                // From the first custom event, writers must understand the full shared wallet.
+                if (head?.v === 2 || command.kind === 'open') patch.head.v = 2;
                 if (admin) patch['rounds/' + command.day] = { last: id, phase: command.kind,
-                    endAt: command.endAt || M.endOfDay(command.day) };
+                    endAt: command.endAt ?? engine.markets.get(command.day).endAt };
                 else e.expires = expires;
                 try { await root.update(patch); accepted = true; }
                 catch {
@@ -449,8 +461,8 @@
             syncSnapshot(snapshot);
             const result = engine.receipts.get(id);
             if (!result || result.error) throw Error(M.errors[result?.error] || 'Не удалось подтвердить действие.');
-            if (command.kind === 'open') { selectLesson(command.day); }
-            if (admin) feedback.textContent = 'Сохранено.';
+            if (command.kind === 'open') { adminPanel.resetForm(); selectMarket(command.day); }
+            if (admin) feedback.textContent = command.kind === 'open' ? 'Прогноз открыт.' : phases[command.kind] + '.';
             else if (command.kind === 'cancel') feedback.textContent = 'Заявка снята.';
             else {
                 const outcome = ' «' + labels[command.side] + '»';
@@ -469,11 +481,17 @@
         }
     }
 
-    function selectLesson(key) {
-        day = key; historyLimit = 12; adminCommand = null; $('confirmAction').hidden = true;
+    function selectMarket(key) {
+        if (!engine.markets.has(key)) return;
+        selectedId = key; historyLimit = 12; adminPanel.showSelected();
+        const url = new URL(location.href);
+        if (url.searchParams.get('event') !== key && /^https?:$/.test(url.protocol)) {
+            url.searchParams.set('event', key);
+            history.replaceState(history.state, '', url);
+        }
         resetDraft(); $('orderFeedback').textContent = ''; notice(''); notice('', true); paint();
     }
-    $('lessonSelect').addEventListener('change', e => selectLesson(e.target.value));
+    $('lessonSelect').addEventListener('change', e => selectMarket(e.target.value));
     $('tradeForm').addEventListener('input', e => {
         if (!['budget','quantity','limitPrice'].includes(e.target.id)) return;
         if (e.target.id === 'quantity' && $('tradeForm').elements.action.value === 'buy') buyQuantity = e.target.value;
@@ -492,7 +510,7 @@
                 const plan = M.preview(engine, ticket, now());
                 if (!plan.error) {
                     const cost = ticket.mode === 'limit' ? ticket.qty * ticket.limit : plan.cash;
-                    $('budget').value = priceInput(Math.min(cost, M.available(engine, user.uid, day, now())));
+                    $('budget').value = priceInput(Math.min(cost, M.available(engine, user.uid, selectedId, now())));
                 }
             }
         } else if (['action','side'].includes(e.target.name) || e.target.id === 'orderMode') {
@@ -533,22 +551,6 @@
     $('tradeForm').addEventListener('submit', e => { e.preventDefault(); if (ticket) send({ ...ticket }); });
     $('historyScope').addEventListener('change', () => { historyLimit = 12; renderHistory(market()); });
     $('moreTrades').addEventListener('click', () => { historyLimit += 24; renderHistory(market()); });
-    $('createRound').addEventListener('submit', e => {
-        e.preventDefault();
-        const key = $('newDay').value;
-        if (engine.markets.has(key)) { selectLesson(key); notice('Этот рынок уже создан.', true); return; }
-        send({ kind: 'open', day: key, endAt: M.endOfDay(key) });
-    });
-    document.querySelectorAll('[data-command]').forEach(button => button.addEventListener('click', () => {
-        adminCommand = { kind: button.dataset.command, day };
-        $('confirmText').textContent = date(day) + '. ' + confirmations[adminCommand.kind];
-        $('confirmAction').hidden = false; $('confirmBack').focus();
-    }));
-    $('confirmBack').addEventListener('click', () => { adminCommand = null; $('confirmAction').hidden = true; });
-    $('confirmGo').addEventListener('click', () => {
-        if (adminCommand?.day === day) send(adminCommand);
-        adminCommand = null; $('confirmAction').hidden = true;
-    });
     if (!api?.database || !api.auth) { gate('Не удалось подключиться', 'Для входа нужен доступ к серверу аккаунтов.', 'retry'); return; }
     api.database.ref('.info/connected').on('value', snap => { connected = snap.val() === true; paint(); });
     api.database.ref('.info/serverTimeOffset').on('value', snap => { offset = Number(snap.val()) || 0; paint(); });

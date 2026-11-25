@@ -107,9 +107,9 @@
             el('chartArea').setAttribute('d', path + 'V' + (h - pad) + 'H' + x(start).toFixed(1) + 'Z');
             el('chartMarker').setAttribute('transform', 'translate(' + right + ' ' + y(lastPrice).toFixed(1) + ')');
             svg.dataset.live = String(live && end === latest);
-            svg.setAttribute('aria-label', 'Вероятность работы в конце графика ' + percent(lastPrice) + '. Шкала от ' + percent(bottom) + ' до ' + percent(top) + '.');
+            svg.setAttribute('aria-label', market.question + ' Вероятность «Да» в конце графика ' + percent(lastPrice) + '. Шкала от ' + percent(bottom) + ' до ' + percent(top) + '.');
             el('probability').textContent = percent(current);
-            el('complement').textContent = 'Не будет · ' + percent(100 - current);
+            el('complement').textContent = 'Нет · ' + percent(100 - current);
             const delta = lastPrice - points[first].p;
             el('chartDelta').hidden = !delta;
             el('chartDelta').dataset.direction = delta > 0 ? 'up' : 'down';
@@ -136,7 +136,7 @@
 
         function update(next, connected) {
             const at = clock();
-            if (market?.day !== next.day) reset();
+            if (market?.id !== next.id) reset();
             if (connected || online) lastSeen = Math.max(at, next.chart.at(-1).at);
             else if (!lastSeen) lastSeen = next.chart.at(-1).at;
             market = next; online = connected; draw(at);

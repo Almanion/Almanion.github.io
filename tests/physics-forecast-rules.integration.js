@@ -25,7 +25,7 @@ const M = require('../physics-forecast-core');
             const updates = {head:{n,id}, ['lastBy/' + actor]:id, ['events/' + id]:e};
             if (kind === 'order') Object.assign(e,{ action:'buy',side:'yes',mode:'market',qty:3,limit:51,totalLimit:153,expires:Date.now()+30000 },overrides);
             else if (kind !== 'cancel') {
-                updates['rounds/' + day] = {last:id,phase:kind,endAt};
+                updates['rounds/' + e.day] = {last:id,phase:kind,endAt};
                 if (kind === 'open') e.endAt=endAt;
             }
             return updates;
@@ -67,6 +67,44 @@ const M = require('../physics-forecast-core');
         await assertSucceeds(at(owner).update(patch(M.OWNER,7,'yes')));
         await assertFails(at(owner).update(patch(M.OWNER,8,'void')));
         await assertFails(at(owner).child('events').remove());
-        console.log('Physics market rules: registered trading, guest restrictions, owner-only lesson management and settlement passed.');
+        function newMarket(actor, n, question, criteria) {
+            const next = patch(actor, n, 'open'), id = next.head.id;
+            next.head.v = 2;
+            const event = next['events/' + id];
+            event.day = id;
+            if (question !== undefined) event.question = question;
+            if (criteria !== undefined) event.criteria = criteria;
+            next['rounds/' + id] = next['rounds/' + day];
+            delete next['rounds/' + day];
+            return next;
+        }
+        const question = 'Выиграет ли класс матч?';
+        for (const title of [undefined, '', '  ', 'тема\nвторая', 'а'.repeat(M.QUESTION_LIMIT + 1)]) {
+            await assertFails(at(owner).update(newMarket(M.OWNER, 8, title))).catch(error => {
+                throw new Error('Invalid event question accepted: ' + JSON.stringify(title), { cause: error });
+            });
+        }
+        await assertFails(at(owner).update(newMarket(M.OWNER, 8, question, 'а'.repeat(M.CRITERIA_LIMIT + 1))));
+        await assertFails(at(siteAdmin).update(newMarket('site-admin', 8, question)));
+        const first = newMarket(M.OWNER, 8, question, 'Победа в основное время.');
+        await assertSucceeds(at(owner).update(first));
+        const second = newMarket(M.OWNER, 9, 'Пройдёт ли open tournament?', 'По расписанию на сайте турнира.');
+        await assertSucceeds(at(owner).update(second));
+        await assertFails(at(owner).child('events/' + first.head.id + '/question').set('Другой вопрос?'));
+        const deal = patch('a', 10, 'order', { day: first.head.id });
+        await assertFails(at(a).update(deal)); // Outdated writers cannot ignore the other markets' balances.
+        deal.head.v = 2;
+        await assertSucceeds(at(a).update(deal));
+        const other = patch('b', 11, 'order', { day: second.head.id, question: 'Дописать?' });
+        other.head.v = 2;
+        await assertFails(at(b).update(other));
+        for (const [n, kind] of [[11, 'lock'], [12, 'yes']]) {
+            const action = patch(M.OWNER, n, kind, { day: first.head.id });
+            action.head.v = 2;
+            await assertFails(at(siteAdmin).update(action));
+            await assertSucceeds(at(owner).update(action));
+        }
+        assert.equal((await at(b).child('rounds/' + second.head.id + '/phase').once('value')).val(), 'open');
+        console.log('Forecast rules: registered trading, owner-only custom events, isolated same-day markets and settlement passed.');
     } finally { await env.cleanup(); }
 })().catch(e => { console.error(e); process.exitCode=1; });

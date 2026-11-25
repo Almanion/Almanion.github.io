@@ -18,6 +18,39 @@ function fixture() {
     return { state, log, add, order, m: state.markets.get(day), time(value) { at = value; } };
 }
 {
+    const state = M.create(), entries = [];
+    const at = M.endOfDay(day) - M.DAY + 100;
+    const match = '00000000000000000001', club = '00000000000000000002';
+    function append(id, key, kind, fields = {}, actor = M.OWNER) {
+        const event = { n: state.n + 1, at: at + state.n, day: key, actor, kind, ...fields };
+        entries.push([id, event]);
+        return M.apply(state, event, id);
+    }
+    const expiry = { endAt: M.endOfDay(day) };
+    assert.deepEqual(append('legacy', day, 'open', expiry), {});
+    assert.equal(state.markets.get(day).question, M.physics.question);
+    assert.deepEqual(append(match, match, 'open', { ...expiry, question: 'Выиграет ли 10-1?', criteria: 'По итоговому счёту.' }), {});
+    assert.deepEqual(append(club, club, 'open', { ...expiry, question: 'Состоится ли кружок?' }), {});
+    const a = state.markets.get(match), b = state.markets.get(club);
+    assert.deepEqual([a.date, b.date, a.criteria, b.criteria], [day, day, 'По итоговому счёту.', '']);
+    assert.equal(append('bad', 'other', 'open', { ...expiry, question: 'Подмена?' }).error, 'invalid');
+    for (const question of ['', '   ', '  вопрос', 'а'.repeat(M.QUESTION_LIMIT + 1)]) {
+        const id = '00000000000000000009';
+        assert.equal(append(id, id, 'open', { ...expiry, question }).error, 'invalid');
+    }
+    const buy = { side: 'yes', action: 'buy', mode: 'market', qty: 15, limit: 55, totalLimit: 785 };
+    assert.equal(append('trade', match, 'order', buy, 'player').cash, 785);
+    assert.deepEqual([M.midpoint(a), M.midpoint(b), M.position(b, 'player').yes, b.trades.length], [52, 50, 0, 0]);
+    assert.equal(M.available(state, 'player', club, at), M.INITIAL - 785);
+    assert.deepEqual(append('end', match, 'lock'), {});
+    assert.deepEqual(append('win', match, 'yes'), {});
+    assert.deepEqual(append('cancel-club', club, 'void'), {});
+    assert.equal(M.available(state, 'player', day, at), M.INITIAL - 785 + 1500);
+    const replay = M.create();
+    for (const [id, event] of entries) M.apply(replay, event, id);
+    assert.deepEqual(replay, state);
+}
+{
     const f = fixture(), { state, m } = f;
     assert.equal(M.dayKey(M.endOfDay(day) - 1), day);
     assert.equal(M.dayKey(M.endOfDay(day)), later);
