@@ -433,6 +433,23 @@
       }
     },
 
+    "accountProfiles": {
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid && auth.token.firebase.sign_in_provider !== 'anonymous'",
+        ".write": "auth != null && auth.uid === $uid && auth.token.firebase.sign_in_provider !== 'anonymous'",
+        ".validate": "newData.hasChildren()",
+        "identity": {
+          ".validate": "newData.hasChildren()",
+          "nickname": { ".validate": "newData.isString() && newData.val().length <= 32 && newData.val().matches(/^[^ <>]([^<>]*[^ <>])?$/) && !newData.val().contains('\\n') && !newData.val().contains('\\r') && !newData.val().contains('\\t')" },
+          "avatar": { ".validate": "newData.val() === 'initial' || newData.val() === 'orbit' || newData.val() === 'book' || newData.val() === 'peak' || newData.val() === 'spark' || newData.val() === 'cat'" },
+          "color": { ".validate": "newData.val() === 'iris' || newData.val() === 'ocean' || newData.val() === 'mint' || newData.val() === 'amber' || newData.val() === 'rose'" },
+          "$other": { ".validate": false }
+        },
+        "telegram": { ".validate": "newData.isString() && newData.val().matches(/^[A-Za-z][A-Za-z0-9_]{0,30}[A-Za-z0-9]$/)" },
+        "$other": { ".validate": false }
+      }
+    },
+
     "accountDirectory": {
       ".read": "auth != null && (auth.uid === '2M2ZdLQcJAhluPjUVFNJ6MyQrdH2' || root.child('adminRoles').child(auth.uid).child('siteAdmin').val() === true)",
       "$uid": {

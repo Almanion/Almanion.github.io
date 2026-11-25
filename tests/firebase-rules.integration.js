@@ -63,6 +63,32 @@ function serverTimestamp() {
             { email: 'dmb23930@gmail.com' }
         )).database();
 
+        const profilePath = 'accountProfiles/' + accountUid;
+        const profile = accountDb.ref(profilePath);
+        const identity = { nickname: 'Лунный Лис', avatar: 'orbit', color: 'iris' };
+        await assertSucceeds(profile.update({ identity, telegram: 'moon_reader' }));
+        await assertSucceeds(profile.child('identity').update({ color: 'mint' }));
+        assert.deepStrictEqual((await assertSucceeds(profile.once('value'))).val(), {
+            identity: { ...identity, color: 'mint' }, telegram: 'moon_reader'
+        });
+        await assertFails(accountDb.ref('accountProfiles').once('value'));
+        await assertFails(ordinaryDb.ref(profilePath).once('value'));
+        await assertFails(ordinaryDb.ref(profilePath + '/identity/nickname').set('Другой'));
+        await assertFails(ownerDb.ref(profilePath + '/telegram').once('value'));
+        await assertFails(environment.unauthenticatedContext().database().ref(profilePath).once('value'));
+        await assertFails(anonDb.ref('accountProfiles/' + anonUid).set({ identity }));
+        await assertFails(anonDb.ref('accountProfiles/' + anonUid).once('value'));
+        for (const patch of [
+            { telegram: 'https://elsewhere.test/x' }, { 'identity/avatar': 'other' }, { 'identity/color': 'blue' },
+            { 'identity/nickname': '<tag>' }, { 'identity/nickname': '   ' }, { 'identity/nickname': 'я'.repeat(33) },
+            { 'identity/nickname': 'Лис\nДруг' }, { extra: 'private' }, { 'identity/role': 'owner' }
+        ]) {
+            await assert.rejects(profile.update(patch), /permission.denied/i, 'Invalid profile patch: ' + JSON.stringify(patch));
+        }
+        await assertSucceeds(profile.child('telegram').remove());
+        assert.equal((await profile.child('identity/nickname').once('value')).val(), identity.nickname);
+        await assertSucceeds(profile.remove());
+
         await assertSucceeds(anonDb.ref('presence/' + anonUid).set(Object.assign(meta(anonUid, 'anonymous'), {
             page: '/', pageTitle: 'Home', timestamp: serverTimestamp(), userAgent: 'test'
         })));

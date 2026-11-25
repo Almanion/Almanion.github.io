@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="ru">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="robots" content="noindex">
+    <meta name="referrer" content="no-referrer">
+    <title>Мой профиль · Almanion</title>
+    <script src="theme-bootstrap.js?v=20261123-palettes"></script>
+    <script defer src="page-transitions.js?v=20261120-navigation"></script>
+    <link rel="icon" href="favicons/favicon.svg?v=20261124-aligned-a" type="image/svg+xml">
+    <script defer src="favicon-theme.js?v=20261124-aligned-a"></script>
+    <link rel="stylesheet" href="styles/page-transitions.css">
+    <link rel="stylesheet" href="styles/site/index.css?v=20261125-profile">
+    <link rel="stylesheet" href="styles/tokens.css">
+    <link rel="stylesheet" href="styles/buttons.css">
+    <link rel="stylesheet" href="style-new.css?v=20260929-2">
+    <link rel="stylesheet" href="styles/typography.css">
+    <link rel="stylesheet" href="styles/profile.css">
+</head>
+<body class="profile-page" data-no-math>
+    <script>window.AlmanionThemeBootstrap.applyBody();</script>
+    <header class="profile-topbar sidebar-header">
+        <a href="index.html" aria-label="Almanion · На главную"><img class="almanion-wordmark" src="images/almanion-wordmark.svg?v=20261124-aligned-a" width="106" height="22" alt="Almanion"></a>
+        <div class="sidebar-header-buttons"></div>
+    </header>
+    <main class="profile-shell">
+        <a class="profile-back" href="index.html"><span aria-hidden="true">←</span> На главную</a>
+        <h1>Мой профиль</h1>
+        <section class="profile-gate" id="profileGate" aria-live="polite">
+            <p id="profileGateMessage">Загружаем профиль…</p>
+            <button class="profile-primary" id="profileGateAction" type="button" hidden>Войти</button>
+        </section>
+        <noscript>Для редактирования профиля включите JavaScript.</noscript>
+        <div class="profile-layout" id="profileEditor" hidden>
+            <section class="profile-card" id="profileCard" aria-label="Предпросмотр профиля" data-profile-color="iris">
+                <div class="profile-cover" aria-hidden="true">
+                    <svg viewBox="0 0 360 116" preserveAspectRatio="xMidYMid slice" focusable="false" fill="none">
+                        <g transform="rotate(-24 209 87)" stroke="currentColor">
+                            <ellipse cx="209" cy="87" rx="82" ry="31"/>
+                            <ellipse cx="209" cy="87" rx="122" ry="48"/>
+                            <ellipse cx="209" cy="87" rx="166" ry="67"/>
+                            <circle cx="291" cy="87" r="3.3" fill="currentColor"/>
+                            <circle cx="209" cy="39" r="2.1" fill="currentColor"/>
+                        </g>
+                        <path d="m66 23 1.4 4.1 4.1 1.4-4.1 1.4-1.4 4.1-1.4-4.1-4.1-1.4 4.1-1.4Z" fill="currentColor"/>
+                    </svg>
+                </div>
+                <div class="profile-card-body">
+                    <div id="profilePreviewAvatar"></div>
+                    <h2 id="profilePreviewName"></h2>
+                    <p id="profileEmail"></p>
+                    <a class="profile-telegram-preview" id="profilePreviewTelegram" target="_blank" rel="noopener noreferrer" hidden></a>
+                </div>
+            </section>
+            <form id="profileForm" class="profile-form" novalidate>
+                <fieldset id="profileFields">
+                    <legend class="profile-sr">Настройки профиля</legend>
+                    <section class="profile-section">
+                        <h2>Личные данные</h2>
+                        <label for="profileNickname">Ник</label>
+                        <input id="profileNickname" name="nickname" type="text" autocomplete="nickname" maxlength="32" spellcheck="false" aria-describedby="nicknameError">
+                        <p class="profile-error" id="nicknameError" hidden></p>
+                        <label for="profileTelegram">Telegram</label>
+                        <input id="profileTelegram" name="telegram" type="text" autocomplete="off" autocapitalize="none" spellcheck="false" maxlength="128" placeholder="@username" aria-describedby="telegramHelp telegramError">
+                        <p id="telegramHelp" class="profile-hint">Виден только вам. Подойдёт также ссылка t.me.</p>
+                        <p class="profile-error" id="telegramError" hidden></p>
+                    </section>
+                    <section class="profile-section">
+                        <h2>Аватар</h2>
+                        <fieldset class="profile-choice-group">
+                            <legend>Значок</legend>
+                            <div class="profile-icons" id="profileIcons"></div>
+                        </fieldset>
+                        <fieldset class="profile-choice-group">
+                            <legend>Цвет <span id="profileColorName"></span></legend>
+                            <div class="profile-colors" id="profileColors"></div>
+                        </fieldset>
+                    </section>
+                </fieldset>
+                <footer class="profile-actions">
+                    <p id="profileStatus" role="status"></p>
+                    <div>
+                        <button type="button" class="profile-secondary" id="profileReset" hidden>Отменить</button>
+                        <button class="profile-primary" id="profileSave" type="submit" disabled>Сохранить</button>
+                    </div>
+                </footer>
+            </form>
+        </div>
+    </main>
+    <script src="data-sync.js"></script>
+    <script src="kc-storage.js"></script>
+    <script src="settings.js?v=20261009-1"></script>
+    <script defer src="https://www.gstatic.com/firebasejs/12.18.0/firebase-app-compat.js"></script>
+    <script defer src="https://www.gstatic.com/firebasejs/12.18.0/firebase-auth-compat.js"></script>
+    <script defer src="https://www.gstatic.com/firebasejs/12.18.0/firebase-database-compat.js"></script>
+    <script defer src="firebase-config.js"></script>
+    <script defer src="account.js?v=20261125-profile"></script>
+    <script defer src="profile.js"></script>
+</body>
+</html>

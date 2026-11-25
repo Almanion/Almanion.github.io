@@ -29,7 +29,7 @@ test('graphite gives the wordmark and remarks neutral ink and keeps signed-in ac
     await page.waitForFunction(() => window.AlmanionAccount?.getUser()?.uid === 'palette-test');
     await page.evaluate(() => window.AlmanionAccount.openAccount());
     const actions = page.locator('#accountOverlay .auth-submit');
-    await expect(actions).toHaveCount(3);
+    await expect(actions).toHaveCount(4);
     for (const expTheme of ['light', 'dark']) {
         await page.evaluate(expTheme => AlmanionSettings.update({ expTheme, expMode: 'graphite', animationLevel: 'off' }), expTheme);
         await expect(page.locator('.almanion-wordmark').first()).toHaveCSS('filter', 'grayscale(1)');
@@ -38,7 +38,7 @@ test('graphite gives the wordmark and remarks neutral ink and keeps signed-in ac
         await expect.poll(() => remark.evaluate(el => getComputedStyle(el, '::before').color)).toBe(
             expTheme === 'light' ? 'rgb(98, 98, 108)' : 'rgb(161, 161, 170)');
         const minimumContrast = () => actions.evaluateAll(buttons => {
-            if (buttons.length !== 3) return 0;
+            if (buttons.length !== 4) return 0;
             const luminance = rgb => rgb.match(/[\d.]+/g).map(Number).slice(0, 3)
                 .map(x => x / 255).map(x => x <= .04045 ? x / 12.92 : ((x + .055) / 1.055) ** 2.4)
                 .reduce((sum, x, i) => sum + x * [.2126, .7152, .0722][i], 0);

@@ -71,6 +71,57 @@
 
     // ---------- Иконки ----------
     const IC_USER = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>';
+    // Resolve relative to this script so the menu also works from /watch and file://.
+    const profileUrl = new URL('profile.html', document.currentScript?.src || document.baseURI).href;
+    const avatarIcons = {
+        initial: ['Буква', ''],
+        orbit: ['Орбита', '<circle cx="12" cy="12" r="6.6"/><ellipse cx="12" cy="12" rx="10.3" ry="3.2" transform="rotate(-32 12 12)"/>'],
+        book: ['Книга', '<path d="M12 6.5c-2.5-2-5.6-2.3-9-1.7v13.5c3.6-.6 6.4 0 9 1.9 2.6-1.9 5.4-2.5 9-1.9V4.8c-3.4-.6-6.5-.3-9 1.7Zm0 0v13.7"/>'],
+        peak: ['Горы', '<path d="m2.2 19 7.6-14 5 8.9 2.5-4.2L22 19H2.2Z"/><path d="m6.7 10.6 2.1.9 1.8-1.5 2 1"/>'],
+        spark: ['Искра', '<path d="M12 2.7c.7 5.8 3.3 8.4 9.3 9.3-6 .9-8.6 3.5-9.3 9.3-.9-5.8-3.5-8.4-9.3-9.3 5.8-.9 8.4-3.5 9.3-9.3Z"/>'],
+        cat: ['Кот', '<path d="m4.3 10-.1-6.1 5 3a13 13 0 0 1 5.6 0l5-3-.1 6.1c2.7 6.6-1.3 10-7.7 10s-10.4-3.4-7.7-10Z"/><path d="M8.7 12.8h.2m6.2 0h.2M11 15.6l1 .7 1-.7"/>']
+    };
+    const avatarColors = { iris: 'Ирис', ocean: 'Океан', mint: 'Мята', amber: 'Янтарь', rose: 'Роза' };
+    let identity = {};
+    let identityRef = null;
+    let identityListener = null;
+
+    function avatarMarkup(value, name) {
+        const icon = Object.hasOwn(avatarIcons, value?.avatar) ? avatarIcons[value.avatar][1] : '';
+        const color = Object.hasOwn(avatarColors, value?.color) ? value.color : 'iris';
+        const initial = Array.from(String(name || '').trim())[0] || 'А';
+        return '<span class="account-avatar profile-mark" data-profile-color="' + color + '" aria-hidden="true">' +
+            (icon ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round">' + icon + '</svg>' : escapeHtml(initial.toLocaleUpperCase('ru'))) + '</span>';
+    }
+
+    function refreshIdentity() {
+        updateButton();
+        const title = document.getElementById('accIdentityName');
+        const mark = document.getElementById('accIdentityMark');
+        if (!user || !title || !mark) return;
+        title.textContent = identity.nickname || user.displayName || 'Мой аккаунт';
+        mark.innerHTML = avatarMarkup(identity, identity.nickname || user.displayName || user.email);
+    }
+
+    function watchIdentity(account) {
+        if (identityRef && identityListener) identityRef.off('value', identityListener);
+        identityRef = null;
+        identityListener = null;
+        identity = {};
+        if (!account) return;
+        const ref = db.ref('accountProfiles/' + account.uid + '/identity');
+        identityRef = ref;
+        identityListener = function (snapshot) {
+            if (identityRef !== ref || user?.uid !== account.uid) return;
+            identity = snapshot.val() || {};
+            refreshIdentity();
+        };
+        ref.on('value', identityListener, function () {
+            if (identityRef !== ref) return;
+            identity = {};
+            refreshIdentity();
+        });
+    }
     const IC_CLOSE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="6" y1="6" x2="18" y2="18"/><line x1="6" y1="18" x2="18" y2="6"/></svg>';
     const IC_GOOGLE = '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">' +
         '<path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.76h3.56c2.08-1.92 3.28-4.74 3.28-8.09z"/>' +
@@ -116,12 +167,11 @@
         if (!btn) return;
         btn.classList.toggle('is-loading', !authStateKnown);
         if (user) {
-            const name = user.displayName || user.email || '';
-            const initial = (name.trim()[0] || '?').toUpperCase();
+            const name = identity.nickname || user.displayName || user.email || '';
             btn.classList.add('signed-in');
             btn.title = name || 'Аккаунт';
             btn.setAttribute('aria-label', 'Аккаунт: ' + (name || 'вошли'));
-            btn.innerHTML = '<span class="account-avatar">' + escapeHtml(initial) + '</span>';
+            btn.innerHTML = avatarMarkup(identity, name);
         } else {
             btn.classList.remove('signed-in');
             btn.title = 'Войти';
@@ -462,16 +512,19 @@
         const ov = ensureOverlay();
         const email = (user && user.email) || 'Аккаунт';
         ov.innerHTML =
-            '<div class="auth-modal account-modal" role="dialog" aria-modal="true">' +
+            '<div class="auth-modal account-modal account-session-modal" role="dialog" aria-modal="true" aria-labelledby="accIdentityName">' +
                 '<button class="kc-close" id="accClose" aria-label="Закрыть">' + IC_CLOSE + '</button>' +
-                '<div class="auth-icon">' + IC_USER + '</div>' +
-                '<h2>Вы вошли</h2>' +
-                '<p class="account-email">' + escapeHtml(email) + '</p>' +
+                '<div class="account-identity"><div class="account-identity-mark" id="accIdentityMark"></div>' +
+                    '<div><h2 id="accIdentityName"></h2><p class="account-email">' + escapeHtml(email) + '</p></div>' +
+                '</div>' +
                 '<div class="account-error" id="accError" hidden></div>' +
+                '<a class="auth-submit account-editor-link" id="accProfile">Мой профиль</a>' +
                 '<div class="account-editor-slot" id="accountEditorSlot"></div>' +
                 '<a class="auth-submit account-editor-link" href="/watch/connect.html">Мои часы</a>' +
                 '<button type="button" class="auth-submit account-signout" id="accSignout">Выйти</button>' +
             '</div>';
+        ov.querySelector('#accProfile').href = profileUrl;
+        refreshIdentity();
         ov.querySelector('#accClose').addEventListener('click', hideOverlay);
         ov.querySelector('#accSignout').addEventListener('click', function () {
             if (authBusy) return;
@@ -484,6 +537,7 @@
         showContentEditorLink(ov);
         ov.classList.remove('hidden');
         ov.setAttribute('aria-hidden', 'false');
+        ov.querySelector('#accProfile').focus({ preventScroll: true });
     }
 
     // ---------- Синхронизация прогресса ----------
@@ -1213,7 +1267,15 @@
         authStateKnown = true;
         // Гость Матцентра не является зарегистрированным аккаунтом сайта.
         if (u && u.isAnonymous) u = null;
+        if (user && user.uid !== u?.uid) {
+            const overlay = document.getElementById('accountOverlay');
+            if (overlay?.querySelector('#accIdentityName')) {
+                hideOverlay();
+                overlay.replaceChildren();
+            }
+        }
         user = u;
+        watchIdentity(u);
         if (kcStorage) kcStorage.setScope(u ? u.uid : 'guest');
         updateButton();
         updateHomeAccessLinks();
@@ -1229,6 +1291,8 @@
     }, function (err) {
         authStateKnown = true;
         user = null;
+        watchIdentity(null);
+        hideOverlay();
         if (kcStorage) kcStorage.setScope('guest');
         updateButton();
         updateHomeAccessLinks();
@@ -1254,6 +1318,8 @@
         openLogin: function () { openLoginModal(false); },
         openAccount: function () { if (user) openAccountMenu(); else openLoginModal(false); },
         getUser: function () { return user; },
+        isReady: function () { return authStateKnown; },
+        profile: { icons: avatarIcons, colors: avatarColors, avatarMarkup: avatarMarkup },
         hasContentEditorAccess: hasContentEditorAccess,
         hasSiteAdminAccess: hasSiteAdminAccess,
         hasEnglishAccess: hasEnglishAccess,

@@ -23,7 +23,7 @@ const pages = JSON.parse(read('content/subjects.json')).map(subject => subject.p
 for (const file of [
     ...pages, 'index.html', 'geometry-formulas.html', 'physics-exam.html', 'english.html', 'matcenter.html',
     'admin.html', 'constructor.html', 'contests.html', 'duty-10-1.html', 'tour-10-1.html', 'homework.html',
-    'planner.html', 'sport.html', 'games/index.html', 'watch/index.html', 'watch/connect.html', 'offline.html'
+    'planner.html', 'sport.html', 'profile.html', 'games/index.html', 'watch/index.html', 'watch/connect.html', 'offline.html'
 ]) {
     const relative = path.posix.relative(path.posix.dirname(file), logo);
     const images = read(file).match(/<img\b[^>]+>/g) || [];

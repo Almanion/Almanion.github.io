@@ -79,6 +79,8 @@
     "planner.html",
     "planner.js",
     "print-export.js",
+    "profile.html",
+    "profile.js",
     "pdf-download.js",
     "pdf-block-frames.js",
     "pdf-pagination.js",
