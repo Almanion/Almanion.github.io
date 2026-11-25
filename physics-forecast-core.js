@@ -3,6 +3,7 @@
 
     const DAY = 86400000;
     const INITIAL = 10000; // Integer hundredths of a point throughout the exchange.
+    const MAX_QTY = 100;
     const OWNER = '2M2ZdLQcJAhluPjUVFNJ6MyQrdH2';
     const MAKER = '@liquidity';
     const sides = ['yes', 'no'];
@@ -101,7 +102,7 @@
         const market = state.markets.get(e.day);
         if (!market || status(market, now) !== 'open') return { error: 'closed' };
         if (!sides.includes(e.side) || !['buy', 'sell'].includes(e.action) || !['market', 'limit'].includes(e.mode)) return { error: 'invalid' };
-        if (!Number.isInteger(e.qty) || e.qty < 1 || e.qty > 100) return { error: 'size' };
+        if (!Number.isInteger(e.qty) || e.qty < 1 || e.qty > MAX_QTY) return { error: 'size' };
         if (!Number.isInteger(e.limit) || e.limit < 1 || e.limit > 99) return { error: 'price' };
         if (e.action === 'sell' && position(market, e.actor)[e.side] - held(market, e.actor, now)[e.side] < e.qty) return { error: 'shares' };
         const fills = [];
@@ -124,6 +125,20 @@
         const reserved = left * e.limit;
         if (e.action === 'buy' && cash + reserved > available(state, e.actor, e.day, now)) return { error: 'cash' };
         return { fills, left, cash, reserved, filled: e.qty - left };
+    }
+
+    function maxOrderSize(state, order, at, budget = Infinity) {
+        // Each extra share can only increase the cost or consume more of the book.
+        let low = 0, high = MAX_QTY;
+        while (low < high) {
+            const qty = Math.ceil((low + high) / 2);
+            const plan = preview(state, { ...order, qty }, at);
+            // A cheaper offer may disappear before a limit order reaches the book.
+            const cost = order.mode === 'limit' ? qty * order.limit : plan.cash;
+            if (!plan.error && (order.action === 'sell' || cost <= budget)) low = qty;
+            else high = qty - 1;
+        }
+        return low;
     }
 
     function bookFill(market, order, qty, price) {
@@ -178,8 +193,8 @@
         state.receipts.set(id, receipt);
         return receipt;
     }
-    const api = { DAY, OWNER, INITIAL, dayKey, endOfDay, create, status, held, position, available,
-        ranked, yesPrice, midpoint, preview, apply, errors };
+    const api = { DAY, OWNER, INITIAL, MAX_QTY, dayKey, endOfDay, create, status, held, position, available,
+        ranked, yesPrice, midpoint, preview, maxOrderSize, apply, errors };
     if (typeof module === 'object' && module.exports) module.exports = api;
     else root.PhysicsForecast = api;
 }(globalThis));

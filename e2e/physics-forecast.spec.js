@@ -30,6 +30,10 @@ function fixture(who, owner) {
             listeners.get('physicsForecast/events')?.(snap('physicsForecast/events'));
         } }; }
     window.firebase = {database:{ServerValue:{TIMESTAMP:{'.sv':'timestamp'}}}};
+    window.setForecastConnection = connected => {
+        data['.info'].connected = connected;
+        listeners.get('.info/connected')?.(snap('.info/connected'));
+    };
     window.AlmanionAccount = { database:{ref}, auth:{onAuthStateChanged(cb) {
         window.changeForecastAccount = cb;
         cb(who === 'guest' ? null : { uid:actor, isAnonymous:who === 'anonymous' });
@@ -57,7 +61,8 @@ test.describe('registered player on a phone', () => {
         await logo.tap(); await logo.tap(); await logo.tap();
         await expect(page).toHaveURL(/physics-forecast\.html/);
         await expect(page.locator('#walletCash')).toHaveText('100 оч.');
-        await page.locator('#quantity').fill('1');
+        await page.locator('#budget').fill('0,51');
+        await expect(page.locator('#placeOrder')).toHaveText('Купить 1 долю «Будет»');
         await page.locator('#placeOrder').tap();
         await expect(page.locator('#walletYes')).toHaveText('1');
         await expect(page.locator('#ownerTools')).toBeHidden();
@@ -84,6 +89,7 @@ for (const width of [360,1280]) {
         await page.goto('/physics-forecast.html'); await expect(page.locator('#gameSurface')).toBeVisible();
         await expect(page.locator('#probability')).toHaveText('50%');
         await expect(page.locator('#walletCash')).toHaveText('100 оч.');
+        await page.locator('#buyUnit').selectOption('shares');
         await page.locator('#quantity').fill('15'); await expect(page.locator('#quotePreview')).toContainText('7,85');
         await page.locator('#placeOrder').click();
         await expect(page.locator('#walletYes')).toHaveText('15');
@@ -91,7 +97,7 @@ for (const width of [360,1280]) {
         await expect(page.locator('#tradeHistory .forecast-row')).toHaveCount(2);
         await expect(page.locator('#probability')).toHaveText('52%');
         await page.locator('label:has(input[name=action][value=sell])').click();
-        await page.locator('#orderMode').selectOption('limit');await page.locator('#limitPrice').fill('70');await page.locator('#quantity').fill('4');
+        await page.locator('#orderMode').selectOption('limit');await page.locator('#limitPrice').fill('0,70');await page.locator('#quantity').fill('4');
         await page.locator('#placeOrder').click();await expect(page.locator('#myOrders')).toContainText('4 дол.');
         await page.locator('#myOrders button').click();await expect(page.locator('#myOrders')).toContainText('Активных заявок нет.');
         await page.locator('[data-range=hour]').click(); await expect(page.locator('[data-range=hour]')).toHaveAttribute('aria-pressed','true');
@@ -101,6 +107,89 @@ for (const width of [360,1280]) {
         await expect(page.locator('#ownerTools')).toBeHidden();
     });
 }
+
+test('point budget buys whole shares at actual prices and a limit order separates fills from reserved points', async ({ page }) => {
+    await mockClass(page);
+    await page.goto('/physics-forecast.html');
+    const budget = page.getByLabel('Сумма покупки'), submit = page.locator('#placeOrder');
+    await expect(submit).toHaveText('Купить 9 долей «Будет»');
+    await expect(page.locator('#quotePreview')).toContainText('4,59 оч.');
+    await budget.fill('0,50');
+    await expect(submit).toBeDisabled();
+    await expect(page.locator('#quotePreview')).toContainText('0,51');
+    await budget.fill('7.84');
+    await expect(submit).toHaveText('Купить 14 долей «Будет»');
+    await budget.fill('7,85');
+    await expect(submit).toHaveText('Купить 15 долей «Будет»');
+    await page.getByRole('button', {name:'1 оч.',exact:true}).click();
+    await expect(submit).toHaveText('Купить 1 долю «Будет»');
+    await page.locator('#orderMode').selectOption('limit');
+    await page.locator('#limitPrice').fill('1.00');
+    await expect(submit).toBeDisabled();
+    await page.locator('#limitPrice').fill('0,53');
+    await budget.fill('6,16');
+    await expect(submit).toContainText('11 долей');
+    await budget.fill('6,36');
+    await expect(page.locator('#quotePreview')).toContainText('5,1 оч.');
+    await expect(page.locator('#quotePreview')).toContainText('1,06 оч.');
+    await expect(page.locator('#quotePreview')).toContainText('6,36 оч.');
+    await submit.click();
+    await expect(page.locator('#walletYes')).toHaveText('10');
+    await expect(page.locator('#walletHeld')).toHaveText('1,06 оч.');
+    await expect(page.locator('#feedback')).toContainText('В открытой заявке 2 доли');
+    await page.locator('#myOrders button').click();
+    await expect(page.locator('#walletHeld')).toHaveText('0 оч.');
+    await expect(page.locator('#walletCash')).toHaveText('94,9 оч.');
+});
+
+test('selling the selected holding respects reservations, supports half or all and never trades until confirmed', async ({ page }) => {
+    await page.setViewportSize({width:320,height:740}); await mockClass(page);
+    await page.goto('/physics-forecast.html');
+    await page.locator('label:has(input[value=no])').click();
+    await page.locator('#placeOrder').click();
+    await expect(page.locator('#walletNo')).toHaveText('9');
+    await page.locator('label:has(input[value=yes])').click();
+    await page.locator('label:has(input[value=sell])').click();
+    await expect(page.locator('input[value=no]')).toBeChecked();
+    await page.locator('#orderMode').selectOption('limit');
+    await page.locator('#limitPrice').fill('0.75');
+    await page.locator('#quantity').fill('3');
+    await page.locator('#placeOrder').click();
+    await expect(page.locator('#heldNo')).toHaveText('В продаже 3 из 9');
+    await page.getByRole('button', {name:'Продать доли «Не будет»',exact:true}).click();
+    await expect(page.locator('#ticketTitle')).toBeFocused();
+    await expect(page.locator('#orderMode')).toHaveValue('market');
+    await expect(page.locator('#quantity')).toHaveValue('6');
+    await expect(page.locator('#walletNo')).toHaveText('9');
+    await page.getByRole('button',{name:'50% · 3 доли',exact:true}).click();
+    await expect(page.locator('#quotePreview')).toContainText('1,47 оч.');
+    await page.getByRole('button',{name:'Все · 6 долей',exact:true}).click();
+    await page.locator('#placeOrder').click();
+    await expect(page.locator('#walletNo')).toHaveText('3');
+    await expect(page.locator('#feedback')).toContainText('Продажа · 6 долей «Не будет» за 2,94 оч.');
+    await expect(page.locator('#showOrders')).toBeVisible();
+    await page.locator('#showOrders').click(); await page.locator('#myOrders button').click();
+    await expect(page.locator('#heldNo')).toBeHidden();
+    await expect(page.getByRole('button', {name:'Продать доли «Не будет»',exact:true})).toBeEnabled();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+});
+
+test('insufficient depth offers an executable quantity or a resting order and an empty position leads back to buying', async ({ page }) => {
+    await mockClass(page); await page.goto('/physics-forecast.html');
+    await page.locator('label:has(input[value=sell])').click();
+    await page.locator('#buyInstead').click();
+    await page.locator('#buyUnit').selectOption('shares');
+    await page.locator('#quantity').fill('100');
+    await expect(page.locator('#placeOrder')).toBeDisabled();
+    await page.locator('#useCapacity').click();
+    await expect(page.locator('#quantity')).toHaveValue('85');
+    await page.locator('#quantity').fill('100');
+    await page.locator('#useLimit').click();
+    await expect(page.locator('#limitPrice')).toBeFocused();
+    await expect(page.locator('#quantity')).toHaveValue('100');
+    await expect(page.locator('#placeOrder')).toBeEnabled();
+    await expect(page.locator('#walletYes')).toHaveText('0');
+});
 
 test('only the owner manages lessons and declares the result',async({page})=>{
     await mockClass(page,'owner'); await page.goto('/physics-forecast.html');
@@ -114,4 +203,63 @@ test('only the owner manages lessons and declares the result',async({page})=>{
     await expect(page.locator('#gameSurface')).toBeVisible();
     await expect(page.locator('#roundState')).toHaveText('Работа была');
     await expect(page.locator('#ownerTools')).toBeHidden();
+});
+
+test('a peer trade moves the live chart while a historical reading stays pinned; reconnect resumes the live clock', async ({ page }) => {
+    await page.clock.install({ time: new Date('2026-11-26T11:00:00Z') });
+    await mockClass(page); await page.goto('/physics-forecast.html');
+    const readout = page.locator('#chartReadout'), chart = page.locator('#probChart');
+    await chart.scrollIntoViewIfNeeded();
+    await expect(chart).toHaveAttribute('data-live','true');
+    await expect(page.locator('#chartScale span').first()).toHaveText('60%');
+    const initialTime = await readout.innerText();
+    await page.clock.runFor(2100);
+    await expect(readout).not.toHaveText(initialTime);
+    await page.locator('#chartCursor').focus(); await page.keyboard.press('Home');
+    const pinned = await readout.innerText();
+    await page.evaluate(async () => {
+        const root = window.AlmanionAccount.database.ref('physicsForecast');
+        const id = root.child('events').push().key, at = Date.now(), day = window.PhysicsForecast.dayKey(at);
+        await root.update({ head:{id,n:2}, ['events/'+id]:{kind:'order', actor:'second-player', day, n:2, at,
+            side:'yes', action:'buy', mode:'market', qty:15, limit:55, totalLimit:785} });
+    });
+    await expect(page.locator('#probability')).toHaveText('52%');
+    await expect(page.locator('#chartDelta')).toHaveText('+2 п. п.');
+    await expect(readout).toHaveText(pinned);
+    await expect(page.locator('#chartTip b')).toHaveText('50%');
+    await page.locator('#chartReturn').click();
+    await expect(page.locator('#chartTip')).toBeHidden();
+    await expect(page.locator('#chartState')).toHaveText('Сейчас');
+    await page.evaluate(() => window.setForecastConnection(false));
+    await expect(chart).toHaveAttribute('data-live','false');
+    const offlineTime = await readout.innerText();
+    await page.clock.runFor(3000); await expect(readout).toHaveText(offlineTime);
+    await page.evaluate(() => window.setForecastConnection(true));
+    await expect(readout).not.toHaveText(offlineTime);
+    await expect(chart).toHaveAttribute('data-live','true');
+    await page.locator('[data-range=hour]').click();
+    await page.locator('#chartCursor').focus(); await page.keyboard.press('Home');
+    const oldHour = await readout.innerText();
+    await page.clock.fastForward(65 * 60000);
+    await expect(readout).toHaveText(oldHour);
+    await page.keyboard.press('End');
+    await expect(page.locator('#chartState')).toHaveText('Сейчас');
+    await expect(chart).toHaveAttribute('data-live','true');
+});
+
+test.describe('touch chart', () => {
+    test.use({ hasTouch:true, viewport:{width:360,height:740} });
+    test('opens from the mobile shortcuts and allows inspecting a point and returning to now', async ({ page }) => {
+        await mockClass(page);
+        await page.goto('/physics-forecast.html');
+        await page.getByRole('link',{name:'График',exact:true}).tap();
+        const plot = page.locator('#probChart');
+        await plot.tap({position:{x:24,y:35}});
+        await expect(page.locator('#chartTip')).toBeVisible();
+        await expect(page.locator('#chartState')).toHaveText('История');
+        await page.locator('#chartReturn').tap();
+        await expect(page.locator('#chartState')).toHaveText('Сейчас');
+        await page.getByRole('link',{name:'Сделка',exact:true}).tap();
+        await expect(page.locator('#budget')).toBeInViewport();
+    });
 });

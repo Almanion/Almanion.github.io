@@ -96,6 +96,29 @@ function fixture() {
     assert.deepEqual(replay,f.state);
 }
 {
+    const f = fixture(), at = M.endOfDay(day) - M.DAY;
+    const buy = { day, actor: 'a', side: 'yes', action: 'buy', mode: 'market', limit: 99 };
+    const max = (order, budget) => M.maxOrderSize(f.state, order, at, budget);
+    assert.equal(max(buy, 50), 0);
+    assert.equal(max(buy, 51), 1);
+    assert.equal(max(buy, 784), 14);
+    assert.equal(max(buy, 785), 15);
+    assert.equal(max(buy), 85); // Only 85 shares for sale across all three levels.
+    const limitBuy = { ...buy, mode: 'limit', limit: 53 };
+    assert.equal(max(limitBuy, 615), 11);
+    assert.equal(max(limitBuy, 616), 11); // A disappearing discount cannot make the order exceed its budget.
+    assert.equal(max(limitBuy, 636), 12); // Up to 636, currently 510 to pay and 106 reserved.
+    assert.equal(max(limitBuy), 100);
+    f.order('a', 'yes', 'buy', 15, 99, 'market');
+    const sell = { ...buy, action: 'sell', limit: 1 };
+    assert.equal(max(sell), 15);
+    f.order('a', 'yes', 'sell', 4, 54);
+    assert.equal(max(buy), 0); // Own order is now first in the matching lane.
+    assert.equal(max(sell), 11);
+    f.add({ kind: 'lock' });
+    assert.equal(max(sell), 0);
+}
+{
     const f = fixture();
     let seed = 47543;
     const random = n => { seed = (Math.imul(1664525,seed) + 1013904223) >>> 0; return (seed >>> 8) % n; };

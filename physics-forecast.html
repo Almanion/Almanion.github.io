@@ -13,7 +13,7 @@
     <link rel="stylesheet" href="styles/buttons.css?v=20260929-2">
     <link rel="stylesheet" href="style-new.css?v=20260929-2">
     <link rel="stylesheet" href="styles/typography.css?v=20261002-1">
-    <link rel="stylesheet" href="styles/physics-forecast.css?v=3">
+    <link rel="stylesheet" href="styles/physics-forecast.css?v=4">
 </head>
 <body class="forecast-page" data-no-math>
     <script>window.AlmanionThemeBootstrap.applyBody();</script>
@@ -67,48 +67,73 @@
             </div>
             <p id="emptyRound" class="forecast-panel" hidden>Пока нет назначенных уроков.</p>
             <div id="roundBody" class="forecast-layout" hidden>
-                <section class="forecast-panel forecast-chart-card" aria-labelledby="chartTitle">
-                    <div class="forecast-section-head"><h2 id="chartTitle">Вероятность работы</h2>
-                        <div class="forecast-ranges" role="group" aria-label="Период графика"><button type="button" data-range="hour" aria-pressed="false">1 ч</button><button type="button" data-range="day" aria-pressed="false">День</button><button type="button" data-range="all" aria-pressed="true">Всё</button></div>
-                    </div>
-                    <div class="forecast-reading"><strong id="probability">—</strong><span id="complement"></span></div>
-                    <div class="forecast-plot"><div class="forecast-scale" aria-hidden="true"><span>100%</span><span>50%</span><span>0%</span></div>
-                    <svg id="probChart" viewBox="0 0 560 160" role="img" aria-label="История рыночной вероятности работы" preserveAspectRatio="none">
-                        <defs><linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1"><stop stop-color="currentColor" stop-opacity=".24"/><stop offset="1" stop-color="currentColor" stop-opacity=".015"/></linearGradient></defs>
-                        <path class="chart-grid" d="M5 9h548M5 80h548M5 151h548"/>
-                        <path id="chartArea" fill="url(#chartGradient)"/><path id="chartLine" fill="none" stroke="currentColor" stroke-width="2.5" vector-effect="non-scaling-stroke"/>
-                        <path id="chartHair" fill="none" stroke="currentColor" opacity=".45" stroke-dasharray="2 5"/>
-                        <circle id="chartDot" r="3.5" fill="currentColor"/>
-                    </svg></div>
-                    <div class="forecast-axis"><span id="chartStart"></span><span id="chartEnd"></span></div>
-                    <label class="forecast-chart-readout"><output id="chartReadout"></output><input id="chartCursor" type="range" min="0" max="100" value="100" aria-label="Посмотреть вероятность на графике по времени"></label>
-                </section>
-                <section class="forecast-panel forecast-ticket" aria-labelledby="ticketTitle">
-                    <div class="forecast-section-head"><h2 id="ticketTitle">Моя заявка</h2><span id="tradeStatus"></span></div>
-                    <p class="forecast-status" id="roundSummary"></p>
+                <nav class="forecast-jumps" aria-label="Разделы прогноза"><a href="#tradeTicket" aria-current="location">Сделка</a><a href="#marketChart">График</a><a href="#portfolio">Портфель</a></nav>
+                <section class="forecast-panel forecast-ticket" id="tradeTicket" aria-labelledby="ticketTitle" tabindex="-1">
                     <form id="tradeForm">
+                        <div class="forecast-section-head">
+                            <h2 id="ticketTitle" tabindex="-1">Сделка</h2>
+                            <select id="orderMode" aria-label="Тип заявки"><option value="market">По рынку</option><option value="limit">Своя цена</option></select>
+                        </div>
+                        <p class="forecast-status" id="roundSummary"></p>
                         <fieldset class="forecast-segments"><legend class="forecast-sr">Действие</legend>
                             <label><input type="radio" name="action" value="buy" checked><span>Купить</span></label>
                             <label><input type="radio" name="action" value="sell"><span>Продать</span></label>
                         </fieldset>
-                        <fieldset class="forecast-options"><legend class="forecast-sr">Исход</legend>
-                            <label><input type="radio" name="side" value="yes" checked><span>Будет <b id="yesAsk">—</b></span></label>
-                            <label><input type="radio" name="side" value="no"><span>Не будет <b id="noAsk">—</b></span></label>
+                        <fieldset class="forecast-options"><legend class="forecast-sr">Исход и цена за одну долю</legend>
+                            <label><input type="radio" name="side" value="yes" checked><span><span>Будет</span> <b id="yesAsk">—</b></span></label>
+                            <label><input type="radio" name="side" value="no"><span><span>Не будет</span> <b id="noAsk">—</b></span></label>
                         </fieldset>
-                        <div class="forecast-inputs">
-                            <label>Тип заявки<select id="orderMode"><option value="market">По рынку</option><option value="limit">Своя цена</option></select></label>
-                            <label>Долей<input id="quantity" type="number" min="1" max="100" step="1" value="5" inputmode="numeric" required></label>
-                            <label id="limitField" hidden>Цена в сотых очка<input id="limitPrice" type="number" min="1" max="99" step="1" value="50" inputmode="numeric"></label>
+                        <label class="forecast-limit" id="limitField" hidden><span id="limitLabel">Цена за долю, оч.</span><input id="limitPrice" type="text" inputmode="decimal" value="0,50" autocomplete="off"></label>
+                        <div class="forecast-size" id="sizeFields">
+                            <div class="forecast-size-head"><label id="sizeLabel" for="budget">Сумма покупки</label><span id="sizeAvailable"></span></div>
+                            <div class="forecast-size-entry">
+                                <input id="budget" type="text" inputmode="decimal" value="5" autocomplete="off" aria-describedby="sizeAvailable">
+                                <input id="quantity" type="number" min="1" max="100" step="1" value="5" inputmode="numeric" aria-describedby="sizeAvailable" hidden>
+                                <select id="buyUnit" aria-label="Единица покупки"><option value="points">Очки</option><option value="shares">Доли</option></select>
+                                <span id="sellUnit" hidden>долей</span>
+                            </div>
+                            <div class="forecast-presets" id="sizePresets" role="group" aria-label="Быстрый выбор суммы или количества">
+                                <button type="button" data-size="0"></button><button type="button" data-size="1"></button><button type="button" data-size="2"></button><button type="button" data-size="3"></button>
+                            </div>
                         </div>
-                        <p class="forecast-quote" id="quotePreview" aria-live="polite"></p>
+                        <div class="forecast-quote" id="quotePreview" aria-live="polite" aria-atomic="true"></div>
+                        <div class="forecast-recovery" id="quoteActions" hidden>
+                            <button type="button" id="useCapacity" hidden></button>
+                            <button type="button" id="useLimit" hidden>Задать свою цену</button>
+                            <button type="button" id="buyInstead" hidden></button>
+                            <a href="#orderListTitle" id="showOrders" hidden>К открытым заявкам</a>
+                        </div>
                         <button type="submit" class="forecast-primary" id="placeOrder" disabled>Купить доли</button>
                     </form>
                     <p id="feedback" class="forecast-feedback" role="status"></p>
                 </section>
-                <section class="forecast-panel forecast-wallet" aria-labelledby="walletTitle">
+                <section class="forecast-panel forecast-chart-card" id="marketChart" aria-labelledby="chartTitle" tabindex="-1">
+                    <div class="forecast-section-head"><h2 id="chartTitle">Вероятность работы</h2>
+                        <div class="forecast-ranges" role="group" aria-label="Период графика"><button type="button" data-range="hour" aria-pressed="false">1 ч</button><button type="button" data-range="day" aria-pressed="false">День</button><button type="button" data-range="all" aria-pressed="true">Всё</button></div>
+                    </div>
+                    <div class="forecast-reading"><strong id="probability">—</strong><span id="chartDelta" title="Изменение за выбранный период" hidden></span><span id="complement"></span></div>
+                    <div class="forecast-plot"><div class="forecast-scale" id="chartScale" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span></div>
+                        <div class="forecast-canvas">
+                            <svg id="probChart" viewBox="0 0 560 180" role="img" aria-label="История рыночной вероятности работы" preserveAspectRatio="none">
+                                <defs><linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1" gradientUnits="userSpaceOnUse"><stop stop-color="currentColor" stop-opacity=".27"/><stop offset=".65" stop-color="currentColor" stop-opacity=".09"/><stop offset="1" stop-color="currentColor" stop-opacity=".01"/></linearGradient></defs>
+                                <path class="chart-grid" id="chartGrid"/><path id="chartArea" fill="url(#chartGradient)"/>
+                                <path id="chartLine" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+                                <path id="chartChange" fill="none" stroke="currentColor" opacity="0" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+                                <g id="chartMarker"><circle class="chart-halo" r="8"/><circle class="chart-dot" r="4"/></g>
+                                <g id="chartInspection" visibility="hidden"><path id="chartHair"/><circle id="chartDot" class="chart-dot" r="4"/></g>
+                            </svg>
+                            <div id="chartTip" class="forecast-tooltip" aria-hidden="true" hidden><b></b><span></span></div>
+                        </div>
+                    </div>
+                    <div class="forecast-axis"><span id="chartStart"></span><span id="chartMiddle"></span><span id="chartEnd"></span></div>
+                    <div class="forecast-chart-readout"><span class="forecast-live" id="chartState"></span><output id="chartReadout" for="chartCursor" aria-live="off"></output><button type="button" id="chartReturn" hidden>К текущей цене</button></div>
+                    <input id="chartCursor" type="range" min="0" max="100" value="100" step=".1" aria-label="Посмотреть вероятность на графике по времени">
+                </section>
+                <section class="forecast-panel forecast-wallet" id="portfolio" aria-labelledby="walletTitle" tabindex="-1">
                     <h2 id="walletTitle">Мой портфель</h2>
-                    <dl><div><dt>Доступно на этом рынке</dt><dd id="walletCash">—</dd></div><div><dt>В заявках на покупку</dt><dd id="walletHeld">—</dd></div>
-                    <div><dt>Доли «Будет»</dt><dd id="walletYes">—</dd></div><div><dt>Доли «Не будет»</dt><dd id="walletNo">—</dd></div></dl>
+                    <dl><div><dt>Свободные очки</dt><dd id="walletCash">—</dd></div><div><dt>В заявках на покупку</dt><dd id="walletHeld">—</dd></div>
+                    <div><dt>Доли «Будет»</dt><dd><span id="walletYes">—</span><button type="button" data-sell="yes" aria-label="Продать доли «Будет»" hidden>Продать</button></dd><dd class="forecast-reserve" id="heldYes" hidden></dd></div>
+                    <div><dt>Доли «Не будет»</dt><dd><span id="walletNo">—</span><button type="button" data-sell="no" aria-label="Продать доли «Не будет»" hidden>Продать</button></dd><dd class="forecast-reserve" id="heldNo" hidden></dd></div></dl>
                     <p class="forecast-footnote" id="walletOutcome"></p>
                 </section>
                 <section class="forecast-panel forecast-book" aria-labelledby="bookTitle">
@@ -116,7 +141,7 @@
                     <p class="forecast-footnote">Цена и количество долей «Будет»</p>
                     <div class="forecast-columns"><div><h3>Покупают</h3><ol id="bookBids"></ol></div><div><h3>Продают</h3><ol id="bookAsks"></ol></div></div>
                 </section>
-                <section class="forecast-panel forecast-orders"><h2>Мои открытые заявки</h2><div id="myOrders"></div></section>
+                <section class="forecast-panel forecast-orders"><h2 id="orderListTitle" tabindex="-1">Мои открытые заявки</h2><div id="myOrders"></div><p class="forecast-feedback" id="orderFeedback" role="status"></p></section>
                 <section class="forecast-panel forecast-history" aria-labelledby="historyTitle">
                     <div class="forecast-section-head"><h2 id="historyTitle">История сделок</h2>
                     <select id="historyScope" aria-label="Чьи сделки показать"><option value="mine">Мои</option><option value="all">Все</option></select></div>
@@ -164,7 +189,8 @@
     <script defer src="script.js?v=20260906-1"></script>
     <script defer src="settings.js?v=20261009-1"></script>
     <script defer src="account.js?v=20260908-1"></script>
-    <script defer src="physics-forecast-core.js?v=1"></script>
-    <script defer src="physics-forecast.js?v=2"></script>
+    <script defer src="physics-forecast-core.js?v=2"></script>
+    <script defer src="physics-forecast-chart.js?v=1"></script>
+    <script defer src="physics-forecast.js?v=3"></script>
 </body>
 </html>
