@@ -13,7 +13,7 @@
     <link rel="stylesheet" href="styles/buttons.css?v=20260929-2">
     <link rel="stylesheet" href="style-new.css?v=20260929-2">
     <link rel="stylesheet" href="styles/typography.css?v=20261002-1">
-    <link rel="stylesheet" href="styles/physics-forecast.css?v=6">
+    <link rel="stylesheet" href="styles/physics-forecast.css?v=7">
 </head>
 <body class="forecast-page" data-no-math>
     <script>window.AlmanionThemeBootstrap.applyBody();</script>
@@ -117,26 +117,47 @@
                     </div>
                     <div class="forecast-chart-controls">
                         <div class="forecast-reading"><strong id="probability">—</strong><span id="chartDelta" title="Изменение за выбранный период" hidden></span></div>
-                        <div class="forecast-ranges" role="group" aria-label="Период графика"><button type="button" data-range="hour" aria-pressed="false">1 ч</button><button type="button" data-range="day" aria-pressed="false">День</button><button type="button" data-range="all" aria-pressed="true">Всё</button></div>
-                    </div>
-                    <div class="forecast-plot">
-                        <div class="forecast-canvas">
-                            <svg id="probChart" viewBox="0 0 560 220" role="img" aria-label="История вероятности" preserveAspectRatio="none">
-                                <defs><linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1" gradientUnits="userSpaceOnUse"><stop stop-color="currentColor" stop-opacity=".25"/><stop offset="1" stop-color="currentColor" stop-opacity=".01"/></linearGradient></defs>
-                                <path class="chart-grid" id="chartGrid"/>
-                                <path id="chartGuide"/>
-                                <g id="chartSeries"><path id="chartArea" fill="url(#chartGradient)"/><path id="chartLine"/><path id="chartVolumes"/></g>
-                                <path id="chartChange" fill="none" stroke="currentColor" opacity="0" stroke-width="4"/>
-                                <g id="chartMarker"><circle class="chart-halo" r="7"/><circle class="chart-dot" r="3.6"/></g>
-                                <g id="chartInspection" visibility="hidden"><path id="chartHair"/><circle id="chartDot" class="chart-dot" r="4"/></g>
-                            </svg>
-                            <div id="chartTip" class="forecast-tooltip" aria-hidden="true" hidden><b></b><span></span><small></small></div>
+                        <div class="forecast-ranges" role="group" aria-label="Период графика">
+                            <button type="button" data-range="quarter" aria-label="15 минут" aria-pressed="false">15 мин</button>
+                            <button type="button" data-range="hour" aria-label="1 час" aria-pressed="false">1 ч</button>
+                            <button type="button" data-range="day" aria-pressed="false">День</button>
+                            <button type="button" data-range="all" aria-pressed="true">Всё</button>
                         </div>
-                        <div class="forecast-scale-column" aria-hidden="true"><div id="chartScale" class="forecast-scale"><span></span><span></span><span></span><span></span><span></span></div><b id="chartPriceTag"></b><small>доли</small></div>
                     </div>
-                    <div class="forecast-axis"><span id="chartStart"></span><span id="chartMiddle"></span><span id="chartEnd"></span></div>
-                    <input id="chartCursor" type="range" min="0" max="100" value="100" step=".1" aria-label="Посмотреть вероятность на графике по времени">
-                    <div class="forecast-chart-readout"><span class="forecast-live" id="chartState"></span><output id="chartReadout" for="chartCursor" aria-live="off"></output><button type="button" id="chartReturn" hidden>К текущей цене</button></div>
+                    <div class="forecast-chart-stage">
+                        <div class="forecast-plot">
+                            <div class="forecast-canvas">
+                                <svg id="probChart" viewBox="0 0 560 220" role="img" aria-label="История вероятности" preserveAspectRatio="none">
+                                    <defs><linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1" gradientUnits="userSpaceOnUse"><stop stop-color="currentColor" stop-opacity=".24"/><stop offset="1" stop-color="currentColor" stop-opacity=".02"/></linearGradient></defs>
+                                    <path class="chart-grid" id="chartGrid"/><path class="chart-grid" id="chartTimeGrid"/>
+                                    <path id="chartGuide"/>
+                                    <g id="chartSeries"><path id="chartArea" fill="url(#chartGradient)"/><path id="chartLine"/><path id="chartVolumes"/></g>
+                                    <path id="chartChange" fill="none" stroke="currentColor" opacity="0" stroke-width="4"/>
+                                    <g id="chartMarker"><circle class="chart-halo" r="7"/><circle class="chart-dot" r="3.6"/></g>
+                                    <g id="chartInspection" visibility="hidden"><path id="chartHair"/><path id="chartActiveVolume"/><circle id="chartDot" class="chart-dot" r="4"/></g>
+                                </svg>
+                            </div>
+                            <div class="forecast-scale-column" aria-hidden="true"><div id="chartScale" class="forecast-scale"><span></span><span></span><span></span><span></span><span></span></div><b id="chartPriceTag"></b><small>доли</small></div>
+                        </div>
+                        <div class="forecast-axis" id="chartAxis" aria-hidden="true"></div>
+                        <div class="forecast-scrubber">
+                            <button type="button" class="forecast-chart-step" id="chartPrev" aria-label="Предыдущая точка графика" title="Предыдущая точка графика" hidden>
+                                <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M12 5l-5 5 5 5"/></svg>
+                            </button>
+                            <input id="chartCursor" type="range" min="0" max="100" value="100" step=".1" aria-label="Посмотреть вероятность на графике по времени">
+                            <button type="button" class="forecast-chart-step" id="chartNext" aria-label="Следующая точка графика" title="Следующая точка графика" hidden>
+                                <svg viewBox="0 0 20 20" aria-hidden="true"><path d="m8 5 5 5-5 5"/></svg>
+                            </button>
+                        </div>
+                        <div class="forecast-chart-readout" id="chartStrip">
+                            <div class="forecast-chart-clock"><span class="forecast-live" id="chartState"></span><output id="chartReadout" for="chartCursor" aria-live="off"></output></div>
+                            <div id="chartTip" class="forecast-tooltip" aria-hidden="true" hidden><b></b><span></span><small></small></div>
+                            <button type="button" id="chartReturn" aria-label="К текущей цене" hidden>
+                                <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 10h12m-5-5 5 5-5 5m6-10v10"/></svg><span class="chart-return-full">К текущей цене</span><span class="chart-return-short" aria-hidden="true">Сейчас</span>
+                            </button>
+                        </div>
+                    </div>
+                    <span class="forecast-sr" id="chartAnnouncement" role="status" aria-live="polite" aria-atomic="true"></span>
                     <dl class="forecast-chart-stats" aria-label="За выбранный период">
                         <div><dt>Минимум</dt><dd id="chartLow">—</dd></div><div><dt>Максимум</dt><dd id="chartHigh">—</dd></div><div><dt>Объём, доли</dt><dd id="chartVolume">—</dd></div>
                     </dl>
@@ -223,7 +244,7 @@
     <script defer src="settings.js?v=20261009-1"></script>
     <script defer src="account.js?v=20260908-1"></script>
     <script defer src="physics-forecast-core.js?v=3"></script>
-    <script defer src="physics-forecast-chart.js?v=3"></script>
+    <script defer src="physics-forecast-chart.js?v=4"></script>
     <script defer src="physics-forecast-admin.js?v=2"></script>
     <script defer src="physics-forecast.js?v=5"></script>
 </body>

@@ -361,6 +361,57 @@ test('the expanded chart keeps its outcome, restores focus and closes on logout'
 
 test.describe('touch chart', () => {
     test.use({ hasTouch:true, viewport:{width:360,height:740} });
+    test('steps through price changes, filters actual volume and keeps the inspected time on rotation', async ({ page }) => {
+        await page.clock.install({ time: new Date('2026-11-26T12:00:00Z') });
+        await mockClass(page);
+        await page.goto('/physics-forecast.html');
+        const previous = page.locator('#chartPrev'), next = page.locator('#chartNext');
+        const tip = page.locator('#chartTip'), dialog = page.locator('#chartDialog');
+        await expect(page.locator('#probability')).toHaveText('50%');
+        await expect(previous).toBeHidden();
+        await page.clock.fastForward(20 * 60000);
+        await page.evaluate(async () => {
+            const root = window.AlmanionAccount.database.ref('physicsForecast'), now = Date.now();
+            const trades = [['yes', 12, 19 * 60000], ['no', 18, 60000], ['no', 20, 20000]];
+            for (const [i, [side, qty, age]] of trades.entries()) {
+                const id = root.child('events').push().key, n = i + 2;
+                const order = { kind: 'order', day: window.PhysicsForecast.dayKey(now), n, at: now - age,
+                    actor: side + '-player', side, action: 'buy', mode: 'market', qty, limit: 99 };
+                await root.update({ head: { id, n }, ['events/' + id]: order });
+            }
+        });
+        await expect(page.locator('#chartVolume')).toHaveText('50');
+        await page.getByRole('button', { name: '15 минут' }).tap();
+        await expect(page.locator('#chartVolume')).toHaveText('38');
+        await previous.tap();
+        const lastChange = await page.locator('#chartCursor').getAttribute('aria-valuetext');
+        await expect(page.locator('#chartActiveVolume')).not.toHaveAttribute('d', '');
+        await previous.tap();
+        await expect(page.locator('#chartCursor')).not.toHaveAttribute('aria-valuetext', lastChange);
+        await next.tap();
+        await expect(page.locator('#chartCursor')).toHaveAttribute('aria-valuetext', lastChange);
+
+        await page.locator('#chartExpand').tap();
+        await page.setViewportSize({ width: 568, height: 320 });
+        // WebKit rounds the SVG intersection to physical pixels after a rotation.
+        await expect.poll(() => dialog.evaluate(box => ['#probChart', '#chartExpand'].every(selector => {
+            const rect = box.querySelector(selector).getBoundingClientRect();
+            return rect.width > 0 && rect.height > 0 && rect.top >= 0 && rect.left >= 0
+                && rect.bottom <= innerHeight + 1 && rect.right <= innerWidth + 1;
+        }))).toBe(true);
+        await expect(page.locator('#chartCursor')).toHaveAttribute('aria-valuetext', lastChange);
+        await expect.poll(() => page.evaluate(() => {
+            const box = document.getElementById('chartDialog');
+            return box.scrollHeight - box.clientHeight;
+        })).toBeLessThanOrEqual(1);
+        const plotBox = await dialog.locator('#probChart').boundingBox(), tipBox = await tip.boundingBox();
+        expect(tipBox.y + tipBox.height).toBeLessThanOrEqual(plotBox.y + 1);
+        await next.tap();
+        await expect(tip).toBeHidden();
+        await expect(page.locator('#chartState')).toHaveText('Сейчас');
+        await expect(next).toBeDisabled();
+    });
+
     test('opens from the mobile shortcuts and allows inspecting a point and returning to now', async ({ page }) => {
         await mockClass(page);
         await page.goto('/physics-forecast.html');

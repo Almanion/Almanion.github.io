@@ -4,6 +4,10 @@
     const fmt = new Intl.NumberFormat('ru-RU', { maximumFractionDigits: 1 });
     const time = options => new Intl.DateTimeFormat('ru-RU', { timeZone: 'Europe/Moscow', hour: '2-digit', minute: '2-digit', ...options });
     const minutes = time({}), seconds = time({ second: '2-digit' }), dated = time({ day: '2-digit', month: '2-digit' });
+    const calendarDate = new Intl.DateTimeFormat('ru-RU', { timeZone: 'Europe/Moscow', day: '2-digit', month: '2-digit' });
+    const hour = 3600000, day = 24 * hour;
+    const rangeSpans = { quarter: hour / 4, hour, day, all: Infinity };
+    const tickIntervals = [1, 2, 5, 10, 15, 30, 60, 120, 300, 600, 900, 1800, 3600, 7200, 10800, 21600, 43200, 86400, 172800, 604800].map(s => s * 1000);
     const percent = value => fmt.format(value) + '%';
     const clamp = (value, low, high) => Math.min(high, Math.max(low, value));
 
@@ -16,6 +20,48 @@
             else high = mid - 1;
         }
         return low;
+    }
+
+    // Move across distinct timestamps, including the visible window's two boundaries.
+    function adjacentTime(points, start, end, at, forward) {
+        if (forward ? at >= end : at <= start) return null;
+        let low = 0, high = points.length;
+        while (low < high) {
+            const mid = (low + high) >>> 1;
+            if (forward ? points[mid].at <= at : points[mid].at < at) low = mid + 1;
+            else high = mid;
+        }
+        return forward ? Math.min(points[low]?.at ?? end, end) : Math.max(points[low - 1]?.at ?? start, start);
+    }
+
+    function timeTicks(start, end, width, fontSize) {
+        const duration = end - start;
+        const crossDay = window.PhysicsForecast.dayKey(start) !== window.PhysicsForecast.dayKey(end);
+        const format = duration >= 2 * day ? calendarDate : duration < 120000 ? seconds : minutes;
+        const edgeLabel = at => crossDay && format !== calendarDate ? calendarDate.format(at) + ' ' + format.format(at) : format.format(at);
+        const left = edgeLabel(start), right = edgeLabel(end);
+        const last = { fraction: 1, label: right, align: 'end' };
+        if (left === right) return [last];
+
+        // The axis uses the same monospaced face at every tick. Reserve space for the edge labels first.
+        const measure = label => label.length * fontSize * .64;
+        const gap = fontSize * 1.1;
+        const ticks = [{ fraction: 0, label: left, align: 'start' }];
+        const rightLimit = width - measure(right) - gap;
+        if (measure(left) > rightLimit) return [last];
+        const desired = duration * (measure(format.format(start)) + gap * 2.5) / width;
+        const interval = tickIntervals.find(step => step >= desired && (format !== calendarDate || step >= day)) || Math.ceil(desired / day) * day;
+        const midnight = Date.parse(window.PhysicsForecast.dayKey(start) + 'T00:00:00+03:00');
+        let nextFree = measure(left) + gap;
+        for (let at = midnight + (Math.floor((start - midnight) / interval) + 1) * interval; at < end; at += interval) {
+            const fraction = (at - start) / duration;
+            const label = format.format(at), half = measure(label) / 2, x = width * fraction;
+            if (x - half < nextFree || x + half > rightLimit || label === ticks.at(-1).label || label === right) continue;
+            ticks.push({ fraction, label, align: 'middle' });
+            nextFree = x + half + gap;
+        }
+        ticks.push(last);
+        return ticks;
     }
 
     function scaleFor(low, high) {
@@ -74,10 +120,14 @@
         const card = el('marketChart'), svg = el('probChart'), slider = el('chartCursor'), tip = el('chartTip');
         const dialog = el('chartDialog'), expand = el('chartExpand'), spacer = document.createElement('div');
         const periodButtons = [...card.querySelectorAll('[data-range]')], sides = [...card.querySelectorAll('[data-chart-side]')];
+        const returnButton = el('chartReturn'), strip = el('chartStrip');
+        const axis = el('chartAxis'), previousPoint = el('chartPrev'), nextPoint = el('chartNext');
+        const compact = matchMedia('(max-width: 759px), (orientation: landscape) and (max-width: 1024px) and (max-height: 540px)');
         const reduced = matchMedia('(prefers-reduced-motion: reduce)');
         const priceForSide = yes => side === 'yes' ? yes : 100 - yes;
         let market = null, online = false, lastSeen = 0, range = 'all', side = 'yes', frame = null, inView = true;
         let pinnedAt = null, hoverAt = null, pointer = null, previousPrice = null, previousTrades = 0, reveal = true;
+        let scheduledReading = 0;
         spacer.className = 'forecast-chart-space';
         spacer.setAttribute('aria-hidden', 'true');
 
@@ -115,11 +165,22 @@
         function restore(focus) {
             if (!spacer.isConnected) return;
             spacer.replaceWith(card); resizeButton(false);
-            if (focus) expand.focus({ preventScroll: true });
+            if (!focus) return;
+            expand.focus({ preventScroll: true });
+            // WebKit can finish releasing the modal's focus scope after the element has moved.
+            requestAnimationFrame(() => {
+                if (!dialog.open && !card.closest('[hidden]') && document.activeElement === document.body) {
+                    expand.focus({ preventScroll: true });
+                }
+            });
+        }
+        function closeExpanded(focus) {
+            if (dialog.open) dialog.close();
+            restore(focus);
         }
         expand.hidden = typeof dialog.showModal !== 'function';
         expand.addEventListener('click', () => {
-            if (dialog.open) { dialog.close(); restore(true); return; }
+            if (dialog.open) { closeExpanded(true); return; }
             if (!market) return;
             spacer.style.height = card.getBoundingClientRect().height + 'px';
             card.replaceWith(spacer); dialog.append(card);
@@ -129,20 +190,21 @@
             expand.focus({ preventScroll: true });
             draw(clock());
         });
+        dialog.addEventListener('cancel', event => { event.preventDefault(); closeExpanded(true); });
         dialog.addEventListener('close', () => { if (!dialog.open) restore(true); });
-        dialog.addEventListener('click', e => { if (e.target === dialog) dialog.close(); });
+        dialog.addEventListener('click', e => { if (e.target === dialog) closeExpanded(true); });
 
         function reset() {
-            if (dialog.open) dialog.close();
-            restore(false);
+            closeExpanded(false);
             market = frame = pointer = previousPrice = null; previousTrades = lastSeen = 0; online = false;
             selectRange('all'); selectSide('yes'); tip.hidden = true;
             svg.dataset.live = 'false'; el('chartDialogQuestion').textContent = '';
+            el('chartAnnouncement').textContent = '';
         }
 
         function readPoint() {
             if (!frame) return;
-            const { start, end, x, y, h, w, volume, live } = frame;
+            const { start, end, x, y, h, w, volume, barPaths, live } = frame;
             const inspected = hoverAt ?? pinnedAt, at = clamp(inspected ?? end, start, end);
             const price = priceForSide(market.chart[pointAt(market.chart, at)].p);
             const position = inspected === null || start === end ? 100 : 100 * (at - start) / (end - start);
@@ -155,8 +217,10 @@
             el('chartReadout').textContent = timeText + ' мск' + (inspected === null ? '' : ' · ' + percent(price));
             el('chartState').textContent = inspected !== null ? 'История' : live ? 'Сейчас' : !online ? 'Нет связи' : 'Последняя цена';
             el('chartState').dataset.state = inspected === null && live ? 'live' : 'idle';
-            el('chartReturn').hidden = pinnedAt === null;
-            el('chartReturn').textContent = live ? 'К текущей цене' : 'К последней цене';
+            returnButton.hidden = pinnedAt === null;
+            previousPoint.disabled = at <= start;
+            nextPoint.disabled = at >= end;
+            strip.toggleAttribute('data-inspecting', inspected !== null);
             el('chartInspection').setAttribute('visibility', inspected === null ? 'hidden' : 'visible');
             tip.hidden = inspected === null;
             if (inspected === null) return;
@@ -164,8 +228,10 @@
             el('chartHair').setAttribute('d', 'M' + px + ' 3V' + (h - 2));
             el('chartDot').setAttribute('cx', px); el('chartDot').setAttribute('cy', py);
             tip.children[0].textContent = sideNames[side] + ' · ' + percent(price);
-            tip.children[1].textContent = timeText;
+            el('chartActiveVolume').setAttribute('d', barPaths[volume.indexAt(at)]);
+            tip.children[1].textContent = timeText + ' мск';
             tip.children[2].textContent = 'Объём за интервал · ' + fmt.format(qty);
+            if (compact.matches) return;
             const tw = tip.offsetWidth, th = tip.offsetHeight;
             tip.style.left = clamp(px + tw + 10 < w ? px + 9 : px - tw - 9, 2, w - tw - 2) + 'px';
             tip.style.top = clamp(py > h / 2 ? py - th - 8 : py + 8, 2, h - th - 2) + 'px';
@@ -175,7 +241,7 @@
             if (!market || !svg.clientWidth || !svg.clientHeight) return;
             const points = market.chart;
             const latest = Math.max(market.openedAt, Math.min(online ? Math.max(at, points.at(-1).at) : lastSeen, market.closedAt ?? market.endAt));
-            const span = range === 'hour' ? 3600000 : range === 'day' ? 86400000 : Infinity;
+            const span = rangeSpans[range];
             const end = pinnedAt === null ? latest : Math.min(latest, pinnedAt + span);
             const start = Math.max(market.openedAt, end - span);
             const first = pointAt(points, start), last = pointAt(points, end);
@@ -192,7 +258,16 @@
             const y = p => pad + (top - p) / (top - bottom) * (floor - pad);
             const volume = tradeVolume(market.trades, start, end, plotWidth);
             const live = online && market.phase === 'open' && at < market.endAt;
-            frame = { start, end, x, y, h, w, volume, live };
+            const barPaths = [];
+            frame = { start, end, x, y, h, w, volume, live, barPaths };
+            previousPoint.hidden = nextPoint.hidden = last === first;
+            const returnLabel = live ? 'К текущей цене' : 'К последней цене';
+            if (returnButton.getAttribute('aria-label') !== returnLabel || !returnButton.title) {
+                returnButton.querySelector('.chart-return-full').textContent = returnLabel;
+                returnButton.querySelector('.chart-return-short').textContent = live ? 'Сейчас' : 'В конец';
+                returnButton.setAttribute('aria-label', returnLabel);
+                returnButton.title = returnLabel;
+            }
             svg.setAttribute('viewBox', '0 0 ' + w + ' ' + h);
             el('chartGradient').setAttribute('y2', floor);
             let grid = '';
@@ -204,21 +279,29 @@
                 ticks[i].style.visibility = Math.abs(py - y(lastPrice)) < 16 ? 'hidden' : '';
                 grid += 'M' + pad + ' ' + py + 'H' + right;
             }
-            for (const fraction of [.25, .5, .75]) grid += 'M' + (pad + plotWidth * fraction) + ' ' + pad + 'V' + floor;
             el('chartGrid').setAttribute('d', grid);
+            const timeMarks = timeTicks(start, end, plotWidth, parseFloat(getComputedStyle(axis).fontSize));
+            let timeGrid = '';
+            while (axis.children.length > timeMarks.length) axis.lastElementChild.remove();
+            timeMarks.forEach(({ fraction, label, align }, index) => {
+                const tick = axis.children[index] || axis.appendChild(document.createElement('span'));
+                tick.textContent = label; tick.dataset.align = align;
+                tick.style.left = (fraction * 100) + '%';
+                if (align === 'middle') timeGrid += 'M' + (pad + plotWidth * fraction) + ' ' + pad + 'V' + floor;
+            });
+            el('chartTimeGrid').setAttribute('d', timeGrid);
             const path = stepPath(points, first, last, x, p => y(priceForSide(p)), start, end, plotWidth);
             el('chartLine').setAttribute('d', path);
             el('chartArea').setAttribute('d', path + 'V' + floor + 'H' + x(start) + 'Z');
             el('chartGuide').setAttribute('d', 'M' + pad + ' ' + y(lastPrice) + 'H' + right);
             el('chartMarker').setAttribute('transform', 'translate(' + right + ' ' + y(lastPrice) + ')');
             const maxBin = Math.max(1, ...volume.bins), binWidth = plotWidth / volume.bins.length;
-            let bars = '';
             volume.bins.forEach((qty, i) => {
-                if (!qty) return;
                 const height = Math.max(1, band * qty / maxBin);
-                bars += 'M' + (pad + i * binWidth + 1) + ' ' + (h - 2) + 'v-' + height + 'h' + Math.max(1, binWidth - 2) + 'v' + height + 'Z';
+                const left = pad + i * binWidth + 1;
+                barPaths.push(qty ? 'M' + left + ' ' + (h - 2) + 'v-' + height + 'h' + Math.max(1, binWidth - 2) + 'v' + height + 'Z' : '');
             });
-            el('chartVolumes').setAttribute('d', bars);
+            el('chartVolumes').setAttribute('d', barPaths.join(''));
             svg.dataset.live = String(live && end === latest);
             svg.setAttribute('aria-label', market.question + ' Вероятность «' + sideNames[side] + '» в конце графика ' + percent(lastPrice) + '. Шкала от ' + percent(bottom) + ' до ' + percent(top) + '.');
             el('chartPriceTag').textContent = percent(lastPrice); el('chartPriceTag').style.top = y(lastPrice) + 'px';
@@ -229,10 +312,6 @@
             el('chartDelta').hidden = !delta;
             el('chartDelta').dataset.direction = delta > 0 ? 'up' : 'down';
             el('chartDelta').textContent = (delta > 0 ? '+' : '−') + fmt.format(Math.abs(delta)) + ' п. п.';
-            const axis = end - start < 120000 ? seconds : window.PhysicsForecast.dayKey(start) === window.PhysicsForecast.dayKey(end) ? minutes : dated;
-            const leftLabel = axis.format(start), rightLabel = axis.format(end), middle = axis.format((start + end) / 2);
-            el('chartStart').textContent = leftLabel; el('chartEnd').textContent = rightLabel;
-            el('chartMiddle').textContent = middle === leftLabel || middle === rightLabel ? '' : middle;
             readPoint();
             const motion = motionLevel();
             if (motion !== 'off') {
@@ -282,27 +361,63 @@
         for (const button of sides) button.addEventListener('click', () => {
             if (button.dataset.chartSide !== side) { selectSide(button.dataset.chartSide); draw(clock()); }
         });
+        function pin(at, announce = true) {
+            hoverAt = null; pinnedAt = at;
+            if (at === null) draw(clock()); else readPoint();
+            if (announce) el('chartAnnouncement').textContent = el('chartState').textContent + '. ' + slider.getAttribute('aria-valuetext');
+        }
+        function step(forward) {
+            if (!frame) return;
+            const at = adjacentTime(market.chart, frame.start, frame.end, pinnedAt ?? frame.end, forward);
+            if (at !== null) pin(forward && at === frame.end ? null : at);
+        }
+        previousPoint.addEventListener('click', () => step(false));
+        nextPoint.addEventListener('click', () => step(true));
         slider.addEventListener('input', () => {
             if (!frame) return;
             const ratio = slider.valueAsNumber / 100;
-            hoverAt = null; pinnedAt = ratio >= 1 ? null : frame.start + ratio * (frame.end - frame.start);
-            if (pinnedAt === null) draw(clock()); else readPoint();
+            pin(ratio >= 1 ? null : frame.start + ratio * (frame.end - frame.start), false);
         });
-        el('chartReturn').addEventListener('click', () => { pinnedAt = hoverAt = null; draw(clock()); slider.focus({ preventScroll: true }); });
-        svg.addEventListener('pointerdown', e => { if (frame && e.isPrimary && e.button === 0) pointer = { x: e.clientX, y: e.clientY, id: e.pointerId }; });
-        svg.addEventListener('pointermove', e => {
-            if (!frame || !e.isPrimary || (!pointer && e.pointerType !== 'mouse')) return;
-            if (pointer && e.pointerType !== 'mouse' && Math.abs(e.clientY - pointer.y) > Math.abs(e.clientX - pointer.x) + 5) {
-                pointer = hoverAt = null; readPoint(); return;
+        returnButton.addEventListener('click', event => {
+            pin(null);
+            if (event.detail === 0) slider.focus({ preventScroll: true });
+        });
+
+        function releasePointer() {
+            pointer = hoverAt = null;
+            if (scheduledReading) cancelAnimationFrame(scheduledReading);
+            scheduledReading = 0; readPoint();
+        }
+        svg.addEventListener('pointerdown', event => {
+            if (!event.isPrimary) { releasePointer(); return; }
+            if (!frame || event.button !== 0) return;
+            pointer = { x: event.clientX, y: event.clientY, id: event.pointerId, dragging: false };
+            if (svg.setPointerCapture && event.isTrusted) svg.setPointerCapture(event.pointerId);
+        });
+        svg.addEventListener('pointermove', event => {
+            if (!frame || !event.isPrimary || (pointer && pointer.id !== event.pointerId)) return;
+            if (!pointer && event.pointerType !== 'mouse') return;
+            if (pointer && !pointer.dragging && event.pointerType !== 'mouse') {
+                const dx = Math.abs(event.clientX - pointer.x), dy = Math.abs(event.clientY - pointer.y);
+                if (Math.max(dx, dy) < 6) return;
+                if (dy >= dx) { releasePointer(); return; }
+                pointer.dragging = true;
             }
-            hoverAt = fromPointer(e); readPoint();
+            hoverAt = fromPointer(event);
+            if (!scheduledReading) scheduledReading = requestAnimationFrame(() => { scheduledReading = 0; readPoint(); });
         });
-        svg.addEventListener('pointerup', e => {
-            if (!frame || pointer?.id !== e.pointerId) return;
-            pinnedAt = fromPointer(e); pointer = hoverAt = null; readPoint();
+        svg.addEventListener('pointerup', event => {
+            if (!frame || pointer?.id !== event.pointerId) return;
+            // A native scroll may end without delivering an intermediate move to this element.
+            const dx = Math.abs(event.clientX - pointer.x), dy = Math.abs(event.clientY - pointer.y);
+            if (event.pointerType !== 'mouse' && !pointer.dragging && dy >= 6 && dy >= dx) { releasePointer(); return; }
+            pointer = null; pin(fromPointer(event));
         });
-        function leave() { pointer = hoverAt = null; readPoint(); }
-        svg.addEventListener('pointercancel', leave); svg.addEventListener('pointerleave', leave);
+        svg.addEventListener('pointercancel', releasePointer);
+        svg.addEventListener('lostpointercapture', event => { if (pointer?.id === event.pointerId) releasePointer(); });
+        svg.addEventListener('pointerleave', event => {
+            if (!pointer || !svg.hasPointerCapture?.(event.pointerId)) releasePointer();
+        });
         new ResizeObserver(() => draw(clock())).observe(svg);
         new IntersectionObserver(([entry]) => {
             inView = entry.isIntersecting; svg.dataset.visible = String(inView);
