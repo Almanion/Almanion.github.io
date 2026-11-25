@@ -157,7 +157,71 @@ test('expiry in another event releases the shared balance while the selected mar
     await page.clock.fastForward(61000);
     await expect(page.locator('#walletCash')).toHaveText('100 оч.');
     await expect(page.locator('#roundState')).toHaveText('Торги открыты');
-    await expect(page.locator('#lessonSelect optgroup[label="Ждут итога"]')).toContainText('Другой прогноз?');
+    await page.locator('#eventPicker').click();
+    const events = page.getByRole('dialog', { name:'События' });
+    await expect(events.getByRole('heading', { name:'Ждут итога' })).toBeVisible();
+    await expect(events.getByRole('button', { name:/Другой прогноз\?/ })).toBeVisible();
+});
+
+test('event picker wraps long questions on mobile and restores keyboard focus', async ({ page }) => {
+    await page.setViewportSize({ width:320, height:640 });
+    await page.clock.install({ time:new Date('2026-11-26T06:00:02Z') });
+    await mockClass(page);
+    await page.goto('/physics-forecast.html');
+    const trigger = page.getByRole('button', { name:'События', exact:true });
+    await expect(trigger).toBeVisible();
+    const key = '00000000000000000902';
+    const question = 'Выиграет ли сборная 10-1 товарищеский матч у сборной 10-2 после занятий в следующую пятницу?';
+    await page.evaluate(async ({ key, question }) => {
+        const core = window.PhysicsForecast, at = Date.now(), day = core.dayKey(at);
+        const root = window.AlmanionAccount.database.ref('physicsForecast');
+        const another = '00000000000000000903', result = '00000000000000000904';
+        const open = { at, kind:'open', actor:core.OWNER, endAt:core.endOfDay(day), eventEnd:core.endOfDay(day) };
+        await root.update({
+            ['events/' + key]:{ ...open, n:2, day:key, question },
+            ['events/' + another]:{ ...open, n:3, day:another, question:'Состоится ли экскурсия?' },
+            ['events/' + result]:{ n:4, at, day:another, actor:core.OWNER, kind:'void' },
+            head:{ n:4, id:result, v:3 }
+        });
+    }, { key, question });
+
+    const events = page.getByRole('dialog', { name:'События' });
+    await trigger.press('Enter');
+    await expect(events).toBeVisible();
+    await expect(events.getByRole('heading', { name:'Открытые' })).toBeVisible();
+    await expect(events.getByRole('heading', { name:'Завершённые' })).toBeVisible();
+    await expect(events.locator('[aria-current="true"]')).toContainText(M.physics.question);
+    const next = events.locator('[data-event-id="' + key + '"]');
+    await expect(next).toContainText(question);
+    const title = next.getByText(question, { exact:true });
+    await expect.poll(() => title.evaluate(element => {
+        const bounds = element.closest('button').getBoundingClientRect();
+        const range = document.createRange();
+        range.selectNodeContents(element);
+        const lines = [...range.getClientRects()];
+        return lines.length > 1 && lines.every(line => line.left >= bounds.left && line.right <= bounds.right + 1);
+    })).toBe(true);
+
+    await page.keyboard.press('Escape');
+    await expect(events).toBeHidden();
+    await expect(trigger).toBeFocused();
+    await trigger.press('Enter');
+    await next.press('Enter');
+    await expect(events).toBeHidden();
+    await expect(trigger).toBeFocused();
+    await expect(page.locator('#lessonQuestion')).toHaveText(question);
+    await expect(page).toHaveURL(new RegExp('\\?event=' + key + '$'));
+
+    await trigger.click();
+    await expect(next).toHaveAttribute('aria-current', 'true');
+    await page.locator('#closeForecastEvents').click();
+    await expect(events).toBeHidden();
+    await trigger.click();
+    await expect(events).toBeVisible();
+    await page.evaluate(() => window.changeForecastAccount(null));
+    await expect(events).toBeHidden();
+    await expect(trigger).toBeHidden();
+    await expect(page.locator('#forecastEvents [data-event-id]')).toHaveCount(0);
 });
 
 test('first visit explains the market and guides the phone through real controls without trading', async ({ page, context }) => {
@@ -333,7 +397,7 @@ for (const width of [360,1280]) {
 test('point budget buys whole shares at actual prices and a limit order separates fills from reserved points', async ({ page }) => {
     await mockClass(page);
     await page.goto('/physics-forecast.html');
-    const budget = page.getByLabel('Сумма покупки'), submit = page.locator('#placeOrder');
+    const budget = page.getByLabel('Лимит покупки'), submit = page.locator('#placeOrder');
     await expect(submit).toHaveText('Купить 9 долей «Да»');
     await expect(page.locator('#quotePreview')).toContainText('4,59 оч.');
     await budget.fill('0,50');
@@ -362,6 +426,34 @@ test('point budget buys whole shares at actual prices and a limit order separate
     await page.locator('#myOrders button').click();
     await expect(page.locator('#walletHeld')).toHaveText('0 оч.');
     await expect(page.locator('#walletCash')).toHaveText('94,9 оч.');
+});
+
+test('a 67-point buying limit shows the actual cost and empty offers after the available shares are bought and sold', async ({ page }) => {
+    await mockClass(page);
+    await page.goto('/physics-forecast.html');
+    await page.locator('label:has(input[value=no])').click();
+    const budget = page.getByLabel('Лимит покупки'), submit = page.locator('#placeOrder');
+    const quote = page.locator('#quotePreview');
+    await budget.fill('67');
+    await expect(submit).toHaveText('Купить 85 долей «Нет»');
+    await expect(quote).toContainText('51,35 оч.');
+    await expect(quote).toContainText('15,65 оч.');
+    await submit.click();
+    await expect(page.locator('#walletNo')).toHaveText('85');
+    await expect(page.locator('#walletCash')).toHaveText('48,65 оч.');
+    await expect(budget).toHaveValue('67');
+    await expect(quote).toContainText('Сейчас никто не продаёт доли «Нет».');
+
+    await page.locator('[data-sell="no"]').click();
+    await expect(submit).toHaveText('Продать 85 долей «Нет»');
+    await submit.click();
+    await expect(page.locator('#walletNo')).toHaveText('0');
+    await expect(page.locator('#walletCash')).toHaveText('82,3 оч.');
+    await page.locator('label:has(input[value=buy])').click();
+    await budget.fill('99');
+    await expect(quote).toContainText('Сейчас никто не продаёт доли «Нет».');
+    await expect(submit).toBeDisabled();
+    await expect(page.locator('#useLimit')).toBeVisible();
 });
 
 test('selling the selected holding respects reservations, supports half or all and never trades until confirmed', async ({ page }) => {

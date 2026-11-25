@@ -31,6 +31,8 @@
     const chart = window.createPhysicsForecastChart(now);
     const guide = window.createForecastGuide();
     const ranking = window.createForecastRanking(api, amount);
+    const eventPicker = $('eventPicker'), eventDialog = $('forecastEvents'), eventList = $('forecastEventList');
+    let eventListVersion = '';
     const execution = $('tradeForm').elements.execution;
     const market = () => engine.markets.get(selectedId);
     const jumpLinks = [...document.querySelectorAll('.forecast-jumps a')];
@@ -61,12 +63,100 @@
         if (cls) element.className = cls;
         return element;
     }
+
+    function positionEventDialog() {
+        if (!eventDialog.open || phone.matches) return;
+        const rect = eventPicker.getBoundingClientRect();
+        const { clientWidth, clientHeight } = document.documentElement;
+        const gap = 8, edge = 12;
+        const below = clientHeight - rect.bottom - gap - edge, above = rect.top - gap - edge;
+        const placeBelow = below >= 270 || below >= above;
+        eventDialog.style.setProperty('--event-room', Math.max(200, placeBelow ? below : above) + 'px');
+        const top = placeBelow ? rect.bottom + gap : rect.top - gap - eventDialog.offsetHeight;
+        const left = Math.max(edge, Math.min(rect.left, clientWidth - eventDialog.offsetWidth - edge));
+        eventDialog.style.setProperty('--event-left', left + 'px');
+        eventDialog.style.setProperty('--event-top', Math.max(edge, Math.min(top, clientHeight - eventDialog.offsetHeight - edge)) + 'px');
+    }
+
+    function renderEventList(markets, at) {
+        const phases = markets.map(item => M.status(item, at));
+        const version = JSON.stringify([selectedId, markets.map((item, i) => [item.id, phases[i], item.endAt])]);
+        if (eventListVersion === version) return;
+        eventListVersion = version;
+        const focusedId = document.activeElement?.dataset?.eventId;
+        const scroll = eventList.scrollTop;
+        const lists = ['Открытые', 'Ждут итога', 'Завершённые'].map(label => {
+            const group = node('section', undefined, 'forecast-event-group');
+            const list = node('ul');
+            group.append(node('h3', label), list);
+            return { group, list };
+        });
+        let restoreFocus;
+        markets.forEach((item, i) => {
+            const phase = phases[i];
+            const button = node('button', undefined, 'forecast-event-choice');
+            button.type = 'button';
+            button.dataset.eventId = item.id;
+            if (item.id === selectedId) button.setAttribute('aria-current', 'true');
+            const detail = phase === 'open' && item.endAt < item.eventEnd ? 'До ' + ledger.cutoff(item.endAt, item.date)
+                : phase !== 'open' && phase !== 'lock' ? phaseLabel(item, phase) : '';
+            button.append(node('span', item.question, 'forecast-event-question'),
+                node('span', date(item.date) + (detail ? ' · ' + detail : ''), 'forecast-event-caption'));
+            const row = node('li');
+            row.append(button);
+            lists[phase === 'open' ? 0 : phase === 'lock' ? 1 : 2].list.append(row);
+            if (item.id === focusedId) restoreFocus = button;
+        });
+        eventList.replaceChildren(...lists.filter(({ list }) => list.childElementCount).map(({ group }) => group));
+        eventList.scrollTop = scroll;
+        restoreFocus?.focus({ preventScroll: true });
+        positionEventDialog();
+    }
+
+    eventPicker.addEventListener('click', () => {
+        if (busy || !ready || eventDialog.open) return;
+        const at = now(), markets = ledger.orderedMarkets(engine, at);
+        if (!markets.length) return;
+        renderEventList(markets, at);
+        eventDialog.showModal();
+        positionEventDialog();
+        eventPicker.setAttribute('aria-expanded', 'true');
+        eventList.querySelector('[aria-current="true"]')?.focus();
+    });
+    $('closeForecastEvents').addEventListener('click', () => eventDialog.close());
+    eventDialog.addEventListener('click', e => {
+        if (e.target !== eventDialog) return;
+        const rect = eventDialog.getBoundingClientRect();
+        if (e.clientX < rect.left || e.clientX >= rect.right || e.clientY < rect.top || e.clientY >= rect.bottom) eventDialog.close();
+    });
+    eventDialog.addEventListener('close', () => {
+        eventPicker.setAttribute('aria-expanded', 'false');
+        if (!eventPicker.hidden && !eventPicker.disabled) eventPicker.focus({ preventScroll: true });
+    });
+    eventList.addEventListener('click', e => {
+        const id = e.target.closest('[data-event-id]')?.dataset.eventId;
+        if (!id || busy || !ready || !engine.markets.has(id)) return;
+        eventDialog.close();
+        if (id !== selectedId) selectMarket(id);
+    });
+    eventList.addEventListener('keydown', e => {
+        if (!['ArrowUp', 'ArrowDown', 'Home', 'End'].includes(e.key)) return;
+        const buttons = [...eventList.querySelectorAll('[data-event-id]')];
+        const index = buttons.indexOf(document.activeElement);
+        if (index < 0) return;
+        const next = e.key === 'Home' ? 0 : e.key === 'End' ? buttons.length - 1 : index + (e.key === 'ArrowUp' ? -1 : 1);
+        e.preventDefault();
+        buttons[next]?.focus();
+    });
+    window.addEventListener('resize', positionEventDialog);
+
     function gate(title, body, action) {
         $('rankOpen').hidden = true;
         guide.setMarket(null, action === 'login' ? 'guest' : 'loading');
         $('accessGate').hidden = false;
         $('gameSurface').hidden = $('connectionNotice').hidden = true;
-        $('eventPicker').hidden = true;
+        eventPicker.hidden = true;
+        if (eventDialog.open) eventDialog.close();
         $('roundState').textContent = '';
         $('roundState').removeAttribute('data-state');
         $('marketDeadline').hidden = true;
@@ -102,7 +192,10 @@
         resetDraft();
         $('forecastAdminLink').href = 'admin.html#forecasts';
         $('feedback').textContent = $('orderFeedback').textContent = '';
-        for (const id of ['tradeHistory', 'myOrders', 'bookAsks', 'bookBids', 'lessonSelect']) $(id).replaceChildren();
+        if (eventDialog.open) eventDialog.close();
+        eventList.replaceChildren();
+        eventListVersion = '';
+        for (const id of ['tradeHistory', 'myOrders', 'bookAsks', 'bookBids']) $(id).replaceChildren();
     }
 
     function subscribe() {
@@ -271,9 +364,10 @@
         row.append(node('span', label), node('strong', value));
         return row;
     }
-    function showEstimate(order, plan, free) {
+    function showEstimate(order, plan, free, unusedLimit) {
         const buy = order.action === 'buy';
         const rows = [quoteRow(buy ? 'К оплате сейчас' : 'К получению сейчас', points(plan.cash))];
+        if (unusedLimit > 0) rows.push(quoteRow('Из лимита останется', points(unusedLimit)));
         if (plan.left) {
             rows.push(quoteRow((buy ? 'В резерв' : 'К получению при продаже') + ' · ' + shares(plan.left), points(plan.left * order.limit)));
         }
@@ -296,6 +390,7 @@
         }
         if (byBudget) {
             const budget = readPoints($('budget').value);
+            if (order.mode === 'market' && bestPrice(market(), 'buy', order.side) === null) return { error: 'depth' };
             if (!Number.isFinite(budget) || budget < 1) return { error: 'budget', message: 'Введи сумму в очках с точностью до сотых.' };
             if (budget > balance) return { error: 'cash', message: 'На покупку доступно ' + points(balance) };
             order.qty = budget >= maxValue ? maxQty : M.maxOrderSize(engine, order, at, budget);
@@ -356,7 +451,7 @@
         $('budget').hidden = !byBudget; $('budget').disabled = disabled || !byBudget;
         $('quantity').hidden = byBudget; $('quantity').disabled = disabled || byBudget || emptySale;
         $('sizeLabel').htmlFor = byBudget ? 'budget' : 'quantity';
-        $('sizeLabel').textContent = byBudget ? 'Сумма покупки' : 'Количество долей';
+        $('sizeLabel').textContent = byBudget ? 'Лимит покупки' : 'Количество долей';
         const saleBalance = maxQty > 0 && maxQty < free ? 'Свободно ' + free + ' · за раз до ' + maxQty : 'Свободно ' + free + ' из ' + own;
         $('sizeAvailable').textContent = buy ? 'Доступно ' + points(balance) : saleBalance;
         for (const side of m.sides) {
@@ -385,7 +480,9 @@
         submit.disabled = disabled;
         if (!busy) submit.textContent = (plan.left ? 'Выставить заявку' : buy ? 'Купить' : 'Продать') +
             (plan.left ? ' · ' : ' ') + shares(order.qty, !plan.left) + ' «' + market().answers[order.side] + '»';
-        showEstimate(order, plan, free);
+        const unusedLimit = byBudget && order.mode === 'market' && order.qty === maxQty
+            ? readPoints($('budget').value) - plan.cash : 0;
+        showEstimate(order, plan, free, unusedLimit);
     }
 
     function renderAccount(m, phase) {
@@ -436,9 +533,12 @@
         for (const item of markets) {
             if (item.phase === 'open' && item.endAt > at) nextClose = Math.min(nextClose, item.endAt);
         }
-        ledger.fillPicker($('lessonSelect'), markets, selectedId, at);
-        $('lessonSelect').disabled = busy;
-        $('eventPicker').hidden = !markets.length;
+        eventPicker.disabled = busy;
+        eventPicker.hidden = !markets.length;
+        if (eventDialog.open) {
+            if (busy || eventPicker.hidden) eventDialog.close();
+            else renderEventList(markets, at);
+        }
         renderHeading(m);
         $('emptyRound').hidden = !!m; $('roundBody').hidden = !m;
         const phase = m ? M.status(m, at) : '';
@@ -501,7 +601,6 @@
         }
         resetDraft(); $('orderFeedback').textContent = ''; notice(''); paint();
     }
-    $('lessonSelect').addEventListener('change', e => selectMarket(e.target.value));
     $('bookSide').addEventListener('change', () => renderBook(market(), M.status(market(), now())));
     $('tradeForm').addEventListener('input', e => {
         if (!['budget','quantity','limitPrice'].includes(e.target.id)) return;
