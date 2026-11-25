@@ -23,14 +23,16 @@
 .profile-shell h1 { margin: 8px 0 clamp(20px, 3vw, 32px); color: inherit; font-size: clamp(2rem, 4vw, 2.85rem); font-weight: 720; line-height: 1.1; letter-spacing: -.045em; }
 .profile-layout { display: grid; grid-template-columns: minmax(210px, .83fr) minmax(0, 1.45fr); gap: clamp(16px, 3vw, 30px); align-items: start; }
 .profile-card, .profile-form, .profile-gate { min-width: 0; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 20px; }
-.profile-card { position: sticky; top: 20px; overflow: hidden; }
+.profile-overview { display: grid; gap: 12px; min-width: 0; position: sticky; top: 16px; }
+.profile-card { overflow: hidden; }
 .profile-cover {
     height: clamp(92px, 10vw, 123px);
     overflow: hidden;
     background: linear-gradient(125deg, color-mix(in srgb, var(--profile-pigment) 24%, var(--bg-secondary)), color-mix(in srgb, var(--profile-pigment) 44%, var(--bg-secondary)));
     color: color-mix(in srgb, var(--profile-pigment) 62%, transparent);
 }
-.profile-cover svg { width: 100%; height: 100%; display: block; }
+.profile-cover svg { width: 100%; height: 100%; display: none; }
+.profile-card[data-cover="orbit"] [data-art="orbit"], .profile-card[data-cover="hills"] [data-art="hills"], .profile-card[data-cover="waves"] [data-art="waves"] { display: block; }
 .profile-card-body { padding: 0 clamp(17px, 2.4vw, 25px) 25px; overflow-wrap: anywhere; }
 #profilePreviewAvatar { display: flex; margin-top: -30px; position: relative; }
 #profilePreviewAvatar .profile-mark { width: 72px; height: 72px; border: 4px solid var(--bg-secondary); font-size: 1.75rem; }
@@ -46,9 +48,9 @@
 .profile-section { padding: clamp(18px, 2.5vw, 28px); }
 .profile-section + .profile-section, .profile-actions { border-top: 1px solid var(--border-color); }
 .profile-section h2 { color: inherit; font-size: 1.2rem; font-weight: 700; margin: 0 0 18px; line-height: 1.25; }
-.profile-section > label, .profile-choice-group legend { display: block; margin: 0 0 7px; font-size: .9rem; font-weight: 620; color: var(--text-primary); }
+.profile-section > label, #profileMonogramField label, #emailCodeForm label, .profile-choice-group legend { display: block; margin: 0 0 7px; font-size: .9rem; font-weight: 620; color: var(--text-primary); }
 .profile-section > label:not(:first-of-type) { margin-top: 17px; }
-.profile-section > input {
+.profile-section > input, #profileMonogram, #emailCode {
     box-sizing: border-box;
     width: 100%;
     height: 45px;
@@ -60,7 +62,7 @@
     font: inherit;
     font-size: 1rem;
 }
-.profile-section > input[aria-invalid="true"] { border-color: var(--error-color); }
+.profile-section input[aria-invalid="true"] { border-color: var(--error-color); }
 .profile-hint, .profile-error { margin: 6px 0 0; font-size: .81rem; line-height: 1.45; }
 .profile-hint, #profileColorName { color: var(--text-secondary); }
 .profile-error, #profileStatus[data-state="error"] { color: var(--error-color); }
@@ -85,6 +87,30 @@
 .profile-choice-swatch { display: grid; place-items: center; width: 30px; height: 30px; border-radius: 50%; background: var(--profile-pigment); }
 .profile-colors input:checked + .profile-choice-face { border-color: var(--text-primary); box-shadow: none; }
 .profile-colors input:checked + .profile-choice-face .profile-choice-swatch::after { content: ''; width: 7px; height: 7px; border: 2px solid #15151e; border-radius: 50%; }
+#profileMonogramField { margin-block: 16px; }
+#profileMonogram { width: 6rem; text-transform: uppercase; }
+.profile-shapes, .profile-covers { display: flex; flex-wrap: wrap; gap: 6px; }
+:is(.profile-shapes,.profile-covers) .profile-choice-face { display: inline-flex; align-items: center; gap: 7px; width: auto; min-height: 44px; height: auto; padding: 8px 11px; font-size: .88rem; }
+.profile-choice [data-shape] { width: 15px; height: 15px; border: 1.5px solid currentColor; }
+.profile-choice [data-shape="circle"] { border-radius: 50%; }
+.profile-choice [data-shape="tile"] { border-radius: 3px; }
+.profile-choice [data-shape="pebble"] { border-radius: 45% 55% 30% 65%; }
+.profile-choice [data-cover] { display: inline-flex; width: 26px; height: 14px; overflow: hidden; color: var(--text-secondary); border: 1px solid var(--border-color); border-radius: 3px; background: var(--bg-tertiary); }
+.profile-choice [data-cover] svg { display: block; width: 100%; height: 100%; }
+.profile-choice [data-cover] svg :is(path, ellipse, circle) { vector-effect: non-scaling-stroke; }
+.profile-section .profile-consent { display: flex; align-items: center; gap: 10px; min-height: 40px; cursor: pointer; }
+.profile-consent input { flex: none; width: 18px; height: 18px; margin: 0; accent-color: var(--accent-color); }
+.profile-verification { min-width: 0; padding: 18px; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 18px; overflow-wrap: anywhere; }
+.profile-verification h2 { margin: 0; color: var(--text-primary); font-size: 1rem; line-height: 1.35; }
+.profile-verification[data-verified="true"] h2::before { content: '✓'; display: inline-grid; place-items: center; width: 1.5em; height: 1.5em; margin-right: .55em; border: 1px solid currentColor; border-radius: 50%; color: var(--text-secondary); font-size: .78em; }
+#emailState { margin: 7px 0 12px; color: var(--text-secondary); font-size: .88rem; }
+#emailCodeForm { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-block: 14px 8px; }
+#emailCodeForm label { flex-basis: 100%; margin: 0; }
+#emailCode { min-width: 7em; width: 7.7em; letter-spacing: .15em; font-variant-numeric: tabular-nums; }
+.email-code-actions { display: flex; align-items: center; gap: 4px 9px; flex-wrap: wrap; }
+.profile-verification[data-verified="false"] .email-code-actions { margin-top: 10px; }
+#emailHaveCode { min-height: 44px; padding: 4px; background: none; border: 0; color: var(--text-primary); font: inherit; font-size: .85rem; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
+.profile-verification button:disabled { cursor: default; color: var(--text-secondary); }
 .profile-shell :is(input, button, a):focus-visible, .profile-choice input:focus-visible + .profile-choice-face { outline: 2px solid var(--accent-color); outline-offset: 3px; }
 .profile-actions { padding: 15px clamp(18px, 2.5vw, 28px); display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
 .profile-actions > div { display: flex; gap: 6px; margin-left: auto; }
@@ -101,7 +127,7 @@
     .profile-page .profile-topbar { min-height: 54px; padding: 5px 16px; }
     .profile-shell { padding: 18px clamp(12px, 4vw, 22px) 36px; }
     .profile-layout { grid-template-columns: 1fr; gap: 14px; }
-    .profile-card { position: static; }
+    .profile-overview { position: static; }
     .profile-cover { height: 55px; }
     .profile-card-body { position: relative; padding: 11px 15px 15px 87px; min-height: 55px; }
     #profilePreviewAvatar { position: absolute; left: 15px; top: -20px; margin: 0; }

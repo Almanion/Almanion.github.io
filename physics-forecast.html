@@ -48,6 +48,10 @@
                     События
                     <select id="lessonSelect" aria-label="Выбрать событие"></select>
                 </label>
+                <button id="rankOpen" type="button" class="forecast-guide-link" aria-haspopup="dialog" aria-controls="forecastRanking" hidden>
+                    <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" aria-hidden="true"><path d="M2.5 16.5v-6h5v6m0 0v-12h5v12m0 0v-8h5v8h-15Z"/></svg>
+                    Рейтинг
+                </button>
                 <button type="button" class="forecast-guide-link" data-market-guide="start" aria-haspopup="dialog" aria-controls="marketGuide">
                     <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="10" cy="10" r="7.4"/><path stroke-linecap="round" d="M7.9 7.9a2.1 2.1 0 0 1 4.2.1c0 1.6-2.1 1.7-2.1 3.2m0 2.5v.05"/></svg>
                     Как устроен рынок
@@ -174,6 +178,25 @@
                 <button type="button" id="startMarketTour" class="forecast-primary" hidden>Начать обзор</button>
             </footer>
         </dialog>
+        <dialog id="forecastRanking" aria-labelledby="rankTitle">
+            <header class="forecast-guide-head"><h2 id="rankTitle">Рейтинг прогнозов</h2><button type="button" id="rankClose" aria-label="Закрыть рейтинг" autofocus><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="m5 5 10 10M15 5 5 15"/></svg></button></header>
+            <div class="rank-scroll">
+                <div class="rank-modes" role="group" aria-label="Подсчёт очков">
+                    <button type="button" data-rank-mode="settled" aria-pressed="true">По итогам</button><button type="button" data-rank-mode="live" aria-pressed="false">С открытыми долями</button>
+                </div>
+                <p class="rank-mine" id="rankMine" role="status"></p>
+                <div id="rankTable" role="table" aria-label="Места участников">
+                    <div class="rank-table-head" role="row"><span role="columnheader" aria-label="Место">№</span><span role="columnheader">Участник</span><span role="columnheader">Очки</span></div>
+                    <div id="rankRows" role="rowgroup"></div>
+                </div>
+                <button id="rankMore" type="button" hidden>Показать ещё</button>
+                <details class="rank-explainer"><summary>Как считаются очки?</summary>
+                    <p>Старт — 100 очков. В списке появляются участники с хотя бы одной сделкой. При равенстве очков они делят место.</p>
+                    <p>«По итогам» учитывает сделки в завершённых прогнозах. Каждая выигравшая доля приносит 1 очко. Отменённый прогноз возвращает участнику исходную сумму.</p>
+                    <p>«С открытыми долями» также учитывает покупки, продажи и стоимость оставшихся долей по последним сделкам. Пока сделок по варианту нет, его начальная цена равна 1, делённой на число вариантов. Для каждого прогноза цены приводятся к сумме 1. Заявки в ожидании на рейтинг не влияют.</p>
+                </details>
+            </div>
+        </dialog>
         <dialog id="marketTour" aria-labelledby="tourTitle" aria-describedby="tourText">
             <div class="forecast-tour-focus" aria-hidden="true"></div>
             <section class="forecast-tour-card">
@@ -201,6 +224,7 @@
     <script defer src="physics-forecast-chart.js?v=20261125-outcomes"></script>
     <script defer src="physics-forecast-ledger.js?v=20261125-outcomes"></script>
     <script defer src="physics-forecast-guide.js?v=20261125-outcomes"></script>
+    <script defer src="physics-forecast-ranking.js"></script>
     <script defer src="physics-forecast.js?v=20261125-outcomes"></script>
 </body>
 </html>

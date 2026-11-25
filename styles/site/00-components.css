@@ -928,12 +928,18 @@ body:not(.no-hover) .kc-answer-remember:hover { background: var(--success-color)
 .account-btn:hover { background: var(--border-color); color: var(--text-primary); }
 .account-btn.signed-in { background: var(--accent-color); color: #fff; }
 .account-btn.is-loading { opacity: 0.62; cursor: progress; }
+.account-verify-link { display: inline-block; margin-top: .25rem; padding-block: .22rem; color: var(--text-primary); font-size: .88rem; text-underline-offset: .18em; }
 .account-avatar { font-size: 0.85rem; font-weight: 700; line-height: 1; }
 [data-profile-color="iris"] { --profile-pigment: #8478e0; }
 [data-profile-color="ocean"] { --profile-pigment: #438ac7; }
 [data-profile-color="mint"] { --profile-pigment: #369c82; }
 [data-profile-color="amber"] { --profile-pigment: #bf8831; }
 [data-profile-color="rose"] { --profile-pigment: #c46c8c; }
+[data-profile-color="coral"] { --profile-pigment: #d37a5c; }
+[data-profile-color="sky"] { --profile-pigment: #56a6b9; }
+[data-profile-color="slate"] { --profile-pigment: #828c9f; }
+.profile-mark[data-profile-shape="tile"] { border-radius: 25%; }
+.profile-mark[data-profile-shape="pebble"] { border-radius: 45% 60% 38% 56%; }
 .profile-mark {
     display: inline-grid;
     place-items: center;

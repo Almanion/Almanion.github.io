@@ -30,6 +30,7 @@
     const now = () => Date.now() + offset;
     const chart = window.createPhysicsForecastChart(now);
     const guide = window.createForecastGuide();
+    const ranking = window.createForecastRanking(api, amount);
     const execution = $('tradeForm').elements.execution;
     const market = () => engine.markets.get(selectedId);
     const jumpLinks = [...document.querySelectorAll('.forecast-jumps a')];
@@ -61,6 +62,7 @@
         return element;
     }
     function gate(title, body, action) {
+        $('rankOpen').hidden = true;
         guide.setMarket(null, action === 'login' ? 'guest' : 'loading');
         $('accessGate').hidden = false;
         $('gameSurface').hidden = $('connectionNotice').hidden = true;
@@ -85,6 +87,7 @@
     function syncSnapshot(snapshot) {
         engine = readLedger(snapshot);
         ready = true;
+        ranking.update(engine, user);
         paint();
     }
 
@@ -94,6 +97,7 @@
         feedOff = undefined;
         epoch++; ready = busy = false; selectedId = ''; readLedger = ledger.createReader(); engine = M.create(); ticket = pendingSnapshot = null;
         chart.reset();
+        ranking.reset();
         renderedMarket = '';
         resetDraft();
         $('forecastAdminLink').href = 'admin.html#forecasts';
@@ -419,6 +423,7 @@
 
     function paint() {
         if (!ready || !user) return;
+        $('rankOpen').hidden = false;
         $('accessGate').hidden = true; $('gameSurface').hidden = false; $('connectionNotice').hidden = connected;
         const at = now(), markets = ledger.orderedMarkets(engine, at);
         if (!engine.markets.has(selectedId)) {

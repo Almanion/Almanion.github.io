@@ -33,26 +33,41 @@
         </section>
         <noscript>Для редактирования профиля включите JavaScript.</noscript>
         <div class="profile-layout" id="profileEditor" hidden>
-            <section class="profile-card" id="profileCard" aria-label="Предпросмотр профиля" data-profile-color="iris">
-                <div class="profile-cover" aria-hidden="true">
-                    <svg viewBox="0 0 360 116" preserveAspectRatio="xMidYMid slice" focusable="false" fill="none">
-                        <g transform="rotate(-24 209 87)" stroke="currentColor">
-                            <ellipse cx="209" cy="87" rx="82" ry="31"/>
-                            <ellipse cx="209" cy="87" rx="122" ry="48"/>
-                            <ellipse cx="209" cy="87" rx="166" ry="67"/>
-                            <circle cx="291" cy="87" r="3.3" fill="currentColor"/>
-                            <circle cx="209" cy="39" r="2.1" fill="currentColor"/>
-                        </g>
-                        <path d="m66 23 1.4 4.1 4.1 1.4-4.1 1.4-1.4 4.1-1.4-4.1-4.1-1.4 4.1-1.4Z" fill="currentColor"/>
-                    </svg>
-                </div>
-                <div class="profile-card-body">
-                    <div id="profilePreviewAvatar"></div>
-                    <h2 id="profilePreviewName"></h2>
-                    <p id="profileEmail"></p>
-                    <a class="profile-telegram-preview" id="profilePreviewTelegram" target="_blank" rel="noopener noreferrer" hidden></a>
-                </div>
-            </section>
+            <div class="profile-overview">
+                <section class="profile-card" id="profileCard" aria-label="Предпросмотр профиля" data-profile-color="iris" data-cover="orbit">
+                    <div class="profile-cover" aria-hidden="true">
+                        <svg data-art="orbit" viewBox="0 0 360 116" preserveAspectRatio="xMidYMid slice" focusable="false" fill="none">
+                            <g transform="rotate(-24 209 87)" stroke="currentColor">
+                                <ellipse cx="209" cy="87" rx="82" ry="31"/>
+                                <ellipse cx="209" cy="87" rx="122" ry="48"/>
+                                <ellipse cx="209" cy="87" rx="166" ry="67"/>
+                                <circle cx="291" cy="87" r="3.3" fill="currentColor"/>
+                                <circle cx="209" cy="39" r="2.1" fill="currentColor"/>
+                            </g>
+                            <path d="m66 23 1.4 4.1 4.1 1.4-4.1 1.4-1.4 4.1-1.4-4.1-4.1-1.4 4.1-1.4Z" fill="currentColor"/>
+                        </svg>
+                        <svg data-art="hills" viewBox="0 0 360 116" preserveAspectRatio="xMidYMid slice" focusable="false" fill="none" stroke="currentColor"><path d="m-25 113 95-83 57 52 76-73 97 94 58-61 38 39"/><path d="m-12 118 72-52 70 51 72-64 85 70 67-45" stroke-width="2"/><circle cx="279" cy="24" r="8"/></svg>
+                        <svg data-art="waves" viewBox="0 0 360 116" preserveAspectRatio="xMidYMid slice" focusable="false" fill="none" stroke="currentColor"><path d="M-20 47Q70-15 161 40t222-15M-20 65Q70 3 161 58t222-15M-20 83Q70 21 161 76t222-15M-20 101Q70 39 161 94t222-15M-20 119Q70 57 161 112t222-15"/></svg>
+                    </div>
+                    <div class="profile-card-body">
+                        <div id="profilePreviewAvatar"></div>
+                        <h2 id="profilePreviewName"></h2>
+                        <p id="profileEmail"></p>
+                        <a class="profile-telegram-preview" id="profilePreviewTelegram" target="_blank" rel="noopener noreferrer" hidden></a>
+                    </div>
+                </section>
+                <section class="profile-verification" id="email" aria-labelledby="emailTitle" hidden>
+                    <h2 id="emailTitle">Подтверждение почты</h2>
+                    <p id="emailState" role="status"></p>
+                    <form id="emailCodeForm" hidden>
+                        <label for="emailCode">Код из письма</label>
+                        <input id="emailCode" name="code" type="text" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6" required>
+                        <button class="profile-primary" type="submit">Подтвердить</button>
+                    </form>
+                    <div class="email-code-actions"><button id="emailSend" type="button" class="profile-secondary">Получить код</button><button id="emailHaveCode" type="button">У меня есть код</button></div>
+                    <p class="profile-error" id="emailError" role="alert" hidden></p>
+                </section>
+            </div>
             <form id="profileForm" class="profile-form" novalidate>
                 <fieldset id="profileFields">
                     <legend class="profile-sr">Настройки профиля</legend>
@@ -72,10 +87,22 @@
                             <legend>Значок</legend>
                             <div class="profile-icons" id="profileIcons"></div>
                         </fieldset>
+                        <div id="profileMonogramField">
+                            <label for="profileMonogram">Свои инициалы</label>
+                            <input id="profileMonogram" name="monogram" maxlength="2" autocomplete="off" spellcheck="false" aria-describedby="monogramError">
+                            <p class="profile-error" id="monogramError" hidden></p>
+                        </div>
                         <fieldset class="profile-choice-group">
                             <legend>Цвет <span id="profileColorName"></span></legend>
                             <div class="profile-colors" id="profileColors"></div>
                         </fieldset>
+                        <fieldset class="profile-choice-group"><legend>Форма</legend><div class="profile-shapes" id="profileShapes"></div></fieldset>
+                        <fieldset class="profile-choice-group"><legend>Обложка</legend><div class="profile-covers" id="profileCovers"></div></fieldset>
+                    </section>
+                    <section class="profile-section">
+                        <h2>В прогнозах</h2>
+                        <label class="profile-consent"><input name="rankVisible" id="rankVisible" type="checkbox"> Показывать ник и аватар в рейтинге</label>
+                        <p class="profile-hint">По умолчанию другим участникам виден игровой псевдоним.</p>
                     </section>
                 </fieldset>
                 <footer class="profile-actions">
@@ -96,6 +123,7 @@
     <script defer src="https://www.gstatic.com/firebasejs/12.18.0/firebase-database-compat.js"></script>
     <script defer src="firebase-config.js"></script>
     <script defer src="account.js?v=20261125-profile"></script>
+    <script defer src="profile-verification.js"></script>
     <script defer src="profile.js"></script>
 </body>
 </html>

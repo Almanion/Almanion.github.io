@@ -3,6 +3,7 @@
 const path = require('node:path');
 const { randomUUID } = require('node:crypto');
 const { test, expect } = require('@playwright/test');
+const { mailScript, emulatorTransport } = require('../tests/helpers/email-code-script');
 
 test.use({ serviceWorkers: 'block' });
 
@@ -25,12 +26,16 @@ test('profile survives sign-out, merges edits from two tabs and clears private f
     const sdk = path.dirname(require.resolve('firebase/package.json'));
     const projectId = 'almanion-rules-test';
     const config = { projectId, apiKey: 'local-emulator', authDomain: 'localhost', databaseURL: 'https://' + projectId + '.firebaseio.com', appId: '1:12345:web:local' };
+    const mailbox = mailScript({ transport: emulatorTransport(authHost) });
     await context.route('**/*', route => {
         const u = new URL(route.request().url());
         if (u.hostname === 'www.gstatic.com' && /^\/firebasejs\/[\d.]+\/firebase-(app|auth|database)-compat\.js$/.test(u.pathname)) {
             return route.fulfill({ contentType: 'application/javascript', path: path.join(sdk, path.basename(u.pathname)) });
         }
         if (u.hostname !== '127.0.0.1' && u.hostname !== 'localhost') return route.abort();
+        if (u.pathname === '/__account/email-code') {
+            return route.fulfill({ json: mailbox.request(route.request().postDataJSON(), route.request().method()) });
+        }
         if (u.pathname === '/firebase-config.js') {
             const code = 'const firebaseConfig=' + JSON.stringify(config) + ';firebase.initializeApp(firebaseConfig);' +
                 'firebase.auth().useEmulator(' + JSON.stringify('http://' + authHost) + ',{disableWarnings:true});' +
@@ -50,12 +55,38 @@ test('profile survives sign-out, merges edits from two tabs and clears private f
         await page.locator('#accPass').fill(password);
         await page.locator('#accPassConfirm').fill(password);
         await page.locator('#accSubmit').click();
+        await expect(page.getByRole('heading', { name: 'Аккаунт создан' })).toBeVisible();
+        await page.getByRole('link', { name: 'Подтвердить почту' }).click();
         await expect(page.locator('#profileEditor')).toBeVisible();
     };
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto('/profile.html');
     await expect(page.locator('#profileGateAction')).toHaveText('Войти');
     await register(email);
+    await page.locator('#accountBtn').click();
+    await page.getByRole('link', { name: 'Подтвердить почту' }).click();
+    await page.locator('#emailSend').click();
+    await expect(page.locator('#emailState')).toContainText('Письмо отправлено');
+    expect(mailbox.mail).toHaveLength(1);
+    expect(mailbox.mail[0].to).toBe(email);
+    const digits = mailbox.mail[0].body.match(/\b\d{6}\b/)[0];
+    await page.locator('#emailCode').fill(digits === '111111' ? '222222' : '111111');
+    await page.locator('#emailCodeForm button').click();
+    await expect(page.locator('#emailError')).toContainText('Код не подошёл');
+    await page.reload();
+    await expect(page.locator('#emailCode')).toBeVisible();
+    await expect(page.locator('#emailSend')).toBeDisabled();
+    await page.locator('#emailCode').fill(digits);
+    await page.locator('#emailCodeForm button').click();
+    await expect(page.locator('#emailTitle')).toHaveText('Почта подтверждена');
+    expect(await page.evaluate(async () => (await firebase.auth().currentUser.getIdTokenResult()).claims.email_verified)).toBe(true);
+    await page.locator('#profileMonogram').fill('сл');
+    await page.locator('label[title="Камень"]').click();
+    await page.locator('label[title="Волны"]').click();
+    await page.locator('#rankVisible').check();
+    await expect(page.locator('#profilePreviewAvatar .profile-mark')).toHaveText('СЛ');
+    await expect(page.locator('#profileCard [data-art="waves"]')).toBeVisible();
+    await expect(page.locator('#profileCard [data-art="orbit"]')).toBeHidden();
     await page.getByLabel('Ник', { exact: true }).fill('Северный Лис');
     await page.locator('#profileTelegram').fill('https://example.org/reader');
     await page.locator('#profileSave').click();
@@ -80,6 +111,10 @@ test('profile survives sign-out, merges edits from two tabs and clears private f
     const other = await context.newPage();
     await other.goto('/profile.html');
     await expect(other.locator('#profileNickname')).toHaveValue('Северный Лис');
+    await expect(other.locator('#emailTitle')).toHaveText('Почта подтверждена');
+    await expect(other.locator('#profileCard')).toHaveAttribute('data-cover', 'waves');
+    await expect(other.locator('#profilePreviewAvatar .profile-mark')).toHaveAttribute('data-profile-shape', 'pebble');
+    await expect(other.locator('#rankVisible')).toBeChecked();
     await page.locator('#profileNickname').fill('Новый ник');
     await other.locator('label[title="Янтарь"]').click();
     await other.locator('#profileSave').click();

@@ -114,6 +114,42 @@
         }
     }
 
+    // Use executed prices, so an unfilled order cannot move a player's score.
+    // Untraded outcomes start equally likely. A complete set is worth exactly one point.
+    function standings(state, mode = 'settled') {
+        const players = new Map();
+        for (const market of state.markets.values()) {
+            const resolved = market.sides.includes(market.phase);
+            const prices = market.sides.map(side => market.lastPrices[side] ?? 100 / market.sides.length);
+            const sum = prices.reduce((total, price) => total + price, 0);
+            for (const [uid, pos] of market.positions) {
+                if (uid === MAKER) continue;
+                let player = players.get(uid);
+                if (!player) {
+                    player = { uid, settled: INITIAL, live: INITIAL };
+                    players.set(uid, player);
+                }
+                if (market.phase === 'void') continue;
+                if (resolved) {
+                    const gain = pos.cash + 100 * pos[market.phase];
+                    player.settled += gain;
+                    player.live += gain;
+                } else {
+                    const valuation = market.sides.reduce((value, side, i) => value + pos[side] * prices[i], 0);
+                    player.live += pos.cash + valuation * 100 / sum;
+                }
+            }
+        }
+        const rows = [...players.values()];
+        for (const row of rows) {
+            row.live = Math.round(row.live);
+            row.score = mode === 'live' ? row.live : row.settled;
+        }
+        rows.sort((a, b) => b.score - a.score || (a.uid < b.uid ? -1 : a.uid > b.uid ? 1 : 0));
+        rows.forEach((row, i) => { row.rank = i && row.score === rows[i - 1].score ? rows[i - 1].rank : i + 1; });
+        return rows;
+    }
+
     function validText(value, limit) {
         return typeof value === 'string' && value.length > 0 && value.length <= limit
             && !value.startsWith(' ') && !value.endsWith(' ') && !/[\r\n\t]/.test(value);
@@ -273,7 +309,7 @@
     }
     const api = { DAY, OWNER, MAKER, INITIAL, MAX_QTY, physics, QUESTION_LIMIT, CRITERIA_LIMIT, SIDE_IDS, DEFAULT_ANSWERS, ANSWER_LIMIT,
         dayKey, endOfDay, deadline, validDeadline, validAnswers, create, status, held, position, available,
-        ranked, quotePrice, midpoint, preview, maxOrderSize, apply, errors };
+        ranked, quotePrice, midpoint, standings, preview, maxOrderSize, apply, errors };
     if (typeof module === 'object' && module.exports) module.exports = api;
     else root.PhysicsForecast = api;
 }(globalThis));

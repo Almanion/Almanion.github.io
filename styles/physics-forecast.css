@@ -448,15 +448,38 @@ body.forecast-page .forecast-header.sidebar-header {
 .forecast-shell details[open] { padding-bottom: 20px; }
 .forecast-admin p { max-width: 78ch; margin: 10px 0 0; line-height: 1.6; }
 
-html:has(#marketGuide[open], #marketTour[open]) { overflow: hidden; }
-#marketGuide {
+html:has(#marketGuide[open], #marketTour[open], #forecastRanking[open]) { overflow: hidden; }
+#marketGuide, #forecastRanking {
     position: fixed; inset: 0; width: min(34rem, calc(100% - 32px));
     max-height: calc(100% - 32px); max-height: min(48rem, calc(100dvh - 32px)); margin: auto; padding: 0;
     overflow: hidden; border: 1px solid var(--rule); border-radius: 18px; background: var(--surface); color: var(--ink);
     box-shadow: 0 18px 70px #080d232b;
 }
-#marketGuide[open] { display: flex; flex-direction: column; }
-#marketGuide::backdrop { background: rgb(9 13 33 / 52%); }
+#marketGuide[open], #forecastRanking[open] { display: flex; flex-direction: column; }
+#marketGuide::backdrop, #forecastRanking::backdrop { background: rgb(9 13 33 / 52%); }
+.rank-scroll { min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: clamp(12px, 3vw, 22px); }
+.rank-modes { display: grid; grid-template-columns: 1fr 1.4fr; padding: 3px; border-radius: 13px; background: var(--inset); }
+.rank-modes button { min-width: 0; min-height: 44px; padding: 5px 8px; border: 1px solid transparent; background: transparent; color: var(--quiet); font: inherit; font-size: .88rem; line-height: 1.2; border-radius: 10px; }
+.rank-modes button[aria-pressed="true"] { background: var(--surface); color: var(--ink); border-color: var(--rule); font-weight: 650; }
+.rank-mine { margin: 14px 0; padding: 12px 15px; border-inline-start: 3px solid var(--signal); border-radius: 0 9px 9px 0; background: var(--selection); color: var(--ink); font-size: .93rem; line-height: 1.4; }
+.rank-table-head, .rank-row { display: grid; grid-template-columns: 2.1em minmax(0, 1fr) max-content; align-items: center; gap: 6px; padding: 8px; }
+.rank-table-head { color: var(--quiet); border-bottom: 1px solid var(--rule); font-size: .78rem; }
+.rank-row { min-height: 49px; border-bottom: 1px solid var(--rule); }
+.rank-row.is-mine { background: var(--selection); }
+.rank-place, .rank-score { color: var(--ink); font: 600 .9rem var(--number-font); font-variant-numeric: tabular-nums; }
+.rank-place { color: var(--quiet); }
+.rank-person { display: flex; align-items: center; gap: 8px; min-width: 0; overflow-wrap: anywhere; font-size: .92rem; }
+.rank-person .profile-mark { width: 32px; height: 32px; font-size: .8rem; }
+.rank-person small { color: var(--signal); font-weight: 650; font-size: .75rem; }
+.rank-explainer { margin-top: 12px; color: var(--quiet); font-size: .86rem; }
+.rank-explainer summary { display: list-item; padding-block: 12px; cursor: pointer; color: var(--ink); }
+.rank-explainer p { margin: 2px 0 10px; line-height: 1.5; }
+#rankMore { width: 100%; margin-top: 10px; min-height: 44px; }
+@media (max-width: 420px) {
+    #forecastRanking { width: calc(100% - 16px); max-height: calc(100dvh - 16px); }
+    .rank-person { flex-wrap: wrap; gap: 3px 6px; }
+    .rank-person > :nth-child(2) { flex: 1 1 min-content; }
+}
 .forecast-guide-head { display: flex; align-items: center; justify-content: space-between; flex: none; gap: 10px; padding: 11px 14px 11px 22px; border-bottom: 1px solid var(--rule); }
 .forecast-guide-head h2 { margin: 0; color: var(--ink); font-size: 1.28rem; line-height: 1.2; letter-spacing: -.025em; }
 .forecast-guide-head h2:focus { outline: 0; }

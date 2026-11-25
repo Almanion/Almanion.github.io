@@ -439,11 +439,19 @@
         ".write": "auth != null && auth.uid === $uid && auth.token.firebase.sign_in_provider !== 'anonymous'",
         ".validate": "newData.hasChildren()",
         "identity": {
+          ".read": "auth != null && auth.token.firebase.sign_in_provider !== 'anonymous' && data.parent().child('rankVisible').val() === true",
           ".validate": "newData.hasChildren()",
           "nickname": { ".validate": "newData.isString() && newData.val().length <= 32 && newData.val().matches(/^[^ <>]([^<>]*[^ <>])?$/) && !newData.val().contains('\\n') && !newData.val().contains('\\r') && !newData.val().contains('\\t')" },
-          "avatar": { ".validate": "newData.val() === 'initial' || newData.val() === 'orbit' || newData.val() === 'book' || newData.val() === 'peak' || newData.val() === 'spark' || newData.val() === 'cat'" },
-          "color": { ".validate": "newData.val() === 'iris' || newData.val() === 'ocean' || newData.val() === 'mint' || newData.val() === 'amber' || newData.val() === 'rose'" },
+          "avatar": { ".validate": "newData.isString() && newData.val().matches(/^(initial|orbit|book|peak|spark|cat|compass|moon|bolt)$/)" },
+          "color": { ".validate": "newData.isString() && newData.val().matches(/^(iris|ocean|mint|amber|rose|coral|sky|slate)$/)" },
+          "shape": { ".validate": "newData.isString() && newData.val().matches(/^(circle|tile|pebble)$/)" },
+          "monogram": { ".validate": "newData.isString() && newData.val().matches(/^[А-Яа-яЁёA-Za-z0-9]{1,2}$/)" },
           "$other": { ".validate": false }
+        },
+        "cover": { ".validate": "newData.isString() && newData.val().matches(/^(orbit|hills|waves|plain)$/)" },
+        "rankVisible": {
+          ".read": "auth != null && auth.token.firebase.sign_in_provider !== 'anonymous'",
+          ".validate": "newData.isBoolean()"
         },
         "telegram": { ".validate": "newData.isString() && newData.val().matches(/^[A-Za-z][A-Za-z0-9_]{0,30}[A-Za-z0-9]$/)" },
         "$other": { ".validate": false }

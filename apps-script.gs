@@ -33,17 +33,24 @@ const PLANNER_TELEGRAM_LATE_WINDOW_MS = 30 * 60 * 1000;
 // TaskId (рекомендуется) | Number | NumberText | Description | Status | Hint | Grade
 
 function doGet(e) {
-  return handle(e);
+  return handle(e, 'GET');
 }
 
 function doPost(e) {
-  return handle(e);
+  return handle(e, 'POST');
 }
 
-function handle(e) {
+function handle(e, method) {
   try {
     const params = requestParams(e);
     const action = params.action || '';
+
+    if (action === 'requestEmailCode' || action === 'confirmEmailCode') {
+      if (method !== 'POST' || e.queryString || !e.postData || !e.postData.contents) {
+        return json({ success: false, reason: 'invalid_request' });
+      }
+      return json(accountEmailCode(action, params));
+    }
 
     if (action === 'capabilities') {
       const scriptProperties = PropertiesService.getScriptProperties();
@@ -373,6 +380,143 @@ function verifyFirebaseToken(idToken) {
     email: user.email || '',
     emailVerified: user.emailVerified === true
   };
+}
+
+// The short code proves access to the mailbox. Firebase owns and consumes the
+// underlying single-use verification token. Neither code is returned to the browser.
+function accountEmailCode(action, params) {
+  let identity;
+  try { identity = verifyFirebaseToken(params.idToken); }
+  catch (_) { return { success: false, reason: 'session' }; }
+  if (!identity.email) return { success: false, reason: 'no_email' };
+  if (identity.emailVerified) return { success: true, verified: true };
+  const digest = Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, identity.email.toLowerCase());
+  const key = 'account-email:' + Utilities.base64EncodeWebSafe(digest);
+  try {
+    return action === 'requestEmailCode'
+      ? requestAccountEmailCode(key, identity)
+      : confirmAccountEmailCode(key, identity, params.code, params.idToken);
+  } catch (_) {
+    return { success: false, reason: 'unavailable' };
+  }
+}
+
+// Script Properties keep an unexpired challenge through cache eviction or a
+// cold start. Only verification records are inspected during hourly cleanup.
+function editEmailChallenge(key, edit) {
+  const lock = LockService.getScriptLock();
+  lock.waitLock(5000);
+  try {
+    const properties = PropertiesService.getScriptProperties();
+    const now = Date.now();
+    const sweep = 'ACCOUNT_EMAIL_NEXT_CLEANUP';
+    if (Number(properties.getProperty(sweep) || 0) <= now) {
+      properties.getKeys().filter(function (name) { return name.indexOf('account-email:') === 0; }).forEach(function (name) {
+        const saved = JSON.parse(properties.getProperty(name) || '{}');
+        if (!(saved.keepUntil > now)) properties.deleteProperty(name);
+      });
+      properties.setProperty(sweep, String(now + 3600000));
+    }
+    const previous = properties.getProperty(key);
+    const record = JSON.parse(previous || '{}');
+    if (record.challenge && record.challenge.expires <= now) delete record.challenge;
+    const result = edit(record, now);
+    if (record.sends && record.sends.length) {
+      record.keepUntil = record.sends[record.sends.length - 1] + 3600000;
+      if (record.keepUntil <= now) properties.deleteProperty(key);
+      else if (previous !== JSON.stringify(record)) properties.setProperty(key, JSON.stringify(record));
+    }
+    return result;
+  } finally { lock.releaseLock(); }
+}
+
+function verificationApi(action, payload, privileged) {
+  const properties = PropertiesService.getScriptProperties();
+  const apiKey = properties.getProperty('FIREBASE_WEB_API_KEY');
+  if (privileged) payload.targetProjectId = properties.getProperty('FIREBASE_PROJECT_ID') || 'almanion-70120';
+  const response = UrlFetchApp.fetch('https://identitytoolkit.googleapis.com/v1/accounts:' + action + '?key=' + encodeURIComponent(apiKey), {
+    method: 'post', contentType: 'application/json', muteHttpExceptions: true,
+    headers: privileged ? { Authorization: 'Bearer ' + ScriptApp.getOAuthToken() } : {},
+    payload: JSON.stringify(payload)
+  });
+  if (response.getResponseCode() !== 200) throw new Error('Identity service unavailable');
+  return JSON.parse(response.getContentText());
+}
+
+function mailboxDigits(secret, identity) {
+  const bytes = Utilities.computeHmacSha256Signature(identity.uid + '|' + identity.email.toLowerCase(), secret);
+  const value = bytes.slice(0, 4).reduce(function (sum, byte) { return sum * 256 + (byte & 255); }, 0);
+  return ('000000' + (value % 1000000)).slice(-6);
+}
+
+function requestAccountEmailCode(key, identity) {
+  const reservation = Utilities.getUuid();
+  const held = editEmailChallenge(key, function (record, now) {
+    if (record.checking && record.checking > now) return { success: false, reason: 'busy' };
+    const sends = (record.sends || []).filter(function (time) { return time > now - 3600000; });
+    const waitUntil = Math.max((sends[sends.length - 1] || 0) + 60000, sends.length >= 5 ? sends[0] + 3600000 : 0);
+    if (waitUntil > now) return { success: false, reason: 'rate', retryAfter: Math.ceil((waitUntil - now) / 1000) };
+    record.sends = sends.concat(now);
+    record.reservation = reservation;
+    return { success: true };
+  });
+  if (!held.success) return held;
+  if (MailApp.getRemainingDailyQuota() < 1) return { success: false, reason: 'mail_quota' };
+  const generated = verificationApi('sendOobCode', { requestType: 'VERIFY_EMAIL', email: identity.email, returnOobLink: true }, true);
+  const match = /[?&]oobCode=([^&#]+)/.exec(generated.oobLink || '');
+  if (!match) throw new Error('Missing email action');
+  const secret = decodeURIComponent(match[1]);
+  const code = mailboxDigits(secret, identity);
+  const stored = editEmailChallenge(key, function (record, now) {
+    if (record.reservation !== reservation) return false;
+    record.challenge = { uid: identity.uid, secret: secret, expires: now + 600000, attempts: 0 };
+    return true;
+  });
+  if (!stored) return { success: false, reason: 'busy' };
+  try {
+    MailApp.sendEmail({ to: identity.email, subject: 'Код подтверждения Almanion', name: 'Almanion',
+      body: 'Ваш код подтверждения почты в Almanion — ' + code + '.\n\nКод действует 10 минут. Если вы не запрашивали код, пропустите это письмо.' });
+  } catch (_) {
+    editEmailChallenge(key, function (record) {
+      if (record.challenge && record.challenge.secret === secret) delete record.challenge;
+    });
+    return { success: false, reason: 'delivery' };
+  }
+  return { success: true, retryAfter: 60 };
+}
+
+function confirmAccountEmailCode(key, identity, code, idToken) {
+  if (typeof code !== 'string' || !/^[0-9]{6}$/.test(code)) return { success: false, reason: 'wrong_code' };
+  const check = editEmailChallenge(key, function (record, now) {
+    const challenge = record.challenge;
+    if (!challenge || challenge.uid !== identity.uid || challenge.expires <= now) return { success: false, reason: 'expired' };
+    if (record.checking > now) return { success: false, reason: 'busy' };
+    if (code !== mailboxDigits(challenge.secret, identity)) {
+      if (++challenge.attempts < 5) return { success: false, reason: 'wrong_code' };
+      delete record.challenge;
+      return { success: false, reason: 'attempts' };
+    }
+    record.checking = now + 60000;
+    return { success: true, secret: challenge.secret };
+  });
+  if (!check.success) return check;
+  let applied = false;
+  try {
+    const updated = verificationApi('update', { oobCode: check.secret }, false);
+    if (updated.localId !== identity.uid || updated.emailVerified !== true) {
+      const actual = verifyFirebaseToken(idToken);
+      if (actual.uid !== identity.uid || actual.email !== identity.email || !actual.emailVerified) throw new Error('Email verification failed');
+    }
+    applied = true;
+    return { success: true, verified: true };
+  } finally {
+    editEmailChallenge(key, function (record) {
+      if (record.challenge && record.challenge.secret === check.secret) {
+        delete record.checking;
+        if (applied) delete record.challenge;
+      }
+    });
+  }
 }
 
 function requireSiteOwner(idToken) {
@@ -1519,6 +1663,18 @@ function json(obj) {
 
    5) Сохраните проект (Ctrl/Cmd+S). При первом сохранении даст имя — например
       «matcenter-backend».
+
+      Для шестизначных кодов почты в appsscript.json сохраните действующие
+      oauthScopes и добавьте https://www.googleapis.com/auth/identitytoolkit
+      и https://www.googleapis.com/auth/script.send_mail. Привяжите скрипт
+      к стандартному Google Cloud проекту с включённым Identity Toolkit API.
+      Если scopes раньше определялись автоматически, сохраните также доступ
+      к таблицам, внешним запросам и триггерам существующего скрипта:
+        https://www.googleapis.com/auth/spreadsheets
+        https://www.googleapis.com/auth/script.external_request
+        https://www.googleapis.com/auth/script.scriptapp
+      У выполняющего скрипт аккаунта должно быть право firebaseauth.users.sendEmail
+      в Firebase-проекте almanion-70120. После смены scopes авторизуйте скрипт заново.
 
    6) В верхнем списке функций выберите authorizeExternalRequests и нажмите Run.
       Подтвердите запрошенные Google разрешения. Этот шаг нужно выполнить один

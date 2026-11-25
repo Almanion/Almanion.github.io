@@ -45,7 +45,13 @@ function fixture({ who, owner, firstVisit }) {
     window.firebase = { initializeApp(){}, database, auth:()=>auth };
     window.changeForecastAccount = user => { auth.currentUser = user; sessions.forEach(cb=>cb(user)); };
     window.setForecastConnection = connected => { data['.info'].connected = connected; emit('.info/connected'); };
-    window.AlmanionAccount = { database:database(), auth, openLogin:()=>{document.body.dataset.loginOpened='true';} };
+    window.setRankProfile = (uid, identity, visible) => {
+        data.accountProfiles ||= {};
+        data.accountProfiles[uid] = { identity, rankVisible: visible };
+        emit('accountProfiles/' + uid + '/rankVisible');
+        emit('accountProfiles/' + uid + '/identity');
+    };
+    window.AlmanionAccount = { database:database(), auth, profile: { avatarMarkup: () => '' }, openLogin:()=>{document.body.dataset.loginOpened='true';} };
 }
 
 async function expectSpotlight(page, targetId) {
@@ -285,6 +291,9 @@ for (const width of [360,1280]) {
     test('trade, reserve, cancel and show fills at '+width+'px',async({page})=>{
         await page.setViewportSize({width,height:820}); await mockClass(page);
         await page.goto('/physics-forecast.html'); await expect(page.locator('#gameSurface')).toBeVisible();
+        await page.locator('#rankOpen').click();
+        await expect(page.locator('#rankMine')).toContainText('Сделок пока нет');
+        await page.locator('#rankClose').click();
         await expect(page.locator('#probability')).toHaveText('50%');
         await expect(page.locator('#walletCash')).toHaveText('100 оч.');
         await page.locator('#buyUnit').selectOption('shares');
@@ -293,6 +302,18 @@ for (const width of [360,1280]) {
         await expect(page.locator('#walletYes')).toHaveText('15');
         await expect(page.locator('#walletCash')).toHaveText('92,15 оч.');
         await expect(page.locator('#tradeHistory .forecast-row')).toHaveCount(2);
+        await page.locator('#rankOpen').click();
+        await expect(page.locator('#rankRows .rank-row')).toHaveCount(1);
+        await expect(page.locator('#rankMine')).toHaveText('Ваше место — 1 · 100 оч.');
+        await page.getByRole('button', { name: 'С открытыми долями' }).click();
+        await expect(page.locator('#rankMine')).toHaveText('Ваше место — 1 · 100,4 оч.');
+        await page.evaluate(() => setRankProfile('classmate', { nickname: 'Лис' }, true));
+        await expect(page.locator('#rankRows')).toContainText('Лис');
+        await page.evaluate(() => setRankProfile('classmate', { nickname: 'Лис' }, false));
+        await expect(page.locator('#rankRows')).not.toContainText('Лис');
+        await expect(page.locator('#rankRows')).toContainText('Игрок');
+        await page.keyboard.press('Escape');
+        await expect(page.locator('#rankOpen')).toBeFocused();
         await expect(page.locator('#probability')).toHaveText('52%');
         await page.locator('label:has(input[name=action][value=sell])').click();
         await page.locator('#orderMode label:has([value=limit])').click();await page.locator('#limitPrice').fill('0,70');await page.locator('#quantity').fill('4');

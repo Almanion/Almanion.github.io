@@ -46,6 +46,7 @@ function fixture() {
     assert.deepEqual(append('win', match, 'yes'), {});
     assert.deepEqual(append('cancel-club', club, 'void'), {});
     assert.equal(M.available(state, 'player', day, at), M.INITIAL - 785 + 1500);
+    assert.equal(M.standings(state)[0].score, 10715);
     const replay = M.create();
     for (const [id, event] of entries) M.apply(replay, event, id);
     assert.deepEqual(replay, state);
@@ -211,7 +212,12 @@ function fixture() {
                 const total = [...m.positions.values()].reduce((sum, p) => sum + p.cash + 100 * p[side], 0);
                 assert.equal(total, 0, 'Collateral must cover exactly one winner');
             }
+            const live = M.standings(state, 'live');
+            assert.deepEqual(M.standings(state).map(r => [r.uid, r.rank, r.score]), [['peer', 1, 10000], ['reader', 1, 10000]]);
+            const weight = count === 2 ? middle : 100 * middle / (middle + (count - 1) * 100 / count);
+            assert.equal(live.find(r => r.uid === 'reader').score, Math.round(10000 - 4 * ask + 2 * middle + 2 * weight));
             assert.equal(order(last, 'reader', 'buy', 8, 1, 'limit').left, 8);
+            assert.deepEqual(M.standings(state, 'live'), live);
             assert.equal(M.held(m, 'reader', at).cash, 8);
             assert.equal(add('deadline', { endAt: start }).error, 'invalid');
             assert.equal(add('deadline', { endAt: cutoff + 1 }).error, 'invalid');
@@ -229,6 +235,8 @@ function fixture() {
             assert.deepEqual(add(winner), {});
             const profit = winner === 'void' ? 0 : -4 * ask + 2 * middle + (last === winner ? 200 : 0);
             assert.equal(M.available(state, 'reader', key, at), M.INITIAL + profit);
+            assert.equal(M.standings(state).find(r => r.uid === 'reader').score, M.INITIAL + profit);
+            assert.deepEqual(M.standings(state), M.standings(state, 'live'));
             assert.equal(add('void').error, 'invalid');
             const replay = M.create();
             for (const [id, e] of log) M.apply(replay, e, id);
@@ -236,4 +244,19 @@ function fixture() {
         }
     }
 }
-console.log('Forecast market passed binary and multi-outcome matching, collateral, payouts, deadlines and replay.');
+{
+    const f = fixture();
+    assert.equal(f.order('waiting', 'yes', 'buy', 2, 1).left, 2);
+    assert.deepEqual(M.standings(f.state), []);
+    f.order('z', 'yes', 'buy', 1, 99, 'market');
+    f.order('a', 'yes', 'buy', 1, 99, 'market');
+    f.order('b', 'no', 'buy', 1, 99, 'market');
+    f.time(M.endOfDay(day) - M.DAY + 1000);
+    f.add({ kind: 'lock' }); f.add({ kind: 'yes' });
+    assert.deepEqual(M.standings(f.state).map(r => [r.uid, r.rank]), [['a',1], ['z',1], ['b',3]]);
+    f.add({ kind: 'open', endAt: M.endOfDay(later) }, M.OWNER, later);
+    f.add({ kind: 'order', action: 'buy', side: 'yes', qty: 1, limit: 99, mode: 'market' }, 'z', later);
+    f.add({ kind: 'void' }, M.OWNER, later);
+    assert.deepEqual(M.standings(f.state).map(r => r.score), [10049,10049,9949]);
+}
+console.log('Forecast market passed matching, payouts, standings, deadlines and replay.');

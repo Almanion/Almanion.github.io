@@ -9,8 +9,10 @@
     const fields = byId('profileFields');
     const nickname = byId('profileNickname');
     const telegram = byId('profileTelegram');
+    const monogram = byId('profileMonogram');
+    const covers = { orbit: 'Орбиты', hills: 'Вершины', waves: 'Волны', plain: 'Без рисунка' };
     const status = byId('profileStatus');
-    const defaults = { nickname: '', telegram: '', avatar: 'initial', color: 'iris' };
+    const defaults = { nickname: '', telegram: '', avatar: 'initial', color: 'iris', shape: 'circle', cover: 'orbit', monogram: '', rankVisible: false };
     let session = null;
 
     function warnBeforeLeave(event) {
@@ -48,7 +50,10 @@
             nickname: typeof identity.nickname === 'string' ? identity.nickname : '',
             telegram: typeof record?.telegram === 'string' ? record.telegram : '',
             avatar: Object.hasOwn(api.profile.icons, identity.avatar) ? identity.avatar : defaults.avatar,
-            color: Object.hasOwn(api.profile.colors, identity.color) ? identity.color : defaults.color
+            color: Object.hasOwn(api.profile.colors, identity.color) ? identity.color : defaults.color,
+            shape: Object.hasOwn(api.profile.shapes, identity.shape) ? identity.shape : defaults.shape,
+            cover: Object.hasOwn(covers, record?.cover) ? record.cover : defaults.cover,
+            monogram: identity.monogram || '', rankVisible: record?.rankVisible === true
         };
     }
 
@@ -68,11 +73,19 @@
             face.setAttribute('aria-hidden', 'true');
             if (group === 'avatar') {
                 face.innerHTML = api.profile.avatarMarkup({ avatar: value }, 'А');
-            } else {
+            } else if (group === 'color') {
                 const swatch = document.createElement('span');
                 swatch.className = 'profile-choice-swatch';
                 swatch.dataset.profileColor = value;
                 face.append(swatch);
+            } else {
+                const sample = document.createElement('i');
+                sample.dataset[group] = value;
+                if (group === 'cover') {
+                    const art = byId('profileCard').querySelector('[data-art="' + value + '"]');
+                    if (art) sample.append(art.cloneNode(true));
+                }
+                face.append(sample, document.createTextNode(name));
             }
             label.append(input, face);
             container.append(label);
@@ -81,9 +94,11 @@
 
     buildOptions(byId('profileIcons'), 'avatar', api.profile.icons);
     buildOptions(byId('profileColors'), 'color', api.profile.colors);
+    buildOptions(byId('profileShapes'), 'shape', api.profile.shapes);
+    buildOptions(byId('profileCovers'), 'cover', covers);
 
     function fieldError(field, message) {
-        const input = field === 'nickname' ? nickname : telegram;
+        const input = form.elements.namedItem(field);
         const error = byId(field + 'Error');
         error.textContent = message;
         error.hidden = !message;
@@ -94,6 +109,7 @@
     function normalized(field, value) {
         if (field === 'nickname') return value.trim();
         if (field === 'telegram') return normalizeTelegram(value);
+        if (field === 'monogram') return value.trim().toUpperCase();
         return value;
     }
 
@@ -101,6 +117,7 @@
         const value = normalized(field, session.draft[field]);
         let message = '';
         if (field === 'telegram' && value === null) message = 'Введите @username или ссылку на профиль Telegram.';
+        if (field === 'monogram' && value && !/^[А-ЯЁA-Z0-9]{1,2}$/.test(value)) message = 'Введите одну или две русские или латинские буквы либо цифры.';
         if (field === 'nickname' && (value.length > 32 || /[<>\x00-\x1f\x7f]/.test(value))) {
             message = 'Ник может содержать до 32 символов. Уберите угловые скобки и управляющие знаки.';
         }
@@ -114,13 +131,18 @@
         else window.removeEventListener('beforeunload', warnBeforeLeave);
         if (nickname.value !== draft.nickname) nickname.value = draft.nickname;
         if (telegram.value !== draft.telegram) telegram.value = draft.telegram;
+        if (monogram.value !== draft.monogram) monogram.value = draft.monogram;
         nickname.placeholder = account.displayName || account.email?.split('@')[0] || 'Ваш ник';
-        for (const group of ['avatar', 'color']) form.elements.namedItem(group).value = draft[group];
+        for (const group of ['avatar', 'color', 'shape', 'cover']) form.elements.namedItem(group).value = draft[group];
+        byId('rankVisible').checked = draft.rankVisible;
+        byId('profileMonogramField').hidden = draft.avatar !== 'initial' && !monogram.hasAttribute('aria-invalid');
         const name = draft.nickname.trim() || nickname.placeholder;
         const handle = normalizeTelegram(draft.telegram);
         byId('profileCard').dataset.profileColor = draft.color;
+        byId('profileCard').dataset.cover = draft.cover;
         byId('profilePreviewAvatar').innerHTML = api.profile.avatarMarkup(draft, name);
-        byId('profileIcons').querySelector('.profile-mark').textContent = (Array.from(name)[0] || 'А').toLocaleUpperCase('ru');
+        monogram.placeholder = (Array.from(name)[0] || 'А').toLocaleUpperCase('ru');
+        byId('profileIcons').querySelector('.profile-mark').textContent = draft.monogram.trim().toUpperCase() || monogram.placeholder;
         byId('profilePreviewName').textContent = name;
         byId('profileEmail').textContent = account.email || '';
         const contact = byId('profilePreviewTelegram');
@@ -148,11 +170,13 @@
         window.removeEventListener('beforeunload', warnBeforeLeave);
         form.reset();
         fields.disabled = true;
-        for (const field of ['nickname', 'telegram']) fieldError(field, '');
+        for (const field of ['nickname', 'telegram', 'monogram']) fieldError(field, '');
         for (const id of ['profilePreviewAvatar', 'profilePreviewName', 'profileEmail', 'profilePreviewTelegram', 'profileStatus']) byId(id).replaceChildren();
         byId('profilePreviewTelegram').removeAttribute('href');
         byId('profilePreviewTelegram').hidden = true;
         nickname.placeholder = '';
+        monogram.placeholder = '';
+        byId('profileIcons').querySelector('.profile-mark').textContent = 'А';
         if (!usable) {
             showGate('Войдите, чтобы открыть свой профиль.', 'Войти', api.openLogin);
             return;
@@ -195,8 +219,9 @@
     form.addEventListener('input', event => {
         const field = event.target.name;
         if (!session?.loaded || session.saving || !Object.hasOwn(defaults, field)) return;
-        session.draft[field] = event.target.value;
-        if (normalized(field, event.target.value) === session.stored[field]) session.changed.delete(field);
+        const value = event.target.type === 'checkbox' ? event.target.checked : event.target.value;
+        session.draft[field] = value;
+        if (normalized(field, value) === session.stored[field]) session.changed.delete(field);
         else session.changed.add(field);
         if (event.target.hasAttribute('aria-invalid')) validateField(field);
         session.message = '';
@@ -204,7 +229,7 @@
         displayForm();
     });
 
-    for (const input of [nickname, telegram]) {
+    for (const input of [nickname, telegram, monogram]) {
         input.addEventListener('blur', () => { if (session?.loaded && session.changed.has(input.name)) validateField(input.name); });
     }
 
@@ -214,8 +239,7 @@
         session.changed.clear();
         session.message = '';
         session.failed = false;
-        fieldError('nickname', '');
-        fieldError('telegram', '');
+        for (const field of ['nickname', 'telegram', 'monogram']) fieldError(field, '');
         displayForm();
         form.querySelector('input[name="avatar"]:checked').focus({ preventScroll: true });
     });
@@ -224,12 +248,13 @@
         event.preventDefault();
         const current = session;
         if (!current?.loaded || current.saving || !current.connected || !current.changed.size) return;
-        const invalid = ['nickname', 'telegram'].filter(key => !validateField(key));
-        if (invalid.length) { form.elements.namedItem(invalid[0]).focus(); return; }
+        const invalid = ['nickname', 'telegram', 'monogram'].filter(key => !validateField(key));
+        if (invalid.length) { displayForm(); form.elements.namedItem(invalid[0]).focus(); return; }
         const patch = {};
         for (const key of current.changed) {
             const value = normalized(key, current.draft[key]);
-            patch[key === 'telegram' ? key : 'identity/' + key] = value === defaults[key] ? null : value;
+            const path = ['telegram', 'cover', 'rankVisible'].includes(key) ? key : 'identity/' + key;
+            patch[path] = value === defaults[key] ? null : value;
         }
         current.saving = true;
         current.failed = false;

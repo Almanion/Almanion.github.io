@@ -154,6 +154,8 @@ test('registration validation and Google login remain available', async ({ page 
     expect(await page.evaluate(() => window.accountTest.registerCalls)).toEqual([]);
     await page.getByLabel('Повторите пароль', { exact: true }).fill('newpassword');
     await page.getByRole('button', { name: 'Зарегистрироваться', exact: true }).click();
+    await expect(page.getByRole('link', { name: 'Подтвердить почту' })).toHaveAttribute('href', /profile\.html#email$/);
+    await page.getByRole('button', { name: 'Позже' }).click();
     await expect(page.getByRole('dialog')).toBeHidden();
     expect(await page.evaluate(() => window.accountTest.registerCalls)).toEqual([{ email: 'student@example.invalid', password: 'newpassword' }]);
     await page.getByRole('button', { name: 'Войти в аккаунт', exact: true }).click();

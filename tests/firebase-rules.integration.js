@@ -74,11 +74,23 @@ function serverTimestamp() {
         await assertFails(accountDb.ref('accountProfiles').once('value'));
         await assertFails(ordinaryDb.ref(profilePath).once('value'));
         await assertFails(ordinaryDb.ref(profilePath + '/identity/nickname').set('Другой'));
+        const sharedIdentity = ordinaryDb.ref(profilePath + '/identity');
+        await assertFails(sharedIdentity.once('value'));
+        await assertSucceeds(profile.update({ rankVisible: true, cover: 'waves', 'identity/shape': 'pebble', 'identity/monogram': 'ЛЛ' }));
+        assert.equal((await assertSucceeds(sharedIdentity.once('value'))).val().monogram, 'ЛЛ');
+        await assertFails(ordinaryDb.ref(profilePath).once('value'));
+        await assertFails(ordinaryDb.ref(profilePath + '/telegram').once('value'));
+        await assertFails(ordinaryDb.ref(profilePath + '/rankVisible').set(false));
+        await assertFails(anonDb.ref(profilePath + '/identity').once('value'));
+        await assertFails(environment.unauthenticatedContext().database().ref(profilePath + '/identity').once('value'));
+        await assertSucceeds(profile.child('rankVisible').remove());
+        await assertFails(sharedIdentity.once('value'));
         await assertFails(ownerDb.ref(profilePath + '/telegram').once('value'));
         await assertFails(environment.unauthenticatedContext().database().ref(profilePath).once('value'));
         await assertFails(anonDb.ref('accountProfiles/' + anonUid).set({ identity }));
         await assertFails(anonDb.ref('accountProfiles/' + anonUid).once('value'));
         for (const patch of [
+            { 'identity/shape': 'unknown' }, { 'identity/monogram': '123' }, { 'identity/monogram': '<>' }, { cover: 'other' }, { rankVisible: 'true' },
             { telegram: 'https://elsewhere.test/x' }, { 'identity/avatar': 'other' }, { 'identity/color': 'blue' },
             { 'identity/nickname': '<tag>' }, { 'identity/nickname': '   ' }, { 'identity/nickname': 'я'.repeat(33) },
             { 'identity/nickname': 'Лис\nДруг' }, { extra: 'private' }, { 'identity/role': 'owner' }
