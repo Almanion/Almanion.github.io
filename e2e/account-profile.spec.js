@@ -71,7 +71,11 @@ test('profile survives sign-out, merges edits from two tabs and clears private f
     for (const width of [320, 390, 768, 1280]) {
         await page.setViewportSize({ width, height: 844 });
         expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+        await expect(page.getByRole('button', { name: 'Настройки', exact: true })).toHaveCount(1);
     }
+    await page.getByRole('button', { name: 'Настройки', exact: true }).click();
+    await expect(page.locator('#settingsModal')).toBeVisible();
+    await page.locator('#settingsDoneBtn').click();
 
     const other = await context.newPage();
     await other.goto('/profile.html');
@@ -80,6 +84,19 @@ test('profile survives sign-out, merges edits from two tabs and clears private f
     await other.locator('label[title="Янтарь"]').click();
     await other.locator('#profileSave').click();
     await expect(page.locator('#profileColorName')).toHaveText('Янтарь');
+    await expect(page.locator('#profileNickname')).toHaveValue('Новый ник');
+    // A rejected save must leave the typed name available for a second attempt.
+    await page.evaluate(() => {
+        const prototype = Object.getPrototypeOf(firebase.database().ref());
+        const original = prototype.update;
+        prototype.update = function (patch, ...rest) {
+            if (!Object.hasOwn(patch, 'identity/nickname')) return original.call(this, patch, ...rest);
+            prototype.update = original;
+            return Promise.reject(new Error('Simulated save refusal'));
+        };
+    });
+    await page.locator('#profileSave').click();
+    await expect(page.locator('#profileStatus')).toContainText('Не удалось сохранить');
     await expect(page.locator('#profileNickname')).toHaveValue('Новый ник');
     await page.locator('#profileSave').click();
     await expect(other.locator('#profileNickname')).toHaveValue('Новый ник');
