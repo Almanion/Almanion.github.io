@@ -1493,7 +1493,7 @@ body.admin-page .profile-id { overflow-wrap: anywhere; }
     .admin-header-label, .admin-header-divider, #adminEmail { display: none; }
     .admin-workspace { display: block; padding: 0; }
     .admin-navigation { z-index: 10; top: 0; padding: 8px; border-bottom: 1px solid var(--border); background: var(--bg); gap: 0; }
-    .admin-nav-tabs { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 2px; }
+    .admin-nav-tabs { grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 2px; }
     .admin-nav-item { display: flex; flex-direction: column; justify-content: center; gap: 6px; min-height: 58px; padding: 8px 1px; border-radius: 10px; font-size: clamp(.56rem, 2.1vw, .68rem); text-align: center; white-space: nowrap; }
     .admin-nav-item .eic { width: 18px; height: 18px; }
     .admin-nav-home { display: none; }
@@ -1557,4 +1557,55 @@ body.admin-page.exp-dark, body.admin-page.dark-theme, body.admin-page.midnight-t
     body.admin-page .online-table td.no-data { display: block; text-align: center; border: 0; }
     body.admin-page .online-table .page-badge { max-width: 65%; overflow-wrap: anywhere; white-space: normal; text-align: right; }
     body.admin-page .online-table .action-btn { flex: none; margin: 0; }
+}
+
+/* Forecast management shares the market's chart and the dashboard's theme. */
+#tab-forecasts[hidden], #view-forecasts [hidden] { display: none !important; }
+.admin-forecast-icon { display: block; flex: none; width: 19px; height: 19px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+#view-forecasts {
+    --ink: var(--text); --quiet: var(--text-secondary); --surface: var(--bg-card); --inset: var(--bg-input);
+    --canvas: var(--bg); --rule: var(--border); --signal: var(--accent); --on-signal: var(--exp-accent-contrast, #fff);
+    --yes: #365ac2; --no: #7644ac; --selection: color-mix(in srgb, var(--signal) 9%, var(--surface));
+    --number-font: ui-monospace, "SFMono-Regular", Consolas, monospace;
+}
+body.exp-dark #view-forecasts { --yes: #96b4ff; --no: #d1acff; }
+body:is(.exp-graphite, .exp-sepia) #view-forecasts { --yes: var(--ink); --no: var(--quiet); }
+#view-forecasts .admin-forecast-shell { width: 100%; max-width: none; margin: 0; padding: 0; container-type: inline-size; }
+#view-forecasts .forecast-admin { margin: 0; padding: clamp(16px, 2.2vw, 24px); }
+#forecastWorkspace, #forecastEventData { display: grid; gap: 16px; min-width: 0; }
+#view-forecasts .forecast-chart-card, #view-forecasts .forecast-chart-space { grid-column: auto; }
+.admin-forecast-loading { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; }
+#forecastLoadStatus { margin: 0; color: var(--quiet); }
+#forecastLoadStatus:empty { display: none; }
+.admin-forecast-loading:has(#forecastLoadStatus:not(:empty)) { margin-bottom: 16px; }
+.admin-forecast-metrics { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); margin: 0; border: 1px solid var(--rule); border-radius: 14px; background: var(--surface); }
+.admin-forecast-metrics > div { min-width: 0; margin: 12px 0; padding: 3px clamp(10px, 2vw, 24px); }
+.admin-forecast-metrics > div + div { border-inline-start: 1px solid var(--rule); }
+.admin-forecast-metrics dt { color: var(--quiet); font-size: .86rem; }
+.admin-forecast-metrics dd { margin: 5px 0 0; font-size: clamp(1.4rem, 2.8vw, 2rem); font-weight: 650; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.admin-forecast-picker { display: grid; gap: 5px; min-width: 0; color: var(--quiet); font-size: .87rem; font-weight: 600; }
+#forecastPicker { width: 100%; text-overflow: ellipsis; }
+#forecastMarketLink { width: auto; min-height: 44px; color: var(--signal); text-decoration: none; }
+#forecastTape { display: grid; list-style: none; margin: 12px 0 0; padding: 0; }
+#forecastTape:empty { display: none; }
+#forecastTape li { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px 12px; padding: 10px 0; border-top: 1px solid var(--rule); }
+#forecastTape li > div { display: grid; gap: 3px; min-width: 0; overflow-wrap: anywhere; }
+#forecastTape li > div:last-child { text-align: right; font-variant-numeric: tabular-nums; }
+#forecastTape span, #forecastTape time { font-size: .8rem; color: var(--quiet); }
+#forecastMoreTrades { margin-top: 10px; }
+@container (min-width: 740px) {
+    #forecastWorkspace { grid-template-columns: minmax(250px, .76fr) minmax(0, 1.24fr); align-items: start; }
+    .admin-forecast-metrics, .admin-forecast-picker, #forecastWorkspace:has(#forecastEventData[hidden]) #ownerTools { grid-column: 1 / -1; }
+    #forecastEventData { grid-column: 2; }
+    #forecastWorkspace:has(#forecastEventData:not([hidden])) .forecast-event-fields { grid-template-columns: 1fr; }
+}
+@media (min-width: 375px) and (max-width: 520px) {
+    .admin-forecast-metrics > div { margin-block: 9px; padding-inline: 7px; }
+    .admin-forecast-metrics dt { font-size: .76rem; }
+}
+@media (max-width: 374px) {
+    .admin-forecast-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .admin-forecast-metrics > div { margin: 0; padding: 12px; }
+    .admin-forecast-metrics > div:nth-child(3) { border-inline-start: 0; }
+    .admin-forecast-metrics > div:nth-child(n + 3) { border-top: 1px solid var(--rule); }
 }

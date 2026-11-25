@@ -2,6 +2,7 @@
   "rootFiles": [
     "account.js",
     "admin-dashboard.js",
+    "admin-forecasts.js",
     "admin-dialogs.js",
     "admin-app.js",
     "admin.html",
@@ -69,6 +70,7 @@
     "physics-forecast.html",
     "physics-forecast.js",
     "physics-forecast-core.js",
+    "physics-forecast-ledger.js",
     "physics-forecast-chart.js",
     "physics-forecast-admin.js",
     "physics.html",

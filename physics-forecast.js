@@ -3,7 +3,6 @@
     const M = window.PhysicsForecast;
     const $ = id => document.getElementById(id);
     const fmt = new Intl.NumberFormat('ru-RU', { maximumFractionDigits: 2 });
-    const dayFmt = new Intl.DateTimeFormat('ru-RU', { day: 'numeric', month: 'long', weekday: 'short', timeZone: 'Europe/Moscow' });
     const stampFmt = new Intl.DateTimeFormat('ru-RU', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Moscow' });
     const amount = cents => fmt.format(cents / 100);
     const points = cents => amount(cents) + ' оч.';
@@ -20,21 +19,17 @@
         const cents = Number(match[1]) * 100 + Number((match[2] || '').padEnd(2, '0'));
         return Number.isSafeInteger(cents) ? cents : NaN;
     }
-    const date = day => dayFmt.format(M.endOfDay(day) - M.DAY);
+    const ledger = window.ForecastLedger;
+    const { date, phases } = ledger;
     const labels = { yes: 'Да', no: 'Нет' };
-    const phases = { open: 'Торги открыты', lock: 'Торги закрыты', yes: 'Итог «Да»', no: 'Итог «Нет»', void: 'Прогноз отменён' };
-    const groupNames = ['Открытые', 'Ждут итога', 'Завершённые'];
-    const phaseGroup = { open: 0, lock: 1, yes: 2, no: 2, void: 2 };
-    let engine = M.create(), ids = [], selectedId = '', user = null, connected = false, offset = 0, ready = false, busy = false;
+    let engine = M.create(), readLedger = ledger.createReader(), selectedId = '', user = null, connected = false, offset = 0, ready = false, busy = false;
     let epoch = 0, clock = 0, connectionTimer, feedOff, pendingSnapshot, historyLimit = 12, ticket = null;
-    let pickerSignature = '';
     let firstPaint = true, renderedToday = '';
     let buyQuantity = '5';
     const api = window.AlmanionAccount;
     const now = () => Date.now() + offset;
     const chart = window.createPhysicsForecastChart(now);
     const market = () => engine.markets.get(selectedId);
-    const adminPanel = window.createForecastAdmin({ now, formatDate: date, phaseLabel: phases, selectMarket, send });
     const jumpLinks = [...document.querySelectorAll('.forecast-jumps a')];
     const phone = matchMedia('(max-width: 759px)');
     let jumpFrame = 0;
@@ -65,7 +60,7 @@
     }
     function gate(title, body, action) {
         $('accessGate').hidden = false;
-        $('gameSurface').hidden = $('ownerTools').hidden = $('connectionNotice').hidden = true;
+        $('gameSurface').hidden = $('connectionNotice').hidden = true;
         $('eventPicker').hidden = true;
         $('roundState').textContent = '';
         $('roundState').removeAttribute('data-state');
@@ -79,20 +74,12 @@
             button.onclick = action === 'login' ? () => api.openLogin() : () => location.reload();
         }
     }
-    function notice(text, admin) {
-        $(admin ? 'adminFeedback' : 'feedback').textContent = text;
+    function notice(text) {
+        $('feedback').textContent = text;
     }
 
     function syncSnapshot(snapshot) {
-        const rows = [];
-        snapshot.forEach(item => { rows.push([item.key, item.val()]); });
-        // Reconcile optimistic SDK data, a rejected append or a freshly restored session.
-        if (ids.length > rows.length || ids.some((id, i) => id !== rows[i][0])) { engine = M.create(); ids = []; }
-        for (let i = ids.length; i < rows.length; i++) {
-            const [id, event] = rows[i];
-            M.apply(engine, event, id);
-            ids.push(id);
-        }
+        engine = readLedger(snapshot);
         ready = true;
         paint();
     }
@@ -101,11 +88,11 @@
         clearTimeout(connectionTimer);
         if (feedOff) feedOff();
         feedOff = undefined;
-        epoch++; ready = busy = false; selectedId = pickerSignature = ''; ids = []; engine = M.create(); ticket = pendingSnapshot = null;
+        epoch++; ready = busy = false; selectedId = ''; readLedger = ledger.createReader(); engine = M.create(); ticket = pendingSnapshot = null;
         chart.reset();
         resetDraft();
-        adminPanel.reset();
-        $('feedback').textContent = $('orderFeedback').textContent = $('adminFeedback').textContent = '';
+        $('forecastAdminLink').href = 'admin.html#forecasts';
+        $('feedback').textContent = $('orderFeedback').textContent = '';
         for (const id of ['tradeHistory', 'myOrders', 'bookAsks', 'bookBids', 'lessonSelect']) $(id).replaceChildren();
     }
 
@@ -132,6 +119,7 @@
     function activate(account) {
         clearMarket();
         user = account && !account.isAnonymous ? account : null;
+        $('forecastAdminLink').hidden = user?.uid !== M.OWNER;
         if (!user) {
             gate('Войди, чтобы открыть рынок', 'Для участия нужен аккаунт Almanion.', 'login');
             return;
@@ -166,10 +154,9 @@
     }
 
     function renderHistory(m) {
-        const mine = $('historyScope').value === 'mine';
-        const trades = (mine ? m.trades.filter(t => t.taker === user.uid || t.maker === user.uid) : m.trades).slice().reverse();
+        const trades = m.trades.filter(t => t.taker === user.uid || t.maker === user.uid).reverse();
         const rows = trades.slice(0, historyLimit).map(t => {
-            const isMaker = mine && t.maker === user.uid;
+            const isMaker = t.maker === user.uid;
             const side = isMaker ? t.makerSide : t.side;
             const action = isMaker ? t.makerAction : t.action;
             const price = side === 'yes' ? t.yesPrice : 100 - t.yesPrice;
@@ -178,7 +165,7 @@
                 node('small', stampFmt.format(t.at) + ' · ' + t.qty + ' × ' + amount(price)));
             row.append(info, node('strong', amount(price * t.qty) + ' оч.')); return row;
         });
-        $('tradeHistory').replaceChildren(...(rows.length ? rows : [node('p', mine ? 'В этом прогнозе у тебя пока нет сделок.' : 'Первой сделки пока не было.', 'forecast-footnote')]));
+        $('tradeHistory').replaceChildren(...(rows.length ? rows : [node('p', 'В этом прогнозе у тебя пока нет сделок.', 'forecast-footnote')]));
         $('moreTrades').hidden = trades.length <= historyLimit;
     }
 
@@ -382,47 +369,24 @@
         $('eventCriteria').hidden = !m?.criteria;
     }
 
-    function orderedMarkets(at) {
-        return [...engine.markets.values()].sort((a, b) => {
-            const first = phaseGroup[M.status(a, at)], second = phaseGroup[M.status(b, at)];
-            return first - second || (first === 2 ? b.endAt - a.endAt : a.endAt - b.endAt)
-                || b.openedAt - a.openedAt || a.id.localeCompare(b.id);
-        });
-    }
-
-    function renderPicker(markets, at) {
-        const select = $('lessonSelect');
-        const signature = markets.map(m => m.id + ':' + M.status(m, at)).join('|');
-        if (signature !== pickerSignature) {
-            const groups = groupNames.map(label => { const group = node('optgroup'); group.label = label; return group; });
-            for (const m of markets) {
-                const phase = M.status(m, at), index = phaseGroup[phase];
-                const suffix = index === 2 ? ' · ' + phases[phase] : '';
-                groups[index].append(new Option(date(m.date) + ' · ' + m.question + suffix, m.id));
-            }
-            select.replaceChildren(...groups.filter(group => group.childElementCount));
-            pickerSignature = signature;
-        }
-        select.value = selectedId; select.disabled = busy;
-        $('eventPicker').hidden = !markets.length;
-    }
-
     function paint() {
         if (!ready || !user) return;
         $('accessGate').hidden = true; $('gameSurface').hidden = false; $('connectionNotice').hidden = connected;
-        const at = now(), markets = orderedMarkets(at);
+        const at = now(), markets = ledger.orderedMarkets(engine, at);
         if (!engine.markets.has(selectedId)) {
             const requested = new URLSearchParams(location.search).get('event');
             selectedId = engine.markets.has(requested) ? requested : markets[0]?.id || '';
         }
         const m = market();
         renderedToday = M.dayKey(at);
-        renderPicker(markets, at);
+        ledger.fillPicker($('lessonSelect'), markets, selectedId, at);
+        $('lessonSelect').disabled = busy;
+        $('eventPicker').hidden = !markets.length;
         renderHeading(m);
         $('emptyRound').hidden = !!m; $('roundBody').hidden = !m;
         const phase = m ? M.status(m, at) : '';
         $('roundState').textContent = phases[phase] || ''; $('roundState').dataset.state = phase;
-        adminPanel.render(user.uid === M.OWNER, m, markets, busy, connected);
+        if (user.uid === M.OWNER) $('forecastAdminLink').href = 'admin.html' + (m ? '?event=' + encodeURIComponent(m.id) : '') + '#forecasts';
         if (!m) { chart.reset(); return; }
         $('roundSummary').textContent = phase === 'open' ? '' : phase === 'lock' ? 'Ждём итог события.' : phases[phase] + '.';
         chart.update(m, connected); renderTicket(); renderBook(m, phase); renderAccount(m, phase); renderHistory(m);
@@ -432,53 +396,20 @@
 
     async function send(command) {
         if (busy || !ready || !user || !connected) return;
-        const admin = !['order','cancel'].includes(command.kind);
-        if (admin && user.uid !== M.OWNER) return;
+        if (!['order', 'cancel'].includes(command.kind)) return;
         const actor = user.uid, session = epoch;
-        const root = api.database.ref('physicsForecast');
-        const id = root.child('events').push().key;
-        // The existing ledger field is named "day". New markets use their opening event's ID.
-        if (command.kind === 'open') command = { ...command, day: id };
-        const expires = Math.floor(now()) + 30000;
         busy = true; pendingSnapshot = null;
-        const feedback = $(admin ? 'adminFeedback' : command.kind === 'cancel' ? 'orderFeedback' : 'feedback');
+        const feedback = $(command.kind === 'cancel' ? 'orderFeedback' : 'feedback');
         feedback.textContent = ''; paint();
         try {
-            let accepted = false;
-            for (let attempt = 0; attempt < 5 && !accepted; attempt++) {
-                const head = (await root.child('head').get()).val();
-                if (session !== epoch || !connected || now() > expires) throw Error('Подключись и подтверди действие заново.');
-                const n = (head?.n || 0) + 1;
-                const e = { ...command, actor, n, at: firebase.database.ServerValue.TIMESTAMP };
-                const patch = { head: { n, id }, ['events/' + id]: e, ['lastBy/' + actor]: id };
-                // From the first custom event, writers must understand the full shared wallet.
-                if (head?.v === 2 || command.kind === 'open') patch.head.v = 2;
-                if (admin) patch['rounds/' + command.day] = { last: id, phase: command.kind,
-                    endAt: command.endAt ?? engine.markets.get(command.day).endAt };
-                else e.expires = expires;
-                try { await root.update(patch); accepted = true; }
-                catch {
-                    if ((await root.child('events/' + id).get()).exists()) { accepted = true; break; }
-                    const latest = (await root.child('head').get()).val();
-                    if ((latest?.n || 0) < n) {
-                        const lastId = (await root.child('lastBy/' + actor).get()).val();
-                        const lastAt = lastId && (await root.child('events/' + lastId + '/at').get()).val();
-                        const wait = lastAt && lastAt + 550 - now();
-                        if (!admin && wait > 0 && wait <= 1000) { await new Promise(resolve => setTimeout(resolve, wait)); continue; }
-                        throw Error('Действие отклонено. Проверь состояние рынка и повтори.');
-                    }
-                }
-            }
-            if (!accepted) throw Error('Рынок изменился. Проверь котировку и попробуй ещё раз.');
-            const snapshot = await root.child('events').orderByChild('n').get();
+            const { id, snapshot } = await ledger.append({ database: api.database, actor, command, engine, now,
+                active: () => session === epoch && connected });
             if (session !== epoch) return;
             pendingSnapshot = null; busy = false;
             syncSnapshot(snapshot);
             const result = engine.receipts.get(id);
             if (!result || result.error) throw Error(M.errors[result?.error] || 'Не удалось подтвердить действие.');
-            if (command.kind === 'open') { adminPanel.resetForm(); selectMarket(command.day); }
-            if (admin) feedback.textContent = command.kind === 'open' ? 'Прогноз открыт.' : phases[command.kind] + '.';
-            else if (command.kind === 'cancel') feedback.textContent = 'Заявка снята.';
+            if (command.kind === 'cancel') feedback.textContent = 'Заявка снята.';
             else {
                 const outcome = ' «' + labels[command.side] + '»';
                 const parts = [];
@@ -498,13 +429,13 @@
 
     function selectMarket(key) {
         if (!engine.markets.has(key)) return;
-        selectedId = key; historyLimit = 12; adminPanel.showSelected();
+        selectedId = key; historyLimit = 12;
         const url = new URL(location.href);
         if (url.searchParams.get('event') !== key && /^https?:$/.test(url.protocol)) {
             url.searchParams.set('event', key);
             history.replaceState(history.state, '', url);
         }
-        resetDraft(); $('orderFeedback').textContent = ''; notice(''); notice('', true); paint();
+        resetDraft(); $('orderFeedback').textContent = ''; notice(''); paint();
     }
     $('lessonSelect').addEventListener('change', e => selectMarket(e.target.value));
     $('tradeForm').addEventListener('input', e => {
@@ -564,7 +495,6 @@
         });
     }
     $('tradeForm').addEventListener('submit', e => { e.preventDefault(); if (ticket) send({ ...ticket }); });
-    $('historyScope').addEventListener('change', () => { historyLimit = 12; renderHistory(market()); });
     $('moreTrades').addEventListener('click', () => { historyLimit += 24; renderHistory(market()); });
     if (!api?.database || !api.auth) { gate('Не удалось подключиться', 'Для входа нужен доступ к серверу аккаунтов.', 'retry'); return; }
     api.database.ref('.info/connected').on('value', snap => { connected = snap.val() === true; paint(); });

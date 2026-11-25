@@ -117,7 +117,68 @@
 
     window.createPhysicsForecastChart = function (clock) {
         const el = id => document.getElementById(id);
-        const card = el('marketChart'), svg = el('probChart'), slider = el('chartCursor'), tip = el('chartTip');
+        const card = el('marketChart'), statistics = card.hasAttribute('data-statistics');
+        card.innerHTML = `
+            <p id="chartDialogQuestion" hidden></p>
+            <div class="forecast-section-head forecast-chart-head">
+                <div class="forecast-chart-heading"><h2 id="chartTitle">Вероятность</h2>
+                    <div class="forecast-chart-sides" role="group" aria-label="Исход на графике">
+                        <button type="button" data-chart-side="yes" aria-pressed="true">Да</button>
+                        <button type="button" data-chart-side="no" aria-pressed="false">Нет</button>
+                    </div>
+                </div>
+                <button type="button" id="chartExpand" aria-label="Развернуть график" title="Развернуть график" aria-haspopup="dialog" aria-expanded="false" aria-controls="chartDialog">
+                    <svg viewBox="0 0 20 20" aria-hidden="true"><path class="expand-icon" d="M4 8V4h4m4 0h4v4m0 4v4h-4m-4 0H4v-4"/><path class="collapse-icon" d="M3 7h4V3m6 0v4h4m0 6h-4v4m-6 0v-4H3"/></svg>
+                </button>
+            </div>
+            <div class="forecast-chart-controls">
+                <div class="forecast-reading"><strong id="probability">—</strong>${statistics ? '<span id="chartDelta" title="Изменение за выбранный период" hidden></span>' : ''}</div>
+                <div class="forecast-ranges" role="group" aria-label="Период графика">
+                    <button type="button" data-range="quarter" aria-label="15 минут" aria-pressed="false">15 мин</button>
+                    <button type="button" data-range="hour" aria-label="1 час" aria-pressed="false">1 ч</button>
+                    <button type="button" data-range="day" aria-pressed="false">День</button>
+                    <button type="button" data-range="all" aria-pressed="true">Всё</button>
+                </div>
+            </div>
+            <div class="forecast-chart-stage">
+                <div class="forecast-plot">
+                    <div class="forecast-canvas">
+                        <svg id="probChart" viewBox="0 0 560 220" role="img" aria-label="История вероятности" preserveAspectRatio="none">
+                            <defs><linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1" gradientUnits="userSpaceOnUse"><stop stop-color="currentColor" stop-opacity=".24"/><stop offset="1" stop-color="currentColor" stop-opacity=".02"/></linearGradient></defs>
+                            <path class="chart-grid" id="chartGrid"/><path class="chart-grid" id="chartTimeGrid"/>
+                            <path id="chartGuide"/>
+                            <g id="chartSeries"><path id="chartArea" fill="url(#chartGradient)"/><path id="chartLine"/>${statistics ? '<path id="chartVolumes"/>' : ''}</g>
+                            <path id="chartChange" fill="none" stroke="currentColor" opacity="0" stroke-width="4"/>
+                            <g id="chartMarker"><circle class="chart-halo" r="7"/><circle class="chart-dot" r="3.6"/></g>
+                            <g id="chartInspection" visibility="hidden"><path id="chartHair"/>${statistics ? '<path id="chartActiveVolume"/>' : ''}<circle id="chartDot" class="chart-dot" r="4"/></g>
+                        </svg>
+                    </div>
+                    <div class="forecast-scale-column" aria-hidden="true"><div id="chartScale" class="forecast-scale"><span></span><span></span><span></span><span></span><span></span></div><b id="chartPriceTag"></b>${statistics ? '<small>доли</small>' : ''}</div>
+                </div>
+                <div class="forecast-axis" id="chartAxis" aria-hidden="true"></div>
+                <div class="forecast-scrubber">
+                    <button type="button" class="forecast-chart-step" id="chartPrev" aria-label="Предыдущая точка графика" title="Предыдущая точка графика" hidden>
+                        <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M12 5l-5 5 5 5"/></svg>
+                    </button>
+                    <input id="chartCursor" type="range" min="0" max="100" value="100" step=".1" aria-label="Посмотреть вероятность на графике по времени">
+                    <button type="button" class="forecast-chart-step" id="chartNext" aria-label="Следующая точка графика" title="Следующая точка графика" hidden>
+                        <svg viewBox="0 0 20 20" aria-hidden="true"><path d="m8 5 5 5-5 5"/></svg>
+                    </button>
+                </div>
+                <div class="forecast-chart-readout" id="chartStrip">
+                    <div class="forecast-chart-clock"><span class="forecast-live" id="chartState"></span><output id="chartReadout" for="chartCursor" aria-live="off"></output></div>
+                    <div id="chartTip" class="forecast-tooltip" aria-hidden="true" hidden><b></b><span></span>${statistics ? '<small></small>' : ''}</div>
+                    <button type="button" id="chartReturn" aria-label="К текущей цене" hidden>
+                        <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 10h12m-5-5 5 5-5 5m6-10v10"/></svg><span class="chart-return-full">К текущей цене</span><span class="chart-return-short" aria-hidden="true">Сейчас</span>
+                    </button>
+                </div>
+            </div>
+            <span class="forecast-sr" id="chartAnnouncement" role="status" aria-live="polite" aria-atomic="true"></span>
+            ${statistics ? `
+                <dl class="forecast-chart-stats" aria-label="За выбранный период">
+                    <div><dt>Минимум</dt><dd id="chartLow">—</dd></div><div><dt>Максимум</dt><dd id="chartHigh">—</dd></div><div><dt>Объём, доли</dt><dd id="chartVolume">—</dd></div>
+                </dl>` : ''}`;
+        const svg = el('probChart'), slider = el('chartCursor'), tip = el('chartTip');
         const dialog = el('chartDialog'), expand = el('chartExpand'), spacer = document.createElement('div');
         const periodButtons = [...card.querySelectorAll('[data-range]')], sides = [...card.querySelectorAll('[data-chart-side]')];
         const returnButton = el('chartReturn'), strip = el('chartStrip');
@@ -139,7 +200,7 @@
 
         function cancelTransitions() {
             for (const id of ['chartSeries', 'chartChange', 'chartVolumes', 'probability']) {
-                for (const animation of el(id).getAnimations?.() || []) animation.cancel();
+                for (const animation of el(id)?.getAnimations?.() || []) animation.cancel();
             }
         }
         reduced.addEventListener('change', () => { if (reduced.matches) cancelTransitions(); });
@@ -200,6 +261,15 @@
             selectRange('all'); selectSide('yes'); tip.hidden = true;
             svg.dataset.live = 'false'; el('chartDialogQuestion').textContent = '';
             el('chartAnnouncement').textContent = '';
+            svg.setAttribute('aria-label', 'История вероятности');
+            for (const id of ['chartReadout', 'chartPriceTag', 'probability', 'chartState', 'chartDelta', 'chartLow', 'chartHigh', 'chartVolume']) {
+                const label = el(id);
+                if (label) label.textContent = '';
+            }
+            for (const path of svg.querySelectorAll('path')) path.removeAttribute('d');
+            for (const label of [...tip.children, ...el('chartScale').children]) label.textContent = '';
+            axis.replaceChildren();
+            slider.removeAttribute('aria-valuetext');
         }
 
         function readPoint() {
@@ -210,10 +280,10 @@
             const position = inspected === null || start === end ? 100 : 100 * (at - start) / (end - start);
             const sameDay = window.PhysicsForecast.dayKey(at) === window.PhysicsForecast.dayKey(end);
             const timeText = (sameDay ? seconds : dated).format(at);
-            const qty = volume.bins[volume.indexAt(at)];
+            const qty = volume ? volume.bins[volume.indexAt(at)] : 0;
             slider.value = String(position);
             slider.style.setProperty('--cursor-position', position + '%');
-            slider.setAttribute('aria-valuetext', timeText + ' по Москве, «' + sideNames[side] + '» ' + percent(price) + ', объём за интервал ' + fmt.format(qty));
+            slider.setAttribute('aria-valuetext', timeText + ' по Москве, «' + sideNames[side] + '» ' + percent(price) + (statistics ? ', объём за интервал ' + fmt.format(qty) : ''));
             el('chartReadout').textContent = timeText + ' мск' + (inspected === null ? '' : ' · ' + percent(price));
             el('chartState').textContent = inspected !== null ? 'История' : live ? 'Сейчас' : !online ? 'Нет связи' : 'Последняя цена';
             el('chartState').dataset.state = inspected === null && live ? 'live' : 'idle';
@@ -228,9 +298,11 @@
             el('chartHair').setAttribute('d', 'M' + px + ' 3V' + (h - 2));
             el('chartDot').setAttribute('cx', px); el('chartDot').setAttribute('cy', py);
             tip.children[0].textContent = sideNames[side] + ' · ' + percent(price);
-            el('chartActiveVolume').setAttribute('d', barPaths[volume.indexAt(at)]);
             tip.children[1].textContent = timeText + ' мск';
-            tip.children[2].textContent = 'Объём за интервал · ' + fmt.format(qty);
+            if (statistics) {
+                el('chartActiveVolume').setAttribute('d', barPaths[volume.indexAt(at)]);
+                tip.children[2].textContent = 'Объём за интервал · ' + fmt.format(qty);
+            }
             if (compact.matches) return;
             const tw = tip.offsetWidth, th = tip.offsetHeight;
             tip.style.left = clamp(px + tw + 10 < w ? px + 9 : px - tw - 9, 2, w - tw - 2) + 'px';
@@ -253,10 +325,10 @@
             }
             const { bottom, top, step } = scaleFor(low, high);
             const w = svg.clientWidth, h = svg.clientHeight, right = w - pad, plotWidth = right - pad;
-            const band = clamp(h * .12, 16, 32), floor = h - band - 12;
+            const band = statistics ? clamp(h * .12, 16, 32) : 0, floor = h - band - 12;
             const x = t => end === start ? right : pad + plotWidth * (t - start) / (end - start);
             const y = p => pad + (top - p) / (top - bottom) * (floor - pad);
-            const volume = tradeVolume(market.trades, start, end, plotWidth);
+            const volume = statistics ? tradeVolume(market.trades, start, end, plotWidth) : null;
             const live = online && market.phase === 'open' && at < market.endAt;
             const barPaths = [];
             frame = { start, end, x, y, h, w, volume, live, barPaths };
@@ -295,23 +367,27 @@
             el('chartArea').setAttribute('d', path + 'V' + floor + 'H' + x(start) + 'Z');
             el('chartGuide').setAttribute('d', 'M' + pad + ' ' + y(lastPrice) + 'H' + right);
             el('chartMarker').setAttribute('transform', 'translate(' + right + ' ' + y(lastPrice) + ')');
-            const maxBin = Math.max(1, ...volume.bins), binWidth = plotWidth / volume.bins.length;
-            volume.bins.forEach((qty, i) => {
-                const height = Math.max(1, band * qty / maxBin);
-                const left = pad + i * binWidth + 1;
-                barPaths.push(qty ? 'M' + left + ' ' + (h - 2) + 'v-' + height + 'h' + Math.max(1, binWidth - 2) + 'v' + height + 'Z' : '');
-            });
-            el('chartVolumes').setAttribute('d', barPaths.join(''));
+            if (statistics) {
+                const maxBin = Math.max(1, ...volume.bins), binWidth = plotWidth / volume.bins.length;
+                volume.bins.forEach((qty, i) => {
+                    const height = Math.max(1, band * qty / maxBin);
+                    const left = pad + i * binWidth + 1;
+                    barPaths.push(qty ? 'M' + left + ' ' + (h - 2) + 'v-' + height + 'h' + Math.max(1, binWidth - 2) + 'v' + height + 'Z' : '');
+                });
+                el('chartVolumes').setAttribute('d', barPaths.join(''));
+            }
             svg.dataset.live = String(live && end === latest);
             svg.setAttribute('aria-label', market.question + ' Вероятность «' + sideNames[side] + '» в конце графика ' + percent(lastPrice) + '. Шкала от ' + percent(bottom) + ' до ' + percent(top) + '.');
             el('chartPriceTag').textContent = percent(lastPrice); el('chartPriceTag').style.top = y(lastPrice) + 'px';
             el('probability').textContent = percent(current);
-            el('chartLow').textContent = percent(low); el('chartHigh').textContent = percent(high);
-            el('chartVolume').textContent = fmt.format(volume.total);
-            const delta = lastPrice - priceForSide(points[first].p);
-            el('chartDelta').hidden = !delta;
-            el('chartDelta').dataset.direction = delta > 0 ? 'up' : 'down';
-            el('chartDelta').textContent = (delta > 0 ? '+' : '−') + fmt.format(Math.abs(delta)) + ' п. п.';
+            if (statistics) {
+                el('chartLow').textContent = percent(low); el('chartHigh').textContent = percent(high);
+                el('chartVolume').textContent = fmt.format(volume.total);
+                const delta = lastPrice - priceForSide(points[first].p);
+                el('chartDelta').hidden = !delta;
+                el('chartDelta').dataset.direction = delta > 0 ? 'up' : 'down';
+                el('chartDelta').textContent = (delta > 0 ? '+' : '−') + fmt.format(Math.abs(delta)) + ' п. п.';
+            }
             readPoint();
             const motion = motionLevel();
             if (motion !== 'off') {
@@ -334,7 +410,7 @@
                             change.animate?.([{ opacity: .75 }, { opacity: 0 }], { duration: 550, easing: 'ease-out' });
                         }
                     }
-                    if (motion === 'full' && market.trades.length > previousTrades) {
+                    if (statistics && motion === 'full' && market.trades.length > previousTrades) {
                         el('chartVolumes').animate?.([{ opacity: 1 }, { opacity: .5 }], { duration: 320 });
                     }
                 }

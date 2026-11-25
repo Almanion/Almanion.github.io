@@ -57,6 +57,18 @@ body.forecast-page .forecast-header.sidebar-header {
 }
 .forecast-header a { display: inline-flex; align-items: center; min-height: 44px; }
 .forecast-header img { width: 110px; height: auto; }
+.forecast-header .forecast-admin-link {
+    flex: none; gap: 7px; min-height: 42px; margin-inline-start: auto; padding: 0 12px;
+    border: 1px solid var(--rule); border-radius: 10px; background: var(--surface);
+    color: var(--signal); font-size: .83rem; font-weight: 650; text-decoration: none;
+}
+.forecast-admin-link svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; }
+.forecast-admin-link:hover, .forecast-admin-link:focus-visible { border-color: var(--signal); background: var(--selection); }
+.forecast-page .forecast-admin-link:not([hidden]) + .sidebar-header-buttons { margin-inline-start: 0; }
+@media (max-width: 530px) {
+    .forecast-header:has(.forecast-admin-link:not([hidden])) .forecast-context { display: none; }
+    .forecast-header .forecast-admin-link { min-height: 44px; padding: 0 8px; }
+}
 /* The wordmark can retain its light-theme ink in WebKit. */
 .forecast-page.exp-dark .forecast-header img { filter: url(#forecast-dark-ink); }
 .forecast-page.exp-dark.exp-graphite .forecast-header img { filter: url(#forecast-dark-ink) grayscale(1); }
@@ -506,6 +518,8 @@ body.forecast-page .forecast-header.sidebar-header {
     .forecast-shell details[open] { padding-bottom: 16px; }
 }
 @media (max-width: 365px) {
+    .forecast-header:has(.forecast-admin-link:not([hidden])) img { width: 80px; }
+    .forecast-admin-link svg { display: none; }
     .forecast-shell { width: calc(100% - 16px); }
     body.forecast-page .forecast-header.sidebar-header { gap: 7px; }
     .forecast-panel { padding-inline: 12px; }

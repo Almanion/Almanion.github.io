@@ -67,7 +67,6 @@
             busy = saving;
             disabled = busy || !connected;
             if (!initialized) {
-                panel.open = !current;
                 creating = !current;
                 initialized = true;
             }
@@ -82,6 +81,8 @@
             if (!current) { dismiss(); return; }
             const phase = M.status(current, now());
             $('manageTitle').textContent = current.question;
+            $('manageCriteria').textContent = current.criteria;
+            $('manageCriteria').hidden = !current.criteria;
             const status = phase === 'lock' && now() < current.endAt - M.DAY ? 'Итог можно указать в день события' : phaseLabel[phase];
             $('manageStatus').textContent = formatDate(current.date) + ' · ' + status;
             for (const button of commands) {
@@ -100,7 +101,8 @@
         }
         function reset() {
             current = null; markets = []; creating = busy = initialized = false; disabled = true;
-            dismiss(); resetForm(); panel.open = false;
+            dismiss(); resetForm(); panel.hidden = true;
+            $('adminFeedback').textContent = $('manageCriteria').textContent = '';
             $('manageTitle').textContent = $('manageStatus').textContent = '';
         }
         $('showCreate').addEventListener('click', () => { setMode(true); template.focus(); });

@@ -6,14 +6,16 @@
     <meta name="robots" content="noindex,nofollow,noarchive">
     <title>Прогнозы класса | Almanion</title>
     <script src="theme-bootstrap.js?v=20261123-palettes"></script>
+    <script defer src="page-transitions.js?v=20261120-navigation"></script>
     <link rel="icon" href="favicons/favicon-ph.svg?v=20261123-tech-book" type="image/svg+xml">
     <script defer src="favicon-theme.js?v=20261124-aligned-a"></script>
+    <link rel="stylesheet" href="styles/page-transitions.css?v=20261120-navigation">
     <link rel="stylesheet" href="styles/site/index.css?v=20261002-1">
     <link rel="stylesheet" href="styles/tokens.css?v=20260929-2">
     <link rel="stylesheet" href="styles/buttons.css?v=20260929-2">
     <link rel="stylesheet" href="style-new.css?v=20260929-2">
     <link rel="stylesheet" href="styles/typography.css?v=20261002-1">
-    <link rel="stylesheet" href="styles/physics-forecast.css?v=7">
+    <link rel="stylesheet" href="styles/physics-forecast.css?v=8">
 </head>
 <body class="forecast-page" data-no-math>
     <script>window.AlmanionThemeBootstrap.applyBody();</script>
@@ -25,6 +27,10 @@
             <img class="almanion-wordmark" src="images/almanion-wordmark.svg?v=20261124-aligned-a" width="96" height="20" alt="Almanion">
         </a>
         <span class="forecast-context">Прогнозы · 10-1</span>
+        <a class="forecast-admin-link" id="forecastAdminLink" href="admin.html#forecasts" hidden>
+            <svg viewBox="0 0 20 20" aria-hidden="true"><rect x="3" y="3" width="5.5" height="5.5" rx="1.2"/><rect x="11.5" y="3" width="5.5" height="5.5" rx="1.2"/><rect x="3" y="11.5" width="5.5" height="5.5" rx="1.2"/><rect x="11.5" y="11.5" width="5.5" height="5.5" rx="1.2"/></svg>
+            Админ-панель
+        </a>
         <div class="sidebar-header-buttons"></div>
     </header>
     <main class="forecast-shell">
@@ -53,48 +59,6 @@
         </section>
         <p id="connectionNotice" class="forecast-notice" role="status" hidden>Связь с сервером потеряна. Для сделки нужно подключение.</p>
         <div class="forecast-game" id="gameSurface" hidden>
-            <details class="forecast-panel forecast-admin" id="ownerTools" hidden>
-                <summary>Управление прогнозами</summary>
-                <div class="forecast-admin-switch" role="group" aria-label="Действия владельца">
-                    <button type="button" id="showManage" aria-controls="manageRound" aria-pressed="true">Торги и итог</button>
-                    <button type="button" id="showCreate" aria-controls="createRound" aria-pressed="false">Новое событие</button>
-                </div>
-                <section id="manageRound" aria-labelledby="manageTitle" hidden>
-                    <h3 id="manageTitle"></h3>
-                    <p class="forecast-footnote" id="manageStatus"></p>
-                    <div class="forecast-manager-actions">
-                        <button type="button" class="forecast-secondary" data-command="lock">Закрыть торги</button>
-                        <button type="button" class="forecast-secondary" data-command="yes">Итог «Да»</button>
-                        <button type="button" class="forecast-secondary" data-command="no">Итог «Нет»</button>
-                        <button type="button" class="forecast-secondary" data-command="void">Отменить с возвратом очков</button>
-                    </div>
-                    <div class="forecast-confirm" id="confirmAction" hidden>
-                        <p id="confirmText"></p>
-                        <button type="button" class="forecast-primary" id="confirmGo">Подтвердить</button>
-                        <button type="button" class="forecast-secondary" id="confirmBack">Назад</button>
-                    </div>
-                    <div class="forecast-admin-links">
-                        <button type="button" id="repeatEvent">Повторить на другую дату</button>
-                        <button type="button" id="nextPending" hidden>Следующее без итога</button>
-                    </div>
-                </section>
-                <form id="createRound" hidden>
-                    <fieldset class="forecast-event-fields" id="eventFields">
-                        <legend class="forecast-sr">Новое событие</legend>
-                        <label>Шаблон<select id="eventTemplate"><option value="">Свой вопрос</option></select></label>
-                        <div class="forecast-date-field">
-                            <label>Дата события<input type="date" id="newDay" required></label>
-                            <div class="forecast-date-shortcuts" role="group" aria-label="Быстрый выбор даты">
-                                <button type="button" data-offset="0">Сегодня</button><button type="button" data-offset="1">Завтра</button>
-                            </div>
-                        </div>
-                        <label class="forecast-field-wide">Вопрос<input type="text" id="eventQuestion" required placeholder="Например, выиграет ли 10-1 матч?"></label>
-                        <label class="forecast-field-wide">Что считается ответом «Да» <small>Необязательно</small><textarea id="newCriteria" rows="2"></textarea></label>
-                    </fieldset>
-                    <button type="submit" class="forecast-primary">Открыть прогноз</button>
-                </form>
-                <p class="forecast-feedback" id="adminFeedback" role="status"></p>
-            </details>
             <p id="emptyRound" class="forecast-panel" hidden>Открытых и завершённых прогнозов пока нет.</p>
             <div id="roundBody" class="forecast-layout" hidden>
                 <nav class="forecast-jumps" aria-label="Разделы прогноза">
@@ -103,64 +67,6 @@
                     <a href="#portfolio"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 6h14v10H3zM7 6V4h6v2m-10 4c4 2 10 2 14 0"/></svg>Портфель</a>
                 </nav>
                 <section class="forecast-panel forecast-chart-card" id="marketChart" aria-labelledby="chartTitle" tabindex="-1">
-                    <p id="chartDialogQuestion" hidden></p>
-                    <div class="forecast-section-head forecast-chart-head">
-                        <div class="forecast-chart-heading"><h2 id="chartTitle">Вероятность</h2>
-                            <div class="forecast-chart-sides" role="group" aria-label="Исход на графике">
-                                <button type="button" data-chart-side="yes" aria-pressed="true">Да</button>
-                                <button type="button" data-chart-side="no" aria-pressed="false">Нет</button>
-                            </div>
-                        </div>
-                        <button type="button" id="chartExpand" aria-label="Развернуть график" title="Развернуть график" aria-haspopup="dialog" aria-expanded="false" aria-controls="chartDialog">
-                            <svg viewBox="0 0 20 20" aria-hidden="true"><path class="expand-icon" d="M4 8V4h4m4 0h4v4m0 4v4h-4m-4 0H4v-4"/><path class="collapse-icon" d="M3 7h4V3m6 0v4h4m0 6h-4v4m-6 0v-4H3"/></svg>
-                        </button>
-                    </div>
-                    <div class="forecast-chart-controls">
-                        <div class="forecast-reading"><strong id="probability">—</strong><span id="chartDelta" title="Изменение за выбранный период" hidden></span></div>
-                        <div class="forecast-ranges" role="group" aria-label="Период графика">
-                            <button type="button" data-range="quarter" aria-label="15 минут" aria-pressed="false">15 мин</button>
-                            <button type="button" data-range="hour" aria-label="1 час" aria-pressed="false">1 ч</button>
-                            <button type="button" data-range="day" aria-pressed="false">День</button>
-                            <button type="button" data-range="all" aria-pressed="true">Всё</button>
-                        </div>
-                    </div>
-                    <div class="forecast-chart-stage">
-                        <div class="forecast-plot">
-                            <div class="forecast-canvas">
-                                <svg id="probChart" viewBox="0 0 560 220" role="img" aria-label="История вероятности" preserveAspectRatio="none">
-                                    <defs><linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1" gradientUnits="userSpaceOnUse"><stop stop-color="currentColor" stop-opacity=".24"/><stop offset="1" stop-color="currentColor" stop-opacity=".02"/></linearGradient></defs>
-                                    <path class="chart-grid" id="chartGrid"/><path class="chart-grid" id="chartTimeGrid"/>
-                                    <path id="chartGuide"/>
-                                    <g id="chartSeries"><path id="chartArea" fill="url(#chartGradient)"/><path id="chartLine"/><path id="chartVolumes"/></g>
-                                    <path id="chartChange" fill="none" stroke="currentColor" opacity="0" stroke-width="4"/>
-                                    <g id="chartMarker"><circle class="chart-halo" r="7"/><circle class="chart-dot" r="3.6"/></g>
-                                    <g id="chartInspection" visibility="hidden"><path id="chartHair"/><path id="chartActiveVolume"/><circle id="chartDot" class="chart-dot" r="4"/></g>
-                                </svg>
-                            </div>
-                            <div class="forecast-scale-column" aria-hidden="true"><div id="chartScale" class="forecast-scale"><span></span><span></span><span></span><span></span><span></span></div><b id="chartPriceTag"></b><small>доли</small></div>
-                        </div>
-                        <div class="forecast-axis" id="chartAxis" aria-hidden="true"></div>
-                        <div class="forecast-scrubber">
-                            <button type="button" class="forecast-chart-step" id="chartPrev" aria-label="Предыдущая точка графика" title="Предыдущая точка графика" hidden>
-                                <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M12 5l-5 5 5 5"/></svg>
-                            </button>
-                            <input id="chartCursor" type="range" min="0" max="100" value="100" step=".1" aria-label="Посмотреть вероятность на графике по времени">
-                            <button type="button" class="forecast-chart-step" id="chartNext" aria-label="Следующая точка графика" title="Следующая точка графика" hidden>
-                                <svg viewBox="0 0 20 20" aria-hidden="true"><path d="m8 5 5 5-5 5"/></svg>
-                            </button>
-                        </div>
-                        <div class="forecast-chart-readout" id="chartStrip">
-                            <div class="forecast-chart-clock"><span class="forecast-live" id="chartState"></span><output id="chartReadout" for="chartCursor" aria-live="off"></output></div>
-                            <div id="chartTip" class="forecast-tooltip" aria-hidden="true" hidden><b></b><span></span><small></small></div>
-                            <button type="button" id="chartReturn" aria-label="К текущей цене" hidden>
-                                <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 10h12m-5-5 5 5-5 5m6-10v10"/></svg><span class="chart-return-full">К текущей цене</span><span class="chart-return-short" aria-hidden="true">Сейчас</span>
-                            </button>
-                        </div>
-                    </div>
-                    <span class="forecast-sr" id="chartAnnouncement" role="status" aria-live="polite" aria-atomic="true"></span>
-                    <dl class="forecast-chart-stats" aria-label="За выбранный период">
-                        <div><dt>Минимум</dt><dd id="chartLow">—</dd></div><div><dt>Максимум</dt><dd id="chartHigh">—</dd></div><div><dt>Объём, доли</dt><dd id="chartVolume">—</dd></div>
-                    </dl>
                 </section>
                 <section class="forecast-panel forecast-ticket" id="tradeTicket" aria-labelledby="ticketTitle" tabindex="-1">
                     <form id="tradeForm">
@@ -215,8 +121,7 @@
                 </section>
                 <section class="forecast-panel forecast-orders"><h2 id="orderListTitle" tabindex="-1">Мои открытые заявки</h2><div id="myOrders"></div><p class="forecast-feedback" id="orderFeedback" role="status"></p></section>
                 <section class="forecast-panel forecast-history" aria-labelledby="historyTitle">
-                    <div class="forecast-section-head"><h2 id="historyTitle">История сделок</h2>
-                    <select id="historyScope" aria-label="Чьи сделки показать"><option value="mine">Мои</option><option value="all">Все</option></select></div>
+                    <div class="forecast-section-head"><h2 id="historyTitle">Мои сделки</h2></div>
                     <div id="tradeHistory"></div><button id="moreTrades" class="forecast-secondary" type="button" hidden>Показать ещё</button>
                 </section>
             </div>
@@ -243,9 +148,9 @@
     <script defer src="script.js?v=20260906-1"></script>
     <script defer src="settings.js?v=20261009-1"></script>
     <script defer src="account.js?v=20260908-1"></script>
-    <script defer src="physics-forecast-core.js?v=3"></script>
-    <script defer src="physics-forecast-chart.js?v=4"></script>
-    <script defer src="physics-forecast-admin.js?v=2"></script>
-    <script defer src="physics-forecast.js?v=5"></script>
+    <script defer src="physics-forecast-core.js?v=4"></script>
+    <script defer src="physics-forecast-chart.js?v=5"></script>
+    <script defer src="physics-forecast-ledger.js?v=1"></script>
+    <script defer src="physics-forecast.js?v=6"></script>
 </body>
 </html>

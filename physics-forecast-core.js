@@ -217,7 +217,7 @@
         state.receipts.set(id, receipt);
         return receipt;
     }
-    const api = { DAY, OWNER, INITIAL, MAX_QTY, physics, QUESTION_LIMIT, CRITERIA_LIMIT, dayKey, endOfDay, create, status, held, position, available,
+    const api = { DAY, OWNER, MAKER, INITIAL, MAX_QTY, physics, QUESTION_LIMIT, CRITERIA_LIMIT, dayKey, endOfDay, create, status, held, position, available,
         ranked, yesPrice, midpoint, preview, maxOrderSize, apply, errors };
     if (typeof module === 'object' && module.exports) module.exports = api;
     else root.PhysicsForecast = api;

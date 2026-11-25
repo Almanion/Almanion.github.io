@@ -12,11 +12,13 @@
     let dashboardGeneration = 0;
     const viewScroll = new Map();
     let activeView = 'overview';
+    let forecasts = null;
+    let forecastOwner = false;
 
     function byId(id) { return document.getElementById(id); }
 
     function selectView(name, options = {}) {
-        if (!byId('view-' + name)) name = 'overview';
+        if (!byId('view-' + name) || (name === 'forecasts' && !forecastOwner)) name = 'overview';
         viewScroll.set(activeView, window.scrollY);
         activeView = name;
         document.querySelectorAll('.admin-view').forEach(panel => {
@@ -30,10 +32,18 @@
         if (options.history && location.hash !== '#' + name) history.pushState(null, '', '#' + name);
         if (options.scroll) window.scrollTo({ top: viewScroll.get(name) || 0, behavior: 'instant' });
         if (options.focus) byId('view-' + name).querySelector('h1').focus({ preventScroll: true });
+        if (name === 'forecasts') {
+            forecasts ??= window.createAdminForecasts({
+                database: db, currentUser: () => auth.currentUser,
+                accountName: uid => accountDirectory[uid]?.displayName || accountDirectory[uid]?.email
+            });
+            forecasts.start();
+        } else if (forecasts) {
+            forecasts.stop();
+        }
     }
 
     function initNavigation() {
-        const tabs = [...document.querySelectorAll('[role="tab"][data-admin-view]')];
         const tablist = document.querySelector('.admin-nav-tabs');
         const mobile = matchMedia('(max-width: 760px)');
         const orientation = () => tablist.setAttribute('aria-orientation', mobile.matches ? 'horizontal' : 'vertical');
@@ -49,6 +59,7 @@
             selectView(button.dataset.adminView, { history: true, scroll: true, focus: button.getAttribute('role') !== 'tab' });
         });
         tablist.addEventListener('keydown', event => {
+            const tabs = [...tablist.querySelectorAll('[role="tab"][data-admin-view]:not([hidden])')];
             const index = tabs.indexOf(event.target);
             if (index < 0) return;
             let next;
@@ -406,6 +417,7 @@
     }
 
     function renderRegisteredAccounts() {
+        forecasts?.refreshNames();
         const root = byId('registeredAccountsList');
         const count = byId('registeredAccountsCount');
         const search = byId('registeredAccountsSearch');
@@ -837,6 +849,10 @@
     initControls();
     auth.onAuthStateChanged(async function (user) {
         const current = ++dashboardGeneration;
+        forecastOwner = isOwner(user) && !user.isAnonymous;
+        byId('tab-forecasts').hidden = !forecastOwner;
+        forecasts?.stop();
+        selectView(location.hash.slice(1));
         analyticsLoading = false;
         accountDirectoryLoading = false;
         accountDirectory = {};

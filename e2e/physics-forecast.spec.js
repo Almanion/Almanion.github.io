@@ -5,40 +5,45 @@ test.use({ serviceWorkers: 'block' });
 
 async function mockClass(page, who = 'classmate') {
     await page.route('https://www.gstatic.com/firebasejs/**', route => route.fulfill({ contentType:'application/javascript', body:'' }));
-    await page.route('**/account.js*', route => route.fulfill({ contentType:'application/javascript',
-        body:'(' + fixture.toString() + ')(' + JSON.stringify(who) + ',' + JSON.stringify(M.OWNER) + ');' }));
+    await page.route('**/account.js*', route => route.fulfill({ contentType:'application/javascript', body:'' }));
+    await page.addInitScript(fixture, { who, owner: M.OWNER });
 }
-function fixture(who, owner) {
-    const actor = who === 'owner' ? owner : who;
+function fixture({ who, owner }) {
     const clock = Date.now(), d = new Date(clock + 10800000).toISOString().slice(0,10);
     const id = '00000000000000000000';
-    const data = {'.info':{connected:true,serverTimeOffset:0},physicsForecast:{
-        events:{[id]:{day:d,n:1,at:clock-160000,actor:owner,kind:'open',endAt:Date.parse(d+'T00:00:00+03:00')+86400000}},head:{id,n:1}}};
-    const listeners = new Map();
+    const saved = sessionStorage.getItem('forecast-test-data');
+    const data = { '.info': { connected:true, serverTimeOffset:0 }, physicsForecast: saved ? JSON.parse(saved) : {
+        events:{[id]:{day:d,n:1,at:clock-160000,actor:owner,kind:'open',endAt:Date.parse(d+'T00:00:00+03:00')+86400000}},head:{id,n:1}} };
+    const listeners = new Map(), sessions = new Set();
     function value(path) { return path.split('/').filter(Boolean).reduce((obj,k)=>obj?.[k],data) ?? null; }
     function snap(path) { const val = structuredClone(value(path)); return { val:()=>val, exists:()=>val!==null,
         forEach:cb=>Object.entries(val || {}).sort((a,b)=>a[1].n-b[1].n).forEach(([key,v])=>cb({key,val:()=>v})) }; }
-    let serial=1;
-    function ref(path='') { return { child:key=>ref(path+'/'+key), orderByChild:()=>ref(path), get:async()=>snap(path),
-        push:()=>({key:String(serial++).padStart(20,'0')}), on:(type,cb)=>{listeners.set(path,cb);queueMicrotask(()=>cb(snap(path)));},
-        off:()=>listeners.delete(path), update:async patches=>{
+    function emit(path) { listeners.get(path)?.forEach(cb => cb(snap(path))); }
+    let serial = data.physicsForecast.head?.n || 1;
+    function ref(path='') { return {
+        child:key=>ref([path,key].filter(Boolean).join('/')), orderByChild:()=>ref(path), get:async()=>snap(path), once:async()=>snap(path),
+        push:()=>({key:String(serial++).padStart(20,'0')}), on:(_type,cb)=>{
+            if (!listeners.has(path)) listeners.set(path,new Set());
+            listeners.get(path).add(cb); queueMicrotask(()=>{ if(listeners.get(path)?.has(cb)) cb(snap(path)); });
+        }, off:(_type,cb)=>listeners.get(path)?.delete(cb), update:async patches=>{
             for(const [key,original] of Object.entries(patches)) {
                 const val=JSON.parse(JSON.stringify(original,(_key,x)=>x?.['.sv']==='timestamp'?Date.now():x));
                 const keys=(path+'/'+key).split('/').filter(Boolean), last=keys.pop();
                 const parent=keys.reduce((o,k)=>o[k]||(o[k]={}),data);parent[last]=val;
             }
-            listeners.get('physicsForecast/events')?.(snap('physicsForecast/events'));
+            sessionStorage.setItem('forecast-test-data', JSON.stringify(data.physicsForecast)); emit('physicsForecast/events');
         } }; }
-    window.firebase = {database:{ServerValue:{TIMESTAMP:{'.sv':'timestamp'}}}};
-    window.setForecastConnection = connected => {
-        data['.info'].connected = connected;
-        listeners.get('.info/connected')?.(snap('.info/connected'));
+    const database = () => ({ref});
+    database.ServerValue = {TIMESTAMP:{'.sv':'timestamp'}};
+    const auth = {
+        currentUser: who === 'guest' ? null : { uid:who === 'owner' ? owner : who, email:who+'@example.test', isAnonymous:who === 'anonymous' },
+        onAuthStateChanged(cb) { sessions.add(cb); queueMicrotask(()=>cb(auth.currentUser)); },
+        async signOut() { window.changeForecastAccount(null); }
     };
-    window.AlmanionAccount = { database:{ref}, auth:{onAuthStateChanged(cb) {
-        window.changeForecastAccount = cb;
-        cb(who === 'guest' ? null : { uid:actor, isAnonymous:who === 'anonymous' });
-    }},
-        openLogin:()=>{document.body.dataset.loginOpened='true';} };
+    window.firebase = { initializeApp(){}, database, auth:()=>auth };
+    window.changeForecastAccount = user => { auth.currentUser = user; sessions.forEach(cb=>cb(user)); };
+    window.setForecastConnection = connected => { data['.info'].connected = connected; emit('.info/connected'); };
+    window.AlmanionAccount = { database:database(), auth, openLogin:()=>{document.body.dataset.loginOpened='true';} };
 }
 
 test('only a triple activation of the homepage wordmark opens the market',async({page})=>{
@@ -65,7 +70,7 @@ test.describe('registered player on a phone', () => {
         await expect(page.locator('#placeOrder')).toHaveText('Купить 1 долю «Да»');
         await page.locator('#placeOrder').tap();
         await expect(page.locator('#walletYes')).toHaveText('1');
-        await expect(page.locator('#ownerTools')).toBeHidden();
+        await expect(page.locator('#forecastAdminLink')).toBeHidden();
     });
 });
 
@@ -77,7 +82,7 @@ test('an anonymous session can sign in on the market page and signing out hides 
     await expect(page.locator('#gameSurface')).toBeHidden();
     await page.evaluate(() => window.changeForecastAccount({ uid:'new-player', isAnonymous:false }));
     await expect(page.locator('#gameSurface')).toBeVisible();
-    await expect(page.locator('#ownerTools')).toBeHidden();
+    await expect(page.locator('#forecastAdminLink')).toBeHidden();
     await page.evaluate(() => window.changeForecastAccount(null));
     await expect(page.locator('#gateAction')).toBeVisible();
     await expect(page.locator('#gameSurface')).toBeHidden();
@@ -102,9 +107,9 @@ for (const width of [360,1280]) {
         await page.locator('#myOrders button').click();await expect(page.locator('#myOrders')).toContainText('Активных заявок нет.');
         await page.locator('[data-range=hour]').click(); await expect(page.locator('[data-range=hour]')).toHaveAttribute('aria-pressed','true');
         await page.locator('#chartCursor').focus();await page.keyboard.press('Home');
-        await page.locator('#historyScope').selectOption('all');await expect(page.locator('#tradeHistory .forecast-row')).toHaveCount(2);
+        await expect(page.locator('#historyScope')).toHaveCount(0);await expect(page.locator('#tradeHistory .forecast-row')).toHaveCount(2);
         expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
-        await expect(page.locator('#ownerTools')).toBeHidden();
+        await expect(page.locator('#forecastAdminLink')).toBeHidden();
     });
 }
 
@@ -191,90 +196,96 @@ test('insufficient depth offers an executable quantity or a resting order and an
     await expect(page.locator('#walletYes')).toHaveText('0');
 });
 
-test('only the owner manages a legacy physics forecast and declares the result',async({page})=>{
+test('owner enters the dashboard at the current event, closes it, settles and returns to the market', async ({page}) => {
     await mockClass(page,'owner'); await page.goto('/physics-forecast.html');
-    await page.locator('#ownerTools summary').click(); await expect(page.locator('[data-command=yes]')).toBeHidden();
+    await expect(page.locator('#ownerTools, #chartVolume, #historyScope')).toHaveCount(0);
+    await page.locator('#forecastAdminLink').click();
+    await expect(page).toHaveURL(/admin\.html\?event=.+#forecasts$/);
+    await expect(page.locator('#tab-forecasts')).toHaveAttribute('aria-selected','true');
+    await expect(page.locator('#manageTitle')).toHaveText(M.physics.question);
+    await expect(page.locator('[data-command=yes]')).toBeHidden();
+    await page.locator('[data-command=lock]').click(); await page.locator('#confirmBack').click();
+    await expect(page.locator('#forecastOpen')).toHaveText('1');
     await page.locator('[data-command=lock]').click(); await page.locator('#confirmGo').click();
-    await expect(page.locator('#roundState')).toHaveText('Торги закрыты');
+    await expect(page.locator('#forecastPending')).toHaveText('1');
     await page.locator('[data-command=yes]').click(); await page.locator('#confirmGo').click();
+    await expect(page.locator('#manageStatus')).toContainText('Итог «Да»');
+    await page.locator('#forecastMarketLink').click();
     await expect(page.locator('#roundState')).toHaveText('Итог «Да»');
     await expect(page.locator('#placeOrder')).toBeDisabled();
-    await page.evaluate(() => window.changeForecastAccount({ uid:'another-player', isAnonymous:false }));
-    await expect(page.locator('#gameSurface')).toBeVisible();
-    await expect(page.locator('#roundState')).toHaveText('Итог «Да»');
-    await expect(page.locator('#ownerTools')).toBeHidden();
+    await page.evaluate(() => window.changeForecastAccount({uid:'classmate',isAnonymous:false}));
+    await expect(page.locator('#forecastAdminLink')).toBeHidden();
 });
 
-test('create custom and template events on one date, trade independently and repeat an event on mobile', async ({ page }) => {
-    await page.setViewportSize({ width: 320, height: 780 });
-    await mockClass(page, 'owner');
-    await page.goto('/physics-forecast.html');
-    const picker = page.getByRole('combobox', { name: 'Выбрать событие' });
-    const title = page.locator('#lessonQuestion'), criteria = page.locator('#eventCriteria');
+test('owner manages multiple events, sees reconciled statistics and preserves event selection across pages on mobile', async ({page}) => {
+    await page.setViewportSize({width:320,height:780});
+    await mockClass(page,'owner'); await page.goto('/admin.html#forecasts');
+    const picker=page.locator('#forecastPicker'), title=page.locator('#manageTitle');
     await expect(title).toHaveText(M.physics.question);
-    await expect(criteria).toHaveText(M.physics.criteria);
-    const legacy = await picker.inputValue();
-    await page.locator('#ownerTools summary').click();
+    const legacy=await picker.inputValue(), match='Выиграет ли 10-1 у 10-2 в пятницу?', club='Состоится ли математический кружок?';
+    const create=page.getByRole('button',{name:'Открыть прогноз',exact:true});
     await page.locator('#showCreate').click();
-    await page.locator('#eventTemplate').selectOption({ label: 'Школьный матч' });
-    const match = 'Выиграет ли 10-1 у 10-2 в пятницу?';
+    await page.locator('#eventTemplate').selectOption({label:'Школьный матч'});
     await page.locator('#eventQuestion').fill(match);
     await page.locator('#newCriteria').fill('Победа по итоговому счёту.');
-    await page.getByRole('button', { name: 'Открыть прогноз' }).click();
-    await expect(title).toHaveText(match);
-    await expect(criteria).toHaveText('Победа по итоговому счёту.');
-    await expect(page.locator('#manageTitle')).toHaveText(match);
-    const first = await picker.inputValue();
+    await create.click(); await expect(title).toHaveText(match);
+    const first=await picker.inputValue();
     expect(first).not.toBe(legacy);
-    await page.locator('#budget').fill('7,85');
-    await page.locator('#placeOrder').click();
-    await expect(page.locator('#probability')).toHaveText('52%');
-    await page.locator('#showCreate').click();
-    const club = 'Состоится ли математический кружок?';
-    await page.locator('#eventQuestion').fill(club);
-    await page.getByRole('button', { name: 'Открыть прогноз' }).click();
-    await expect(title).toHaveText(club);
-    await expect(criteria).toBeHidden();
-    await expect(page.locator('#walletYes')).toHaveText('0');
-    await expect(page.locator('#walletCash')).toHaveText('92,15 оч.');
-    await expect(page.locator('#probability')).toHaveText('50%');
-    await expect(page.locator('#probChart')).toHaveAttribute('aria-label', /математический кружок/);
-    const second = await picker.inputValue();
-    expect(new URL(page.url()).searchParams.get('event')).toBe(second);
-    await page.locator('#showCreate').click();
-    await page.locator('#eventQuestion').fill(club);
-    await page.getByRole('button', { name: 'Открыть прогноз' }).click();
-    await expect(page.locator('#adminFeedback')).toContainText('уже есть');
-    await expect(picker.locator('option')).toHaveCount(3);
-    await picker.selectOption(first);
+    await page.locator('#forecastMarketLink').click();
+    await expect(page.locator('#lessonQuestion')).toHaveText(match);
+    await expect(page.locator('#eventCriteria')).toHaveText('Победа по итоговому счёту.');
+    await page.locator('#budget').fill('7,85'); await page.locator('#placeOrder').click();
     await expect(page.locator('#walletYes')).toHaveText('15');
-    await expect(page.locator('#probability')).toHaveText('52%');
-    await page.locator('[data-command="lock"]').click();
+    await page.locator('#forecastAdminLink').click(); await expect(picker).toHaveValue(first);
+    await expect(page.locator('#forecastTraders')).toHaveText('1');
+    await expect(page.locator('#forecastTape li')).toHaveCount(2);
+    await expect(page.locator('#forecastFills')).toHaveText('2');
+    await expect(page.locator('#chartVolume')).toHaveText('15');
+    await expect(page.locator('#chartLow')).toHaveText('50%'); await expect(page.locator('#chartHigh')).toHaveText('52%');
+    await page.locator('[data-chart-side=no]').click();
+    await expect(page.locator('#chartLow')).toHaveText('48%'); await expect(page.locator('#chartHigh')).toHaveText('50%');
+    await page.locator('#showCreate').click(); await page.locator('#eventQuestion').fill(club); await create.click();
+    await expect(title).toHaveText(club); const second=await picker.inputValue();
+    await expect(page.locator('#chartVolume')).toHaveText('0');
+    await page.locator('#showCreate').click(); await page.locator('#eventQuestion').fill(club); await create.click();
+    await expect(page.locator('#adminFeedback')).toContainText('уже есть'); await expect(picker.locator('option')).toHaveCount(3);
+    await picker.selectOption(first); await page.locator('[data-command=lock]').click();
     await expect(page.locator('#confirmText')).toContainText(match);
-    await picker.selectOption(second);
-    await expect(page.locator('#confirmAction')).toBeHidden();
-    await page.locator('#repeatEvent').click();
-    await expect(page.locator('#eventQuestion')).toHaveValue(club);
-    await expect(page.locator('[data-offset="1"]')).toHaveAttribute('aria-pressed', 'true');
-    await page.getByRole('button', { name: 'Открыть прогноз' }).click();
+    await picker.selectOption(second); await expect(page.locator('#confirmAction')).toBeHidden();
+    await page.locator('#repeatEvent').click(); await expect(page.locator('#eventQuestion')).toHaveValue(club);
+    await expect(page.locator('[data-offset="1"]')).toHaveAttribute('aria-pressed','true'); await create.click();
     await expect(picker.locator('option')).toHaveCount(4);
-    await picker.selectOption(first);
-    await page.locator('[data-command="lock"]').click();
-    await page.locator('#confirmGo').click();
-    await picker.selectOption(second);
-    await page.locator('#nextPending').click();
-    await expect(picker).toHaveValue(first);
-    await page.locator('[data-command="yes"]').click();
-    await page.locator('#confirmGo').click();
-    await expect(page.locator('#roundState')).toHaveText('Итог «Да»');
-    await picker.selectOption(second);
+    await picker.selectOption(first); await page.locator('[data-command=lock]').click(); await page.locator('#confirmGo').click();
+    await picker.selectOption(second); await page.locator('#nextPending').click(); await expect(picker).toHaveValue(first);
+    await page.locator('[data-command=yes]').click(); await page.locator('#confirmGo').click();
+    await picker.selectOption(second); await page.locator('#forecastMarketLink').click();
     await expect(page.locator('#roundState')).toHaveText('Торги открыты');
     await expect(page.locator('#walletCash')).toHaveText('107,15 оч.');
-    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
-    await page.evaluate(() => window.changeForecastAccount(null));
-    await expect(title).toHaveText('Прогнозы класса');
-    await expect(page.locator('#ownerTools')).toBeHidden();
+    expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+    await page.locator('#forecastAdminLink').click(); await expect(picker).toHaveValue(second);
+    await page.evaluate(()=>window.changeForecastAccount(null));
+    await expect(page.locator('#tab-forecasts')).toBeHidden(); await expect(page.locator('#forecastTape')).toBeEmpty();
     await expect(picker.locator('option')).toHaveCount(0);
+});
+
+test('offline management disables confirmation and a cancelled forecast refunds the participant', async ({page}) => {
+    await mockClass(page, 'owner');
+    await page.goto('/physics-forecast.html');
+    await page.locator('#budget').fill('0,51'); await page.locator('#placeOrder').click();
+    await expect(page.locator('#walletCash')).toHaveText('99,49 оч.');
+    await page.locator('#forecastAdminLink').click();
+    await page.locator('[data-command=void]').click();
+    const confirm = page.locator('#confirmGo');
+    await page.evaluate(() => window.setForecastConnection(false));
+    await expect(confirm).toBeDisabled();
+    await expect(page.locator('#forecastLoadStatus')).toContainText('Нет связи');
+    await page.evaluate(() => window.setForecastConnection(true));
+    await expect(confirm).toBeEnabled(); await confirm.click();
+    await expect(page.locator('#manageStatus')).toContainText('Прогноз отменён');
+    await expect(page.locator('[data-command=void]')).toBeHidden();
+    await page.locator('#forecastMarketLink').click();
+    await expect(page.locator('#placeOrder')).toBeDisabled();
+    await expect(page.locator('#walletCash')).toHaveText('100 оч.');
 });
 
 test('a peer trade moves the live chart while a historical reading stays pinned; reconnect resumes the live clock', async ({ page }) => {
@@ -296,18 +307,13 @@ test('a peer trade moves the live chart while a historical reading stays pinned;
             side:'yes', action:'buy', mode:'market', qty:15, limit:55, totalLimit:785} });
     });
     await expect(page.locator('#probability')).toHaveText('52%');
-    await expect(page.locator('#chartDelta')).toHaveText('+2 п. п.');
+    await expect(page.locator('#tradeHistory .forecast-row')).toHaveCount(0);
+    await expect(page.locator('#chartDelta, #chartVolume, #forecastAdminLink:not([hidden])')).toHaveCount(0);
     await expect(readout).toHaveText(pinned);
     await expect(page.locator('#chartTip b')).toHaveText('Да · 50%');
-    await expect(page.locator('#chartVolume')).toHaveText('15');
-    await expect(page.locator('#chartLow')).toHaveText('50%');
-    await expect(page.locator('#chartHigh')).toHaveText('52%');
     await page.locator('[data-chart-side=no]').click();
     await expect(page.locator('#probability')).toHaveText('48%');
-    await expect(page.locator('#chartDelta')).toHaveText('−2 п. п.');
     await expect(page.locator('#chartTip b')).toHaveText('Нет · 50%');
-    await expect(page.locator('#chartLow')).toHaveText('48%');
-    await expect(page.locator('#chartHigh')).toHaveText('50%');
     await expect(page.locator('[name=side][value=yes]')).toBeChecked();
     await expect(page.locator('#chartPriceTag')).toHaveText('48%');
     await page.locator('#chartReturn').click();
@@ -326,11 +332,7 @@ test('a peer trade moves the live chart while a historical reading stays pinned;
     await page.clock.fastForward(65 * 60000);
     await expect(readout).toHaveText(oldHour);
     await page.keyboard.press('End');
-    await expect(page.locator('#chartVolume')).toHaveText('0');
-    await expect(page.locator('#chartLow')).toHaveText('48%');
-    await expect(page.locator('#chartHigh')).toHaveText('48%');
     await page.locator('[data-range=all]').click();
-    await expect(page.locator('#chartVolume')).toHaveText('15');
     await expect(page.locator('#chartState')).toHaveText('Сейчас');
     await expect(chart).toHaveAttribute('data-live','true');
 });
@@ -363,8 +365,8 @@ test.describe('touch chart', () => {
     test.use({ hasTouch:true, viewport:{width:360,height:740} });
     test('steps through price changes, filters actual volume and keeps the inspected time on rotation', async ({ page }) => {
         await page.clock.install({ time: new Date('2026-11-26T12:00:00Z') });
-        await mockClass(page);
-        await page.goto('/physics-forecast.html');
+        await mockClass(page, 'owner');
+        await page.goto('/admin.html#forecasts');
         const previous = page.locator('#chartPrev'), next = page.locator('#chartNext');
         const tip = page.locator('#chartTip'), dialog = page.locator('#chartDialog');
         await expect(page.locator('#probability')).toHaveText('50%');

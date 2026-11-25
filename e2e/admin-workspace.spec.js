@@ -237,6 +237,29 @@ test('assigned administrator cannot see or request owner-only access controls', 
     expect(reads).not.toContain('contestSharing');
 });
 
+test('forecast deep link is owner-only and the ledger is only subscribed while the tab is open', async ({page}) => {
+    await setupAdmin(page, { role: 'admin' });
+    await page.goto('/admin.html#forecasts');
+    await expect(page.locator('#view-overview')).toBeVisible();
+    await expect(page.locator('#tab-forecasts')).toBeHidden();
+    expect(await page.evaluate(() => adminFixture.reads())).not.toContain('physicsForecast/events');
+    await page.evaluate(() => adminFixture.owner());
+    await expect(page.locator('#tab-forecasts')).toHaveAttribute('aria-selected','true');
+    await expect(page.locator('#createRound')).toBeVisible();
+    await expect(page.locator('#forecastOpen')).toHaveText('0');
+    await expect(page.locator('#forecastEventData')).toBeHidden();
+    await page.locator('#tab-overview').click();
+    await expect(page.locator('#view-forecasts')).toBeHidden();
+    const inactive = await page.evaluate(() => adminFixture.listenerCount());
+    await page.locator('#tab-forecasts').click(); await expect(page.locator('#forecastOpen')).toHaveText('0');
+    await expect.poll(() => page.evaluate(() => adminFixture.listenerCount())).toBe(inactive + 3);
+    await page.evaluate(() => adminFixture.admin());
+    await expect(page.locator('#view-overview')).toBeVisible();
+    await expect(page.locator('#tab-forecasts')).toBeHidden();
+    await expect(page.locator('#forecastTraders')).toBeEmpty();
+    await expect(page.locator('#adminFeedback')).toBeEmpty();
+});
+
 test('late directory responses cannot restore an old admin session', async ({ page }) => {
     await setupAdmin(page, { deferDirectory: true });
     await page.goto('/admin.html#users');
