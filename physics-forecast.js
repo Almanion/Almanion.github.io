@@ -29,6 +29,8 @@
     const api = window.AlmanionAccount;
     const now = () => Date.now() + offset;
     const chart = window.createPhysicsForecastChart(now);
+    const guide = window.createForecastGuide();
+    const execution = $('tradeForm').elements.execution;
     const market = () => engine.markets.get(selectedId);
     const jumpLinks = [...document.querySelectorAll('.forecast-jumps a')];
     const phone = matchMedia('(max-width: 759px)');
@@ -59,6 +61,7 @@
         return element;
     }
     function gate(title, body, action) {
+        guide.setMarket(null, action === 'login' ? 'guest' : 'loading');
         $('accessGate').hidden = false;
         $('gameSurface').hidden = $('connectionNotice').hidden = true;
         $('eventPicker').hidden = true;
@@ -128,17 +131,17 @@
     }
 
     function renderBook(m, phase) {
+        $('publicOrders').hidden = phase !== 'open';
+        if (phase !== 'open') return;
         const sides = [['bookBids', 'bid'], ['bookAsks', 'ask']];
         let largest = 0;
         const books = sides.map(([id, side]) => {
             const levels = new Map();
-            if (phase === 'open') {
-                for (const order of M.ranked(m, side)) {
-                    const price = M.yesPrice(order);
-                    const total = (levels.get(price) || 0) + order.qty;
-                    levels.set(price, total);
-                    largest = Math.max(largest, total);
-                }
+            for (const order of M.ranked(m, side)) {
+                const price = M.yesPrice(order);
+                const total = (levels.get(price) || 0) + order.qty;
+                levels.set(price, total);
+                largest = Math.max(largest, total);
             }
             return { id, levels };
         });
@@ -146,10 +149,11 @@
             const rows = Array.from(levels, ([price, qty]) => {
                 const row = node('li');
                 row.style.setProperty('--depth', (100 * qty / largest).toFixed(1) + '%');
-                row.append(node('b', amount(price)), node('span', qty));
+                row.append(node('b', points(price)), node('span', shares(qty)));
                 return row;
             });
-            $(id).replaceChildren(...(rows.length ? rows : [node('li', '—')]));
+            const empty = id === 'bookBids' ? 'Пока нет покупателей' : 'Пока нет продавцов';
+            $(id).replaceChildren(...(rows.length ? rows : [node('li', empty, 'forecast-book-empty')]));
         }
     }
 
@@ -177,7 +181,7 @@
 
     function draftOrder() {
         const { action, side } = $('tradeForm').elements;
-        const mode = $('orderMode').value;
+        const mode = execution.value;
         return { kind: 'order', day: selectedId, actor: user.uid, action: action.value, side: side.value, mode,
             limit: mode === 'limit' ? readPoints($('limitPrice').value) : action.value === 'buy' ? 99 : 1 };
     }
@@ -201,7 +205,7 @@
         const form = $('tradeForm'), at = now();
         form.elements.action.value = 'sell';
         form.elements.side.value = side;
-        if ($('orderMode').value === 'limit') suggestPrice();
+        if (execution.value === 'limit') suggestPrice();
         const free = freeShares(market(), side, at);
         const tradable = free ? M.maxOrderSize(engine, draftOrder(), at) : 0;
         $('quantity').value = String(tradable || Math.min(free, M.MAX_QTY) || 1);
@@ -270,13 +274,24 @@
         return M.preview(engine, order, at);
     }
 
-    function showQuoteError(plan, order, byBudget, maxValue) {
+    function showQuoteError(plan, order, byBudget, maxValue, maxQty) {
         const { error } = plan;
-        $('quotePreview').textContent = plan.message || M.errors[error];
+        let message = plan.message || M.errors[error];
+        if (error === 'depth') {
+            const side = '«' + labels[order.side] + '»', buy = order.action === 'buy';
+            if (bestPrice(market(), order.action, order.side) === null) {
+                message = 'Сейчас никто не ' + (buy ? 'продаёт' : 'покупает') + ' доли ' + side + '.';
+            } else if (maxQty > 0) {
+                message = 'Сейчас можно ' + (buy ? 'купить ' : 'продать ') + shares(maxQty, true) + ' ' + side + '.';
+            } else message = 'Сейчас не хватает предложений на весь выбранный объём.';
+        }
+        $('quotePreview').textContent = message;
         const canResize = maxValue > 0 && ['depth', 'shares', 'cash', 'own', 'size'].includes(error);
         $('useCapacity').hidden = !canResize;
         if (canResize) $('useCapacity').textContent = 'Выбрать ' + (byBudget ? points(maxValue) : shares(maxValue, true));
         $('useLimit').hidden = error !== 'depth' || order.mode !== 'market';
+        $('explainDepth').hidden = error !== 'depth';
+        $('explainDepth').disabled = false;
         $('showOrders').hidden = error !== 'reserved' && error !== 'own';
         $('buyInstead').hidden = error !== 'empty';
         $('buyInstead').textContent = 'Купить «' + labels[order.side] + '»';
@@ -297,6 +312,8 @@
         const form = $('tradeForm'), preview = $('quotePreview'), submit = $('placeOrder');
         ticket = null;
         for (const control of form.elements) control.disabled = disabled;
+        for (const group of form.querySelectorAll('fieldset')) group.hidden = !open;
+        $('closedPortfolio').hidden = open;
         $('limitField').hidden = order.mode !== 'limit' || emptySale || !open;
         $('limitPrice').disabled = disabled || $('limitField').hidden;
         $('limitLabel').textContent = buy ? 'Максимальная цена за долю, оч.' : 'Минимальная цена за долю, оч.';
@@ -311,7 +328,9 @@
         $('sizeAvailable').textContent = buy ? 'Доступно ' + points(balance) : saleBalance;
         for (const side of ['yes','no']) {
             const price = open ? bestPrice(m, order.action, side) : null;
-            $(side + 'Ask').textContent = price === null ? '—' : points(price);
+            const label = $(side + 'Ask');
+            label.textContent = price === null ? (buy ? 'Нет продавцов' : 'Нет покупателей') : points(price);
+            label.classList.toggle('forecast-price-empty', price === null);
         }
         sizePresets(order, byBudget, free, maxValue, disabled);
         submit.disabled = true; submit.hidden = !open || emptySale;
@@ -320,11 +339,11 @@
         if (!open) { preview.replaceChildren(); return; }
         if (emptySale) {
             const message = own ? 'Все доли «' + labels[order.side] + '» уже выставлены на продажу.' : 'У тебя пока нет долей «' + labels[order.side] + '».';
-            showQuoteError({ error: own ? 'reserved' : 'empty', message }, order, byBudget, maxValue);
+            showQuoteError({ error: own ? 'reserved' : 'empty', message }, order, byBudget, maxValue, maxQty);
             return;
         }
         const plan = quoteForSize(order, at, byBudget, balance, maxQty, maxValue);
-        if (plan.error) { showQuoteError(plan, order, byBudget, maxValue); return; }
+        if (plan.error) { showQuoteError(plan, order, byBudget, maxValue, maxQty); return; }
         if (order.mode === 'market') {
             order.limit = plan.fills.at(-1).price;
             order.totalLimit = plan.cash;
@@ -354,11 +373,11 @@
             ? 'Выплата ' + pos[phase] + ' оч. · результат по событию ' + amount(pos.cash + pos[phase] * 100) + ' оч.' : '';
         const rows = m.orders.filter(o => phase === 'open' && o.actor === user.uid).map(o => {
             const row = node('div', undefined, 'forecast-row'), info = node('div');
-            info.append(node('b', (o.action === 'buy' ? 'Покупка' : 'Продажа') + ' · ' + labels[o.side]), node('small', o.qty + ' дол. по ' + amount(o.limit)));
-            const cancel = node('button', 'Снять', 'forecast-secondary'); cancel.type = 'button'; cancel.disabled = busy || !connected || phase !== 'open';
+            info.append(node('b', (o.action === 'buy' ? 'Покупка' : 'Продажа') + ' · ' + labels[o.side]), node('small', shares(o.qty) + ' по ' + points(o.limit)));
+            const cancel = node('button', 'Снять заявку', 'forecast-secondary'); cancel.type = 'button'; cancel.disabled = busy || !connected || phase !== 'open';
             cancel.addEventListener('click', () => send({ kind: 'cancel', day: selectedId, target: o.id })); row.append(info, cancel); return row;
         });
-        $('myOrders').replaceChildren(...(rows.length ? rows : [node('p', 'Активных заявок нет.', 'forecast-footnote')]));
+        $('myOrders').replaceChildren(...(rows.length ? rows : [node('p', 'У тебя нет заявок в ожидании сделки.', 'forecast-footnote')]));
     }
 
     function renderHeading(m) {
@@ -385,10 +404,11 @@
         renderHeading(m);
         $('emptyRound').hidden = !!m; $('roundBody').hidden = !m;
         const phase = m ? M.status(m, at) : '';
+        guide.setMarket(m?.id, m ? phase : 'empty');
         $('roundState').textContent = phases[phase] || ''; $('roundState').dataset.state = phase;
         if (user.uid === M.OWNER) $('forecastAdminLink').href = 'admin.html' + (m ? '?event=' + encodeURIComponent(m.id) : '') + '#forecasts';
         if (!m) { chart.reset(); return; }
-        $('roundSummary').textContent = phase === 'open' ? '' : phase === 'lock' ? 'Ждём итог события.' : phases[phase] + '.';
+        $('roundSummary').textContent = phase === 'open' ? '' : phase === 'lock' ? 'Торги закрыты. Ждём итог события.' : phases[phase] + '.';
         chart.update(m, connected); renderTicket(); renderBook(m, phase); renderAccount(m, phase); renderHistory(m);
         updateJumps();
         if (firstPaint) { firstPaint = false; $('gameSurface').classList.add('forecast-enter'); }
@@ -459,9 +479,9 @@
                     $('budget').value = priceInput(Math.min(cost, M.available(engine, user.uid, selectedId, now())));
                 }
             }
-        } else if (['action','side'].includes(e.target.name) || e.target.id === 'orderMode') {
+        } else if (['action', 'side', 'execution'].includes(e.target.name)) {
             if (e.target.name === 'action') $('quantity').value = buyQuantity;
-            if ($('orderMode').value === 'limit') suggestPrice();
+            if (execution.value === 'limit') suggestPrice();
         } else return;
         notice(''); renderTicket();
     });
@@ -480,16 +500,16 @@
     });
     $('useCapacity').addEventListener('click', () => setSize(Number($('sizePresets').lastElementChild.dataset.value)));
     $('useLimit').addEventListener('click', () => {
-        $('orderMode').value = 'limit'; suggestPrice(); notice(''); renderTicket(); $('limitPrice').focus(); $('limitPrice').select();
+        execution.value = 'limit'; suggestPrice(); notice(''); renderTicket(); $('limitPrice').focus(); $('limitPrice').select();
     });
     $('buyInstead').addEventListener('click', () => {
         $('tradeForm').elements.action.value = 'buy'; $('quantity').value = buyQuantity;
-        if ($('orderMode').value === 'limit') suggestPrice();
+        if (execution.value === 'limit') suggestPrice();
         notice(''); renderTicket(); $('tradeForm').querySelector('[name="action"]:checked').focus();
     });
     for (const button of document.querySelectorAll('[data-sell]')) {
         button.addEventListener('click', () => {
-            $('orderMode').value = 'market'; prepareSale(button.dataset.sell); notice(''); renderTicket();
+            execution.value = 'market'; prepareSale(button.dataset.sell); notice(''); renderTicket();
             $('ticketTitle').focus({ preventScroll: true });
             $('tradeTicket').scrollIntoView({ block: 'start' });
         });

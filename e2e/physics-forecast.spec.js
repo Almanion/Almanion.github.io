@@ -3,12 +3,13 @@ const { test, expect } = require('@playwright/test');
 const M = require('../physics-forecast-core');
 test.use({ serviceWorkers: 'block' });
 
-async function mockClass(page, who = 'classmate') {
+async function mockClass(page, who = 'classmate', firstVisit = false) {
     await page.route('https://www.gstatic.com/firebasejs/**', route => route.fulfill({ contentType:'application/javascript', body:'' }));
     await page.route('**/account.js*', route => route.fulfill({ contentType:'application/javascript', body:'' }));
-    await page.addInitScript(fixture, { who, owner: M.OWNER });
+    await page.addInitScript(fixture, { who, owner: M.OWNER, firstVisit });
 }
-function fixture({ who, owner }) {
+function fixture({ who, owner, firstVisit }) {
+    if (!firstVisit) localStorage.setItem('almanion:forecast:guide-seen:v1', '1');
     const clock = Date.now(), d = new Date(clock + 10800000).toISOString().slice(0,10);
     const id = '00000000000000000000';
     const saved = sessionStorage.getItem('forecast-test-data');
@@ -45,6 +46,106 @@ function fixture({ who, owner }) {
     window.setForecastConnection = connected => { data['.info'].connected = connected; emit('.info/connected'); };
     window.AlmanionAccount = { database:database(), auth, openLogin:()=>{document.body.dataset.loginOpened='true';} };
 }
+
+async function expectSpotlight(page, targetId) {
+    await expect.poll(() => page.evaluate(id => {
+        const ring = document.querySelector('.forecast-tour-focus').getBoundingClientRect();
+        const card = document.querySelector('.forecast-tour-card').getBoundingClientRect();
+        const target = document.getElementById(id).getBoundingClientRect();
+        const overlap = (a, b) => Math.max(0, Math.min(a.right, b.right) - Math.max(a.left, b.left))
+            * Math.max(0, Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top));
+        return ring.width > 30 && ring.height > 15 && overlap(ring, target) > ring.width * ring.height * .65
+            && overlap(card, ring) < 1 && card.bottom <= innerHeight + 1 && ring.top >= 0;
+    }, targetId)).toBe(true);
+}
+
+test('first visit explains the market and guides the phone through real controls without trading', async ({ page, context }) => {
+    await page.setViewportSize({width:320,height:640});
+    await mockClass(page, 'classmate', true); await page.goto('/physics-forecast.html');
+    const rules = page.getByRole('dialog', {name:'Как устроен рынок'});
+    await expect(rules).toBeVisible(); await expect(rules).toContainText('5 долей «Да» по 0,40');
+    await expect(rules.locator('.forecast-guide-example dd')).toHaveText(['2 очка','5 очков','+3 очка']);
+    await page.getByRole('button', {name:'Начать обзор'}).click();
+    await expect(page.locator('#backMarketTour')).toBeDisabled();
+    await expectSpotlight(page, 'eventPicker');
+    await page.locator('#nextMarketTour').click(); await expectSpotlight(page, 'probChart');
+    await page.locator('#backMarketTour').click(); await expectSpotlight(page, 'eventPicker');
+    await page.locator('#nextMarketTour').click(); await page.locator('#nextMarketTour').click();
+    await expectSpotlight(page, 'ticketChoices');
+    await page.setViewportSize({width:568,height:320}); await expectSpotlight(page, 'ticketChoices');
+    await page.locator('#nextMarketTour').click(); await expectSpotlight(page, 'portfolio');
+    await expect(page.locator('#tourProgress')).toHaveText('Шаг 4 из 4');
+    await page.getByRole('button', {name:'Готово',exact:true}).click();
+    await expect(page.locator('#marketTour')).toBeHidden();
+    await expect(page.locator('[data-market-guide=start]')).toBeFocused();
+    await expect(page.locator('#walletCash')).toHaveText('100 оч.'); await expect(page.locator('#walletYes')).toHaveText('0');
+    await page.reload(); await expect(page.locator('#gameSurface')).toBeVisible(); await expect(rules).toBeHidden();
+    const nextTab = await context.newPage();
+    await mockClass(nextTab, 'classmate', true); await nextTab.goto('/physics-forecast.html');
+    await expect(nextTab.locator('#gameSurface')).toBeVisible(); await expect(nextTab.locator('#marketGuide')).toBeHidden();
+});
+
+test('rules remain available to guests and the tour can be replayed, skipped and dismissed by keyboard', async ({ page }) => {
+    await mockClass(page, 'guest', true); await page.goto('/physics-forecast.html');
+    await expect(page.locator('#guideAvailability')).toHaveText('Обзор доступен после входа.');
+    await expect(page.locator('#startMarketTour')).toBeHidden(); await page.keyboard.press('Escape');
+    await expect(page.locator('#gateAction')).toBeVisible();
+    await page.evaluate(() => window.changeForecastAccount({uid:'classmate',isAnonymous:false}));
+    const trigger=page.locator('[data-market-guide=start]');
+    await trigger.click(); await page.locator('#startMarketTour').click(); await page.locator('#skipMarketTour').click();
+    await expect(trigger).toBeFocused(); await trigger.click(); await page.locator('#startMarketTour').click();
+    await page.keyboard.press('Escape'); await expect(trigger).toBeFocused();
+    await trigger.click(); await page.locator('#startMarketTour').click();
+    await page.evaluate(() => window.changeForecastAccount(null));
+    await expect(page.locator('#marketTour')).toBeHidden(); await expect(page.locator('#gameSurface')).toBeHidden();
+});
+
+test('empty offers explain which side is missing and a guide can be opened from a draft without losing it', async ({page}) => {
+    await page.setViewportSize({width:360,height:740}); await mockClass(page); await page.goto('/physics-forecast.html');
+    await page.locator('#buyUnit').selectOption('shares'); await page.locator('#quantity').fill('3'); await page.locator('#placeOrder').click();
+    await expect(page.locator('#walletYes')).toHaveText('3');
+    await page.evaluate(async () => {
+        const root = window.AlmanionAccount.database.ref('physicsForecast');
+        for (const [side, qty] of [['yes',82],['no',85]]) {
+            const n=(await root.child('head').get()).val().n+1, id=root.child('events').push().key, at=Date.now();
+            await root.update({head:{id,n},['events/'+id]:{kind:'order', actor:'peer-'+side,
+                day:window.PhysicsForecast.dayKey(at), n, at, side, qty, action:'buy', mode:'market', limit:99}});
+        }
+    });
+    await expect(page.locator('#yesAsk')).toHaveText('Нет продавцов');
+    await expect(page.locator('#quotePreview')).toHaveText('Сейчас никто не продаёт доли «Да».');
+    await expect(page.locator('#bookAsks')).toContainText('Пока нет продавцов');
+    await page.locator('#explainDepth').click(); await expect(page.locator('#guideOrders summary')).toBeFocused();
+    await page.locator('#startMarketTour').click(); await page.locator('#nextMarketTour').click(); await page.locator('#skipMarketTour').click();
+    await expect(page.locator('#explainDepth')).toBeFocused(); await expect(page.locator('#quantity')).toHaveValue('3');
+    await page.locator('label:has([value=sell])').click();
+    await expect(page.locator('#yesAsk')).toHaveText('Нет покупателей');
+    await expect(page.locator('#bookBids')).toContainText('Пока нет покупателей');
+    await expect(page.locator('#quotePreview')).toHaveText('Сейчас никто не покупает доли «Да».');
+    await page.locator('#useLimit').click(); await page.locator('#limitPrice').fill('0,70'); await page.locator('#placeOrder').click();
+    await expect(page.locator('#myOrders')).toContainText('3 доли по 0,7 оч.'); await page.locator('#myOrders button').click();
+    await expect(page.locator('#walletYes')).toHaveText('3'); await expect(page.locator('#myOrders button')).toHaveCount(0);
+});
+
+test('the walkthrough reflects a settled event and offers only the rules before the first event', async ({page}) => {
+    await mockClass(page); await page.goto('/physics-forecast.html');
+    await expect(page.locator('#roundBody')).toBeVisible();
+    await page.evaluate(async () => {
+        const root=window.AlmanionAccount.database.ref('physicsForecast'), at=Date.now(), day=window.PhysicsForecast.dayKey(at);
+        for (const [i,kind] of ['lock','yes'].entries()) {
+            const id=root.child('events').push().key, n=i+2;
+            await root.update({head:{id,n},['events/'+id]:{kind,n,at,day,actor:window.PhysicsForecast.OWNER}});
+        }
+    });
+    await expect(page.locator('#roundState')).toHaveText('Итог «Да»'); await expect(page.locator('#orderMode')).toBeHidden();
+    await page.locator('[data-market-guide=start]').click(); await page.locator('#startMarketTour').click();
+    await page.locator('#nextMarketTour').click(); await page.locator('#nextMarketTour').click();
+    await expect(page.locator('#tourText')).toContainText('Итог — «Да»');
+    await page.evaluate(() => window.AlmanionAccount.database.ref('physicsForecast').update({events:{},head:null}));
+    await expect(page.locator('#marketTour')).toBeHidden(); await expect(page.locator('#emptyRound')).toBeVisible();
+    await page.locator('[data-market-guide=start]').click(); await expect(page.locator('#startMarketTour')).toBeHidden();
+    await expect(page.locator('#guideAvailability')).toHaveText('Обзор появится с первым событием.');
+});
 
 test('only a triple activation of the homepage wordmark opens the market',async({page})=>{
     await mockClass(page,'guest');
@@ -102,9 +203,9 @@ for (const width of [360,1280]) {
         await expect(page.locator('#tradeHistory .forecast-row')).toHaveCount(2);
         await expect(page.locator('#probability')).toHaveText('52%');
         await page.locator('label:has(input[name=action][value=sell])').click();
-        await page.locator('#orderMode').selectOption('limit');await page.locator('#limitPrice').fill('0,70');await page.locator('#quantity').fill('4');
-        await page.locator('#placeOrder').click();await expect(page.locator('#myOrders')).toContainText('4 дол.');
-        await page.locator('#myOrders button').click();await expect(page.locator('#myOrders')).toContainText('Активных заявок нет.');
+        await page.locator('#orderMode label:has([value=limit])').click();await page.locator('#limitPrice').fill('0,70');await page.locator('#quantity').fill('4');
+        await page.locator('#placeOrder').click();await expect(page.locator('#myOrders')).toContainText('4 доли по 0,7 оч.');
+        await page.locator('#myOrders button').click();await expect(page.locator('#myOrders')).toContainText('нет заявок в ожидании сделки');
         await page.locator('[data-range=hour]').click(); await expect(page.locator('[data-range=hour]')).toHaveAttribute('aria-pressed','true');
         await page.locator('#chartCursor').focus();await page.keyboard.press('Home');
         await expect(page.locator('#historyScope')).toHaveCount(0);await expect(page.locator('#tradeHistory .forecast-row')).toHaveCount(2);
@@ -128,7 +229,7 @@ test('point budget buys whole shares at actual prices and a limit order separate
     await expect(submit).toHaveText('Купить 15 долей «Да»');
     await page.getByRole('button', {name:'1 оч.',exact:true}).click();
     await expect(submit).toHaveText('Купить 1 долю «Да»');
-    await page.locator('#orderMode').selectOption('limit');
+    await page.locator('#orderMode label:has([value=limit])').click();
     await page.locator('#limitPrice').fill('1.00');
     await expect(submit).toBeDisabled();
     await page.locator('#limitPrice').fill('0,53');
@@ -156,14 +257,14 @@ test('selling the selected holding respects reservations, supports half or all a
     await page.locator('label:has(input[value=yes])').click();
     await page.locator('label:has(input[value=sell])').click();
     await expect(page.locator('input[value=no]')).toBeChecked();
-    await page.locator('#orderMode').selectOption('limit');
+    await page.locator('#orderMode label:has([value=limit])').click();
     await page.locator('#limitPrice').fill('0.75');
     await page.locator('#quantity').fill('3');
     await page.locator('#placeOrder').click();
     await expect(page.locator('#heldNo')).toHaveText('В продаже 3 из 9');
     await page.getByRole('button', {name:'Продать доли «Нет»',exact:true}).click();
     await expect(page.locator('#ticketTitle')).toBeFocused();
-    await expect(page.locator('#orderMode')).toHaveValue('market');
+    await expect(page.locator('#orderMode [value=market]')).toBeChecked();
     await expect(page.locator('#quantity')).toHaveValue('6');
     await expect(page.locator('#walletNo')).toHaveText('9');
     await page.getByRole('button',{name:'50% · 3 доли',exact:true}).click();
@@ -186,6 +287,7 @@ test('insufficient depth offers an executable quantity or a resting order and an
     await page.locator('#buyUnit').selectOption('shares');
     await page.locator('#quantity').fill('100');
     await expect(page.locator('#placeOrder')).toBeDisabled();
+    await expect(page.locator('#quotePreview')).toHaveText('Сейчас можно купить 85 долей «Да».');
     await page.locator('#useCapacity').click();
     await expect(page.locator('#quantity')).toHaveValue('85');
     await page.locator('#quantity').fill('100');

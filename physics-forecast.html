@@ -15,7 +15,7 @@
     <link rel="stylesheet" href="styles/buttons.css?v=20260929-2">
     <link rel="stylesheet" href="style-new.css?v=20260929-2">
     <link rel="stylesheet" href="styles/typography.css?v=20261002-1">
-    <link rel="stylesheet" href="styles/physics-forecast.css?v=8">
+    <link rel="stylesheet" href="styles/physics-forecast.css?v=9">
 </head>
 <body class="forecast-page" data-no-math>
     <script>window.AlmanionThemeBootstrap.applyBody();</script>
@@ -35,19 +35,23 @@
     </header>
     <main class="forecast-shell">
         <header class="forecast-hero">
-            <div class="forecast-hero-top">
-                <div class="forecast-event-meta">
-                    <p class="forecast-kicker" id="lessonDate">Класс 10-1</p>
-                    <span class="forecast-state" id="roundState"></span>
-                </div>
+            <div class="forecast-event-meta">
+                <p class="forecast-kicker" id="lessonDate">Класс 10-1</p>
+                <span class="forecast-state" id="roundState"></span>
+            </div>
+            <h1 id="lessonQuestion">Прогнозы класса</h1>
+            <p class="forecast-definition" id="eventCriteria" hidden></p>
+            <div class="forecast-hero-actions">
                 <label id="eventPicker" hidden>
                     <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 5h14M3 10h9M3 15h6"/></svg>
                     События
                     <select id="lessonSelect" aria-label="Выбрать событие"></select>
                 </label>
+                <button type="button" class="forecast-guide-link" data-market-guide="start" aria-haspopup="dialog" aria-controls="marketGuide">
+                    <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="10" cy="10" r="7.4"/><path stroke-linecap="round" d="M7.9 7.9a2.1 2.1 0 0 1 4.2.1c0 1.6-2.1 1.7-2.1 3.2m0 2.5v.05"/></svg>
+                    Как устроен рынок
+                </button>
             </div>
-            <h1 id="lessonQuestion">Прогнозы класса</h1>
-            <p class="forecast-definition" id="eventCriteria" hidden></p>
         </header>
 
         <noscript>Для прогнозов включите JavaScript в браузере.</noscript>
@@ -70,19 +74,24 @@
                 </section>
                 <section class="forecast-panel forecast-ticket" id="tradeTicket" aria-labelledby="ticketTitle" tabindex="-1">
                     <form id="tradeForm">
-                        <div class="forecast-section-head">
-                            <h2 id="ticketTitle" tabindex="-1">Сделка</h2>
-                            <select id="orderMode" aria-label="Тип заявки"><option value="market">По рынку</option><option value="limit">Своя цена</option></select>
+                        <div id="ticketChoices">
+                            <div class="forecast-section-head">
+                                <h2 id="ticketTitle" tabindex="-1">Сделка</h2>
+                                <fieldset id="orderMode"><legend class="forecast-sr">Способ сделки</legend>
+                                    <label><input type="radio" class="forecast-sr" name="execution" value="market" checked><span>Сразу</span></label>
+                                    <label><input type="radio" class="forecast-sr" name="execution" value="limit"><span>Своя цена</span></label>
+                                </fieldset>
+                            </div>
+                            <p class="forecast-status" id="roundSummary"></p>
+                            <fieldset class="forecast-segments"><legend class="forecast-sr">Действие</legend>
+                                <label><input type="radio" name="action" value="buy" checked><span>Купить</span></label>
+                                <label><input type="radio" name="action" value="sell"><span>Продать</span></label>
+                            </fieldset>
+                            <fieldset class="forecast-options"><legend>Лучшая цена за долю</legend>
+                                <label><input type="radio" name="side" value="yes" checked><span><span>Да</span> <b id="yesAsk">—</b></span></label>
+                                <label><input type="radio" name="side" value="no"><span><span>Нет</span> <b id="noAsk">—</b></span></label>
+                            </fieldset>
                         </div>
-                        <p class="forecast-status" id="roundSummary"></p>
-                        <fieldset class="forecast-segments"><legend class="forecast-sr">Действие</legend>
-                            <label><input type="radio" name="action" value="buy" checked><span>Купить</span></label>
-                            <label><input type="radio" name="action" value="sell"><span>Продать</span></label>
-                        </fieldset>
-                        <fieldset class="forecast-options"><legend class="forecast-sr">Исход и цена за одну долю</legend>
-                            <label><input type="radio" name="side" value="yes" checked><span><span>Да</span> <b id="yesAsk">—</b></span></label>
-                            <label><input type="radio" name="side" value="no"><span><span>Нет</span> <b id="noAsk">—</b></span></label>
-                        </fieldset>
                         <label class="forecast-limit" id="limitField" hidden><span id="limitLabel">Цена за долю, оч.</span><input id="limitPrice" type="text" inputmode="decimal" value="0,50" autocomplete="off"></label>
                         <div class="forecast-size" id="sizeFields">
                             <div class="forecast-size-head"><label id="sizeLabel" for="budget">Сумма покупки</label><span id="sizeAvailable"></span></div>
@@ -102,9 +111,11 @@
                             <button type="button" id="useLimit" hidden>Задать свою цену</button>
                             <button type="button" id="buyInstead" hidden></button>
                             <a href="#orderListTitle" id="showOrders" hidden>К открытым заявкам</a>
+                            <button type="button" class="forecast-inline-help" id="explainDepth" data-market-guide="orders" aria-haspopup="dialog" aria-controls="marketGuide" hidden>Почему нет заявок?</button>
                         </div>
                         <button type="submit" class="forecast-primary" id="placeOrder" disabled>Купить доли</button>
                     </form>
+                    <a class="forecast-portfolio-link" id="closedPortfolio" href="#portfolio" hidden>Мой портфель ↓</a>
                     <p id="feedback" class="forecast-feedback" role="status"></p>
                 </section>
                 <section class="forecast-panel forecast-wallet" id="portfolio" aria-labelledby="walletTitle" tabindex="-1">
@@ -114,30 +125,67 @@
                     <div><dt>Доли «Нет»</dt><dd><span id="walletNo">—</span><button type="button" data-sell="no" aria-label="Продать доли «Нет»" hidden>Продать</button></dd><dd class="forecast-reserve" id="heldNo" hidden></dd></div></dl>
                     <p class="forecast-footnote" id="walletOutcome"></p>
                 </section>
-                <section class="forecast-panel forecast-book" aria-labelledby="bookTitle">
-                    <h2 id="bookTitle">Стакан заявок</h2>
-                    <p class="forecast-footnote">Цена и количество долей «Да»</p>
-                    <div class="forecast-columns"><div><h3>Покупают</h3><ol id="bookBids"></ol></div><div><h3>Продают</h3><ol id="bookAsks"></ol></div></div>
-                </section>
                 <section class="forecast-panel forecast-orders"><h2 id="orderListTitle" tabindex="-1">Мои открытые заявки</h2><div id="myOrders"></div><p class="forecast-feedback" id="orderFeedback" role="status"></p></section>
                 <section class="forecast-panel forecast-history" aria-labelledby="historyTitle">
                     <div class="forecast-section-head"><h2 id="historyTitle">Мои сделки</h2></div>
                     <div id="tradeHistory"></div><button id="moreTrades" class="forecast-secondary" type="button" hidden>Показать ещё</button>
                 </section>
+                <section class="forecast-panel forecast-book" id="publicOrders" aria-labelledby="bookTitle">
+                    <h2 id="bookTitle">Предложения по «Да»</h2>
+                    <div class="forecast-columns"><div><h3>Покупают</h3><ol id="bookBids"></ol></div><div><h3>Продают</h3><ol id="bookAsks"></ol></div></div>
+                </section>
             </div>
         </div>
         <dialog id="chartDialog" aria-labelledby="chartDialogQuestion chartTitle"></dialog>
-        <details class="forecast-panel forecast-rules">
-            <summary>Как устроен рынок</summary>
-            <div>
-                <p>При первом входе у каждого 100 бесплатных виртуальных очков на все события. Их нельзя покупать, передавать или обменивать на призы.</p>
-                <p>Доля верного исхода приносит 1 очко, другого — 0. Например, пять долей «Да» по 0,40 стоят 2 очка. При итоге «Да» выплата составит 5 очков, прибыль — 3. До закрытия торгов доли можно продать.</p>
-                <p>Заявка «По рынку» исполняется целиком по доступным ценам в пределах показанной котировки. В режиме «Своя цена» остаток ждёт встречной заявки. Лучшие цены идут первыми, при равной цене первой исполняется более ранняя заявка. Продать можно только свои свободные доли.</p>
-                <p>Доли «Да» и «Нет» образуют пару стоимостью 1 очко. Поэтому покупка «Нет» по 0,40 соответствует предложению «Да» по 0,60. В начале на каждой стороне стоят виртуальные заявки на 10 долей по 0,49, 25 по 0,45 и 50 по 0,35.</p>
-                <p>График показывает середину между лучшими ценами покупки и продажи «Да». Если разница больше 0,10 или одна сторона пуста, берём цену последней сделки. Это оценка участников. Коэффициент выплаты равен 1 / цене покупки.</p>
-                <p>Владелец закрывает торги до объявления результата. Если он не закрыл их вручную, они останавливаются в конце дня события по Москве. При отмене прогноза сделки по нему аннулируются. До подведения итога прибыль этого рынка можно использовать только внутри него.</p>
+        <dialog id="marketGuide" aria-labelledby="marketGuideTitle">
+            <header class="forecast-guide-head">
+                <h2 id="marketGuideTitle" tabindex="-1" autofocus>Как устроен рынок</h2>
+                <form method="dialog"><button type="submit" aria-label="Закрыть правила"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><path d="m5 5 10 10M15 5 5 15"/></svg></button></form>
+            </header>
+            <div class="forecast-guide-body">
+                <p>На старте у тебя <strong>100 виртуальных очков</strong> на все события. Доля верного исхода принесёт 1 очко, другого — 0.</p>
+                <div class="forecast-guide-example">
+                    <strong>5 долей «Да» по 0,40</strong>
+                    <dl><div><dt>Стоимость</dt><dd>2 очка</dd></div><div><dt>Если «Да»</dt><dd>5 очков</dd></div><div><dt>Прибыль при «Да»</dt><dd>+3 очка</dd></div></dl>
+                </div>
+                <dl class="forecast-guide-modes">
+                    <dt>Сразу</dt><dd>Весь объём по доступным ценам. Если долей мало, сделка не пройдёт.</dd>
+                    <dt>Своя цена</dt><dd>Укажи максимум для покупки или минимум для продажи. Остаток будет ждать.</dd>
+                </dl>
+                <details id="guideOrders">
+                    <summary>Что значит «нет заявок»?</summary>
+                    <p><strong>На рынке.</strong> Заявка — предложение купить или продать доли. Для покупки нужен продавец, для продажи — покупатель. Если предложений нет, можно оставить свою цену.</p>
+                    <p><strong>В «Моих открытых заявках».</strong> Пустой список означает, что у тебя нет предложений в ожидании. Открытую заявку можно снять. Покупки и продажи видны в «Моих сделках».</p>
+                </details>
+                <details>
+                    <summary>Откуда берётся процент на графике?</summary>
+                    <p>При лучших ценах «Да» 0,48 и 0,52 график покажет середину — 50%. Если разница больше 0,10 или одна сторона пуста, берётся цена последней сделки.</p>
+                </details>
+                <details>
+                    <summary>Когда подводят итог?</summary>
+                    <p>Торги закроются в конце дня события по Москве или раньше по решению владельца. Он объявит исход. До итога прибыль доступна внутри события. При отмене очки вернутся.</p>
+                    <p>Очки нельзя купить, передать или обменять на призы.</p>
+                </details>
             </div>
-        </details>
+            <footer class="forecast-guide-footer">
+                <span id="guideAvailability" hidden></span>
+                <button type="button" id="dismissMarketGuide">Понятно</button>
+                <button type="button" id="startMarketTour" class="forecast-primary" hidden>Начать обзор</button>
+            </footer>
+        </dialog>
+        <dialog id="marketTour" aria-labelledby="tourTitle" aria-describedby="tourText">
+            <div class="forecast-tour-focus" aria-hidden="true"></div>
+            <section class="forecast-tour-card">
+                <div class="forecast-tour-top">
+                    <span id="tourProgress"></span><button type="button" id="skipMarketTour">Пропустить</button>
+                </div>
+                <div aria-live="polite" aria-atomic="true"><h2 id="tourTitle"></h2><p id="tourText"></p></div>
+                <div class="forecast-tour-actions">
+                    <button type="button" id="backMarketTour">Назад</button>
+                    <button type="button" id="nextMarketTour" class="forecast-primary" autofocus>Дальше</button>
+                </div>
+            </section>
+        </dialog>
     </main>
     <script defer src="https://www.gstatic.com/firebasejs/12.18.0/firebase-app-compat.js"></script>
     <script defer src="https://www.gstatic.com/firebasejs/12.18.0/firebase-database-compat.js"></script>
@@ -151,6 +199,7 @@
     <script defer src="physics-forecast-core.js?v=4"></script>
     <script defer src="physics-forecast-chart.js?v=5"></script>
     <script defer src="physics-forecast-ledger.js?v=1"></script>
-    <script defer src="physics-forecast.js?v=6"></script>
+    <script defer src="physics-forecast-guide.js?v=1"></script>
+    <script defer src="physics-forecast.js?v=7"></script>
 </body>
 </html>

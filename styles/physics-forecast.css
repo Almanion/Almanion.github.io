@@ -92,7 +92,7 @@ body.forecast-page .forecast-header.sidebar-header {
 .forecast-shell { width: min(calc(100% - 48px), var(--shell)); margin: auto; padding: 0 0 52px; }
 .forecast-defs { position: absolute; width: 0; height: 0; pointer-events: none; }
 .forecast-hero { padding: clamp(20px, 3vw, 38px) 0 clamp(18px, 2vw, 27px); }
-.forecast-hero-top, .forecast-event-meta, .forecast-section-head, .forecast-manager-actions {
+.forecast-event-meta, .forecast-section-head, .forecast-manager-actions {
     display: flex; align-items: center; justify-content: space-between; gap: 8px 15px;
 }
 .forecast-event-meta, .forecast-manager-actions, .forecast-section-head { flex-wrap: wrap; }
@@ -104,6 +104,12 @@ body.forecast-page .forecast-header.sidebar-header {
 }
 .forecast-hero h1[data-long] { max-width: 48ch; font-size: clamp(1.65rem, 3.2vw, 2.85rem); line-height: 1.12; }
 .forecast-definition { max-width: 76ch; margin: 10px 0 0; color: var(--quiet); font-size: .92rem; line-height: 1.45; overflow-wrap: anywhere; }
+.forecast-hero-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 2px 8px; margin-top: 10px; }
+.forecast-hero-actions .forecast-guide-link {
+    display: inline-flex; align-items: center; gap: 7px; min-height: 44px; padding: 6px 9px;
+    border-color: transparent; background: transparent; color: var(--signal); font-size: .88rem; font-weight: 620;
+}
+.forecast-guide-link svg { width: 18px; height: 18px; flex: none; }
 #eventPicker {
     position: relative; display: inline-flex; align-items: center; flex: none; gap: 8px; min-height: 42px; overflow: hidden; padding: 0 12px;
     border: 1px solid var(--rule); border-radius: 8px; color: var(--ink); background: var(--surface); cursor: pointer; font-size: .87rem; font-weight: 620;
@@ -286,11 +292,16 @@ body.forecast-page .forecast-header.sidebar-header {
 .forecast-ticket { container-type: inline-size; scroll-margin-block-start: 12px; }
 .forecast-ticket form { display: grid; gap: 12px; }
 .forecast-ticket .forecast-section-head { flex-wrap: nowrap; }
-#orderMode { min-height: 40px; background-color: var(--inset); font-size: .84rem; }
+#ticketChoices { display: grid; gap: 12px; }
+#orderMode { display: inline-flex; gap: 2px; padding: 2px; border: 0; border-radius: 8px; background: var(--inset); }
+#orderMode label { position: relative; display: flex; }
+#orderMode label > span { display: grid; place-items: center; min-height: 36px; padding: 3px 9px; border: 1px solid transparent; border-radius: 6px; color: var(--quiet); cursor: pointer; font-size: .83rem; }
+#orderMode input:checked + span { border-color: var(--rule); color: var(--signal); background: var(--surface); font-weight: 650; }
 .forecast-ticket .forecast-status { margin: 0; }
 .forecast-page fieldset { min-width: 0; margin: 0; }
 .forecast-segments label { position: relative; flex: 1; }
 .forecast-options { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 0; border: 0; }
+.forecast-options legend { margin: 0 0 6px; padding: 0; color: var(--quiet); font-size: .82rem; font-weight: 550; }
 .forecast-options label { --outcome: var(--yes); position: relative; min-width: 0; }
 .forecast-options label:last-child { --outcome: var(--no); }
 .forecast-options input, .forecast-segments input, .forecast-sr {
@@ -305,6 +316,7 @@ body.forecast-page .forecast-header.sidebar-header {
     color: var(--ink); border: 1px solid var(--rule); border-radius: 9px; font-weight: 620;
 }
 .forecast-options b { margin-inline-start: auto; font: 650 .88rem var(--number-font); }
+.forecast-options .forecast-price-empty { color: var(--quiet); font: 500 .78rem/1.25 var(--font-sans); }
 .forecast-options label > span::before {
     content: ""; flex: none; width: 7px; height: 7px; border: 1px solid var(--outcome); border-radius: 50%;
 }
@@ -365,6 +377,8 @@ body.forecast-page .forecast-header.sidebar-header {
     font: 600 .83rem/1.2 var(--font-sans); text-decoration: none;
 }
 .forecast-recovery a:focus-visible { outline: 2px solid var(--signal); outline-offset: 2px; }
+.forecast-recovery .forecast-inline-help { border-color: transparent; text-decoration: underline; text-underline-offset: .18em; }
+.forecast-portfolio-link { display: inline-flex; align-items: center; min-height: 44px; align-self: start; color: var(--signal); }
 .forecast-quote:empty { display: none; }
 
 .forecast-wallet dl { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); margin: 16px 0 0; gap: 14px 18px; }
@@ -387,7 +401,9 @@ body.forecast-page .forecast-header.sidebar-header {
 .forecast-columns ol { max-height: 190px; margin: 0; padding: 0; overflow: auto; list-style: none; }
 .forecast-columns li, .forecast-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; border-bottom: 1px solid var(--rule); }
 .forecast-columns li::before { content: ""; position: absolute; z-index: -1; inset: 2px 0 2px auto; width: var(--depth, 0%); border-radius: 3px; background: color-mix(in srgb, var(--side-ink) 13%, transparent); }
-.forecast-columns li { position: relative; isolation: isolate; padding: 7px 5px; font: .88rem/1.25 var(--number-font); }
+.forecast-columns li { position: relative; isolation: isolate; flex-wrap: wrap; gap: 2px 6px; padding: 7px 5px; font: .82rem/1.35 var(--number-font); }
+.forecast-columns li > * { white-space: nowrap; }
+.forecast-columns .forecast-book-empty { color: var(--quiet); font: .85rem/1.45 var(--font-sans); }
 .forecast-columns li span, .forecast-row small { color: var(--quiet); }
 .forecast-row { flex-wrap: wrap; padding: 11px 0; font-size: .91rem; }
 .forecast-row:last-child, .forecast-columns li:last-child { border-bottom: 0; }
@@ -396,7 +412,7 @@ body.forecast-page .forecast-header.sidebar-header {
 :is(.forecast-orders, .forecast-history) .forecast-footnote { margin-top: 14px; }
 #moreTrades { margin-top: 10px; }
 
-.forecast-rules, .forecast-admin { margin-top: 14px; padding-block: 0; }
+.forecast-admin { margin-top: 14px; padding-block: 0; }
 .forecast-shell summary {
     display: flex; justify-content: space-between; align-items: center; gap: 12px;
     min-height: 56px; padding: 12px 0; list-style: none; font-weight: 640;
@@ -408,7 +424,69 @@ body.forecast-page .forecast-header.sidebar-header {
 }
 .forecast-shell details[open] > summary::after { transform: rotate(225deg); }
 .forecast-shell details[open] { padding-bottom: 20px; }
-.forecast-rules p, .forecast-admin p { max-width: 78ch; margin: 10px 0 0; line-height: 1.6; }
+.forecast-admin p { max-width: 78ch; margin: 10px 0 0; line-height: 1.6; }
+
+html:has(#marketGuide[open], #marketTour[open]) { overflow: hidden; }
+#marketGuide {
+    position: fixed; inset: 0; width: min(34rem, calc(100% - 32px));
+    max-height: calc(100% - 32px); max-height: min(48rem, calc(100dvh - 32px)); margin: auto; padding: 0;
+    overflow: hidden; border: 1px solid var(--rule); border-radius: 18px; background: var(--surface); color: var(--ink);
+    box-shadow: 0 18px 70px #080d232b;
+}
+#marketGuide[open] { display: flex; flex-direction: column; }
+#marketGuide::backdrop { background: rgb(9 13 33 / 52%); }
+.forecast-guide-head { display: flex; align-items: center; justify-content: space-between; flex: none; gap: 10px; padding: 11px 14px 11px 22px; border-bottom: 1px solid var(--rule); }
+.forecast-guide-head h2 { margin: 0; color: var(--ink); font-size: 1.28rem; line-height: 1.2; letter-spacing: -.025em; }
+.forecast-guide-head h2:focus { outline: 0; }
+.forecast-guide-head form { margin: 0; }
+.forecast-guide-head button { display: grid; place-items: center; width: 44px; height: 44px; padding: 0; border-radius: 50%; }
+.forecast-guide-head button svg { width: 18px; height: 18px; }
+.forecast-guide-body {
+    min-height: 0; padding: 18px 22px 14px; overflow-y: auto; overscroll-behavior: contain;
+    color: var(--ink); font-size: .95rem; line-height: 1.48;
+}
+.forecast-guide-body p { margin: 0; }
+.forecast-guide-example { margin-block: 12px 18px; padding: 10px 13px; border-inline-start: 3px solid var(--signal); border-radius: 0 8px 8px 0; background: var(--selection); }
+.forecast-guide-example dl { display: grid; grid-template-columns: 1fr 1fr 1.2fr; gap: 7px; margin: 9px 0 0; }
+.forecast-guide-example dl div { display: flex; flex-direction: column; justify-content: space-between; }
+.forecast-guide-example dt { color: var(--quiet); font-size: .77rem; line-height: 1.2; }
+.forecast-guide-example dd { margin: 4px 0 0; color: var(--ink); font-weight: 650; font-variant-numeric: tabular-nums; }
+.forecast-guide-modes { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 7px 14px; margin: 0 0 16px; }
+.forecast-guide-modes dt { font-weight: 680; }
+.forecast-guide-modes dd { margin: 0; }
+.forecast-guide-body details { border-top: 1px solid var(--rule); }
+.forecast-guide-body details[open] { padding-bottom: 12px; }
+.forecast-guide-body summary { min-height: 46px; padding-block: 9px; line-height: 1.3; }
+.forecast-guide-body summary::after { flex: none; }
+.forecast-guide-body details p { color: var(--quiet); }
+.forecast-guide-body details p + p { margin-top: 7px; }
+.forecast-guide-body details strong { color: var(--ink); }
+.forecast-guide-footer { display: flex; flex: none; align-items: center; justify-content: flex-end; gap: 8px; padding: 10px 16px; border-top: 1px solid var(--rule); }
+.forecast-guide-footer > span { margin-inline-end: auto; color: var(--quiet); font-size: .82rem; line-height: 1.3; }
+
+#marketTour {
+    position: fixed; inset: 0; width: 100%; max-width: none; height: 100%; height: 100dvh; max-height: none;
+    margin: 0; padding: 0; overflow: hidden; border: 0; background: transparent; color: var(--ink);
+}
+#marketTour::backdrop { background: transparent; }
+body:has(#marketTour[open]) .forecast-shell { padding-bottom: max(50vh, 220px); }
+.forecast-tour-focus {
+    position: absolute; pointer-events: none; border: 2px solid var(--signal); border-radius: 9px;
+    box-shadow: 0 0 0 150vmax rgb(8 12 29 / 62%);
+}
+.forecast-tour-card {
+    position: absolute; inset: auto 20px 20px auto; width: min(23rem, calc(100% - 24px)); max-height: calc(100% - 20px);
+    overflow-y: auto; overscroll-behavior: contain; padding: 12px 18px 16px;
+    border: 1px solid var(--rule); border-radius: 14px; background: var(--surface); color: var(--ink);
+    box-shadow: 0 10px 40px rgb(8 12 29 / 25%);
+}
+.forecast-tour-card h2 { margin: 2px 0 5px; color: var(--ink); font-size: 1.18rem; line-height: 1.25; }
+.forecast-tour-card p { margin: 0; color: var(--quiet); font-size: .92rem; line-height: 1.45; }
+.forecast-tour-top, .forecast-tour-actions { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.forecast-tour-top > span { color: var(--signal); font-size: .82rem; font-weight: 650; font-variant-numeric: tabular-nums; }
+.forecast-tour-top button { padding-inline: 4px; border-color: transparent; background: transparent; color: var(--quiet); font-size: .85rem; }
+.forecast-tour-actions { margin-top: 14px; }
+.forecast-tour-actions button { min-width: 80px; }
 .forecast-game > .forecast-admin { margin: 0 0 14px; }
 .forecast-admin-switch { display: inline-flex; gap: 3px; max-width: 100%; padding: 3px; border: 1px solid var(--rule); border-radius: 12px; background: var(--inset); }
 .forecast-admin-switch button { border-color: transparent; background: transparent; color: var(--quiet); font-size: .91rem; }
@@ -451,7 +529,7 @@ body.forecast-page .forecast-header.sidebar-header {
     .forecast-chart-card, .forecast-chart-space { grid-column: 1 / -1; }
     .forecast-plot { min-height: 240px; }
     .forecast-wallet { align-self: start; }
-    .forecast-history { grid-column: 1 / -1; }
+    .forecast-book { grid-column: 1 / -1; }
 }
 @media (min-width: 960px) {
     .forecast-layout { grid-template-columns: repeat(12, minmax(0, 1fr)); }
@@ -473,6 +551,7 @@ body.forecast-page .forecast-header.sidebar-header {
     :root:not([data-page-motion="off"]):not([data-page-motion="medium"]) .forecast-page:not(.animations-off):not(.animations-medium) {
         & #probChart[data-live="true"][data-visible="true"] .chart-halo { transform-origin: 0 0; animation: forecast-price-pulse 3.6s ease-in-out infinite; }
         & .forecast-enter, & #chartDialog[open] { animation: forecast-enter .28s cubic-bezier(.2,.75,.3,1) both; }
+        & #marketGuide[open], & #marketTour[open] .forecast-tour-card { animation: forecast-enter .16s ease-out; }
         & .forecast-segments::before { transition: transform .21s cubic-bezier(.2,.75,.3,1); }
         & :is(.forecast-chart-sides button, .forecast-ranges button, .forecast-primary, .forecast-jumps a, #chartExpand) { transition: background-color .16s, color .16s, border-color .16s; }
         & .forecast-primary:not(:disabled):active { transform: translateY(1px); }
@@ -508,14 +587,29 @@ body.forecast-page .forecast-header.sidebar-header {
     .forecast-chart-sides button, .forecast-ranges button { min-width: 44px; min-height: 44px; padding-inline: 6px; }
     #chartExpand, #orderMode, #chartCursor, #chartReturn, .forecast-presets button, .forecast-recovery button, .forecast-recovery a, .forecast-wallet [data-sell] { min-height: 44px; }
     #chartExpand { min-width: 44px; }
+    #orderMode label > span, .forecast-segments label > span { min-height: 44px; }
     .forecast-chart-stats { margin-top: 8px; padding-top: 10px; }
     .forecast-gate { grid-template-columns: auto 1fr; grid-template-areas: "symbol heading" "symbol message" "button button"; gap: 5px 10px; }
     .forecast-gate button { margin-top: 8px; }
     .forecast-game > .forecast-admin { margin-bottom: 10px; }
-    .forecast-rules, .forecast-admin { padding-block: 0; margin-top: 10px; }
+    .forecast-admin { padding-block: 0; margin-top: 10px; }
     .forecast-event-fields { grid-template-columns: minmax(0, 1fr); }
     .forecast-admin form > .forecast-primary { width: 100%; }
     .forecast-shell details[open] { padding-bottom: 16px; }
+    #marketGuide {
+        inset: auto 0 0; width: min(100%, 38rem); max-width: 100%; max-height: calc(100dvh - max(12px, env(safe-area-inset-top)));
+        margin: 0 auto; border-radius: 16px 16px 0 0; border-bottom: 0;
+    }
+    .forecast-guide-head { padding: 7px max(12px, env(safe-area-inset-right)) 7px max(16px, env(safe-area-inset-left)); }
+    .forecast-guide-body { padding: 14px max(16px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left)); }
+    .forecast-guide-body details[open] { padding-bottom: 12px; }
+    .forecast-guide-footer { padding: 8px max(12px, env(safe-area-inset-right)) max(10px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left)); }
+    .forecast-tour-card { inset: auto max(8px, env(safe-area-inset-right)) max(8px, env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-left)); width: auto; max-width: 32rem; margin-inline: auto; padding: 8px 14px 12px; }
+}
+@media (min-width: 510px) and (max-height: 440px) {
+    .forecast-tour-card { inset: auto max(8px, env(safe-area-inset-right)) max(6px, env(safe-area-inset-bottom)) auto; width: min(44%, 19rem); margin: 0; padding: 6px 12px 10px; }
+    #marketTour[data-card-left] .forecast-tour-card { inset-inline: max(8px, env(safe-area-inset-left)) auto; }
+    .forecast-tour-actions { margin-top: 8px; }
 }
 @media (max-width: 365px) {
     .forecast-header:has(.forecast-admin-link:not([hidden])) img { width: 80px; }
