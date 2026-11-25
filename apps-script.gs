@@ -449,7 +449,28 @@ function mailboxDigits(secret, identity) {
   return ('000000' + (value % 1000000)).slice(-6);
 }
 
+function verificationMailConnection() {
+  const properties = PropertiesService.getScriptProperties();
+  const url = properties.getProperty('ALMANION_MAIL_URL') || '';
+  const key = properties.getProperty('ALMANION_MAIL_KEY') || '';
+  return /^https:\/\/script\.google\.com\/macros\/s\/[\w-]+\/exec$/.test(url) && key.length >= 32 ? { url, key } : null;
+}
+
+function contactVerificationMailer(connection, fields) {
+  const message = JSON.stringify(Object.assign({ version: 1, time: Date.now() }, fields));
+  const signature = Utilities.base64EncodeWebSafe(
+    Utilities.computeHmacSha256Signature(message, connection.key)).replace(/=+$/, '');
+  const response = UrlFetchApp.fetch(connection.url, {
+    method: 'post', contentType: 'application/json', muteHttpExceptions: true,
+    payload: JSON.stringify({ message, signature })
+  });
+  if (response.getResponseCode() !== 200) throw new Error('Mail service unavailable');
+  return JSON.parse(response.getContentText());
+}
+
 function requestAccountEmailCode(key, identity) {
+  const connection = verificationMailConnection();
+  if (!connection) return { success: false, reason: 'unavailable' };
   const reservation = Utilities.getUuid();
   const held = editEmailChallenge(key, function (record, now) {
     if (record.checking && record.checking > now) return { success: false, reason: 'busy' };
@@ -461,28 +482,32 @@ function requestAccountEmailCode(key, identity) {
     return { success: true };
   });
   if (!held.success) return held;
-  if (MailApp.getRemainingDailyQuota() < 1) return { success: false, reason: 'mail_quota' };
   const generated = verificationApi('sendOobCode', { requestType: 'VERIFY_EMAIL', email: identity.email, returnOobLink: true }, true);
   const match = /[?&]oobCode=([^&#]+)/.exec(generated.oobLink || '');
   if (!match) throw new Error('Missing email action');
   const secret = decodeURIComponent(match[1]);
   const code = mailboxDigits(secret, identity);
   const stored = editEmailChallenge(key, function (record, now) {
-    if (record.reservation !== reservation) return false;
+    if (record.reservation !== reservation || record.checking > now) return null;
+    const previous = record.challenge;
     record.challenge = { uid: identity.uid, secret: secret, expires: now + 600000, attempts: 0 };
-    return true;
+    return { previous };
   });
   if (!stored) return { success: false, reason: 'busy' };
+  let delivery;
   try {
-    MailApp.sendEmail({ to: identity.email, subject: 'Код подтверждения Almanion', name: 'Almanion',
-      body: 'Ваш код подтверждения почты в Almanion — ' + code + '.\n\nКод действует 10 минут. Если вы не запрашивали код, пропустите это письмо.' });
+    delivery = contactVerificationMailer(connection, { action: 'send', id: reservation, to: identity.email, code });
   } catch (_) {
-    editEmailChallenge(key, function (record) {
-      if (record.challenge && record.challenge.secret === secret) delete record.challenge;
-    });
+    // The mailer may already have sent the code if its response was lost.
     return { success: false, reason: 'delivery' };
   }
-  return { success: true, retryAfter: 60 };
+  if (delivery.success === true) return { success: true, retryAfter: 60 };
+  editEmailChallenge(key, function (record, now) {
+    if (!record.challenge || record.challenge.secret !== secret || record.checking > now) return;
+    if (stored.previous && stored.previous.expires > now) record.challenge = stored.previous;
+    else delete record.challenge;
+  });
+  return { success: false, reason: delivery.reason === 'mail_quota' ? 'mail_quota' : 'delivery' };
 }
 
 function confirmAccountEmailCode(key, identity, code, idToken) {
@@ -1665,8 +1690,7 @@ function json(obj) {
       «matcenter-backend».
 
       Для шестизначных кодов почты в appsscript.json сохраните действующие
-      oauthScopes и добавьте https://www.googleapis.com/auth/identitytoolkit
-      и https://www.googleapis.com/auth/script.send_mail. Привяжите скрипт
+      oauthScopes и добавьте https://www.googleapis.com/auth/identitytoolkit. Привяжите скрипт
       к стандартному Google Cloud проекту с включённым Identity Toolkit API.
       Если scopes раньше определялись автоматически, сохраните также доступ
       к таблицам, внешним запросам и триггерам существующего скрипта:
@@ -1675,6 +1699,10 @@ function json(obj) {
         https://www.googleapis.com/auth/script.scriptapp
       У выполняющего скрипт аккаунта должно быть право firebaseauth.users.sendEmail
       в Firebase-проекте almanion-70120. После смены scopes авторизуйте скрипт заново.
+      Отправитель — отдельный проект из tools/account-mailer под almanion.mail@gmail.com.
+      В его Script Properties и в свойствах Матцентра задайте одинаковый ALMANION_MAIL_KEY
+      (32 случайных байта в Base64). В Матцентре задайте ALMANION_MAIL_URL — адрес /exec
+      развёрнутого почтового проекта. Право script.send_mail требуется только отправителю.
 
    6) В верхнем списке функций выберите authorizeExternalRequests и нажмите Run.
       Подтвердите запрошенные Google разрешения. Этот шаг нужно выполнить один

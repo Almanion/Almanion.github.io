@@ -2,7 +2,7 @@
 const assert = require('node:assert/strict');
 const { mailScript } = require('./helpers/email-code-script');
 
-function fixture() {
+function fixture(options = {}) {
     let now = Date.UTC(2026, 10, 25), failDelivery = false, tokens = 0, nextAction = 5;
     const users = { a: { localId: 'reader', email: 'reader@example.test' }, b: { localId: 'other', email: 'other@example.test' } };
     const actions = new Map(), mail = [];
@@ -30,7 +30,7 @@ function fixture() {
             }
             default: throw new Error('Unexpected call');
             }
-        }
+        }, ...options
     });
     const call = (action, token = 'a', extra = {}) => script.request({ action, idToken: token, ...extra });
     return { script, users, mail, applied: () => tokens, advance: ms => { now += ms; }, fail: value => { failDelivery = value; },
@@ -76,6 +76,32 @@ function fixture() {
     f.advance(600000);
     assert.equal(f.confirm(f.code()).reason, 'expired');
     assert.equal(f.applied(), 0);
+}
+{
+    const f = fixture();
+    assert.equal(f.send().success, true);
+    const [envelope] = f.script.requests;
+    const forged = { ...envelope, message: envelope.message.replace('reader@example.test', 'other@example.test') };
+    assert.equal(f.script.postToMailer(forged).success, false);
+    assert.equal(f.script.postToMailer(envelope).success, true);
+    assert.equal(f.mail.length, 1);
+    f.advance(150000);
+    assert.equal(f.script.postToMailer(envelope).success, false);
+    assert.equal(f.mail.length, 1);
+}
+{
+    for (const [options, reason] of [[{ connected: false }, 'unavailable'], [{ sender: 'owner@example.test' }, 'delivery'],
+        [{ quota: () => 0 }, 'mail_quota']]) {
+        const f = fixture(options);
+        assert.equal(f.send().reason, reason);
+        assert.equal(f.mail.length, 0);
+    }
+    const f = fixture();
+    f.send();
+    const first = f.code();
+    f.advance(60000); f.fail(true);
+    assert.equal(f.send().reason, 'delivery');
+    assert.equal(f.confirm(first).verified, true);
 }
 {
     const f = fixture();
