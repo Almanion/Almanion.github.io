@@ -298,7 +298,18 @@ test('a peer trade moves the live chart while a historical reading stays pinned;
     await expect(page.locator('#probability')).toHaveText('52%');
     await expect(page.locator('#chartDelta')).toHaveText('+2 п. п.');
     await expect(readout).toHaveText(pinned);
-    await expect(page.locator('#chartTip b')).toHaveText('50%');
+    await expect(page.locator('#chartTip b')).toHaveText('Да · 50%');
+    await expect(page.locator('#chartVolume')).toHaveText('15');
+    await expect(page.locator('#chartLow')).toHaveText('50%');
+    await expect(page.locator('#chartHigh')).toHaveText('52%');
+    await page.locator('[data-chart-side=no]').click();
+    await expect(page.locator('#probability')).toHaveText('48%');
+    await expect(page.locator('#chartDelta')).toHaveText('−2 п. п.');
+    await expect(page.locator('#chartTip b')).toHaveText('Нет · 50%');
+    await expect(page.locator('#chartLow')).toHaveText('48%');
+    await expect(page.locator('#chartHigh')).toHaveText('50%');
+    await expect(page.locator('[name=side][value=yes]')).toBeChecked();
+    await expect(page.locator('#chartPriceTag')).toHaveText('48%');
     await page.locator('#chartReturn').click();
     await expect(page.locator('#chartTip')).toBeHidden();
     await expect(page.locator('#chartState')).toHaveText('Сейчас');
@@ -315,8 +326,37 @@ test('a peer trade moves the live chart while a historical reading stays pinned;
     await page.clock.fastForward(65 * 60000);
     await expect(readout).toHaveText(oldHour);
     await page.keyboard.press('End');
+    await expect(page.locator('#chartVolume')).toHaveText('0');
+    await expect(page.locator('#chartLow')).toHaveText('48%');
+    await expect(page.locator('#chartHigh')).toHaveText('48%');
+    await page.locator('[data-range=all]').click();
+    await expect(page.locator('#chartVolume')).toHaveText('15');
     await expect(page.locator('#chartState')).toHaveText('Сейчас');
     await expect(chart).toHaveAttribute('data-live','true');
+});
+
+test('the expanded chart keeps its outcome, restores focus and closes on logout', async ({ page }) => {
+    await mockClass(page);
+    await page.goto('/physics-forecast.html');
+    const expand = page.locator('#chartExpand'), dialog = page.locator('#chartDialog');
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await page.locator('[data-chart-side=no]').click();
+    expect(await page.locator('#chartSeries').evaluate(series => series.getAnimations().some(anim => anim.playState === 'running'))).toBe(false);
+    await expand.click();
+    await expect(dialog).toBeVisible();
+    await expect(dialog.locator('#chartDialogQuestion')).toHaveText(await page.locator('#lessonQuestion').innerText());
+    await expect(dialog.locator('[data-chart-side=no]')).toHaveAttribute('aria-pressed', 'true');
+    await expect(dialog.locator('#chartPriceTag')).toHaveText('50%');
+    await page.keyboard.press('Escape');
+    await expect(dialog).toBeHidden();
+    await expect(expand).toBeFocused();
+    await expect(page.locator('#roundBody #marketChart')).toHaveCount(1);
+    await expand.click();
+    await page.evaluate(() => window.changeForecastAccount(null));
+    await expect(dialog).toBeHidden();
+    await expect(page.locator('#eventPicker')).toBeHidden();
+    await expect(page.locator('#roundState')).toBeHidden();
+    await expect(page.locator('#gateAction')).toBeVisible();
 });
 
 test.describe('touch chart', () => {
@@ -324,6 +364,10 @@ test.describe('touch chart', () => {
     test('opens from the mobile shortcuts and allows inspecting a point and returning to now', async ({ page }) => {
         await mockClass(page);
         await page.goto('/physics-forecast.html');
+        await expect(page.locator('#probChart')).toBeInViewport();
+        await page.locator('#chartExpand').tap();
+        await expect(page.locator('#chartDialog #probChart')).toBeInViewport();
+        await page.locator('#chartExpand').tap();
         await page.getByRole('link',{name:'График',exact:true}).tap();
         const plot = page.locator('#probChart');
         await plot.tap({position:{x:24,y:35}});

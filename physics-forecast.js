@@ -42,7 +42,7 @@
         if (!phone.matches || jumpFrame) return;
         jumpFrame = requestAnimationFrame(() => {
             jumpFrame = 0;
-            if ($('roundBody').hidden || $('gameSurface').hidden) return;
+            if ($('roundBody').hidden || $('gameSurface').hidden || $('chartDialog').open) return;
             const edge = jumpLinks[0].parentElement.getBoundingClientRect().bottom + 14;
             let active = jumpLinks[0];
             for (const link of jumpLinks) {
@@ -66,6 +66,9 @@
     function gate(title, body, action) {
         $('accessGate').hidden = false;
         $('gameSurface').hidden = $('ownerTools').hidden = $('connectionNotice').hidden = true;
+        $('eventPicker').hidden = true;
+        $('roundState').textContent = '';
+        $('roundState').removeAttribute('data-state');
         renderHeading(null);
         $('gateTitle').textContent = title;
         $('gateText').textContent = body;
@@ -137,14 +140,26 @@
     }
 
     function renderBook(m, phase) {
-        for (const [id, side] of [['bookBids','bid'], ['bookAsks','ask']]) {
+        const sides = [['bookBids', 'bid'], ['bookAsks', 'ask']];
+        let largest = 0;
+        const books = sides.map(([id, side]) => {
             const levels = new Map();
-            if (phase === 'open') for (const o of M.ranked(m, side)) {
-                const price = M.yesPrice(o);
-                levels.set(price, (levels.get(price) || 0) + o.qty);
+            if (phase === 'open') {
+                for (const order of M.ranked(m, side)) {
+                    const price = M.yesPrice(order);
+                    const total = (levels.get(price) || 0) + order.qty;
+                    levels.set(price, total);
+                    largest = Math.max(largest, total);
+                }
             }
-            const rows = [...levels].map(([p, qty]) => {
-                const li = node('li'); li.append(node('b', amount(p)), node('span', qty)); return li;
+            return { id, levels };
+        });
+        for (const { id, levels } of books) {
+            const rows = Array.from(levels, ([price, qty]) => {
+                const row = node('li');
+                row.style.setProperty('--depth', (100 * qty / largest).toFixed(1) + '%');
+                row.append(node('b', amount(price)), node('span', qty));
+                return row;
             });
             $(id).replaceChildren(...(rows.length ? rows : [node('li', '—')]));
         }
