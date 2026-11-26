@@ -121,6 +121,33 @@ test('broken image reports an error and cancellation restores focus', async ({ p
     expect(await page.evaluate(() => window.cropResult)).toBeNull();
 });
 
+test('homepage photos with a lot of detail still fit the upload limit', async ({ page }) => {
+    await page.route('**/__profile-crop-fixture.html', route => route.fulfill({ contentType: 'text/html', body: pageMarkup }));
+    await page.goto('/__profile-crop-fixture.html');
+    const photo = await page.evaluate(async () => {
+        const original = document.createElement('canvas');
+        original.width = original.height = 1728;
+        const ctx = original.getContext('2d');
+        const pixels = ctx.createImageData(original.width, original.height);
+        let random = 1729;
+        for (let offset = 0; offset < pixels.data.length; offset += 4) {
+            random ^= random << 13;
+            random ^= random >>> 17;
+            random ^= random << 5;
+            pixels.data.set([random & 255, (random >>> 8) & 255, (random >>> 16) & 255, 255], offset);
+        }
+        ctx.putImageData(pixels, 0, 0);
+        const blob = await new Promise(resolve => original.toBlob(resolve, 'image/png'));
+        const encoded = await AlmanionProfileImage.encodeBackground(new File([blob], 'detailed.png', { type: 'image/png' }));
+        const image = new Image();
+        image.src = 'data:image/jpeg;base64,' + encoded;
+        await image.decode();
+        return { size: encoded.length, square: image.naturalWidth === image.naturalHeight };
+    });
+    expect(photo.size).toBeLessThanOrEqual(192000);
+    expect(photo.square).toBe(true);
+});
+
 test.describe('touch crop', () => {
     test.use({ hasTouch: true, viewport: { width: 390, height: 780 } });
 

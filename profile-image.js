@@ -185,10 +185,10 @@
 
     const encodeError = 'Не удалось подготовить изображение. Попробуйте другой файл.';
 
-    async function encodeImage(source, crop, { width, height, limit }) {
+    async function encodeImage(source, crop, { width, height, limit, scales = [1, .8, .6] }) {
         const canvas = document.createElement('canvas');
         try {
-            for (const scale of [1, .8, .6]) {
+            for (const scale of scales) {
                 canvas.width = Math.max(1, Math.round(width * scale));
                 canvas.height = Math.max(1, Math.round(height * scale));
                 const ctx = canvas.getContext('2d', { alpha: false });
@@ -221,7 +221,8 @@
             return await encodeImage(image.source, { x: 0, y: 0, width: image.width, height: image.height }, {
                 width: image.width * scale,
                 height: image.height * scale,
-                limit: 192000
+                limit: 192000,
+                scales: [1, .8, .6, .48, .36]
             });
         } finally {
             image.release();
