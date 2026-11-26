@@ -99,11 +99,13 @@
             '<circle class="avatar-tint" cx="12" cy="12" r="5.9"/>' +
             '<g transform="rotate(-28 12 12)"><path d="M2.7 12a9.3 3.1 0 0 1 4.1-2.5m10.4 0a9.3 3.1 0 0 1 4.1 2.5M2.7 12a9.3 3.1 0 1 0 18.6 0"/>' +
             '<circle class="avatar-ink" cx="20.2" cy="13.5" r="1.7"/></g>'],
+        // The supplied three-quarter reference is drawn in broad planes so the
+        // brow, nose and chin remain distinguishable in the smallest avatar.
         moai: ['Моаи',
-            '<path class="avatar-tint" d="M3.1 21.3 4.6 19.3l3.1-.9-1.1-3.9V6.3l1.7-2.6 2.3-1.1 5.1.3 1.7 1.7.5 4.3 2.8 3.5-.8 1.2-2.4.4.1 1.7-.4 1.9-2 1.6 3.2.5 1.9 1.6Z"/>' +
-            '<path class="avatar-ink" opacity=".38" d="m7 6.3 1.7-2.5 2.2-.8-1 5.1.1 6.8 1.7 3.9-1.1 2.2h-7l1.4-1.5 3.2-.9-1.2-4.2Z"/>' +
-            '<path stroke-width="1.8" d="m9.9 8.4 4.6-.3 2.7 1"/>' +
-            '<path d="m14.5 8.7-1.4 4.6 3 .4m-4 2.5 4.7-.1"/>'],
+            '<path class="avatar-ink" opacity=".59" d="M9.3 1.9C10.8.8 15.4.7 17.2 1.8c.7.4.8 1.2 1 2.3.6 3.9 2 8.5 2 13.4 0 2-.1 3.6-1 4.5-1.4 1.5-5.6 1.3-8.3 1-2.3-.2-4.4-.7-5-2.3-.5-1.1-.2-2.4-.8-3.8l.7-1.8c.2-.5-.2-.7-.8-.8-.7-.2-.9-.7-.6-1.4.3-.7 1.4-1.3 2-2 .6-1.3 1-2.5 1.5-4.4-.6-.2-1.1-.6-.9-1.3.3-.9 1.5-2.7 2.3-3.3Z"/>' +
+            '<path class="avatar-ink" opacity=".57" d="M7 5.4c2.2-.4 5 .1 7.8.8-1.1.3-1.9 1.2-3.1 1.3L8 7c0-.3.1-.4 0-.5-.5-.2-.9-.6-1-1.1Zm-2.6 8.2c2.6.3 4.8.5 7.6 1-1 1.2-3.5 1.7-6.7 1.7l.5-1.2c.2-.5-.2-.7-.8-.8-.4 0-.6-.3-.6-.7Zm.8 3.3c2.7-.5 5.4.3 6.8 1.2-1.3 1.7-4 2.1-6.2 1.7-.2-.9-.1-1.8-.6-2.9Z"/>' +
+            '<path class="avatar-ink" opacity=".22" d="M14.1 1.1c1.7.1 3 .4 3.5 1.2.6.8.6 2.4.9 3.6.9 4.7 2 9 1.7 13-.1 1.5-.5 2.7-1.2 3.3-1.8 1.4-7 1.1-9.7.6-1.1-.1-2-.4-2.5-1 5.1 1.1 9.2.4 10.1-1.9.6-1.6.5-3.4.3-5.9-.3-3.6-1.1-8.3-3.1-12.9Z"/>' +
+            '<path class="avatar-ink" opacity=".49" d="M15.9 14.1c.9.2 1.9.2 2.9-.2.1 1.3-.4 2.2-1 2.8-.8-.6-1.5-1.3-1.9-2.6Z"/>'],
         book: ['Книга',
             '<path class="avatar-tint" d="M12 6.8C9.5 4.9 6.6 4.7 3.2 5.6v12.4c3.4-.9 6.3-.6 8.8 1.2 2.5-1.8 5.4-2.1 8.8-1.2V5.6c-3.4-.9-6.3-.7-8.8 1.2Zm0 0v12.4"/>' +
             '<path d="M6.2 9.1c1.1 0 2.1.2 3 .6m-3 3c1.1 0 2.1.2 3 .6m5.6-3.6c.9-.4 1.9-.6 3-.6m-3 4.2c.9-.4 1.9-.6 3-.6"/>'],
@@ -165,7 +167,7 @@
         const stylesheet = document.createElement('link');
         stylesheet.dataset.profileMotion = '';
         stylesheet.rel = 'stylesheet';
-        stylesheet.href = new URL('styles/profile-motion.css?v=20261126-2', profileUrl).href;
+        stylesheet.href = new URL('styles/profile-motion.css?v=20261126-3', profileUrl).href;
         stylesheet.addEventListener('error', () => stylesheet.remove(), { once: true });
         document.head.appendChild(stylesheet);
     }

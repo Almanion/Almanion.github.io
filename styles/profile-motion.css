@@ -1,9 +1,15 @@
+@property --avatar-orbit-phase {
+    syntax: "<angle>";
+    inherits: false;
+    initial-value: -150deg;
+}
+
 .profile-mark:not([data-profile-background="solid"]) {
-    --avatar-chroma: color-mix(in srgb, var(--profile-pigment) 73%, #b4dcff);
-    --avatar-reflection: color-mix(in srgb, var(--avatar-chroma) 57%, transparent);
-    --avatar-edge: color-mix(in srgb, var(--profile-pigment) 28%, transparent);
-    --avatar-shadow: color-mix(in srgb, var(--profile-pigment) 15%, var(--bg-secondary));
-    --avatar-spark: color-mix(in srgb, var(--avatar-chroma) 74%, #fff);
+    --avatar-chroma: color-mix(in srgb, var(--profile-pigment) 76%, #b4dcff);
+    --avatar-reflection: color-mix(in srgb, var(--avatar-chroma) 61%, transparent);
+    --avatar-edge: color-mix(in srgb, var(--profile-pigment) 33%, transparent);
+    --avatar-shadow: color-mix(in srgb, var(--profile-pigment) 13%, var(--bg-secondary));
+    --avatar-spark: color-mix(in srgb, var(--profile-pigment) 74%, var(--text-primary));
 }
 
 .profile-mark:not([data-profile-background="solid"])::before {
@@ -15,76 +21,105 @@
 
 /* Oversized light layers leave room to move without exposing hard edges. */
 .profile-mark[data-profile-background="glow"] {
-    --avatar-pattern: radial-gradient(ellipse at 71% 24%, var(--avatar-reflection), transparent 62%),
-        radial-gradient(ellipse at 16% 66%, var(--avatar-edge), transparent 70%),
-        linear-gradient(142deg, var(--avatar-shadow), transparent 42%);
-    --avatar-size: 167% 154%, 153% 175%, 100% 100%;
-    --avatar-position: 16% 36%, 72% 58%, center;
+    --avatar-pattern:
+        radial-gradient(ellipse 53% 39% at 28% 28%, var(--avatar-reflection) 2%, var(--avatar-edge) 38%, transparent 95%),
+        radial-gradient(ellipse 65% 60% at 107% 98%, var(--avatar-reflection), transparent 72%),
+        linear-gradient(137deg, transparent 40%, var(--avatar-shadow) 79%);
+    --avatar-size: 145% 158%, 100% 100%, 100% 100%;
+    --avatar-position: 20% 22%, center, center;
     --avatar-motion: avatar-glow 15s ease-in-out -3s infinite alternate;
 }
 
 .profile-mark[data-profile-background="grid"] {
     --avatar-pattern: linear-gradient(125deg, transparent 35%, var(--avatar-reflection) 49%, transparent 63%),
+        radial-gradient(circle at 25% 25%, var(--avatar-spark) 0 .75px, transparent 1.6px),
+        radial-gradient(circle at 75% 75%, var(--avatar-spark) 0 .75px, transparent 1.6px),
         repeating-linear-gradient(90deg, transparent 0 calc(25% - 1px), var(--avatar-edge) calc(25% - 1px) 25%),
         repeating-linear-gradient(0deg, transparent 0 calc(25% - 1px), var(--avatar-edge) calc(25% - 1px) 25%),
         radial-gradient(ellipse at 15% 5%, var(--avatar-edge), transparent 68%);
-    --avatar-size: 230% 230%, 100% 100%, 100% 100%, 100% 100%;
-    --avatar-position: 0% 95%, center, center, center;
+    --avatar-size: 230% 230%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%;
+    --avatar-position: 0% 95%, center, center, center, center, center;
     --avatar-motion: avatar-grid-light 18s ease-in-out -4s infinite alternate;
 }
 
 .profile-mark[data-profile-background="diagonal"] {
-    --avatar-pattern: linear-gradient(136deg,
-        var(--avatar-shadow) 0 26%, var(--avatar-edge) 26% 28%, transparent 28% 32%,
-        var(--avatar-reflection) 32% 35%, transparent 35% 64%, var(--avatar-edge) 64% 66%,
-        var(--avatar-shadow) 66% 76%, var(--avatar-edge) 76% 79%, transparent 79%);
-    --avatar-size: 128% 128%;
-    --avatar-position: 37% 44%;
-    --avatar-motion: avatar-bands 14s ease-in-out -3s infinite alternate;
+    --avatar-pattern:
+        linear-gradient(136deg, transparent 38%, var(--avatar-edge) 48%, transparent 56%),
+        linear-gradient(136deg,
+            transparent 0 16%, var(--avatar-edge) 16% 27%, var(--avatar-reflection) 27% 29%,
+            transparent 29% 66%, var(--avatar-edge) 66% 76%, var(--avatar-shadow) 76% 80%,
+            var(--avatar-reflection) 80% 82%, transparent 82%);
+    --avatar-size: 228% 228%, 100% 100%;
+    --avatar-position: 8% 8%, center;
+    --avatar-motion: avatar-bands 16s ease-in-out -3s infinite alternate;
 }
 
 .profile-mark[data-profile-background="dust"] {
     --avatar-pattern:
-        radial-gradient(circle at 24% 27%, var(--avatar-spark) 0 .65px, transparent 1.5px),
-        radial-gradient(circle at 72% 17%, var(--avatar-reflection) 0 .8px, transparent 1.65px),
-        radial-gradient(circle at 79% 60%, var(--avatar-spark) 0 .65px, transparent 1.5px),
-        radial-gradient(circle at 27% 69%, var(--avatar-chroma) 0 1px, transparent 2.1px),
-        radial-gradient(circle at 52% 82%, var(--avatar-reflection) 0 .6px, transparent 1.55px),
-        radial-gradient(circle at 69% 38%, var(--avatar-edge) 0 .6px, transparent 1.45px),
-        radial-gradient(ellipse at 58% 34%, var(--avatar-edge), transparent 57%),
-        linear-gradient(25deg, var(--avatar-shadow), transparent);
-    --avatar-size: 120% 120%, 120% 120%, 120% 120%, 125% 125%, 125% 125%, 125% 125%, 158% 155%, 100% 100%;
-    --avatar-position: 48% 37%, 76% 34%, 56% 35%, 55% 73%, 46% 72%, 61% 52%, 40% 60%, center;
-    --avatar-motion: avatar-night-drift 21s ease-in-out -6s infinite alternate;
+        radial-gradient(ellipse 8% 2% at 25% 26%, var(--avatar-spark), transparent),
+        radial-gradient(ellipse 2% 8% at 25% 26%, var(--avatar-spark), transparent),
+        radial-gradient(ellipse 7% 2% at 77% 70%, var(--avatar-spark), transparent),
+        radial-gradient(ellipse 2% 7% at 77% 70%, var(--avatar-spark), transparent),
+        radial-gradient(circle at 72% 21%, var(--avatar-edge) 0 .8px, transparent 1.6px),
+        radial-gradient(circle at 20% 67%, var(--avatar-spark) 0 .65px, transparent 1.5px),
+        radial-gradient(circle at 48% 82%, var(--avatar-edge) 0 .6px, transparent 1.55px),
+        radial-gradient(ellipse at 58% 24%, var(--avatar-reflection), transparent 53%),
+        linear-gradient(22deg, var(--avatar-shadow), transparent 78%);
+    --avatar-size: 90% 90%, 90% 90%, 124% 124%, 124% 124%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%;
+    --avatar-position: 25% 26%, 25% 26%, 77% 70%, 77% 70%, center, center, center, center, center;
+    --avatar-motion: avatar-twinkle 14s ease-in-out -3s infinite;
 }
 
 .profile-mark[data-profile-background="plasma"] {
-    --plasma-rose: color-mix(in srgb, var(--profile-pigment) 63%, #dd9cc9);
-    --plasma-blue: color-mix(in srgb, var(--profile-pigment) 48%, #78c7e0);
+    --plasma-rose: color-mix(in srgb, var(--profile-pigment) 55%, #ec8abc);
+    --plasma-blue: color-mix(in srgb, var(--profile-pigment) 52%, #65d8ce);
     --avatar-pattern:
-        radial-gradient(ellipse at 28% 25%, color-mix(in srgb, var(--plasma-rose) 77%, transparent) 0%, transparent 57%),
-        radial-gradient(ellipse at 72% 63%, color-mix(in srgb, var(--plasma-blue) 72%, transparent) 0%, transparent 60%),
-        conic-gradient(from 38deg at 51% 54%, var(--avatar-shadow), transparent, var(--avatar-edge), var(--avatar-shadow));
+        radial-gradient(ellipse 66% 77% at 12% 23%, color-mix(in srgb, var(--plasma-rose) 83%, transparent) 1%, transparent 68%),
+        radial-gradient(ellipse 67% 74% at 78% 70%, color-mix(in srgb, var(--plasma-blue) 75%, transparent) 5%, transparent 65%),
+        conic-gradient(from 32deg at 51% 54%, var(--avatar-shadow), transparent, var(--avatar-edge), var(--avatar-shadow));
     --avatar-size: 154% 160%, 168% 166%, 139% 132%;
     --avatar-position: 27% 21%, 81% 68%, 58% 44%;
     --avatar-motion: avatar-nebula 13s ease-in-out -4s infinite;
 }
 
 .profile-mark[data-profile-background="ripples"] {
-    --avatar-pattern: repeating-radial-gradient(ellipse at 27% 77%,
-        transparent 0 13%, var(--avatar-edge) 14% 15%, var(--avatar-reflection) 15% 16%, transparent 17% 24%),
-        radial-gradient(ellipse at 28% 76%, var(--avatar-reflection), transparent 48%),
+    --avatar-motion: avatar-ripples 11s linear -2s infinite;
+}
+
+.profile-mark[data-profile-background="ripples"]::before {
+    --orbit-cx: 33%;
+    --orbit-cy: 64%;
+    --orbit-radius: 29%;
+    --orbit-dot-x: 7.9%;
+    --orbit-dot-y: 49.5%;
+    --avatar-orbit-phase: -150deg;
+    --avatar-pattern:
+        radial-gradient(circle at var(--orbit-dot-x) var(--orbit-dot-y),
+            var(--avatar-spark) 0 1px, var(--avatar-reflection) 1.2px, transparent 2.35px),
+        radial-gradient(ellipse 100% 100% at var(--orbit-cx) var(--orbit-cy),
+            var(--avatar-edge), transparent 9%, transparent 13%, var(--avatar-edge) 15%, transparent 17%,
+            transparent calc(var(--orbit-radius) - 2%),
+            var(--avatar-reflection) var(--orbit-radius),
+            transparent calc(var(--orbit-radius) + 2%),
+            transparent 41%, var(--avatar-edge) 43%, transparent 45%),
+        radial-gradient(ellipse at 29% 72%, var(--avatar-edge), transparent 56%),
         linear-gradient(132deg, var(--avatar-shadow), transparent);
-    --avatar-position: 42% 57%, 30% 66%, center;
-    --avatar-size: 115% 122%, 134% 130%, 100% 100%;
-    --avatar-motion: avatar-ripples 12s ease-in-out -3s infinite alternate;
+    --avatar-position: center;
+    --avatar-size: 100% 100%;
+}
+
+@supports (width: calc(1px * cos(0deg))) {
+    .profile-mark[data-profile-background="ripples"]::before {
+        --orbit-dot-x: calc(var(--orbit-cx) + var(--orbit-radius) * cos(var(--avatar-orbit-phase)));
+        --orbit-dot-y: calc(var(--orbit-cy) + var(--orbit-radius) * sin(var(--avatar-orbit-phase)));
+    }
 }
 
 .profile-mark[data-profile-background="scan"] {
-    --avatar-pattern: linear-gradient(to bottom, transparent 37%, var(--avatar-edge) 49%,
-        var(--avatar-reflection) 51%, transparent 54%),
+    --avatar-pattern: linear-gradient(to bottom, transparent 37%, var(--avatar-edge) 47%,
+        var(--avatar-reflection) 50%, var(--avatar-reflection) 51%, transparent 56%),
         repeating-linear-gradient(to bottom, transparent 0 15%, var(--avatar-edge) 15% 18%),
-        linear-gradient(128deg, var(--avatar-shadow) 8%, transparent 59%, var(--avatar-edge) 95%);
+        linear-gradient(90deg, var(--avatar-shadow) 0 7%, transparent 15% 84%, var(--avatar-edge) 94%, var(--avatar-shadow));
     --avatar-size: 100% 212%, 100% 100%, 100% 100%;
     --avatar-position: 0% 8%, center, center;
     --avatar-motion: avatar-signal-sweep 11s ease-in-out -2s infinite alternate;
@@ -93,49 +128,50 @@
 .profile-mark[data-profile-background="stardust"] {
     --avatar-pattern:
         radial-gradient(circle at 80% 50%, var(--avatar-spark) 0 1px, var(--avatar-reflection) 1.05px, transparent 2.55px),
-        radial-gradient(ellipse 47% 9% at 42% 50%, var(--avatar-reflection), transparent 90%),
-        radial-gradient(circle at 76% 49%, var(--avatar-spark) 0 .68px, transparent 1.75px),
-        radial-gradient(ellipse 46% 7% at 40% 49%, var(--avatar-edge), transparent 90%),
-        radial-gradient(circle at 23% 25%, var(--avatar-edge) 0 .9px, transparent 1.65px),
-        radial-gradient(circle at 73% 71%, var(--avatar-reflection) 0 1.05px, transparent 1.85px),
-        linear-gradient(33deg, var(--avatar-shadow), transparent 63%);
-    --avatar-size: 59% 37%, 59% 37%, 44% 28%, 44% 28%, 100% 100%, 100% 100%, 100% 100%;
-    --avatar-position: 39% 24%, 39% 24%, 13% 77%, 13% 77%, center, center, center;
+        radial-gradient(ellipse 51% 8% at 48% 50%, var(--avatar-reflection), transparent 95%),
+        radial-gradient(circle at 21% 50%, var(--avatar-spark) 0 .8px, transparent 2px),
+        radial-gradient(ellipse 45% 8% at 58% 50%, var(--avatar-reflection), transparent 95%),
+        radial-gradient(circle at 23% 79%, var(--avatar-edge) 0 .85px, transparent 1.6px),
+        radial-gradient(circle at 73% 17%, var(--avatar-reflection) 0 1px, transparent 1.8px),
+        radial-gradient(ellipse at 95% 105%, var(--avatar-edge), transparent 70%);
+    --avatar-size: 59% 46%, 59% 46%, 51% 37%, 51% 37%, 100% 100%, 100% 100%, 100% 100%;
+    --avatar-position: 28% 10%, 28% 10%, 45% 85%, 45% 85%, center, center, center;
     --avatar-motion: avatar-comets 17s linear -5s infinite;
 }
 
-/* Animate selected previews and the visible account mark. A page with many avatars stays calm. */
+/* Keep the texture choices still so each preview can be compared at a glance. */
 @media (prefers-reduced-motion: no-preference) {
-    :root[data-page-motion="max"] :is(#accountBtn, #accIdentityMark, #profilePreviewAvatar, #profileCompactAvatar,
-        .profile-backgrounds input:checked + .profile-choice-face) .profile-mark:not(:has(.profile-photo))::before {
+    :root[data-page-motion="max"] :is(#accountBtn, #accIdentityMark, #profilePreviewAvatar, #profileCompactAvatar)
+        .profile-mark:not(:has(.profile-photo))::before {
         animation: var(--avatar-motion, none);
     }
 }
 
 @keyframes avatar-glow {
-    to { background-position: 69% 68%, 32% 22%, center; }
+    to { background-position: 64% 53%, center, center; }
 }
 @keyframes avatar-grid-light {
-    to { background-position: 100% 5%, center, center, center; }
+    to { background-position: 100% 5%, center, center, center, center, center; }
 }
 @keyframes avatar-bands {
-    to { background-position: 61% 65%; }
+    to { background-position: 93% 93%, center; }
 }
-@keyframes avatar-night-drift {
-    to { background-position: 36% 56%, 55% 52%, 38% 56%, 72% 58%, 58% 58%, 73% 40%, 62% 39%, center; }
+@keyframes avatar-twinkle {
+    37% { background-size: 158% 158%, 158% 158%, 98% 98%, 98% 98%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%; }
+    71% { background-size: 106% 106%, 106% 106%, 155% 155%, 155% 155%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%; }
 }
 @keyframes avatar-nebula {
     34% { background-position: 65% 54%, 61% 31%, 24% 69%; }
     66% { background-position: 52% 73%, 24% 62%, 37% 31%; }
 }
 @keyframes avatar-ripples {
-    to { background-size: 153% 158%, 145% 138%, 100% 100%; }
+    to { --avatar-orbit-phase: 210deg; }
 }
 @keyframes avatar-signal-sweep {
     to { background-position: 0% 91%, center, center; }
 }
 @keyframes avatar-comets {
-    0%, 17% { background-position: -150% 63%, -150% 63%, -90% 93%, -90% 93%, center, center, center; }
-    42%, 56% { background-position: 255% -8%, 255% -8%, -90% 93%, -90% 93%, center, center, center; }
-    79%, 100% { background-position: 255% -8%, 255% -8%, 227% 31%, 227% 31%, center, center, center; }
+    0%, 17% { background-position: -150% 10%, -150% 10%, 210% 85%, 210% 85%, center, center, center; }
+    42%, 56% { background-position: 255% 10%, 255% 10%, 210% 85%, 210% 85%, center, center, center; }
+    79%, 100% { background-position: 255% 10%, 255% 10%, -110% 85%, -110% 85%, center, center, center; }
 }

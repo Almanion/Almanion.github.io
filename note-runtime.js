@@ -32,7 +32,7 @@
         firebaseConfig: 'firebase-config.js?v=20261126-1',
         dataSync: 'data-sync.js?v=20260908-1',
         analytics: 'firebase-analytics.js?v=20261009-4',
-        account: 'account.js?v=20261126-8',
+        account: 'account.js?v=20261126-9',
         bookmarks: 'bookmarks.js?v=20261122-4',
         editor: 'note-editor.js?v=20261126-2'
     };
