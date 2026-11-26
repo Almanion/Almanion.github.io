@@ -73,7 +73,7 @@
             lastPress = now;
             if (presses === 3) {
                 presses = 0;
-                window.location.assign('physics-forecast.html');
+                window.location.assign('forecast.html');
             }
         });
         wordmark.addEventListener('blur', function () { presses = 0; });

@@ -414,6 +414,12 @@ mark.search-result-term {
     list-style: none;
 }
 
+@media (min-width: 1051px) and (pointer: fine) {
+    body:is([data-reader-layout], [data-note-subject]) .sidebar > .nav-menu > .nav-section:not(.other-subjects) > ul {
+        padding-inline-start: 1rem;
+    }
+}
+
 .nav-link {
     display: block;
     padding: 0.85rem var(--spacing);

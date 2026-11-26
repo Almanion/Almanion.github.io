@@ -2,11 +2,80 @@
     'use strict';
     const M = window.PhysicsForecast;
     const $ = id => document.getElementById(id);
-    const templates = [
-        { label: 'Работа по физике', ...M.physics },
-        { label: 'Домашнее задание', question: 'Зададут ли домашнюю работу по геометрии?', criteria: 'Считается задание для всего класса, записанное в электронном дневнике в день события.' },
-        { label: 'Школьный матч', question: 'Выиграет ли 10-1 матч?', criteria: 'Ответ «Да» — победа 10-1 по официальному результату матча.' }
-    ];
+    const templateGroups = {
+        'Уроки': [
+            { label: 'Работа по физике', ...M.physics },
+            {
+                label: 'Домашнее задание',
+                question: 'Зададут ли домашнюю работу по геометрии?',
+                criteria: '«Да», если к концу дня в электронном дневнике под сегодняшним уроком геометрии появится задание для всего класса.'
+            },
+            {
+                label: 'Задачи по геометрии',
+                question: 'Сколько задач разберут у доски на первом уроке геометрии?',
+                answers: ['Ни одной', '1–2 задачи', '3–4 задачи', '5 и больше'],
+                criteria: 'Считаем разные задачи, решение которых довели до ответа у доски за этот урок. Два способа решения одной задачи считаются за одну. Если урок отменят, прогноз отменяется.'
+            },
+            {
+                label: 'Опыт по химии',
+                question: 'Кто проведёт первый опыт на уроке химии?',
+                answers: ['Учитель', 'Ученики', 'Опыта не будет'],
+                criteria: 'Берём первый опыт, который проведут в классе в день события. Если хотя бы один ученик сам выполняет опыт, выбираем «Ученики». Видеозапись опыта не учитывается. Если урок отменят, прогноз отменяется.'
+            }
+        ],
+        'Кружки и события': [
+            {
+                label: 'Объём серии',
+                question: 'Сколько задач будет в новой серии маткружка?',
+                answers: ['До 5 включительно', '6–8', '9–11', '12 и больше'],
+                criteria: 'Считаем пронумерованные задачи в первой серии, выданной в день занятия. Подпункты одного номера считаются за одну задачу. Если серию не выдадут, прогноз отменяется.'
+            },
+            {
+                label: 'Посещаемость кружка',
+                question: 'Сколько учеников придёт на математический кружок?',
+                answers: ['До 10 включительно', '11–20', '21 и больше'],
+                criteria: 'Считаем учеников в аудитории через десять минут после начала занятия. Ведущие кружка в подсчёт не входят. Если занятие отменят, прогноз отменяется.'
+            },
+            {
+                label: 'Начало концерта',
+                question: 'Когда начнётся школьный концерт?',
+                answers: ['Вовремя или раньше', 'На 1–10 минут позже', 'Больше чем на 10 минут позже'],
+                criteria: 'Сравниваем объявленное время с минутой первого приветствия ведущего со сцены. Используем часы и минуты без секунд. Если в этот день концерт не состоится, прогноз отменяется.'
+            }
+        ],
+        'Спорт': [
+            {
+                label: 'Школьный матч',
+                question: 'Выиграет ли 10-1 матч?',
+                criteria: 'Берём официальный результат первого матча класса в этот день, включая дополнительное время и пенальти. Ничья означает «Нет». Если матч не завершится в этот день, прогноз отменяется.'
+            },
+            {
+                label: 'Итог матча',
+                question: 'Чем закончится первый футбольный матч нашего класса?',
+                answers: ['Победа класса', 'Ничья', 'Победа соперника'],
+                criteria: 'Берём счёт по окончании основного времени, включая добавленные минуты. Дополнительные таймы и серия пенальти в итог не входят. Если матч в этот день не доиграют до конца основного времени, прогноз отменяется.'
+            },
+            {
+                label: 'Голы в матче',
+                question: 'Сколько голов забьют обе команды в первом матче нашего класса?',
+                answers: ['0 голов', '1–2 гола', '3–4 гола', '5 и больше'],
+                criteria: 'Складываем голы обеих команд к концу основного времени, включая добавленные минуты. Голы в серии пенальти не учитываются. Если основное время не доиграют в этот день, прогноз отменяется.'
+            }
+        ],
+        'Погода': [
+            {
+                label: 'Температура в полдень',
+                question: 'Какую температуру покажет уличный термометр у школы в полдень?',
+                answers: ['Ниже 0 °C', 'От 0 до +10 °C включительно', 'Выше +10 °C'],
+                criteria: 'Берём показание на первом фото уличного термометра у главного входа, сделанном с 12:00 до 12:10. Если фото нет, прогноз отменяется.'
+            },
+            {
+                label: 'Осадки на перемене',
+                question: 'Будут ли осадки в начале большой перемены?',
+                criteria: 'Смотрим у главного входа сразу после звонка на первую большую перемену. «Да», если в этот момент идёт дождь, снег или град. Лужи и снег на земле не считаются. Если никто не проверил, прогноз отменяется.'
+            }
+        ]
+    };
     const confirmations = {
         liquidity: 'Включить пополнение заявок на продажу из резерва площадки?',
         lock: 'Закрыть торги и снять оставшиеся заявки?',
@@ -25,9 +94,27 @@
         let current, markets = [], creating = false, busy = false, disabled = true, pending = null, initialized = false;
         question.maxLength = M.QUESTION_LIMIT;
         criteria.maxLength = M.CRITERIA_LIMIT;
-        templates.forEach((item, i) => template.add(new Option(item.label, String(i))));
+        const presets = new Map();
+        for (const [groupLabel, items] of Object.entries(templateGroups)) {
+            const group = document.createElement('optgroup');
+            group.label = groupLabel;
+            for (const item of items) {
+                presets.set(item.label, item);
+                group.append(new Option(item.label, item.label));
+            }
+            template.append(group);
+        }
 
         function answerInputs() { return [...editor.querySelectorAll('input')]; }
+        let customDraft = null;
+        function rememberCustomDraft() {
+            template.value = '';
+            customDraft = {
+                question: question.value,
+                criteria: criteria.value,
+                answers: answerInputs().map(input => input.value)
+            };
+        }
         function setAnswers(labels = Object.values(M.DEFAULT_ANSWERS), focus = -1) {
             for (const row of editor.querySelectorAll('.forecast-answer-row')) row.remove();
             labels.forEach((label, index) => {
@@ -42,7 +129,7 @@
                     remove.setAttribute('aria-label', 'Удалить вариант ' + (index + 1));
                     remove.addEventListener('click', () => {
                         const values = answerInputs().map(el => el.value); values.splice(index, 1);
-                        setAnswers(values); addAnswer.focus();
+                        setAnswers(values); rememberCustomDraft(); addAnswer.focus();
                     });
                     row.append(remove);
                 }
@@ -53,7 +140,10 @@
         }
         addAnswer.addEventListener('click', () => {
             const values = answerInputs().map(el => el.value);
-            if (values.length < M.SIDE_IDS.length) setAnswers([...values, ''], values.length);
+            if (values.length < M.SIDE_IDS.length) {
+                setAnswers([...values, ''], values.length);
+                rememberCustomDraft();
+            }
         });
         setAnswers();
 
@@ -152,6 +242,7 @@
         }
         function resetForm() {
             form.reset();
+            customDraft = null;
             question.setCustomValidity(''); clockInput.setCustomValidity(''); setAnswers();
         }
         function reset() {
@@ -164,20 +255,19 @@
         $('showManage').addEventListener('click', () => setMode(false));
         $('nextPending').addEventListener('click', () => { const next = anotherPending(); if (next) selectMarket(next.id); });
         template.addEventListener('change', () => {
-            const preset = template.value === '' ? null : templates[Number(template.value)];
-            question.value = preset?.question || '';
-            criteria.value = preset?.criteria || '';
+            const chosen = presets.get(template.value) || customDraft;
+            question.value = chosen?.question || '';
+            criteria.value = chosen?.criteria || '';
             question.setCustomValidity('');
-            if (preset) setAnswers();
+            setAnswers(chosen?.answers);
         });
         form.addEventListener('input', e => {
             if (e.target === date) syncDate();
             if (e.target === date || e.target === clockInput) clockInput.setCustomValidity('');
-            if (editor.contains(e.target)) answerInputs().forEach(input => input.setCustomValidity(''));
-            if (e.target === question || e.target === criteria) {
-                template.value = '';
-                question.setCustomValidity('');
-            }
+            const editingAnswer = editor.contains(e.target);
+            if (editingAnswer) answerInputs().forEach(input => input.setCustomValidity(''));
+            if (e.target === question) question.setCustomValidity('');
+            if (e.target === question || e.target === criteria || editingAnswer) rememberCustomDraft();
         });
         for (const button of dateButtons) button.addEventListener('click', () => {
             date.value = M.dayKey(now() + Number(button.dataset.offset) * M.DAY);
@@ -187,10 +277,10 @@
         $('repeatEvent').addEventListener('click', () => {
             if (!current) return;
             setMode(true);
-            template.value = '';
             question.value = current.question; criteria.value = current.criteria;
             question.setCustomValidity(''); clockInput.setCustomValidity('');
             setAnswers(current.sides.map(id => current.answers[id]));
+            rememberCustomDraft();
             clockInput.value = current.endAt === current.eventEnd ? '' : window.ForecastLedger.time.format(current.endAt);
             const tomorrow = now() + M.DAY;
             const next = M.dayKey(Math.max(tomorrow, current.eventEnd));

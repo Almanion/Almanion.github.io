@@ -138,7 +138,7 @@ test('forecast login on a phone waits for an input tap and fits above the keyboa
     await page.route('**/*', route => new URL(route.request().url()).hostname === '127.0.0.1' ? route.continue() : route.abort());
     await page.addInitScript(installAccountStub);
     await page.addInitScript(() => localStorage.setItem('almanion:forecast:guide-seen:v1', '1'));
-    await page.goto('/physics-forecast.html');
+    await page.goto('/forecast.html');
     await page.locator('#gateAction').click();
     await expect(page.locator('#accTitle')).toBeFocused();
     const password = page.locator('#accPass');

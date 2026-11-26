@@ -59,11 +59,11 @@ test('avatar surfaces animate only with full site motion and respect reduced mot
     });
     await expect(avatar).toHaveAttribute('data-profile-background', 'scan');
     const animation = () => avatar.evaluate(mark => getComputedStyle(mark, '::before').animationName);
-    await expect.poll(animation).toBe('avatar-scan');
+    await expect.poll(animation).toBe('avatar-signal-sweep');
     await page.evaluate(() => window.AlmanionSettings.update({ animationLevel: 'medium' }));
     await expect.poll(animation).toBe('none');
     await page.evaluate(() => window.AlmanionSettings.update({ animationLevel: 'max' }));
-    await expect.poll(animation).toBe('avatar-scan');
+    await expect.poll(animation).toBe('avatar-signal-sweep');
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await expect.poll(animation).toBe('none');
 });

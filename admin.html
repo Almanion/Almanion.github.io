@@ -247,7 +247,7 @@
             </div>
         </div></section>
             <section class="admin-view" id="view-forecasts" role="tabpanel" aria-labelledby="tab-forecasts" tabindex="0" hidden>
-                <div class="admin-view-heading"><h1 tabindex="-1">Прогнозы</h1><a id="forecastMarketLink" class="btn btn-outline btn-sm" href="physics-forecast.html">К прогнозам ↗</a></div>
+                <div class="admin-view-heading"><h1 tabindex="-1">Прогнозы</h1><a id="forecastMarketLink" class="btn btn-outline btn-sm" href="forecast.html">К прогнозам ↗</a></div>
                 <div class="forecast-shell admin-forecast-shell">
                     <div class="admin-forecast-loading"><p id="forecastLoadStatus" role="status">Загружаем прогнозы…</p><button class="forecast-secondary" type="button" id="forecastRetry" hidden>Повторить</button></div>
                     <div id="forecastWorkspace" hidden>
@@ -318,7 +318,7 @@
                             <form id="createRound" hidden>
                                 <fieldset class="forecast-event-fields" id="eventFields">
                                     <legend class="forecast-sr">Новое событие</legend>
-                                    <label>Шаблон<select id="eventTemplate"><option value="">Свой вопрос</option></select></label>
+                                    <label class="forecast-field-wide">Шаблон<select id="eventTemplate"><option value="">Свой вопрос</option></select></label>
                                     <div class="forecast-date-field">
                                         <label>Дата события<input type="date" id="newDay" required></label>
                                         <div class="forecast-date-shortcuts" role="group" aria-label="Быстрый выбор даты">
@@ -326,7 +326,7 @@
                                         </div>
                                     </div>
                                     <label>Закрыть торги в день события, мск <small>По умолчанию в конце дня</small><input type="time" id="newTime" step="60"></label>
-                                    <label class="forecast-field-wide">Вопрос<input type="text" id="eventQuestion" required placeholder="Например, выиграет ли 10-1 матч?"></label>
+                                    <label class="forecast-field-wide">Вопрос<input type="text" id="eventQuestion" required placeholder="Например, сколько задач будет в серии?"></label>
                                     <fieldset class="forecast-answer-editor forecast-event-fields" id="answerEditor">
                                         <legend>Варианты ответа</legend>
                                         <button type="button" class="forecast-secondary" id="addAnswer">+ Вариант</button>
@@ -411,8 +411,8 @@
     <script src="physics-forecast-core.js?v=20261126-liquidity"></script>
     <script src="physics-forecast-ledger.js?v=20261126-liquidity"></script>
     <script src="physics-forecast-chart.js?v=20261126-phone-layout"></script>
-    <script src="physics-forecast-admin.js?v=20261126-liquidity"></script>
-    <script src="admin-forecasts.js?v=20261126-liquidity"></script>
+    <script src="physics-forecast-admin.js?v=20261127-1"></script>
+    <script src="admin-forecasts.js?v=20261127-1"></script>
     <script src="constructor/config.js?v=20261126-1"></script>
     <script src="constructor/model.js?v=20261126-1"></script>
     <script src="constructor/review.js?v=20261126-1"></script>

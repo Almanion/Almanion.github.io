@@ -234,7 +234,7 @@ function build(options) {
             .replace(/((?:src|href)=["'](?:(?:note-runtime|knowledge-check)\.js|styles\/site\/(?:reader|index)\.css))(?:\?[^"']*)?(["'])/g, '$1?v=20261016-1$2')
             .replace(/((?:src|href)=["'](?:(?:note-runtime|print-export)\.js|styles\/print\.css))(?:\?[^"']*)?(["'])/g, '$1?v=20261016-3$2')
             .replace(/(href=["'](?:style-new|styles\/typography)\.css)(?:\?[^"']*)?(["'])/g, '$1?v=20261016-4$2')
-            .replace(/((?:src|href)=["'](?:(?:note-runtime|account|bookmarks|personal-notes|home-motion)\.js|styles\/(?:site\/index|home-dashboard)\.css))(?:\?[^"']*)?(["'])/g, '$1?v=20261018-1$2')
+            .replace(/((?:src|href)=["'](?:(?:note-runtime|account|bookmarks|personal-notes)\.js|styles\/(?:site\/index|home-dashboard)\.css))(?:\?[^"']*)?(["'])/g, '$1?v=20261018-1$2')
             .replace(/(src=["']home-dashboard\.js)(?:\?[^"']*)?(["'])/g, '$1?v=20261114-2$2')
             .replace(/(src=["'](?:note-runtime|print-export)\.js)(?:\?[^"']*)?(["'])/g, '$1?v=20261113-1$2')
             .replace(/(href=["'](?:styles\/copy-blocks|style-new)\.css)(?:\?[^"']*)?(["'])/g, '$1?v=20261113-2$2')
@@ -246,7 +246,6 @@ function build(options) {
             .replace(/(src=["'](?:script|note-runtime|print-export|russian-ege|duty\/view)\.js)(?:\?[^"']*)?(["'])/g, '$1?v=20261121-2$2')
             .replace(/((?:src|href)=["'](?:(?:script|note-runtime|print-export)\.js|styles\/(?:copy-blocks|chemistry-10-notes|print)\.css))(?:\?[^"']*)?(["'])/g, '$1?v=20261121-4$2')
             .replace(/(src=["']experimental-reader\.js)(?:\?[^"']*)?(["'])/g, '$1?v=20261122-1$2')
-            .replace(/(src=["']home-motion\.js)(?:\?[^"']*)?(["'])/g, '$1?v=20261122-2$2')
             .replace(/(src=["']print-export\.js)(?:\?[^"']*)?(["'])/g, '$1?v=20261122-3$2')
             .replace(/((?:src|href)=["'](?:(?:script|search|bookmarks)\.js|styles\/site\/(?:reader|index)\.css))(?:\?[^"']*)?(["'])/g, '$1?v=20261122-4$2')
             .replace(/(src=["'](?:note-runtime|english-ui|settings)\.js)(?:\?[^"']*)?(["'])/g, '$1?v=20261123-3$2')
@@ -258,8 +257,8 @@ function build(options) {
             .replace(/(href=["']style-new\.css)(?:\?[^"']*)?(["'])/g, '$1?v=20261123-tech-book$2')
             .replace(/((?:src|href)=["'](?:\.\.\/)?(?:(?:account|firebase-config|note-runtime)\.js|styles\/site\/(?:index|reader)\.css|constructor\/(?:index\.css|(?:index|model|review)\.js)))(?:\?[^"']*)?(["'])/g, '$1?v=20261126-2$2');
         let published = updated
-            .replace(/((?:src|href)=["'](?:\.\.\/)?styles\/site\/(?:index|reader)\.css)\?v=20261126-2(["'])/g, '$1?v=20261126-6$2')
-            .replace(/(src=["'](?:\.\.\/)?note-runtime\.js)\?v=20261126-2(["'])/g, '$1?v=20261126-9$2')
+            .replace(/(href=["'](?:\.\.\/)?styles\/site\/(?:index|reader|features)\.css)(?:\?[^"']*)?(["'])/g, '$1?v=20261127-1$2')
+            .replace(/(src=["'](?:\.\.\/)?(?:note-runtime|settings)\.js)(?:\?[^"']*)?(["'])/g, '$1?v=20261127-1$2')
             .replace(/(src=["'](?:\.\.\/)?account\.js)(?:\?[^"']*)?(["'])/g, '$1?v=20261126-9$2');
         // The browser decides whether to take a navigation snapshot before
         // deferred scripts run. Make the opt-in available with the first bytes of HTML.

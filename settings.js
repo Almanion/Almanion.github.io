@@ -441,14 +441,17 @@ function refreshSettingsControls() {
     modal.querySelector('.prefs-preview').disabled = siteSettings.animationLevel === 'off' || matchMedia('(prefers-reduced-motion: reduce)').matches;
     const hover = modal.querySelector('#hoverToggle');
     if (hover) hover.checked = siteSettings.hoverEffects;
-    const percent = String(Math.round(normalizeNoteScale(siteSettings.noteScale) * 100));
+    const percent = Math.round(normalizeNoteScale(siteSettings.noteScale) * 100);
     const number = modal.querySelector('#noteScaleInput');
     const range = modal.querySelector('#noteScaleRange');
     const resetScale = modal.querySelector('[data-note-scale-action="reset"]');
-    if (resetScale) resetScale.disabled = percent === '100';
+    if (resetScale) resetScale.disabled = percent === 100;
     if (number && document.activeElement !== number) number.value = percent;
     if (range) {
-        range.value = percent;
+        range.valueAsNumber = percent;
+        const min = Number(range.min);
+        const max = Number(range.max);
+        range.style.setProperty('--note-scale-fraction', (percent - min) / (max - min));
         range.setAttribute('aria-valuetext', percent + '%');
     }
 }

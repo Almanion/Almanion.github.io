@@ -71,6 +71,34 @@ for (const width of [1440, 390, 320]) test(`settings controls fit and persist at
     await expect(page.locator('#settingsModal')).toHaveClass(/hidden/);
 });
 
+test('the scale slider fill follows keyboard, pointer and numeric input', async ({ page }) => {
+    await page.setViewportSize({ width: 320, height: 680 });
+    await page.evaluate(() => openSettingsModal());
+    const range = page.getByRole('slider', { name: 'Масштаб конспекта' });
+    const number = page.locator('#noteScaleInput');
+    await expect(range).toHaveCSS('height', '44px');
+    await expect(range).toHaveCSS('appearance', 'none');
+    await expect(range).toHaveCSS('--note-scale-fraction', '0.5');
+    await range.press('ArrowRight');
+    await expect(number).toHaveValue('101');
+    await expect(range).toHaveAttribute('aria-valuetext', '101%');
+    await expect(range).toHaveCSS('--note-scale-fraction', '0.52');
+
+    await number.fill('75');
+    await number.press('Tab');
+    await expect(range).toHaveValue('75');
+    await expect(range).toHaveCSS('--note-scale-fraction', '0');
+    const bounds = await range.boundingBox();
+    await range.click({ position: { x: bounds.width - 1, y: bounds.height / 2 } });
+    await expect(number).toHaveValue('125');
+    await expect(range).toHaveCSS('--note-scale-fraction', '1');
+
+    await page.locator('[data-note-scale-action="reset"]').click();
+    await expect(range).toBeFocused();
+    await expect(number).toHaveValue('100');
+    await expect(range).toHaveCSS('--note-scale-fraction', '0.5');
+});
+
 test('touch scrolling settings body does not drag or close the sheet', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 800 });
     await page.evaluate(() => {
@@ -235,14 +263,17 @@ test('landscape previews each motion level and replays by keyboard', async ({ pa
     await page.evaluate(() => openSettingsModal());
     const preview = page.getByRole('button', { name: 'Повторить анимацию' });
     const names = () => preview.evaluate(el => el.getAnimations({ subtree: true }).map(a => a.animationName));
+    const cloudDuration = () => preview.locator('.prefs-cloud').evaluate(el => parseFloat(getComputedStyle(el).animationDuration) * 1000);
     await expect(page.locator('#settingsDoneBtn')).toBeFocused();
     await expect.poll(names).toContain('prefs-trail');
+    expect(await cloudDuration()).toBeCloseTo(2400 / 1.3, 1);
     await preview.evaluate(el => el.getAnimations({ subtree: true }).forEach(a => a.finish()));
     await preview.focus();
     await page.keyboard.press('Enter');
     await expect.poll(names).toContain('prefs-trail');
     await page.locator('[data-level="medium"]').click();
     await expect.poll(names).toContain('prefs-cloud-drift');
+    expect(await cloudDuration()).toBeCloseTo(800 / 1.3, 1);
     expect(await names()).not.toContain('prefs-hills');
     await page.locator('[data-level="off"]').click();
     await expect(preview).toBeDisabled();
@@ -266,10 +297,11 @@ test('sun sets behind the ridge and the moon completes the orbit in both directi
         if (!arc) throw new Error('No day/night transition');
         arc.pause();
         await arc.ready;
+        const duration = arc.effect.getTiming().duration;
         const elapsed = [0, .25, .5, .75, 1];
         const orbit = sky.querySelector('.prefs-orbit');
         const points = elapsed.map(part => {
-            arc.currentTime = arc.effect.getTiming().duration * part;
+            arc.currentTime = duration * part;
             const matrix = new DOMMatrix(getComputedStyle(orbit).transform);
             const offset = new DOMPoint(12, -22).matrixTransform(matrix);
             return {
@@ -279,7 +311,7 @@ test('sun sets behind the ridge and the moon completes the orbit in both directi
             };
         });
         arc.finish();
-        return points;
+        return { duration, points };
     });
     const switchTo = async theme => {
         await page.locator(`[data-exp-theme="${theme}"]`).click();
@@ -287,7 +319,8 @@ test('sun sets behind the ridge and the moon completes the orbit in both directi
     };
 
     await switchTo('dark');
-    const sunset = await readArc();
+    const { duration, points: sunset } = await readArc();
+    expect(duration).toBeCloseTo(2400 / 1.3, 1);
     expect(sunset[0].moon).toBe(0);
     expect(sunset[1].x).toBeLessThan(44);
     expect(sunset[2].y).toBeGreaterThan(44);
@@ -296,7 +329,7 @@ test('sun sets behind the ridge and the moon completes the orbit in both directi
     expect(sunset[4]).toMatchObject({ x: 56, y: 9, moon: 1, twilight: 0 });
 
     await switchTo('light');
-    const sunrise = await readArc();
+    const { points: sunrise } = await readArc();
     expect(sunrise[0].moon).toBe(1);
     expect(sunrise[1].x).toBeGreaterThan(56);
     expect(sunrise[3].x).toBeLessThan(56);

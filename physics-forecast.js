@@ -36,6 +36,9 @@
     const execution = $('tradeForm').elements.execution;
     const market = () => engine.markets.get(selectedId);
     const jumpBar = $('forecastJumps'), jumpLinks = [...jumpBar.querySelectorAll('a')];
+    const wallet = $('portfolio'), walletToggle = $('walletToggle');
+    const walletJump = jumpBar.querySelector('a[href="#portfolio"]');
+    const sectionJumps = jumpLinks.filter(link => link !== walletJump);
     const phone = matchMedia('(max-width: 759px), (orientation: landscape) and (max-width: 1024px) and (max-height: 540px) and (pointer: coarse)');
     const book = $('publicOrders'), moreBookLevels = $('moreBookLevels');
     const bookJump = jumpBar.querySelector('a[href="#publicOrders"]');
@@ -45,17 +48,20 @@
         jumpFrame = requestAnimationFrame(() => {
             jumpFrame = 0;
             if (jumpBar.hidden || $('chartDialog').open) return;
-            const edge = Math.min(100, innerHeight * .24);
-            let active = jumpLinks[0];
-            for (const link of jumpLinks) {
-                if (!link.hidden && $(link.hash.slice(1)).getBoundingClientRect().top <= edge) active = link;
-            }
-            const bottom = document.scrollingElement.scrollHeight - scrollY - innerHeight;
-            if (bottom <= 2 && scrollY > 0) {
-                const destination = jumpLinks.find(link => !link.hidden && link.hash === location.hash);
-                const target = destination && $(destination.hash.slice(1)).getBoundingClientRect();
-                active = target && target.bottom >= edge && target.top < innerHeight * .6
-                    ? destination : jumpLinks.at(-1);
+            let active = walletJump;
+            if (!wallet.open) {
+                const edge = wallet.getBoundingClientRect().height + Math.min(80, innerHeight * .2);
+                const visible = sectionJumps.filter(link => !link.hidden);
+                active = visible[0];
+                for (const link of visible) {
+                    if ($(link.hash.slice(1)).getBoundingClientRect().top <= edge) active = link;
+                }
+                const bottom = document.scrollingElement.scrollHeight - scrollY - innerHeight;
+                if (bottom <= 2 && scrollY > 0) {
+                    const destination = visible.find(link => link.hash === location.hash);
+                    const target = destination && $(destination.hash.slice(1)).getBoundingClientRect();
+                    active = target && target.bottom >= edge && target.top < innerHeight * .6 ? destination : visible.at(-1);
+                }
             }
             for (const link of jumpLinks) {
                 if (link === active) link.setAttribute('aria-current', 'location');
@@ -64,8 +70,16 @@
         });
     }
     function arrangePanels() {
-        if (phone.matches) $('portfolio').before(book);
+        if (phone.matches) $('tradeTicket').after(book);
         else $('roundBody').append(book);
+        updateJumps();
+    }
+    function updateWalletSize() {
+        document.body.style.setProperty('--forecast-wallet-height', Math.ceil(wallet.getBoundingClientRect().height) + 'px');
+        updateJumps();
+    }
+    function applyWalletHash() {
+        if (!wallet.hidden) wallet.open = location.hash === '#portfolio';
         updateJumps();
     }
     function updateDockForKeyboard() {
@@ -76,8 +90,28 @@
     arrangePanels();
     phone.addEventListener('change', arrangePanels);
     window.addEventListener('scroll', updateJumps, { passive: true });
-    window.addEventListener('resize', updateJumps);
-    window.addEventListener('hashchange', updateJumps);
+    window.addEventListener('resize', updateWalletSize);
+    window.addEventListener('hashchange', applyWalletHash);
+    if (typeof ResizeObserver === 'function') new ResizeObserver(updateWalletSize).observe(wallet);
+    wallet.addEventListener('toggle', updateJumps);
+    document.addEventListener('click', event => {
+        const target = event.target;
+        if (target.closest('a[href="#portfolio"]') && !wallet.hidden
+            && !event.ctrlKey && !event.metaKey && !event.shiftKey && !event.altKey) {
+            event.preventDefault();
+            if (location.hash !== '#portfolio') history.pushState(history.state, '', '#portfolio');
+            wallet.open = true;
+            walletToggle.focus({ preventScroll: true });
+        } else if (wallet.open && (!wallet.contains(target) || target.closest('.forecast-portfolio-jumps a'))) {
+            wallet.open = false;
+        }
+    });
+    wallet.addEventListener('keydown', event => {
+        if (event.key !== 'Escape' || !wallet.open) return;
+        event.preventDefault();
+        wallet.open = false;
+        walletToggle.focus({ preventScroll: true });
+    });
     window.visualViewport?.addEventListener('resize', updateDockForKeyboard);
     document.addEventListener('focusin', updateDockForKeyboard);
     document.addEventListener('focusout', () => requestAnimationFrame(updateDockForKeyboard));
@@ -175,6 +209,9 @@
     window.addEventListener('resize', positionEventDialog);
 
     function gate(title, body, action) {
+        wallet.open = false;
+        wallet.hidden = true;
+        updateWalletSize();
         jumpBar.hidden = true;
         $('rankOpen').hidden = true;
         guide.setMarket(null, action === 'login' ? 'guest' : 'loading');
@@ -269,7 +306,9 @@
             price.id = side + 'Ask'; content.append(node('span', name), price); label.append(radio, content); choices.append(label);
             const holding = node('div'), value = node('dd'), quantity = node('span'), sell = node('button', 'Продать');
             const reserved = node('dd', '', 'forecast-reserve');
-            holding.dataset.holding = side; quantity.id = 'wallet' + suffix(side); reserved.id = 'held' + suffix(side);
+            holding.dataset.holding = side;
+            holding.style.setProperty('--outcome', 'var(--' + side + ')');
+            quantity.id = 'wallet' + suffix(side); reserved.id = 'held' + suffix(side);
             sell.type = 'button'; sell.dataset.sell = side; sell.setAttribute('aria-label', 'Продать доли «' + name + '»');
             value.append(quantity, sell); holding.append(node('dt', 'Доли «' + name + '»'), value, reserved); balances.append(holding);
         }
@@ -479,7 +518,6 @@
         ticket = null;
         for (const control of form.elements) control.disabled = disabled;
         for (const group of form.querySelectorAll('fieldset')) group.hidden = !open;
-        $('closedPortfolio').hidden = open;
         $('limitField').hidden = order.mode !== 'limit' || emptySale || !open;
         $('limitPrice').disabled = disabled || $('limitField').hidden;
         $('limitLabel').textContent = buy ? 'Максимальная цена за долю, оч.' : 'Минимальная цена за долю, оч.';
@@ -552,7 +590,8 @@
     function renderHeading(m) {
         $('lessonQuestion').textContent = m?.question || 'Прогнозы класса';
         $('lessonQuestion').toggleAttribute('data-long', (m?.question.length || 0) > 70);
-        $('lessonDate').textContent = m ? date(m.date) + ' · 10-1' : 'Класс 10-1';
+        $('lessonDate').textContent = m ? date(m.date) : '';
+        $('lessonDate').hidden = !m;
         $('eventCriteria').textContent = m?.criteria || '';
         $('eventCriteria').hidden = !m?.criteria;
         $('criteriaToggle').hidden = (m?.criteria?.length || 0) <= 118;
@@ -581,6 +620,11 @@
         }
         renderHeading(m);
         $('emptyRound').hidden = !!m; $('roundBody').hidden = !m; jumpBar.hidden = !m;
+        const walletWasHidden = wallet.hidden;
+        wallet.hidden = !m;
+        if (!m) wallet.open = false;
+        else if (walletWasHidden) applyWalletHash();
+        if (wallet.hidden !== walletWasHidden) updateWalletSize();
         const phase = m ? M.status(m, at) : '';
         guide.setMarket(m, m ? phase : 'empty');
         $('roundState').textContent = phaseLabel(m, phase); $('roundState').dataset.state = phase;
@@ -714,6 +758,7 @@
     $('walletBalances').addEventListener('click', event => {
         const button = event.target.closest('[data-sell]');
         if (!button || button.disabled) return;
+        wallet.open = false;
         execution.value = 'market'; prepareSale(button.dataset.sell); notice(''); renderTicket();
         $('bookSide').value = button.dataset.sell; renderBook(market(), M.status(market(), now()));
         $('ticketTitle').focus({ preventScroll: true });

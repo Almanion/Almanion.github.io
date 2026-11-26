@@ -240,7 +240,7 @@
             picker.disabled = busy;
             byId('forecastPickerLabel').hidden = !market;
             byId('forecastEventData').hidden = !market;
-            marketLink.href = 'physics-forecast.html' + (market ? '?event=' + encodeURIComponent(selected) : '');
+            marketLink.href = 'forecast.html' + (market ? '?event=' + encodeURIComponent(selected) : '');
             form.render(true, market, markets, busy, connected);
             renderBalances();
             renderTrades(market);
@@ -315,7 +315,7 @@
             statusLine.textContent = '';
             picker.replaceChildren(); byId('forecastTape').replaceChildren();
             for (const id of ['forecastOpen', 'forecastPending', 'forecastTraders', 'forecastFills', 'forecastTradeCount']) byId(id).textContent = '';
-            marketLink.href = 'physics-forecast.html';
+            marketLink.href = 'forecast.html';
         }
 
         function start() {
