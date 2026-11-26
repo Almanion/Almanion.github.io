@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 594 412" role="img" aria-labelledby="title desc">
+<title id="title">Изотермы Эндрюса и Ван-дер-Ваальса при одной температуре</title>
+<desc id="desc">Между C и B сплошная изотерма идёт горизонтально, а расчётная проходит через минимум C₁ и максимум B₁. Слева от C и справа от B остаются однофазные ветви.</desc>
+
+<style>
+text{font-family:Arial,Helvetica,sans-serif;font-size:22px;fill:#263747}
+.axis,.iso,.guide,.model,.boundary,.spin,.leader{fill:none;stroke-linecap:round;stroke-linejoin:round}
+.axis{stroke:#263747;stroke-width:2.2}.iso{stroke:#1e5c92;stroke-width:3.4}
+.guide{stroke:#718393;stroke-width:1.5;stroke-dasharray:5 5}
+.model{stroke:#a55228;stroke-width:2.6;stroke-dasharray:7 5}
+.boundary{stroke:#136f70;stroke-width:3}.spin{stroke:#754774;stroke-width:2.2;stroke-dasharray:7 5}
+.leader{stroke:#506679;stroke-width:1.3}
+.math{font:italic 25px Georgia,'Times New Roman',serif}.small{font-size:19px}.phase{font-weight:600;font-size:21px}
+</style>
+<defs>
+<marker id="axis-tip" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="9" markerHeight="9" markerUnits="userSpaceOnUse" orient="auto"><path d="M1 1 L8 5 L1 9" fill="none" stroke="#263747" stroke-width="1.7"/></marker>
+</defs>
+<rect width="594" height="412" rx="10" fill="#fff"/>
+<path d="M52.0 322.0 L52.0 18.0" class="axis" marker-end="url(#axis-tip)"/>
+<path d="M52.0 322.0 L562.0 322.0" class="axis" marker-end="url(#axis-tip)"/>
+<text x="39.0" y="27.0" class="math" text-anchor="end">p</text>
+<text x="563.0" y="351.0" class="math" text-anchor="end">V</text>
+<path d="M111.3 26.0 L115.7 82.3 L120.5 131.7 L125.5 173.8 L130.9 208.9" class="iso"/>
+<path d="M460.9 208.9 L523.0 230.5" class="iso"/>
+<path d="M130.9 208.9 L133.5 222.7 L138.5 244.8 L143.5 261.2 L148.3 273.1 L153.0 281.5 L157.6 287.0 L159.8 289.0 L164.3 291.4 L166.5 292.1 L169.8 292.4 L175.0 291.7 L181.2 289.1 L187.2 285.4 L193.0 280.8 L204.1 270.4 L228.0 246.0 L240.5 233.8 L252.2 223.4 L264.7 213.7 L276.4 206.0 L287.5 199.9 L299.2 194.7 L310.2 191.0 L324.7 187.7 L340.1 185.9 L356.1 185.6 L373.4 186.9 L391.4 189.7 L411.9 194.3 L434.1 200.4 L460.9 208.9" class="model"/>
+<path d="M130.9 208.9 L460.9 208.9" class="iso"/>
+<path d="M130.9 214.9 L130.9 322.0" class="guide"/>
+<text x="130.9" y="351.0" class="math" text-anchor="middle">V₂</text>
+<path d="M460.9 214.9 L460.9 322.0" class="guide"/>
+<text x="460.9" y="351.0" class="math" text-anchor="middle">V₁</text>
+<circle cx="130.9" cy="208.9" r="3.7" fill="#1e5c92" stroke="#1e5c92" stroke-width="1.8"/>
+<text x="115.9" y="201.9" class="math" text-anchor="middle" style="fill:#1e5c92">C</text>
+<circle cx="460.9" cy="208.9" r="3.7" fill="#1e5c92" stroke="#1e5c92" stroke-width="1.8"/>
+<text x="467.9" y="196.9" class="math" text-anchor="middle" style="fill:#1e5c92">B</text>
+<circle cx="169.8" cy="292.4" r="3.7" fill="#a55228" stroke="#a55228" stroke-width="1.8"/>
+<text x="186.8" y="311.4" class="math" text-anchor="middle" style="fill:#a55228">C₁</text>
+<circle cx="350.6" cy="185.5" r="3.7" fill="#a55228" stroke="#a55228" stroke-width="1.8"/>
+<text x="357.6" y="173.5" class="math" text-anchor="middle" style="fill:#a55228">B₁</text>
+<circle cx="523.0" cy="230.5" r="3.7" fill="#1e5c92" stroke="#1e5c92" stroke-width="1.8"/>
+<text x="538.0" y="235.5" class="math" text-anchor="middle" style="fill:#1e5c92">A</text>
+<circle cx="112.5" cy="41.8" r="3.5" fill="#1e5c92" stroke="#1e5c92" stroke-width="1.8"/>
+<text x="129.5" y="45.8" class="math" text-anchor="middle">D</text>
+<path d="M44.0 384.0 L88.0 384.0" class="iso"/>
+<text x="99.0" y="390.0" class="small" text-anchor="start">Опыт Эндрюса</text>
+<path d="M292.0 384.0 L336.0 384.0" class="model"/>
+<text x="347.0" y="390.0" class="small" text-anchor="start">Модель Ван-дер-Ваальса</text>
+</svg>

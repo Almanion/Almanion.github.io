@@ -1,0 +1,127 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 651 521" role="img" aria-labelledby="title desc">
+<title id="title">Изотермическое сжатие в опыте Эндрюса</title>
+<desc id="desc">При движении поршня влево объём уменьшается. На графике A, B и C отвечают V₁, V₂ и V₃. Под графиком четыре положения поршня: газ в A, насыщенный пар в B, жидкость с паром между B и C и жидкость в C. М — манометр.</desc>
+
+<style>
+text{font-family:Arial,Helvetica,sans-serif;font-size:22px;fill:#263747}
+.axis,.iso,.guide,.model,.boundary,.spin,.leader{fill:none;stroke-linecap:round;stroke-linejoin:round}
+.axis{stroke:#263747;stroke-width:2.2}.iso{stroke:#1e5c92;stroke-width:3.4}
+.guide{stroke:#718393;stroke-width:1.5;stroke-dasharray:5 5}
+.model{stroke:#a55228;stroke-width:2.6;stroke-dasharray:7 5}
+.boundary{stroke:#136f70;stroke-width:3}.spin{stroke:#754774;stroke-width:2.2;stroke-dasharray:7 5}
+.leader{stroke:#506679;stroke-width:1.3}
+.math{font:italic 25px Georgia,'Times New Roman',serif}.small{font-size:19px}.phase{font-weight:600;font-size:21px}
+</style>
+<defs>
+<marker id="axis-tip" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="9" markerHeight="9" markerUnits="userSpaceOnUse" orient="auto"><path d="M1 1 L8 5 L1 9" fill="none" stroke="#263747" stroke-width="1.7"/></marker>
+</defs>
+<rect width="651" height="521" rx="10" fill="#fff"/>
+<path d="M87.0 248.0 L87.0 26.0" class="axis" marker-end="url(#axis-tip)"/>
+<path d="M87.0 248.0 L585.0 248.0" class="axis" marker-end="url(#axis-tip)"/>
+<text x="74.0" y="35.0" class="math" text-anchor="end">p</text>
+<text x="586.0" y="277.0" class="math" text-anchor="end">V</text>
+<path d="M124 43 C127 71 135 108 151 119 H351 C395 164 459 203 522 216 Q543 220 554 221" class="iso"/>
+<circle cx="124.0" cy="43.0" r="3.8" fill="#263747" stroke="#263747" stroke-width="1.8"/>
+<text x="140.0" y="44.0" class="math" text-anchor="middle">D</text>
+<circle cx="151.0" cy="119.0" r="3.8" fill="#263747" stroke="#263747" stroke-width="1.8"/>
+<text x="138.0" y="109.0" class="math" text-anchor="middle">C</text>
+<circle cx="351.0" cy="119.0" r="3.8" fill="#263747" stroke="#263747" stroke-width="1.8"/>
+<text x="356.0" y="107.0" class="math" text-anchor="middle">B</text>
+<circle cx="522.0" cy="216.0" r="3.8" fill="#263747" stroke="#263747" stroke-width="1.8"/>
+<text x="535.0" y="208.0" class="math" text-anchor="middle">A</text>
+<path d="M151.0 124.0 L151.0 248.0" class="guide"/>
+<text x="151.0" y="277.0" class="math" text-anchor="middle">V₃</text>
+<path d="M351.0 124.0 L351.0 248.0" class="guide"/>
+<text x="351.0" y="277.0" class="math" text-anchor="middle">V₂</text>
+<path d="M522.0 221.0 L522.0 248.0" class="guide"/>
+<text x="522.0" y="277.0" class="math" text-anchor="middle">V₁</text>
+<path d="M251.0 123.0 L251.0 248.0" class="guide"/>
+<circle cx="107.1" cy="314.4" r="2.05" fill="white" stroke="#1e5c92" stroke-width="1.8"/>
+<circle cx="145.5" cy="312.7" r="2.05" fill="white" stroke="#1e5c92" stroke-width="1.8"/>
+<circle cx="183.9" cy="316.1" r="2.05" fill="white" stroke="#1e5c92" stroke-width="1.8"/>
+<circle cx="222.3" cy="314.5" r="2.05" fill="white" stroke="#1e5c92" stroke-width="1.8"/>
+<circle cx="260.6" cy="312.7" r="2.05" fill="white" stroke="#1e5c92" stroke-width="1.8"/>
+<circle cx="299.0" cy="316.0" r="2.05" fill="white" stroke="#1e5c92" stroke-width="1.8"/>
+<circle cx="337.4" cy="314.5" r="2.05" fill="white" stroke="#1e5c92" stroke-width="1.8"/>
+<circle cx="375.8" cy="312.6" r="2.05" fill="white" stroke="#1e5c92" stroke-width="1.8"/>
+<circle cx="414.1" cy="316.0" r="2.05" fill="white" stroke="#1e5c92" stroke-width="1.8"/>
+<circle cx="452.5" cy="314.6" r="2.05" fill="white" stroke="#1e5c92" stroke-width="1.8"/>
+<circle cx="490.9" cy="312.6" r="2.05" fill="white" stroke="#1e5c92" stroke-width="1.8"/>
+<circle cx="115.6" cy="329.2" r="2.05" fill="white" stroke="#1e5c92" stroke-width="1.8"/>
+<circle cx="153.9" cy="327.9" r="2.05" fill="white" stroke="#1e5c92" stroke-width="1.8"/>
+<circle cx="192.3" cy="325.8" r="2.05" fill="white" stroke="#1e5c92" stroke-width="1.8"/>
+<circle cx="230.7" cy="329.1" r="2.05" fill="white" stroke="#1e5c92" stroke-width="1.8"/>
+<circle cx="269.1" cy="327.9" r="2.05" fill="white" stroke="#1e5c92" stroke-width="1.8"/>
+<circle cx="307.5" cy="325.8" r="2.05" fill="white" stroke="#1e5c92" stroke-width="1.8"/>
+<circle cx="345.8" cy="329.1" r="2.05" fill="white" stroke="#1e5c92" stroke-width="1.8"/>
+<circle cx="384.2" cy="328.0" r="2.05" fill="white" stroke="#1e5c92" stroke-width="1.8"/>
+<circle cx="422.6" cy="325.7" r="2.05" fill="white" stroke="#1e5c92" stroke-width="1.8"/>
+<circle cx="461.0" cy="329.0" r="2.05" fill="white" stroke="#1e5c92" stroke-width="1.8"/>
+<circle cx="499.3" cy="328.1" r="2.05" fill="white" stroke="#1e5c92" stroke-width="1.8"/>
+<path d="M551 304 H87 V338 H551" class="axis"/>
+<rect x="522" y="305" width="9" height="32" rx="1" fill="#657b89"/>
+<rect x="530" y="318" width="45" height="6" fill="#9aabb5"/>
+<path d="M87 323 H67 V316" class="axis"/>
+<circle cx="67.0" cy="306.0" r="11" fill="white" stroke="#263747" stroke-width="1.8"/>
+<text x="67.0" y="311.0" class="small" text-anchor="middle">М</text>
+<text x="594.0" y="329.0" class="math" text-anchor="start">A</text>
+<circle cx="100.6" cy="371.4" r="2.05" fill="white" stroke="#1e5c92" stroke-width="1.8"/>
+<circle cx="123.6" cy="369.7" r="2.05" fill="white" stroke="#1e5c92" stroke-width="1.8"/>
+<circle cx="146.6" cy="373.1" r="2.05" fill="white" stroke="#1e5c92" stroke-width="1.8"/>
+<circle cx="169.6" cy="371.5" r="2.05" fill="white" stroke="#1e5c92" stroke-width="1.8"/>
+<circle cx="192.5" cy="369.7" r="2.05" fill="white" stroke="#1e5c92" stroke-width="1.8"/>
+<circle cx="215.5" cy="373.0" r="2.05" fill="white" stroke="#1e5c92" stroke-width="1.8"/>
+<circle cx="238.5" cy="371.5" r="2.05" fill="white" stroke="#1e5c92" stroke-width="1.8"/>
+<circle cx="261.5" cy="369.6" r="2.05" fill="white" stroke="#1e5c92" stroke-width="1.8"/>
+<circle cx="284.4" cy="373.0" r="2.05" fill="white" stroke="#1e5c92" stroke-width="1.8"/>
+<circle cx="307.4" cy="371.6" r="2.05" fill="white" stroke="#1e5c92" stroke-width="1.8"/>
+<circle cx="330.4" cy="369.6" r="2.05" fill="white" stroke="#1e5c92" stroke-width="1.8"/>
+<circle cx="105.7" cy="386.2" r="2.05" fill="white" stroke="#1e5c92" stroke-width="1.8"/>
+<circle cx="128.7" cy="384.9" r="2.05" fill="white" stroke="#1e5c92" stroke-width="1.8"/>
+<circle cx="151.6" cy="382.8" r="2.05" fill="white" stroke="#1e5c92" stroke-width="1.8"/>
+<circle cx="174.6" cy="386.1" r="2.05" fill="white" stroke="#1e5c92" stroke-width="1.8"/>
+<circle cx="197.6" cy="384.9" r="2.05" fill="white" stroke="#1e5c92" stroke-width="1.8"/>
+<circle cx="220.6" cy="382.8" r="2.05" fill="white" stroke="#1e5c92" stroke-width="1.8"/>
+<circle cx="243.5" cy="386.1" r="2.05" fill="white" stroke="#1e5c92" stroke-width="1.8"/>
+<circle cx="266.5" cy="385.0" r="2.05" fill="white" stroke="#1e5c92" stroke-width="1.8"/>
+<circle cx="289.5" cy="382.7" r="2.05" fill="white" stroke="#1e5c92" stroke-width="1.8"/>
+<circle cx="312.5" cy="386.0" r="2.05" fill="white" stroke="#1e5c92" stroke-width="1.8"/>
+<circle cx="335.4" cy="385.1" r="2.05" fill="white" stroke="#1e5c92" stroke-width="1.8"/>
+<path d="M551 361 H87 V395 H551" class="axis"/>
+<rect x="351" y="362" width="9" height="32" rx="1" fill="#657b89"/>
+<rect x="359" y="375" width="216" height="6" fill="#9aabb5"/>
+<path d="M87 380 H67 V373" class="axis"/>
+<circle cx="67.0" cy="363.0" r="11" fill="white" stroke="#263747" stroke-width="1.8"/>
+<text x="67.0" y="368.0" class="small" text-anchor="middle">М</text>
+<text x="594.0" y="386.0" class="math" text-anchor="start">B</text>
+<rect x="88" y="443" width="163" height="9" fill="#80bfca"/>
+<path d="M88.0 443.0 L251.0 443.0" class="boundary"/>
+<circle cx="100.2" cy="425.9" r="2.05" fill="white" stroke="#1e5c92" stroke-width="1.8"/>
+<circle cx="122.0" cy="424.7" r="2.05" fill="white" stroke="#1e5c92" stroke-width="1.8"/>
+<circle cx="143.8" cy="427.0" r="2.05" fill="white" stroke="#1e5c92" stroke-width="1.8"/>
+<circle cx="165.7" cy="425.9" r="2.05" fill="white" stroke="#1e5c92" stroke-width="1.8"/>
+<circle cx="187.5" cy="424.7" r="2.05" fill="white" stroke="#1e5c92" stroke-width="1.8"/>
+<circle cx="209.3" cy="427.0" r="2.05" fill="white" stroke="#1e5c92" stroke-width="1.8"/>
+<circle cx="231.2" cy="426.0" r="2.05" fill="white" stroke="#1e5c92" stroke-width="1.8"/>
+<circle cx="105.0" cy="433.9" r="2.05" fill="white" stroke="#1e5c92" stroke-width="1.8"/>
+<circle cx="126.8" cy="436.2" r="2.05" fill="white" stroke="#1e5c92" stroke-width="1.8"/>
+<circle cx="148.6" cy="435.3" r="2.05" fill="white" stroke="#1e5c92" stroke-width="1.8"/>
+<circle cx="170.5" cy="433.9" r="2.05" fill="white" stroke="#1e5c92" stroke-width="1.8"/>
+<circle cx="192.3" cy="436.2" r="2.05" fill="white" stroke="#1e5c92" stroke-width="1.8"/>
+<circle cx="214.1" cy="435.3" r="2.05" fill="white" stroke="#1e5c92" stroke-width="1.8"/>
+<path d="M551 418 H87 V452 H551" class="axis"/>
+<rect x="251" y="419" width="9" height="32" rx="1" fill="#657b89"/>
+<rect x="259" y="432" width="316" height="6" fill="#9aabb5"/>
+<path d="M87 437 H67 V430" class="axis"/>
+<circle cx="67.0" cy="420.0" r="11" fill="white" stroke="#263747" stroke-width="1.8"/>
+<text x="67.0" y="425.0" class="small" text-anchor="middle">М</text>
+<text x="594.0" y="443.0" class="math" text-anchor="start">BC</text>
+<rect x="88" y="475" width="63" height="34" fill="#80bfca"/>
+<path d="M551 475 H87 V509 H551" class="axis"/>
+<rect x="151" y="476" width="9" height="32" rx="1" fill="#657b89"/>
+<rect x="159" y="489" width="416" height="6" fill="#9aabb5"/>
+<path d="M87 494 H67 V487" class="axis"/>
+<circle cx="67.0" cy="477.0" r="11" fill="white" stroke="#263747" stroke-width="1.8"/>
+<text x="67.0" y="482.0" class="small" text-anchor="middle">М</text>
+<text x="594.0" y="500.0" class="math" text-anchor="start">C</text>
+</svg>

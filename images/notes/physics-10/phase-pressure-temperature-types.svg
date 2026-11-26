@@ -1,0 +1,79 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 569 630" role="img" aria-labelledby="title desc">
+<title id="title">Два вида диаграмм состояния p(T)</title>
+<desc id="desc">На обеих схемах CА — линия сублимации, АB — плавления, АK — парообразования. А — тройная точка, K — критическая. На верхней схеме линия плавления наклонена вправо, на нижней — влево.</desc>
+
+<style>
+text{font-family:Arial,Helvetica,sans-serif;font-size:22px;fill:#263747}
+.axis,.iso,.guide,.model,.boundary,.spin,.leader{fill:none;stroke-linecap:round;stroke-linejoin:round}
+.axis{stroke:#263747;stroke-width:2.2}.iso{stroke:#1e5c92;stroke-width:3.4}
+.guide{stroke:#718393;stroke-width:1.5;stroke-dasharray:5 5}
+.model{stroke:#a55228;stroke-width:2.6;stroke-dasharray:7 5}
+.boundary{stroke:#136f70;stroke-width:3}.spin{stroke:#754774;stroke-width:2.2;stroke-dasharray:7 5}
+.leader{stroke:#506679;stroke-width:1.3}
+.math{font:italic 25px Georgia,'Times New Roman',serif}.small{font-size:19px}.phase{font-weight:600;font-size:21px}
+</style>
+<defs>
+<marker id="axis-tip" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="9" markerHeight="9" markerUnits="userSpaceOnUse" orient="auto"><path d="M1 1 L8 5 L1 9" fill="none" stroke="#263747" stroke-width="1.7"/></marker>
+</defs>
+<rect width="569" height="630" rx="10" fill="#fff"/>
+<g transform="translate(0 0)">
+<text x="287.0" y="29.0" class="phase" text-anchor="middle">а. Твёрдое тело плотнее жидкости</text>
+<path d="M113 64 H502 V268 H113 Z" fill="#f8efdf"/>
+<path d="M113 249 C146 237 203 218 246 192 C286 157 327 111 337 64 H113 Z" fill="#dce9e9"/>
+<path d="M246 192 C323 183 420 146 502 64 H337 C327 111 286 157 246 192 Z" fill="#dbeaf9"/>
+<path d="M65.0 192.0 L246.0 192.0" class="guide"/>
+<path d="M246.0 192.0 L246.0 268.0" class="guide"/>
+<path d="M113 249 C146 237 203 218 246 192" class="boundary"/>
+<path d="M246 192 C286 157 327 111 337 64" class="iso"/>
+<path d="M246 192 C323 183 420 146 502 64" class="axis" style="stroke:#a55228;stroke-width:3"/>
+<path d="M65.0 268.0 L65.0 55.0" class="axis" marker-end="url(#axis-tip)"/>
+<path d="M65.0 268.0 L531.0 268.0" class="axis" marker-end="url(#axis-tip)"/>
+<text x="52.0" y="64.0" class="math" text-anchor="end">p</text>
+<text x="532.0" y="297.0" class="math" text-anchor="end">T</text>
+<text x="57.0" y="289.0" class="small" text-anchor="middle">0</text>
+<text x="55.0" y="198.0" class="math" text-anchor="end">p<tspan dy="5" font-size="67%">тр</tspan></text>
+<text x="246.0" y="296.0" class="math" text-anchor="middle">T<tspan dy="5" font-size="67%">тр</tspan></text>
+<circle cx="113.0" cy="249.0" r="3" fill="#263747" stroke="#263747" stroke-width="1.8"/>
+<text x="102.0" y="252.0" class="math" text-anchor="middle">C</text>
+<circle cx="337.0" cy="64.0" r="3" fill="#263747" stroke="#263747" stroke-width="1.8"/>
+<text x="337.0" y="58.0" class="math" text-anchor="middle">B</text>
+<circle cx="502.0" cy="64.0" r="3" fill="#263747" stroke="#263747" stroke-width="1.8"/>
+<text x="514.0" y="64.0" class="math" text-anchor="middle">K</text>
+<circle cx="246.0" cy="192.0" r="3" fill="#263747" stroke="#263747" stroke-width="1.8"/>
+<text x="250.0" y="217.0" class="math" text-anchor="middle">A</text>
+<text x="191.0" y="112.0" class="small" text-anchor="middle">Твёрдое</text>
+<text x="191.0" y="134.0" class="small" text-anchor="middle">тело</text>
+<text x="386.0" y="100.0" class="phase" text-anchor="middle">Жидкость</text>
+<text x="435.0" y="224.0" class="phase" text-anchor="middle">Газ</text>
+</g>
+<g transform="translate(0 317)">
+<text x="287.0" y="29.0" class="phase" text-anchor="middle">б. Жидкость плотнее твёрдого тела</text>
+<path d="M113 64 H502 V268 H113 Z" fill="#f8efdf"/>
+<path d="M113 249 C146 237 203 218 246 192 C216 158 181 108 172 64 H113 Z" fill="#dce9e9"/>
+<path d="M246 192 C323 183 420 146 502 64 H172 C181 108 216 158 246 192 Z" fill="#dbeaf9"/>
+<path d="M65.0 192.0 L246.0 192.0" class="guide"/>
+<path d="M246.0 192.0 L246.0 268.0" class="guide"/>
+<path d="M113 249 C146 237 203 218 246 192" class="boundary"/>
+<path d="M246 192 C216 158 181 108 172 64" class="iso"/>
+<path d="M246 192 C323 183 420 146 502 64" class="axis" style="stroke:#a55228;stroke-width:3"/>
+<path d="M65.0 268.0 L65.0 55.0" class="axis" marker-end="url(#axis-tip)"/>
+<path d="M65.0 268.0 L531.0 268.0" class="axis" marker-end="url(#axis-tip)"/>
+<text x="52.0" y="64.0" class="math" text-anchor="end">p</text>
+<text x="532.0" y="297.0" class="math" text-anchor="end">T</text>
+<text x="57.0" y="289.0" class="small" text-anchor="middle">0</text>
+<text x="55.0" y="198.0" class="math" text-anchor="end">p<tspan dy="5" font-size="67%">тр</tspan></text>
+<text x="246.0" y="296.0" class="math" text-anchor="middle">T<tspan dy="5" font-size="67%">тр</tspan></text>
+<circle cx="113.0" cy="249.0" r="3" fill="#263747" stroke="#263747" stroke-width="1.8"/>
+<text x="102.0" y="252.0" class="math" text-anchor="middle">C</text>
+<circle cx="172.0" cy="64.0" r="3" fill="#263747" stroke="#263747" stroke-width="1.8"/>
+<text x="172.0" y="58.0" class="math" text-anchor="middle">B</text>
+<circle cx="502.0" cy="64.0" r="3" fill="#263747" stroke="#263747" stroke-width="1.8"/>
+<text x="514.0" y="64.0" class="math" text-anchor="middle">K</text>
+<circle cx="246.0" cy="192.0" r="3" fill="#263747" stroke="#263747" stroke-width="1.8"/>
+<text x="250.0" y="217.0" class="math" text-anchor="middle">A</text>
+<text x="156.0" y="144.0" class="small" text-anchor="middle">Твёрдое</text>
+<text x="156.0" y="166.0" class="small" text-anchor="middle">тело</text>
+<text x="318.0" y="100.0" class="phase" text-anchor="middle">Жидкость</text>
+<text x="435.0" y="224.0" class="phase" text-anchor="middle">Газ</text>
+</g>
+</svg>

@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 588 278" role="img" aria-labelledby="title desc">
+<title id="title">Один и три объёма при заданном давлении</title>
+<desc id="desc">Слева горизонталь пересекает изотерму идеального газа один раз. Справа та же горизонталь пересекает докритическую изотерму Ван-дер-Ваальса при V₁, V₂ и V₃.</desc>
+
+<style>
+text{font-family:Arial,Helvetica,sans-serif;font-size:22px;fill:#263747}
+.axis,.iso,.guide,.model,.boundary,.spin,.leader{fill:none;stroke-linecap:round;stroke-linejoin:round}
+.axis{stroke:#263747;stroke-width:2.2}.iso{stroke:#1e5c92;stroke-width:3.4}
+.guide{stroke:#718393;stroke-width:1.5;stroke-dasharray:5 5}
+.model{stroke:#a55228;stroke-width:2.6;stroke-dasharray:7 5}
+.boundary{stroke:#136f70;stroke-width:3}.spin{stroke:#754774;stroke-width:2.2;stroke-dasharray:7 5}
+.leader{stroke:#506679;stroke-width:1.3}
+.math{font:italic 25px Georgia,'Times New Roman',serif}.small{font-size:19px}.phase{font-weight:600;font-size:21px}
+</style>
+<defs>
+<marker id="axis-tip" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="9" markerHeight="9" markerUnits="userSpaceOnUse" orient="auto"><path d="M1 1 L8 5 L1 9" fill="none" stroke="#263747" stroke-width="1.7"/></marker>
+</defs>
+<rect width="588" height="278" rx="10" fill="#fff"/>
+<path d="M56.0 229.0 L56.0 48.0" class="axis" marker-end="url(#axis-tip)"/>
+<path d="M56.0 229.0 L285.0 229.0" class="axis" marker-end="url(#axis-tip)"/>
+<text x="43.0" y="57.0" class="math" text-anchor="end">p</text>
+<text x="286.0" y="258.0" class="math" text-anchor="end">V</text>
+<text x="166.0" y="28.0" class="phase" text-anchor="middle">Идеальный газ</text>
+<path d="M91 55 C106 93 128 119 155 140 S232 182 271 194" class="iso"/>
+<path d="M56 140 H155 V229" class="guide"/>
+<circle cx="155.0" cy="140.0" r="3.8" fill="#263747" stroke="#263747" stroke-width="1.8"/>
+<path d="M335.0 229.0 L335.0 48.0" class="axis" marker-end="url(#axis-tip)"/>
+<path d="M335.0 229.0 L564.0 229.0" class="axis" marker-end="url(#axis-tip)"/>
+<text x="322.0" y="57.0" class="math" text-anchor="end">p</text>
+<text x="565.0" y="258.0" class="math" text-anchor="end">V</text>
+<text x="445.0" y="28.0" class="phase" text-anchor="middle">Газ Ван-дер-Ваальса</text>
+<path d="M357 56 C359 99 365 128 377 140 C393 164 415 165 447 140 S489 102 513 140 C525 161 539 179 557 188" class="iso"/>
+<path d="M335.0 140.0 L513.0 140.0" class="guide"/>
+<path d="M377.0 140.0 L377.0 229.0" class="guide"/>
+<circle cx="377.0" cy="140.0" r="3.8" fill="#263747" stroke="#263747" stroke-width="1.8"/>
+<text x="377.0" y="259.0" class="math" text-anchor="middle">V₁</text>
+<path d="M447.0 140.0 L447.0 229.0" class="guide"/>
+<circle cx="447.0" cy="140.0" r="3.8" fill="#263747" stroke="#263747" stroke-width="1.8"/>
+<text x="447.0" y="259.0" class="math" text-anchor="middle">V₂</text>
+<path d="M513.0 140.0 L513.0 229.0" class="guide"/>
+<circle cx="513.0" cy="140.0" r="3.8" fill="#263747" stroke="#263747" stroke-width="1.8"/>
+<text x="513.0" y="259.0" class="math" text-anchor="middle">V₃</text>
+</svg>

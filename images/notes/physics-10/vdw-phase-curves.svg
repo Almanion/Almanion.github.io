@@ -1,0 +1,88 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 648 565" role="img" aria-labelledby="title desc">
+<title id="title">Диаграмма p(V) с расчётными изотермами и площадками равновесия</title>
+<desc id="desc">На трёх докритических изотермах показаны отрезки ac, a′c′ и a″c″. Точки a и c отвечают Vж и Vг при давлении насыщенного пара, b лежит на площадке, d и e — экстремумы расчётной кривой. Границы сходятся в критической точке K.</desc>
+
+<style>
+text{font-family:Arial,Helvetica,sans-serif;font-size:22px;fill:#263747}
+.axis,.iso,.guide,.model,.boundary,.spin,.leader{fill:none;stroke-linecap:round;stroke-linejoin:round}
+.axis{stroke:#263747;stroke-width:2.2}.iso{stroke:#1e5c92;stroke-width:3.4}
+.guide{stroke:#718393;stroke-width:1.5;stroke-dasharray:5 5}
+.model{stroke:#a55228;stroke-width:2.6;stroke-dasharray:7 5}
+.boundary{stroke:#136f70;stroke-width:3}.spin{stroke:#754774;stroke-width:2.2;stroke-dasharray:7 5}
+.leader{stroke:#506679;stroke-width:1.3}
+.math{font:italic 25px Georgia,'Times New Roman',serif}.small{font-size:19px}.phase{font-weight:600;font-size:21px}
+</style>
+<defs>
+<marker id="axis-tip" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="9" markerHeight="9" markerUnits="userSpaceOnUse" orient="auto"><path d="M1 1 L8 5 L1 9" fill="none" stroke="#263747" stroke-width="1.7"/></marker>
+</defs>
+<rect width="648" height="565" rx="10" fill="#fff"/>
+<defs><clipPath id="plot"><rect x="91" y="26" width="449" height="418"/></clipPath></defs><g clip-path="url(#plot)">
+<path d="M104.7 27.0 L107.5 136.8 L110.2 217.1 L112.9 275.8 L115.6 318.5 L118.3 349.4 L119.7 361.2 L122.4 379.4 L123.8 386.2 L126.5 396.0 L129.2 401.9 L132.0 404.8 L133.3 405.3 L134.7 405.4 L137.4 404.2 L140.1 401.8 L142.8 398.4 L149.7 387.3 L167.4 353.9 L176.9 337.5 L187.8 321.4 L193.2 314.4 L200.0 306.7 L205.5 301.2 L212.3 295.3 L219.1 290.2 L225.9 285.9 L232.7 282.2 L240.9 278.7 L247.7 276.4 L255.8 274.1 L264.0 272.5 L272.2 271.4 L281.7 270.6 L291.2 270.4 L313.0 271.2 L337.5 273.9 L360.7 277.4 L387.9 282.4 L491.4 303.2 L539.0 312.4" class="iso" style="stroke:#1e5c92"/>
+<path d="M109.1 27.0 L111.8 104.6 L114.5 162.9 L117.1 206.8 L119.8 239.7 L123.9 273.9 L127.9 295.2 L129.3 300.2 L132.0 307.7 L134.7 312.6 L137.4 315.4 L140.1 316.7 L142.8 316.7 L145.5 315.7 L149.5 313.1 L156.2 306.5 L173.8 286.2 L184.5 274.9 L195.3 265.5 L200.7 261.5 L207.4 257.2 L219.6 251.2 L231.7 247.0 L245.2 244.3 L260.0 243.0 L274.8 243.1 L291.0 244.4 L308.5 246.9 L330.1 250.9 L366.5 259.2 L477.0 286.3 L539.0 300.3" class="iso" style="stroke:#1e5c92"/>
+<path d="M115.1 27.0 L117.7 76.5 L120.4 115.0 L123.0 144.8 L127.0 177.4 L131.0 199.5 L135.0 214.1 L137.7 220.8 L140.3 225.6 L143.0 229.1 L145.6 231.3 L148.3 232.7 L150.9 233.3 L154.9 233.3 L158.9 232.4 L165.6 229.7 L182.8 221.0 L192.1 216.9 L202.8 213.2 L213.4 210.6 L224.0 209.1 L235.7 208.6 L248.0 209.1 L259.9 210.5 L282.5 214.6 L309.1 221.3 L334.3 228.6 L408.8 251.5 L450.0 263.7 L495.1 276.2 L539.0 287.3" class="iso" style="stroke:#1e5c92"/>
+<path d="M123.0 27.0 L125.6 55.7 L129.5 88.5 L132.1 105.1 L136.1 124.1 L140.0 137.7 L142.6 144.6 L145.2 150.0 L147.8 154.3 L150.4 157.8 L153.0 160.4 L156.9 163.4 L163.4 166.2 L171.3 167.6 L202.6 168.4 L220.8 170.2 L236.5 173.1 L254.7 177.9 L270.4 182.8 L289.9 189.6 L381.2 224.3 L430.8 242.0 L484.2 259.2 L539.0 274.8" class="iso" style="stroke:#136f70"/>
+<path d="M162.9 27.0 L170.0 38.7 L174.7 45.1 L179.4 50.7 L190.0 61.5 L204.2 73.5 L226.6 90.1 L258.4 111.9 L290.2 132.5 L320.9 151.2 L346.8 165.9 L372.8 179.7 L398.7 192.6 L424.6 204.6 L451.8 216.2 L480.0 227.5 L509.5 238.3 L539.0 248.2" class="iso" style="stroke:#1e5c92"/>
+<path d="M241.8 27.0 L255.8 42.1 L270.7 57.1 L286.5 72.0 L302.3 85.9 L319.1 99.7 L335.9 112.6 L353.6 125.4 L372.2 138.0 L390.9 149.8 L410.4 161.4 L430.0 172.2 L450.5 182.9 L471.9 193.2 L493.3 203.0 L515.7 212.4 L539.0 221.6" class="iso" style="stroke:#1e5c92"/>
+<path d="M93.9 429.4 L107.1 343.1 L115.1 297.1 L119.3 276.3 L123.8 257.0 L128.5 239.5 L133.4 224.3 L138.2 211.7 L144.3 198.7 L150.4 188.7 L155.8 182.0 L159.2 178.6 L163.5 175.1 L169.3 171.7 L182.7 168.2 L186.0 168.0 L189.4 168.2 L206.2 171.7 L215.6 175.1 L223.5 178.6 L237.1 185.4 L249.4 192.1 L316.7 230.4 L339.4 242.5 L356.9 251.2 L381.1 262.6 L406.4 273.6 L433.0 284.3 L454.0 292.1 L483.4 302.1 L514.7 311.8 L548.1 321.2 L574.7 328.0 L612.3 336.7 L642.4 343.1 L685.2 351.2 L719.5 357.1 L768.4 364.7 L807.8 370.2 L849.6 375.6 L894.2 380.7 L958.2 387.3 L1010.1 392.0 L1125.1 401.0 L1257.3 409.3 L1410.5 417.0 L1589.1 424.0 L1761.2 429.4" class="boundary"/>
+<path d="M116.9 823.5 L122.2 653.0 L125.2 575.0 L128.2 507.6 L131.3 449.7 L134.9 395.0 L138.4 348.6 L142.1 309.6 L145.9 277.2 L150.3 246.7 L155.0 222.0 L160.0 202.7 L165.2 188.1 L168.7 181.1 L170.8 177.7 L173.4 174.4 L176.8 171.2 L184.1 168.2 L186.0 168.0" class="spin"/>
+<path d="M400.7 349.2 L378.5 336.9 L357.5 323.7 L337.6 309.5 L318.5 294.2 L298.4 276.3 L278.7 256.7 L260.3 236.8 L225.0 196.6 L212.1 183.2 L203.9 176.0 L196.1 170.9 L187.9 168.2 L186.0 168.0" class="spin"/>
+<path d="M114.4 300.7 L479.1 300.7" class="axis" style="stroke:#566d78;stroke-dasharray:7 4"/>
+<circle cx="114.4" cy="300.7" r="3.4" fill="#136f70" stroke="#136f70" stroke-width="1.8"/>
+<circle cx="479.1" cy="300.7" r="3.4" fill="#136f70" stroke="#136f70" stroke-width="1.8"/>
+<circle cx="134.1" cy="405.4" r="3.2" fill="white" stroke="#754774" stroke-width="1.8"/>
+<circle cx="292.2" cy="270.4" r="3.2" fill="white" stroke="#754774" stroke-width="1.8"/>
+<path d="M122.4 262.8 L381.5 262.8" class="axis" style="stroke:#566d78;stroke-dasharray:7 4"/>
+<circle cx="122.4" cy="262.8" r="3.4" fill="#136f70" stroke="#136f70" stroke-width="1.8"/>
+<circle cx="381.5" cy="262.8" r="3.4" fill="#136f70" stroke="#136f70" stroke-width="1.8"/>
+<circle cx="141.4" cy="316.8" r="3.2" fill="white" stroke="#754774" stroke-width="1.8"/>
+<circle cx="265.7" cy="242.9" r="3.2" fill="white" stroke="#754774" stroke-width="1.8"/>
+<path d="M136.1 217.0 L292.7 217.0" class="axis" style="stroke:#566d78;stroke-dasharray:7 4"/>
+<circle cx="136.1" cy="217.0" r="3.4" fill="#136f70" stroke="#136f70" stroke-width="1.8"/>
+<circle cx="292.7" cy="217.0" r="3.4" fill="#136f70" stroke="#136f70" stroke-width="1.8"/>
+<circle cx="152.7" cy="233.4" r="3.2" fill="white" stroke="#754774" stroke-width="1.8"/>
+<circle cx="235.7" cy="208.6" r="3.2" fill="white" stroke="#754774" stroke-width="1.8"/>
+</g>
+<path d="M52.0 300.7 L110.4 300.7" class="guide"/>
+<text x="47.0" y="306.7" class="math" text-anchor="end">p<tspan dy="5" font-size="67%">нп</tspan></text>
+<path d="M114.4 304.7 L114.4 444.0" class="guide"/>
+<path d="M479.1 304.7 L479.1 444.0" class="guide"/>
+<path d="M52.0 444.0 L52.0 18.0" class="axis" marker-end="url(#axis-tip)"/>
+<path d="M52.0 444.0 L574.0 444.0" class="axis" marker-end="url(#axis-tip)"/>
+<text x="39.0" y="27.0" class="math" text-anchor="end">p</text>
+<text x="575.0" y="473.0" class="math" text-anchor="end">V</text>
+<text x="114.4" y="475.0" class="math" text-anchor="middle">V<tspan dy="5" font-size="67%">ж</tspan></text>
+<text x="479.1" y="475.0" class="math" text-anchor="middle">V<tspan dy="5" font-size="67%">г</tspan></text>
+<circle cx="258.3" cy="300.7" r="3" fill="#263747" stroke="#263747" stroke-width="1.8"/>
+<text x="258.3" y="325.7" class="math" text-anchor="middle">b</text>
+<text x="100.0" y="305.7" class="math" text-anchor="end">a</text>
+<rect x="490.1" y="305.7" width="14" height="21" rx="3" fill="white"/>
+<text x="491.1" y="323.7" class="math" text-anchor="start">c</text>
+<text x="100.0" y="267.8" class="math" text-anchor="end">a′</text>
+<path d="M104.0 262.8 L117.4 262.8" class="guide"/>
+<rect x="395.5" y="230.8" width="21" height="21" rx="3" fill="white"/>
+<text x="396.5" y="248.8" class="math" text-anchor="start">c′</text>
+<text x="100.0" y="222.0" class="math" text-anchor="end">a″</text>
+<path d="M104.0 217.0 L131.1 217.0" class="guide"/>
+<rect x="307.7" y="185.0" width="21" height="21" rx="3" fill="white"/>
+<text x="308.7" y="203.0" class="math" text-anchor="start">c″</text>
+<text x="122.1" y="428.4" class="math" text-anchor="middle">d</text>
+<rect x="300.2" y="245.4" width="15" height="18" rx="3" fill="white"/>
+<text x="308.2" y="260.4" class="math" text-anchor="middle">e</text>
+<circle cx="186.0" cy="168.0" r="4" fill="#136f70" stroke="#136f70" stroke-width="1.8"/>
+<text x="190.0" y="155.0" class="math" text-anchor="middle" style="fill:#136f70">K</text>
+<path d="M541.0 312.4 L577.0 367.0" class="leader" style="stroke:#1e5c92"/>
+<text x="587.0" y="373.0" class="math" text-anchor="start" style="fill:#1e5c92">T₁</text>
+<path d="M541.0 300.3 L577.0 339.0" class="leader" style="stroke:#1e5c92"/>
+<text x="587.0" y="345.0" class="math" text-anchor="start" style="fill:#1e5c92">T₂</text>
+<path d="M541.0 287.3 L577.0 311.0" class="leader" style="stroke:#1e5c92"/>
+<text x="587.0" y="317.0" class="math" text-anchor="start" style="fill:#1e5c92">T₃</text>
+<path d="M541.0 274.8 L577.0 280.0" class="leader" style="stroke:#136f70"/>
+<text x="587.0" y="286.0" class="math" text-anchor="start" style="fill:#136f70">T<tspan dy="5" font-size="67%">к</tspan></text>
+<g transform="translate(83 161) rotate(-90)"><text x="0.0" y="0.0" class="small" text-anchor="middle">Жидкость</text></g>
+<text x="457.0" y="99.0" class="phase" text-anchor="middle">Газ</text>
+<text x="319.0" y="419.0" class="small" text-anchor="middle">Жидкость + газ</text>
+<path d="M51.0 509.0 L99.0 509.0" class="boundary"/>
+<text x="112.0" y="515.0" class="small" text-anchor="start">Граница сосуществования фаз</text>
+<path d="M51.0 539.0 L99.0 539.0" class="spin"/>
+<text x="112.0" y="545.0" class="small" text-anchor="start">Минимумы и максимумы изотерм</text>
+</svg>
