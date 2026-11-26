@@ -10,7 +10,7 @@
     "signal:test": "node tests/signal-frontier.test.js && node tests/signal-frontier-campaign.test.js && node tests/signal-frontier-long-operation.test.js && node tests/signal-frontier-expedition.test.js && node tests/signal-frontier-cloud.test.js",
     "game:build": "node tools/build-game.js",
     "game:test": "npm run game:build && node --test tests/game*.test.js tests/orbital-account.test.js",
-    "test:rules": "npx --yes firebase-tools@14.22.0 emulators:exec --project almanion-rules-test --only database \"node tests/firebase-rules.integration.js && node tests/contests-rules.integration.js && node tests/physics-forecast-rules.integration.js && node tests/note-review-rules.integration.js\"",
+    "test:rules": "npx --yes firebase-tools@14.22.0 emulators:exec --project almanion-rules-test --only database \"node tests/firebase-rules.integration.js && node tests/contests-rules.integration.js && node tests/physics-forecast-rules.integration.js && node tests/note-review-rules.integration.js && node tests/home-art-rules.integration.js\"",
     "test:e2e": "node tools/build-site.js --output _site && playwright test",
     "notes:assign-kc-ids": "node tools/assign-kc-ids.js",
     "site:build": "node tools/build-site.js --output _site",

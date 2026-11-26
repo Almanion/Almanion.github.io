@@ -991,6 +991,37 @@
       }
     },
 
+    "homeArt": {
+      "published": {
+        ".read": true,
+        ".write": "auth != null && auth.token.firebase.sign_in_provider !== 'anonymous' && auth.uid === '2M2ZdLQcJAhluPjUVFNJ6MyQrdH2' && newData.exists() && newData.child('revision').isString() && newData.child('revision').val().matches(/^[-_A-Za-z0-9]{20}$/) && data.parent().child('submissions').child(newData.child('revision').val()).child('status').val() === 'pending' && data.parent().child('submissions').child(newData.child('revision').val()).child('baseRevision').val() === (data.exists() ? data.child('revision').val() : 'none')",
+        ".validate": "newData.hasChildren(['revision', 'drawing', 'publishedAt']) && newData.child('drawing').val() === data.parent().child('submissions').child(newData.child('revision').val()).child('drawing').val() && newData.parent().child('submissions').child(newData.child('revision').val()).child('status').val() === 'published' && newData.parent().child('submissions').child(newData.child('revision').val()).child('decidedAt').val() === now",
+        "revision": { ".validate": "newData.isString() && newData.val().matches(/^[-_A-Za-z0-9]{20}$/)" },
+        "drawing": { ".validate": "newData.isString() && newData.val().length >= 2 && newData.val().length <= 120000" },
+        "publishedAt": { ".validate": "newData.isNumber() && newData.val() === now" },
+        "$other": { ".validate": false }
+      },
+      "submissions": {
+        ".indexOn": ["status", "authorUid"],
+        ".read": "auth != null && auth.token.firebase.sign_in_provider !== 'anonymous' && (auth.uid === '2M2ZdLQcJAhluPjUVFNJ6MyQrdH2' || (query.orderByChild === 'authorUid' && query.equalTo === auth.uid))",
+        "$id": {
+          ".read": "auth != null && auth.token.firebase.sign_in_provider !== 'anonymous' && data.child('authorUid').val() === auth.uid",
+          ".write": "auth != null && auth.token.firebase.sign_in_provider !== 'anonymous' && newData.exists() && ((!data.exists() && newData.child('authorUid').val() === auth.uid && newData.child('authorEmail').val() === auth.token.email && newData.child('submittedAt').val() === now && newData.child('status').val() === 'pending' && (auth.uid === '2M2ZdLQcJAhluPjUVFNJ6MyQrdH2' || root.child('adminRoles').child(auth.uid).child('contentEditor').val() === true)) || (data.child('status').val() === 'pending' && ((auth.uid === '2M2ZdLQcJAhluPjUVFNJ6MyQrdH2' && (newData.child('status').val() === 'published' || newData.child('status').val() === 'returned')) || (data.child('authorUid').val() === auth.uid && newData.child('status').val() === 'withdrawn'))))",
+          ".validate": "$id.matches(/^[-_A-Za-z0-9]{20}$/) && newData.hasChildren(['authorUid', 'authorEmail', 'baseRevision', 'drawing', 'submittedAt', 'status']) && (!data.exists() || (newData.child('authorUid').val() === data.child('authorUid').val() && newData.child('authorEmail').val() === data.child('authorEmail').val() && newData.child('baseRevision').val() === data.child('baseRevision').val() && newData.child('drawing').val() === data.child('drawing').val() && newData.child('submittedAt').val() === data.child('submittedAt').val())) && (newData.child('status').val() === 'pending' ? (!newData.child('decisionBy').exists() && !newData.child('decidedAt').exists() && !newData.child('note').exists()) : newData.hasChildren(['decisionBy', 'decidedAt', 'note'])) && (newData.child('status').val() !== 'published' || (newData.parent().parent().child('published').child('revision').val() === $id && newData.parent().parent().child('published').child('publishedAt').val() === now))",
+          "authorUid": { ".validate": "newData.isString() && newData.val().length <= 128" },
+          "authorEmail": { ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 254" },
+          "baseRevision": { ".validate": "newData.isString() && newData.val().matches(/^(none|[-_A-Za-z0-9]{20})$/)" },
+          "drawing": { ".validate": "newData.isString() && newData.val().length >= 2 && newData.val().length <= 120000" },
+          "submittedAt": { ".validate": "newData.isNumber() && newData.val() > 0" },
+          "status": { ".validate": "newData.val() === 'pending' || newData.val() === 'published' || newData.val() === 'returned' || newData.val() === 'withdrawn'" },
+          "decisionBy": { ".validate": "newData.val() === auth.uid" },
+          "decidedAt": { ".validate": "newData.isNumber() && newData.val() === now" },
+          "note": { ".validate": "newData.isString() && (newData.parent().child('status').val() === 'returned' ? (newData.val().length > 0 && newData.val().length <= 1200) : newData.val() === '')" },
+          "$other": { ".validate": false }
+        }
+      }
+    },
+
     "noteDrafts": {
       "$subject": {
         ".read": "auth != null && (auth.uid === '2M2ZdLQcJAhluPjUVFNJ6MyQrdH2' || root.child('adminRoles').child(auth.uid).child('contentEditor').val() === true)",

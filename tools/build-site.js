@@ -250,13 +250,15 @@ function build(options) {
             .replace(/(src=["']print-export\.js)(?:\?[^"']*)?(["'])/g, '$1?v=20261122-3$2')
             .replace(/((?:src|href)=["'](?:(?:script|search|bookmarks)\.js|styles\/site\/(?:reader|index)\.css))(?:\?[^"']*)?(["'])/g, '$1?v=20261122-4$2')
             .replace(/(src=["'](?:note-runtime|english-ui|settings)\.js)(?:\?[^"']*)?(["'])/g, '$1?v=20261123-3$2')
-            .replace(/(href=["'](?:constructor\/index|styles\/home-dashboard)\.css)(?:\?[^"']*)?(["'])/g, '$1?v=20261123-1$2')
+            .replace(/(href=["']constructor\/index\.css)(?:\?[^"']*)?(["'])/g, '$1?v=20261123-1$2')
+            .replace(/(href=["']styles\/home-dashboard\.css)(?:\?[^"']*)?(["'])/g, '$1?v=20261126-3$2')
             .replace(/(href=["']styles\/site\/index\.css)(?:\?[^"']*)?(["'])/g, '$1?v=20261123-3$2')
             .replace(/((?:src|href)=["'](?:(?:note-runtime|experimental-reader|english-ui|settings|script|print-export|constructor\/index)\.js|(?:style-new|styles\/(?:typography|english|site\/(?:reader|index))|constructor\/index)\.css))(?:\?[^"']*)?(["'])/g, '$1?v=20261123-4$2')
             .replace(/((?:src|href)=["'](?:(?:note-runtime|experimental-reader|english-ui|settings)\.js|(?:style-new|styles\/site\/index)\.css))(?:\?[^"']*)?(["'])/g, '$1?v=20261123-7$2')
             .replace(/(href=["']style-new\.css)(?:\?[^"']*)?(["'])/g, '$1?v=20261123-tech-book$2')
             .replace(/((?:src|href)=["'](?:\.\.\/)?(?:(?:account|firebase-config|note-runtime)\.js|styles\/site\/(?:index|reader)\.css|constructor\/(?:index\.css|(?:index|model|review)\.js)))(?:\?[^"']*)?(["'])/g, '$1?v=20261126-2$2');
-        let published = updated;
+        let published = updated
+            .replace(/(src=["'](?:\.\.\/)?(?:account|note-runtime)\.js)\?v=20261126-2(["'])/g, '$1?v=20261126-3$2');
         // The browser decides whether to take a navigation snapshot before
         // deferred scripts run. Make the opt-in available with the first bytes of HTML.
         const transitionLink = /[ \t]*<link rel="stylesheet" href="styles\/page-transitions\.css[^"]*">\n/;

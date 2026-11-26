@@ -231,6 +231,7 @@ body.home-page .home-editor-link {
     text-decoration: none;
 }
 body.home-page .home-editor-link svg { width: 18px; height: 18px; color: var(--text-secondary); flex: 0 0 auto; }
+body.home-page button.home-editor-link { font-family: inherit; cursor: pointer; }
 body.home-page .home-quick-section { margin: 0 0 30px; padding: 0; }
 body.home-page .home-section-heading {
     display: flex;
@@ -746,7 +747,7 @@ body.home-quick-dialog-open {
         margin: 0 0 20px;
     }
     body.home-page .home-privileged-actions .home-editor-link { justify-content: center; min-height: 44px; padding-inline: 8px; font-size: 0.77rem; }
-    body.home-page .home-planner-link,
+    body.home-page .home-planner-link:last-child,
     body.home-page .home-privileged-actions .home-editor-link:only-child { grid-column: 1 / -1; }
     body.home-page .home-section-heading { margin-bottom: 8px; }
     body.home-page .home-quick-customize { min-height: 44px; }

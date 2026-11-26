@@ -260,3 +260,9 @@
     .admin-review-values { grid-template-columns: minmax(0, 1fr); }
     .admin-review-actions { flex-direction: column; }
 }
+.admin-review-links {
+    display: flex;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    gap: 8px;
+}

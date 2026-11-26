@@ -15,7 +15,7 @@
     <link rel="stylesheet" href="styles/typography.css?v=20261002-1">
     <link rel="stylesheet" href="styles/physics-forecast.css?v=20261126-phone-layout">
     <link rel="stylesheet" href="styles/admin.css?v=20261125-balances">
-    <link rel="stylesheet" href="styles/admin-reviews.css?v=20261126-1">
+    <link rel="stylesheet" href="styles/admin-reviews.css?v=20261126-art">
 </head>
 <body class="admin-page">
 <script>window.AlmanionThemeBootstrap.applyBody();</script>
@@ -351,7 +351,13 @@
                 </div>
             </section>
             <section class="admin-view" id="view-reviews" role="tabpanel" aria-labelledby="tab-reviews" tabindex="0" hidden>
-                <div class="admin-view-heading"><h1 tabindex="-1">Редакция</h1><a class="btn btn-outline" href="constructor.html">Открыть конструктор</a></div>
+                <div class="admin-view-heading">
+                    <h1 tabindex="-1">Редакция</h1>
+                    <div class="admin-review-links">
+                        <a class="btn btn-outline" href="index.html#background-review">Рисунки фона <span class="review-count" id="adminHomeArtCount" hidden></span></a>
+                        <a class="btn btn-outline" href="constructor.html">Открыть конструктор</a>
+                    </div>
+                </div>
                 <div class="admin-review-workspace">
                     <section class="section admin-review-inbox" aria-labelledby="reviewInboxTitle">
                         <header class="admin-review-inbox-header">

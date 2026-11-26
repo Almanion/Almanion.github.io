@@ -44,10 +44,9 @@
     let homeAccessGeneration = 0;
     let homeRolesRef = null;
     let homeRolesHandler = null;
-    let reviewInboxRef = null;
-    let reviewInboxHandler = null;
+    const reviewWatches = [];
+    const reviewCounts = { notes: 0, art: 0 };
     let reviewCount = 0;
-    let reviewInboxIds = new Set();
     const appleEnabled = typeof appleAuthEnabled !== 'undefined' && appleAuthEnabled === true
         && typeof firebase.auth.OAuthProvider === 'function';
 
@@ -212,7 +211,13 @@
         return account?.uid === '2M2ZdLQcJAhluPjUVFNJ6MyQrdH2';
     }
 
-    function showReviewCount(count) {
+    function showReviewCounts() {
+        const artCount = document.getElementById('adminHomeArtCount');
+        if (artCount) {
+            artCount.hidden = !reviewCounts.art;
+            artCount.textContent = String(reviewCounts.art);
+        }
+        const count = reviewCounts.notes + reviewCounts.art;
         if (reviewCount === count) return;
         reviewCount = count;
         updateButton();
@@ -221,44 +226,45 @@
     }
 
     function watchReviewInbox(account) {
-        if (isReviewOwner(account) && reviewInboxRef) return;
-        if (reviewInboxRef) reviewInboxRef.off('value', reviewInboxHandler);
-        reviewInboxRef = reviewInboxHandler = null;
-        reviewInboxIds = new Set();
+        if (isReviewOwner(account) && reviewWatches.length) return;
+        for (const stop of reviewWatches.splice(0)) stop();
         const announcement = document.getElementById('accountReviewAnnouncement');
         if (announcement) announcement.textContent = '';
-        showReviewCount(0);
+        reviewCounts.notes = reviewCounts.art = 0;
+        showReviewCounts();
         if (!isReviewOwner(account)) return;
-        const query = db.ref('noteReviewInbox').orderByChild?.('status')?.equalTo?.('pending');
-        if (!query) return;
-        reviewInboxRef = query;
-        reviewInboxHandler = snapshot => {
-            if (reviewInboxRef !== query || user?.uid !== account.uid) return;
-            const incoming = snapshot.numChildren?.() ?? Object.keys(snapshot.val() || {}).length;
-            const ids = new Set();
-            let newest = null;
-            snapshot.forEach?.(entry => {
-                ids.add(entry.key);
-                const proposal = entry.val();
-                if (!reviewInboxIds.has(entry.key) && (!newest || proposal.submittedAt > newest.submittedAt)) newest = proposal;
-            });
-            reviewInboxIds = ids;
-            if (newest || incoming > reviewCount) {
-                let live = document.getElementById('accountReviewAnnouncement');
-                if (!live) {
-                    live = document.createElement('span');
-                    live.id = 'accountReviewAnnouncement';
-                    live.className = 'account-review-sr';
-                    live.setAttribute('role', 'status');
-                    document.body.appendChild(live);
+        for (const [kind, path] of [['notes', 'noteReviewInbox'], ['art', 'homeArt/submissions']]) {
+            const query = db.ref(path).orderByChild?.('status')?.equalTo?.('pending');
+            if (!query) continue;
+            let previousIds = new Set();
+            const handler = snapshot => {
+                if (user?.uid !== account.uid) return;
+                const records = snapshot.val() || {};
+                const ids = Object.keys(records);
+                const newest = ids.filter(id => !previousIds.has(id))
+                    .reduce((latest, id) => !latest || records[id].submittedAt > latest.submittedAt ? records[id] : latest, null);
+                previousIds = new Set(ids);
+                reviewCounts[kind] = ids.length;
+                if (newest) {
+                    let live = document.getElementById('accountReviewAnnouncement');
+                    if (!live) {
+                        live = document.createElement('span');
+                        live.id = 'accountReviewAnnouncement';
+                        live.className = 'account-review-sr';
+                        live.setAttribute('role', 'status');
+                        document.body.appendChild(live);
+                    }
+                    live.textContent = kind === 'art' ? 'Новый рисунок фона на проверке.' : 'Новая версия на проверке. ' + (newest.title || '');
                 }
-                live.textContent = newest?.title ? 'Новая версия на проверке. ' + newest.title : 'Версий конспектов на проверке: ' + incoming;
-            }
-            showReviewCount(incoming);
-        };
-        query.on('value', reviewInboxHandler, () => {
-            if (reviewInboxRef === query) showReviewCount(0);
-        });
+                showReviewCounts();
+            };
+            reviewWatches.push(() => query.off('value', handler));
+            query.on('value', handler, () => {
+                if (user?.uid !== account.uid) return;
+                reviewCounts[kind] = 0;
+                showReviewCounts();
+            });
+        }
     }
 
     function onAccountClick() {
@@ -1071,6 +1077,15 @@
         if (contentEditor) slot.appendChild(createHomeAccessLink('constructor'));
         if (siteAdmin) slot.appendChild(createHomeAccessLink('admin'));
         if (plannerOwner) slot.appendChild(createHomeAccessLink('planner'));
+        if (contentEditor) {
+            const artwork = document.createElement('button');
+            artwork.type = 'button';
+            artwork.className = 'home-editor-link';
+            artwork.dataset.homeArtOpen = '';
+            artwork.setAttribute('aria-haspopup', 'dialog');
+            artwork.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20c3 0 8-.3 8-5a3 3 0 0 0-6 0c0 2-1 4-2 5ZM10 12l7-8a2.1 2.1 0 0 1 3 3l-8 7"/></svg><span>Фон главной</span>';
+            slot.appendChild(artwork);
+        }
         slot.hidden = slot.childElementCount === 0;
     }
 
