@@ -49,7 +49,7 @@
             ['eventPicker', 'Выбери событие', 'В «Событиях» можно открыть другой прогноз или посмотреть исход завершённого.'],
             ['probChart', 'Посмотри вероятность', 'Выбери вариант ответа над графиком. Проведи по графику или передвинь ползунок, чтобы увидеть оценку в выбранный момент.'],
             ['ticketChoices', 'Купи или продай доли', 'Выбери действие и исход. Можно совершить сделку сразу или задать свою цену. Перед подтверждением увидишь расчёт.'],
-            ['portfolio', 'Проверь свой портфель', 'Свободные очки и очки в заявках всегда видны сверху. Открой портфель, чтобы увидеть доли, заявки и историю сделок.']
+            ['portfolio', 'Проверь свой портфель', 'Сверху видны доступные для этого события очки и общий резерв по всем прогнозам. Открой портфель, чтобы увидеть доли, заявки и историю сделок.']
         ];
         const phoneSteps = [
             'Открой список, чтобы сменить событие или посмотреть его итог.',
@@ -62,7 +62,7 @@
 
         function positionStep() {
             if (!tour.open) return;
-            const target = byId(steps[index][0]);
+            const target = byId(index === 2 && phase !== 'open' ? 'eventResult' : steps[index][0]);
             const viewport = tour.getBoundingClientRect();
             const short = viewport.width >= 510 && (viewport.height <= 440 || phone.matches && viewport.height <= 540 && viewport.width > viewport.height);
             let rect = target.getBoundingClientRect();
@@ -128,7 +128,7 @@
         window.visualViewport?.addEventListener('resize', scheduleLayout);
         if (window.ResizeObserver) new ResizeObserver(scheduleLayout).observe(card);
 
-        if (firstVisit()) openGuide(mainLink);
+        let introductionPending = true;
         return {
             setMarket(event, status) {
                 const id = event?.id;
@@ -140,6 +140,10 @@
                 const phaseChanged = status !== phase;
                 market = id; phase = status; winner = event?.answers[status] || '';
                 start.hidden = !id;
+                if (id && introductionPending) {
+                    introductionPending = false;
+                    if (firstVisit() && !guide.open) openGuide(mainLink);
+                }
                 const availability = byId('guideAvailability');
                 availability.textContent = !id && status === 'guest' ? 'Обзор доступен после входа.'
                     : !id && status === 'empty' ? 'Обзор появится с первым событием.' : '';

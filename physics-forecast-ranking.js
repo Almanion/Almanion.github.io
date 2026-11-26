@@ -66,6 +66,7 @@ window.createForecastRanking = function (account, amount) {
     }
     function render() {
         if (!dialog.open || !user) return;
+        byId('rankScope').textContent = mode === 'settled' ? 'По всем завершённым прогнозам.' : 'По всем прогнозам с учётом текущей стоимости долей.';
         const visible = rows.slice(0, limit);
         const wanted = new Set(visible.map(row => row.uid));
         for (const item of watched.values()) if (!wanted.has(item.uid)) forget(item);

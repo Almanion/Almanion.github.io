@@ -121,7 +121,7 @@
         card.innerHTML = `
             <p id="chartDialogQuestion" hidden></p>
             <div class="forecast-section-head forecast-chart-head">
-                <div class="forecast-chart-heading"><h2 id="chartTitle">Вероятность</h2>
+                <div class="forecast-chart-heading"><h2 id="chartTitle">Оценка рынка</h2>
                     <div class="forecast-chart-sides" role="group" aria-label="Исход на графике">
                         <button type="button" data-chart-side="yes" aria-pressed="true">Да</button>
                         <button type="button" data-chart-side="no" aria-pressed="false">Нет</button>
@@ -196,6 +196,14 @@
         let scheduledReading = 0;
         spacer.className = 'forecast-chart-space';
         spacer.setAttribute('aria-hidden', 'true');
+        if (!statistics) {
+            const trade = document.createElement('button');
+            trade.id = 'chartTrade';
+            trade.type = 'button';
+            trade.className = 'forecast-secondary';
+            trade.textContent = 'К сделке по этому исходу';
+            card.append(trade);
+        }
         const mobileChart = () => !statistics && compact.matches;
 
         function motionLevel() {

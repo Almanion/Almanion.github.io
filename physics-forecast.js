@@ -24,6 +24,9 @@
     let renderedMarket = '';
     let engine = M.create(), readLedger = ledger.createReader(), selectedId = '', user = null, connected = false, offset = 0, ready = false, busy = false;
     let epoch = 0, clock = 0, connectionTimer, feedOff, pendingSnapshot, historyLimit = 12, ticket = null;
+    const review = $('tradeReview');
+    let reviewedOrder = null;
+    let otherOrdersVersion = '';
     let firstPaint = true, renderedToday = '', nextClose = Infinity;
     let buyQuantity = '5';
     const api = window.AlmanionAccount;
@@ -69,11 +72,6 @@
             }
         });
     }
-    function arrangePanels() {
-        if (phone.matches) $('tradeTicket').after(book);
-        else $('roundBody').append(book);
-        updateJumps();
-    }
     function updateWalletSize() {
         document.body.style.setProperty('--forecast-wallet-height', Math.ceil(wallet.getBoundingClientRect().height) + 'px');
         updateJumps();
@@ -87,8 +85,7 @@
         const keyboard = window.visualViewport && innerHeight - window.visualViewport.height > 120;
         jumpBar.toggleAttribute('data-keyboard', Boolean(typing && keyboard));
     }
-    arrangePanels();
-    phone.addEventListener('change', arrangePanels);
+    phone.addEventListener('change', updateJumps);
     window.addEventListener('scroll', updateJumps, { passive: true });
     window.addEventListener('resize', updateWalletSize);
     window.addEventListener('hashchange', applyWalletHash);
@@ -223,6 +220,7 @@
         $('roundState').removeAttribute('data-state');
         $('marketDeadline').hidden = true;
         renderHeading(null);
+        $('eventResult').hidden = true;
         $('gateTitle').textContent = title;
         $('gateText').textContent = body;
         const button = $('gateAction');
@@ -245,6 +243,10 @@
 
     function clearMarket() {
         clearTimeout(connectionTimer);
+        if (review.open) review.close();
+        reviewedOrder = null;
+        otherOrdersVersion = '';
+        $('walletOtherList').replaceChildren();
         if (feedOff) feedOff();
         feedOff = undefined;
         epoch++; ready = busy = false; selectedId = ''; readLedger = ledger.createReader(); engine = M.create(); ticket = pendingSnapshot = null;
@@ -285,7 +287,7 @@
         user = account && !account.isAnonymous ? account : null;
         $('forecastAdminLink').hidden = user?.uid !== M.OWNER;
         if (!user) {
-            gate('Войди, чтобы открыть рынок', 'Для участия нужен аккаунт Almanion.', 'login');
+            gate('Войди, чтобы открыть рынок', 'На старте — 100 бесплатных виртуальных очков на прогнозы класса.', 'login');
             return;
         }
         subscribe();
@@ -296,6 +298,7 @@
         if (renderedMarket === m.id) return;
         renderedMarket = m.id;
         const choices = $('tradeAnswers'), balances = $('walletBalances');
+        choices.removeAttribute('data-picked');
         choices.toggleAttribute('data-compact', m.sides.length === 2 && m.sides.every(side => m.answers[side].length <= 5));
         for (const label of choices.querySelectorAll('label')) label.remove();
         for (const row of balances.querySelectorAll('[data-holding]')) row.remove();
@@ -368,8 +371,8 @@
             const price = isMaker ? t.makerPrice : t.price;
             const row = node('div', undefined, 'forecast-row');
             const info = node('div'); info.append(node('b', (action === 'buy' ? 'Покупка' : 'Продажа') + ' · ' + m.answers[side]),
-                node('small', stampFmt.format(t.at) + ' · ' + t.qty + ' × ' + amount(price)));
-            row.append(info, node('strong', amount(price * t.qty) + ' оч.')); return row;
+                node('small', stampFmt.format(t.at) + ' мск · ' + shares(t.qty) + ' по ' + points(price)));
+            row.append(info, node('strong', (m.phase === 'void' ? 'Отменено · ' : action === 'buy' ? 'Списано ' : 'Получено ') + points(price * t.qty))); return row;
         });
         $('tradeHistory').replaceChildren(...(rows.length ? rows : [node('p', 'В этом прогнозе у тебя пока нет сделок.', 'forecast-footnote')]));
         $('moreTrades').hidden = trades.length <= historyLimit;
@@ -405,13 +408,11 @@
     }
 
     function prepareSale(side) {
-        const form = $('tradeForm'), at = now();
+        const form = $('tradeForm');
         form.elements.action.value = 'sell';
         form.elements.side.value = side;
         if (execution.value === 'limit') suggestPrice();
-        const free = freeShares(market(), side, at);
-        const tradable = free ? M.maxOrderSize(engine, draftOrder(), at) : 0;
-        $('quantity').value = String(tradable || Math.min(free, M.MAX_QTY) || 1);
+        $('quantity').value = '1';
     }
 
     function sizePresets(order, byBudget, free, maximum, disabled) {
@@ -443,7 +444,7 @@
     }
     function showEstimate(order, plan, free, unusedLimit) {
         const buy = order.action === 'buy';
-        const rows = [quoteRow(buy ? 'К оплате сейчас' : 'К получению сейчас', points(plan.cash))];
+        const rows = [quoteRow((buy ? 'К оплате сейчас' : 'К получению сейчас') + ' · ' + shares(plan.filled), points(plan.cash))];
         if (unusedLimit > 0) rows.push(quoteRow('Из лимита останется', points(unusedLimit)));
         if (plan.left) {
             rows.push(quoteRow((buy ? 'В резерв' : 'К получению при продаже') + ' · ' + shares(plan.left), points(plan.left * order.limit)));
@@ -556,15 +557,42 @@
         submit.disabled = disabled;
         if (!busy) submit.textContent = (plan.left ? 'Выставить заявку' : buy ? 'Купить' : 'Продать') +
             (plan.left ? ' · ' : ' ') + shares(order.qty, !plan.left) + ' «' + market().answers[order.side] + '»';
-        const unusedLimit = byBudget && order.mode === 'market' && order.qty === maxQty
-            ? readPoints($('budget').value) - plan.cash : 0;
+        if (!busy && phone.matches && $('tradeAnswers').hasAttribute('data-picked')) submit.textContent = 'Проверить сделку';
+        const unusedLimit = byBudget ? readPoints($('budget').value) - plan.cash - plan.reserved : 0;
         showEstimate(order, plan, free, unusedLimit);
     }
 
     function renderAccount(m, phase) {
         const pos = M.position(m, user.uid), reserve = M.held(m, user.uid, now());
         $('walletCash').textContent = amount(M.available(engine, user.uid, selectedId, now())) + ' оч.';
-        $('walletHeld').textContent = amount(reserve.cash) + ' оч.';
+        let totalReserve = 0;
+        const otherOrders = [];
+        for (const item of engine.markets.values()) {
+            if (M.status(item, now()) !== 'open') continue;
+            const orders = item.orders.filter(order => order.actor === user.uid);
+            for (const order of orders) {
+                if (order.action === 'buy') totalReserve += order.qty * order.limit;
+            }
+            if (item.id !== m.id && orders.length) otherOrders.push([item.id, item.question, orders.length]);
+        }
+        $('walletHeld').textContent = points(totalReserve);
+        $('walletEventTitle').textContent = 'В этом прогнозе · ' + m.question;
+        $('walletOtherEvents').hidden = !otherOrders.length;
+        const version = JSON.stringify(otherOrders);
+        if (otherOrdersVersion !== version) {
+            otherOrdersVersion = version;
+            $('walletOtherList').replaceChildren(...otherOrders.map(([id, question, count]) => {
+                const button = node('button', question + ' · заявок: ' + count, 'forecast-secondary');
+                button.type = 'button';
+                button.addEventListener('click', () => {
+                    wallet.open = false;
+                    selectMarket(id);
+                    $('orderListTitle').focus();
+                    $('orderListTitle').scrollIntoView({ block: 'start' });
+                });
+                return button;
+            }));
+        }
         for (const side of m.sides) {
             $('wallet' + suffix(side)).textContent = String(pos[side]);
             const held = $('held' + suffix(side));
@@ -577,13 +605,31 @@
         const paid = m.sides.includes(phase);
         $('walletOutcome').textContent = phase === 'void' ? 'Все сделки по этому событию аннулированы.' : paid
             ? 'Выплата ' + pos[phase] + ' оч. · результат по событию ' + amount(pos.cash + pos[phase] * 100) + ' оч.' : '';
+        const outcome = $('eventResult');
+        outcome.hidden = phase === 'open';
+        if (!outcome.hidden) {
+            if (phase === 'lock') outcome.textContent = 'Торги завершены. Ждём объявления результата.';
+            else if (phase === 'void') outcome.textContent = pos.cash < 0 ? 'Возвращено ' + points(-pos.cash)
+                : pos.cash > 0 ? 'Отменён доход по событию · ' + points(pos.cash) : 'Баланс по событию восстановлен.';
+            else outcome.textContent = $('walletOutcome').textContent;
+        }
+        const focusedOrder = document.activeElement?.dataset.orderId;
         const rows = m.orders.filter(o => phase === 'open' && o.actor === user.uid).map(o => {
             const row = node('div', undefined, 'forecast-row'), info = node('div');
             info.append(node('b', (o.action === 'buy' ? 'Покупка' : 'Продажа') + ' · ' + m.answers[o.side]), node('small', shares(o.qty) + ' по ' + points(o.limit)));
             const cancel = node('button', 'Снять заявку', 'forecast-secondary'); cancel.type = 'button'; cancel.disabled = busy || !connected || phase !== 'open';
-            cancel.addEventListener('click', () => send({ kind: 'cancel', day: selectedId, target: o.id })); row.append(info, cancel); return row;
+            cancel.dataset.orderId = o.id;
+            cancel.addEventListener('click', async () => {
+                await send({ kind: 'cancel', day: selectedId, target: o.id });
+                if (document.activeElement === document.body && ready && selectedId === m.id)
+                    ($('myOrders').querySelector('button') || $('orderListTitle')).focus({ preventScroll: true });
+            }); row.append(info, cancel); return row;
         });
         $('myOrders').replaceChildren(...(rows.length ? rows : [node('p', 'У тебя нет заявок в ожидании сделки.', 'forecast-footnote')]));
+        if (focusedOrder && !busy) {
+            const next = Array.from($('myOrders').querySelectorAll('button')).find(button => button.dataset.orderId === focusedOrder);
+            (next || $('orderListTitle')).focus({ preventScroll: true });
+        }
         $('walletOrderCount').textContent = fmt.format(rows.length);
     }
 
@@ -634,10 +680,20 @@
             $('marketDeadline').textContent = 'До ' + ledger.cutoff(m.endAt, m.date);
         }
         if (user.uid === M.OWNER) $('forecastAdminLink').href = 'admin.html' + (m ? '?event=' + encodeURIComponent(m.id) : '') + '#forecasts';
+        $('eventResult').hidden = !m || phase === 'open';
+        $('ticketConnection').hidden = connected || phase !== 'open';
+        const tradeJump = jumpBar.querySelector('[data-trade-jump]');
+        tradeJump.lastChild.textContent = phase === 'open' ? 'Сделка' : 'Итог';
+        tradeJump.href = phase === 'open' ? '#tradeTicket' : '#eventResult';
+        $('tradeTicket').hidden = phase !== 'open';
+        $('orderListTitle').parentElement.hidden = phase !== 'open';
+        $('walletOrderCount').parentElement.hidden = phase !== 'open';
+        $('chartTrade').hidden = phase !== 'open';
         if (!m) { chart.reset(); return; }
         buildAnswerControls(m);
         $('roundSummary').textContent = phase === 'open' ? '' : phase === 'lock' ? 'Торги закрыты. Ждём итог события.' : phaseLabel(m, phase) + '.';
         chart.update(m, connected); renderTicket(); renderBook(m, phase); renderAccount(m, phase); renderHistory(m);
+        if (reviewedOrder && !sameReview()) invalidateReview();
         updateJumps();
         if (firstPaint) {
             firstPaint = false; $('gameSurface').classList.add('forecast-enter');
@@ -670,6 +726,7 @@
                 if (result.filled) parts.push((command.action === 'buy' ? 'Покупка' : 'Продажа') + ' · ' + shares(result.filled) + outcome + ' за ' + points(result.cash));
                 if (result.left) parts.push('В открытой заявке ' + shares(result.left) + outcome + ' по ' + points(command.limit));
                 feedback.textContent = parts.join(' · ');
+                return feedback.textContent;
             }
         } catch (err) { if (session === epoch) feedback.textContent = err.message || 'Не удалось подтвердить действие.'; }
         finally {
@@ -681,17 +738,57 @@
         }
     }
 
-    function selectMarket(key) {
+    function selectMarket(key, record = true) {
         if (!engine.markets.has(key)) return;
         selectedId = key; historyLimit = 12;
         const url = new URL(location.href);
-        if (url.searchParams.get('event') !== key && /^https?:$/.test(url.protocol)) {
+        if (review.open) review.close();
+        if (record && url.searchParams.get('event') !== key && /^https?:$/.test(url.protocol)) {
             url.searchParams.set('event', key);
-            history.replaceState(history.state, '', url);
+            history.pushState(history.state, '', url);
         }
         resetDraft(); expandBook(false); toggleCriteria(false);
         $('orderFeedback').textContent = ''; notice(''); paint();
     }
+    window.addEventListener('popstate', () => {
+        if (!ready) return;
+        const requested = new URL(location.href).searchParams.get('event');
+        const key = engine.markets.has(requested) ? requested : ledger.orderedMarkets(engine, now())[0]?.id;
+        if (key && key !== selectedId) selectMarket(key, false);
+    });
+    $('walletEvents').addEventListener('click', () => { wallet.open = false; eventPicker.click(); });
+    function focusSelectedOutcome() {
+        const choices = $('tradeAnswers');
+        if (!phone.matches || choices.hasAttribute('data-compact')) return;
+        choices.setAttribute('data-picked', '');
+        renderTicket();
+        $('tradeTicket').scrollIntoView({ block: 'start' });
+    }
+    $('tradeAnswers').addEventListener('click', event => {
+        if (event.target.matches('input[name=side]') && event.detail > 0) focusSelectedOutcome();
+    });
+    $('changeOutcome').addEventListener('click', () => {
+        $('tradeAnswers').removeAttribute('data-picked');
+        renderTicket();
+        $('tradeAnswers').querySelector('input:checked').focus();
+    });
+    phone.addEventListener('change', () => {
+        $('tradeAnswers').removeAttribute('data-picked');
+        renderTicket();
+    });
+    function tradeSide(side) {
+        const radio = $('tradeForm').elements.side;
+        radio.value = side;
+        $('tradeAnswers').querySelector('input:checked').dispatchEvent(new Event('change', { bubbles: true }));
+        focusSelectedOutcome();
+        $('ticketTitle').focus({ preventScroll: true });
+        $('tradeTicket').scrollIntoView({ block: 'start' });
+    }
+    $('bookTrade').addEventListener('click', () => tradeSide($('bookSide').value));
+    $('chartTrade').addEventListener('click', () => {
+        if ($('chartDialog').open) $('chartExpand').click();
+        tradeSide($('marketChart').dataset.side);
+    });
     function toggleCriteria(expanded) {
         $('criteriaToggle').setAttribute('aria-expanded', String(expanded));
         $('criteriaToggle').textContent = expanded ? 'Свернуть условия' : 'Читать условия';
@@ -710,8 +807,7 @@
     $('tradeForm').addEventListener('change', e => {
         const { action, side } = $('tradeForm').elements;
         if (e.target.name === 'action' && action.value === 'sell') {
-            const at = now(), m = market();
-            prepareSale(freeShares(m, side.value, at) ? side.value : m.sides.find(id => freeShares(m, id, at)) || side.value);
+            prepareSale(side.value);
         } else if (e.target.name === 'side' && action.value === 'sell') {
             prepareSale(side.value);
         } else if (e.target.id === 'buyUnit') {
@@ -761,10 +857,60 @@
         wallet.open = false;
         execution.value = 'market'; prepareSale(button.dataset.sell); notice(''); renderTicket();
         $('bookSide').value = button.dataset.sell; renderBook(market(), M.status(market(), now()));
+        focusSelectedOutcome();
         $('ticketTitle').focus({ preventScroll: true });
         $('tradeTicket').scrollIntoView({ block: 'start' });
     });
-    $('tradeForm').addEventListener('submit', e => { e.preventDefault(); if (ticket) send({ ...ticket }); });
+    function sameReview() {
+        return connected && ticket && reviewedOrder && JSON.stringify(ticket) === JSON.stringify(reviewedOrder.command)
+            && reviewedOrder.quote === $('quotePreview').textContent;
+    }
+
+    function invalidateReview() {
+        reviewedOrder = null;
+        $('reviewConfirm').hidden = true;
+        $('reviewStatus').textContent = !connected ? 'Связь потеряна. Вернись к форме после подключения.'
+            : 'Условия изменились. Вернись к расчёту и проверь его ещё раз.';
+        $('reviewBack').focus({ preventScroll: true });
+    }
+
+    $('tradeForm').addEventListener('submit', event => {
+        event.preventDefault();
+        renderTicket();
+        if (!ticket || busy || !connected || review.open) return;
+        reviewedOrder = { command: { ...ticket }, quote: $('quotePreview').textContent };
+        $('reviewTitle').textContent = 'Проверка сделки';
+        $('reviewEvent').textContent = market().question;
+        const action = ticket.action === 'buy' ? 'Покупка' : 'Продажа';
+        $('reviewOrder').textContent = action + ' · ' + shares(ticket.qty) + ' «' + market().answers[ticket.side] + '»';
+        $('reviewQuote').replaceChildren(...Array.from($('quotePreview').children, row => row.cloneNode(true)));
+        if (ticket.mode === 'limit') $('reviewQuote').prepend(quoteRow(ticket.action === 'buy' ? 'Максимальная цена за долю' : 'Минимальная цена за долю', points(ticket.limit)));
+        $('reviewStatus').textContent = '';
+        $('reviewBack').textContent = 'Изменить';
+        $('reviewConfirm').hidden = false;
+        $('reviewConfirm').disabled = false;
+        review.showModal();
+        $('reviewTitle').focus();
+    });
+    $('reviewBack').addEventListener('click', () => review.close());
+    review.addEventListener('close', () => { reviewedOrder = null; });
+    $('reviewConfirm').addEventListener('click', async () => {
+        if (!reviewedOrder || busy) return;
+        renderTicket();
+        if (!sameReview()) { invalidateReview(); return; }
+        const command = reviewedOrder.command, session = epoch;
+        reviewedOrder = null;
+        $('reviewConfirm').disabled = true;
+        $('reviewStatus').textContent = 'Отправляем…';
+        const receipt = await send(command);
+        if (session !== epoch || !review.open) return;
+        $('reviewConfirm').hidden = true;
+        $('reviewTitle').textContent = receipt ? 'Сделка принята' : 'Сделка не подтверждена';
+        $('reviewStatus').textContent = receipt || $('feedback').textContent;
+        $('reviewQuote').replaceChildren();
+        $('reviewBack').textContent = receipt ? 'Новая сделка' : 'К расчёту';
+        $('reviewTitle').focus();
+    });
     $('moreTrades').addEventListener('click', () => { historyLimit += 24; renderHistory(market()); });
     if (!api?.database || !api.auth) { gate('Не удалось подключиться', 'Для входа нужен доступ к серверу аккаунтов.', 'retry'); return; }
     api.database.ref('.info/connected').on('value', snap => { connected = snap.val() === true; paint(); });
