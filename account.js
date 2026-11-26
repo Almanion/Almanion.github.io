@@ -44,8 +44,12 @@
     let homeAccessGeneration = 0;
     let homeRolesRef = null;
     let homeRolesHandler = null;
-    const reviewWatches = [];
-    const reviewCounts = { notes: 0, art: 0 };
+    const reviewPaths = { notes: 'noteReviewInbox', art: 'homeArt/submissions' };
+    const reviewWatches = new Map();
+    const reviewSources = {};
+    let reviewOwnerUid = '';
+    let reviewPanel = null;
+    let reviewAssets = null;
     let reviewCount = 0;
     const appleEnabled = typeof appleAuthEnabled !== 'undefined' && appleAuthEnabled === true
         && typeof firebase.auth.OAuthProvider === 'function';
@@ -213,6 +217,7 @@
             btn.classList.add('home-account-btn');
             (document.getElementById('homeControls') || document.body).appendChild(btn);
             updateButton();
+            mountReviewPanel();
             return;
         }
         let container = header.querySelector('.sidebar-header-buttons');
@@ -239,9 +244,9 @@
             btn.classList.add('signed-in');
             btn.title = name || 'Аккаунт';
             btn.setAttribute('aria-label', 'Аккаунт: ' + (name || 'вошли') +
-                (reviewCount ? '. Версий на проверке: ' + reviewCount : ''));
+                (reviewCount && !reviewPanel?.bell.isConnected ? '. Версий на проверке: ' + reviewCount : ''));
             btn.innerHTML = avatarMarkup(identity, name);
-            if (reviewCount) {
+            if (reviewCount && !reviewPanel?.bell.isConnected) {
                 const count = document.createElement('span');
                 count.className = 'account-review-count';
                 count.setAttribute('aria-hidden', 'true');
@@ -260,60 +265,153 @@
         return account?.uid === '2M2ZdLQcJAhluPjUVFNJ6MyQrdH2';
     }
 
-    function showReviewCounts() {
-        const artCount = document.getElementById('adminHomeArtCount');
-        if (artCount) {
-            artCount.hidden = !reviewCounts.art;
-            artCount.textContent = String(reviewCounts.art);
-        }
-        const count = reviewCounts.notes + reviewCounts.art;
-        if (reviewCount === count) return;
-        reviewCount = count;
-        updateButton();
+    function updateReviewLink() {
         const link = document.getElementById('accountReviewLink');
-        if (link) link.textContent = count ? 'Версии на проверке · ' + count : 'Проверка версий';
+        if (!link) return;
+        const onlyArt = reviewSources.art?.count && !reviewSources.notes?.count;
+        link.href = onlyArt ? new URL('index.html#background-review', profileUrl).href : reviewInboxUrl;
+        link.textContent = reviewPanel
+            ? (reviewCount ? 'Уведомления · ' + reviewCount : 'Уведомления')
+            : (reviewCount ? 'Версии на проверке · ' + reviewCount : 'Проверка версий');
+        link.setAttribute('aria-haspopup', reviewPanel ? 'dialog' : 'false');
+    }
+
+    function showReviewCounts() {
+        if (reviewPanel && reviewOwnerUid) reviewPanel.update(reviewSources);
+        const count = (reviewSources.notes?.count || 0) + (reviewSources.art?.count || 0);
+        if (reviewCount !== count) {
+            reviewCount = count;
+            updateButton();
+        }
+        updateReviewLink();
+    }
+
+    function loadReviewAssets() {
+        if (reviewAssets) return reviewAssets;
+        const script = document.createElement('script');
+        script.src = new URL('account-notifications.js?v=20261126-1', profileUrl).href;
+        const css = document.createElement('link');
+        css.rel = 'stylesheet';
+        css.href = new URL('styles/account-notifications.css?v=20261126-1', profileUrl).href;
+        // The review panel is only used by the owner. Other accounts retain the existing account payload.
+        const load = node => new Promise((resolve, reject) => {
+            node.onload = resolve;
+            node.onerror = reject;
+            document.head.append(node);
+        });
+        reviewAssets = Promise.all([load(css), load(script)])
+            .then(() => {
+                if (!window.AlmanionAccountNotifications?.create) throw new Error('Review panel unavailable');
+                return true;
+            })
+            .catch(() => {
+                css.remove();
+                script.remove();
+                reviewAssets = null;
+                return false;
+            });
+        return reviewAssets;
+    }
+
+    function mountReviewPanel() {
+        if (!reviewOwnerUid || typeof HTMLDialogElement === 'undefined' || !HTMLDialogElement.prototype.showModal) return;
+        loadReviewAssets().then(loaded => {
+            if (!loaded || !reviewOwnerUid || !isReviewOwner(user)) return;
+            if (!reviewPanel) reviewPanel = window.AlmanionAccountNotifications.create({
+                baseUrl: profileUrl,
+                retry() {
+                    for (const kind of Object.keys(reviewPaths)) {
+                        if (reviewSources[kind].status === 'error') watchReviewSource(kind);
+                    }
+                }
+            });
+            const homeControls = document.getElementById('homeControls');
+            if (homeControls && !reviewPanel.bell.isConnected) {
+                const accountButton = homeControls.querySelector('#accountBtn');
+                homeControls.insertBefore(reviewPanel.bell, accountButton);
+            }
+            showReviewCounts();
+            updateButton();
+        });
+    }
+
+    function announceReview(kind) {
+        let live = document.getElementById('accountReviewAnnouncement');
+        if (!live) {
+            live = document.createElement('span');
+            live.id = 'accountReviewAnnouncement';
+            live.className = 'account-review-sr';
+            live.setAttribute('role', 'status');
+            document.body.appendChild(live);
+        }
+        live.textContent = kind === 'art' ? 'Новый фон главной на проверке.' : 'Новая версия конспекта на проверке.';
+    }
+
+    function watchReviewSource(kind) {
+        reviewWatches.get(kind)?.();
+        const query = db.ref(reviewPaths[kind]).orderByChild?.('status')?.equalTo?.('pending');
+        reviewSources[kind] = { status: query ? 'loading' : 'error', count: 0, entries: [] };
+        if (!query) {
+            showReviewCounts();
+            return;
+        }
+        const isCurrent = () => reviewWatches.get(kind) === stop && Boolean(reviewOwnerUid);
+        function failed() {
+            clearTimeout(initialLoad);
+            if (!isCurrent()) return;
+            reviewSources[kind] = { status: 'error', count: 0, entries: [] };
+            showReviewCounts();
+        }
+        const initialLoad = setTimeout(failed, 10000);
+        const handler = snapshot => {
+            if (!isCurrent()) return;
+            clearTimeout(initialLoad);
+            const previous = reviewSources[kind];
+            const entries = [];
+            for (const [id, record] of Object.entries(snapshot.val?.() || {})) {
+                if (!/^[-_A-Za-z0-9]{20}$/.test(id) || !record || typeof record !== 'object') continue;
+                const at = Number(record.submittedAt);
+                entries.push({
+                    id, kind,
+                    at: Number.isFinite(at) && at > 0 && at <= 8_640_000_000_000_000 ? at : 0,
+                    subject: String(record.subject || ''),
+                    title: kind === 'notes' ? String(record.title || 'Версия конспекта') :
+                        (record.photo ? 'Фотография' : 'Рисунок'),
+                    author: String(record.authorEmail || '')
+                });
+            }
+            const count = snapshot.numChildren?.() ?? entries.length;
+            reviewSources[kind] = { status: 'ready', count, entries };
+            showReviewCounts();
+            if (previous.status === 'ready') {
+                const previousIds = new Set(previous.entries.map(item => item.id));
+                if (entries.some(item => !previousIds.has(item.id))) announceReview(kind);
+            }
+        };
+        const stop = () => {
+            clearTimeout(initialLoad);
+            query.off('value', handler);
+        };
+        reviewWatches.set(kind, stop);
+        query.on('value', handler, failed);
+        showReviewCounts();
     }
 
     function watchReviewInbox(account) {
-        if (isReviewOwner(account) && reviewWatches.length) return;
-        for (const stop of reviewWatches.splice(0)) stop();
+        const ownerUid = isReviewOwner(account) ? account.uid : '';
+        if (reviewOwnerUid === ownerUid) return;
+        reviewOwnerUid = ownerUid;
+        for (const stop of reviewWatches.values()) stop();
+        reviewWatches.clear();
+        for (const kind of Object.keys(reviewPaths)) reviewSources[kind] = { status: 'loading', count: 0, entries: [] };
         const announcement = document.getElementById('accountReviewAnnouncement');
-        if (announcement) announcement.textContent = '';
-        reviewCounts.notes = reviewCounts.art = 0;
+        announcement?.remove();
+        reviewPanel?.reset();
+        reviewPanel = null;
         showReviewCounts();
-        if (!isReviewOwner(account)) return;
-        for (const [kind, path] of [['notes', 'noteReviewInbox'], ['art', 'homeArt/submissions']]) {
-            const query = db.ref(path).orderByChild?.('status')?.equalTo?.('pending');
-            if (!query) continue;
-            let previousIds = new Set();
-            const handler = snapshot => {
-                if (user?.uid !== account.uid) return;
-                const records = snapshot.val?.() || {};
-                const ids = Object.keys(records);
-                const newest = ids.filter(id => !previousIds.has(id))
-                    .reduce((latest, id) => !latest || records[id].submittedAt > latest.submittedAt ? records[id] : latest, null);
-                previousIds = new Set(ids);
-                reviewCounts[kind] = snapshot.numChildren?.() ?? ids.length;
-                if (newest) {
-                    let live = document.getElementById('accountReviewAnnouncement');
-                    if (!live) {
-                        live = document.createElement('span');
-                        live.id = 'accountReviewAnnouncement';
-                        live.className = 'account-review-sr';
-                        live.setAttribute('role', 'status');
-                        document.body.appendChild(live);
-                    }
-                    live.textContent = kind === 'art' ? 'Новый рисунок фона на проверке.' : 'Новая версия на проверке. ' + (newest.title || '');
-                }
-                showReviewCounts();
-            };
-            reviewWatches.push(() => query.off('value', handler));
-            query.on('value', handler, () => {
-                if (user?.uid !== account.uid) return;
-                reviewCounts[kind] = 0;
-                showReviewCounts();
-            });
-        }
+        if (!ownerUid) return;
+        for (const kind of Object.keys(reviewPaths)) watchReviewSource(kind);
+        mountReviewPanel();
     }
 
     function onAccountClick() {
@@ -766,8 +864,13 @@
         ov.querySelector('#accProfile').href = profileUrl;
         const reviewLink = ov.querySelector('#accountReviewLink');
         if (reviewLink) {
-            reviewLink.href = reviewInboxUrl;
-            reviewLink.textContent = reviewCount ? 'Версии на проверке · ' + reviewCount : 'Проверка версий';
+            updateReviewLink();
+            reviewLink.addEventListener('click', event => {
+                if (!reviewPanel || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+                event.preventDefault();
+                hideOverlay();
+                reviewPanel.show(document.getElementById('accountBtn'));
+            });
         }
         const verifyLink = ov.querySelector('#accVerifyEmail');
         if (verifyLink) {
@@ -1565,12 +1668,16 @@
     });
 
     window.addEventListener('pageshow', function (event) {
-        if (event.persisted) updateHomeAccessLinks();
+        if (event.persisted) {
+            updateHomeAccessLinks();
+            watchReviewInbox(user);
+        }
     });
 
     window.addEventListener('pagehide', function (event) {
         if (!event.persisted) return;
         homeAccessGeneration++;
+        watchReviewInbox(null);
         updateContestsLinks(false);
         detachHomeRolesListener();
         const slot = document.getElementById('homePrivilegedActions');

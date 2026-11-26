@@ -2,7 +2,7 @@
 
 const { test, expect } = require('@playwright/test');
 
-function reviewFixture({ withPhotos, withAspect }) {
+function reviewFixture({ withPhotos, withAspect, reviewId }) {
     const now = Date.now();
     const points = withAspect
         ? [1000, 1000, 9000, 1000, 9000, 9000, 1000, 9000, 1000, 1000]
@@ -38,6 +38,7 @@ function reviewFixture({ withPhotos, withAspect }) {
     const publishedListeners = new Set();
     const calls = [];
     const counts = [];
+    const resolvedLinks = [];
     let published = {
         revision: 'original', drawing, publishedAt: now, ...(withPhotos ? { photo: beforePhoto } : {}),
         ...(withAspect ? { aspect: 2.4 } : {})
@@ -79,10 +80,15 @@ function reviewFixture({ withPhotos, withAspect }) {
         }
     };
     const host = document.querySelector('main');
-    const review = window.AlmanionHomeArtReview.create({ host, client, onPendingCount: count => counts.push(count) });
+    const review = window.AlmanionHomeArtReview.create({
+        host, client, reviewId,
+        onPendingCount: count => counts.push(count),
+        onReviewLinkResolved: id => resolvedLinks.push(id)
+    });
     window.homeArtReviewFixture = {
         resume: () => { denyPending = false; },
         reads: () => ({ calls, counts }),
+        resolvedLinks: () => resolvedLinks.slice(),
         stop: () => review.stop(),
         hasPublishedPhoto: () => !!afterPhoto && published.photo === afterPhoto && published.drawing === '[]',
         subscriptions: () => pendingListeners.size + publishedListeners.size
@@ -156,6 +162,25 @@ test('owner can compare both previews at once and closing the review detaches li
     await page.evaluate(() => window.homeArtReviewFixture.stop());
     expect(await page.evaluate(() => window.homeArtReviewFixture.subscriptions())).toBe(0);
     await expect(page.getByRole('button', { name: 'Опубликовать фон' })).toBeHidden();
+});
+
+test('the requested background is selected after a successful retry', async ({ page }) => {
+    await startReview(page, { reviewId: 'second' });
+    await expect(page.getByRole('heading', { name: 'writer@example.com' })).toBeFocused();
+    await expect(page.getByRole('button', { name: /writer@example/ })).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.getByRole('button', { name: 'Опубликовать фон' })).toBeDisabled();
+    await page.getByRole('button', { name: /editor@example/ }).click();
+    await expect(page.getByRole('heading', { name: 'editor@example.com' })).toBeVisible();
+    expect(await page.evaluate(() => window.homeArtReviewFixture.resolvedLinks())).toEqual(['second']);
+});
+
+test('a removed background link leaves the review queue visible without a selection', async ({ page }) => {
+    await startReview(page, { reviewId: 'resolved' });
+    await expect(page.getByText('Эта версия уже недоступна для проверки.')).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Опубликовать фон' })).toBeHidden();
+    await page.getByRole('button', { name: /editor@example/ }).click();
+    await expect(page.getByText('Эта версия уже недоступна для проверки.')).toBeHidden();
+    await expect(page.getByRole('button', { name: 'Опубликовать фон' })).toBeEnabled();
 });
 
 test('owner can compare and publish a photo-only homepage background', async ({ page }) => {

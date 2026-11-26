@@ -3,6 +3,7 @@
 
     const byId = id => document.getElementById(id);
     const dates = new Intl.DateTimeFormat('ru-RU', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'Europe/Moscow' });
+    const reviewIdPattern = /^[-_A-Za-z0-9]{20}$/;
     const fieldLabels = {
         title: 'Заголовок', navTitle: 'Название в меню', order: 'Порядок раздела',
         type: 'Тип блока', term: 'Термин', separator: 'Разделитель', content: 'Текст',
@@ -149,6 +150,7 @@
         const subjects = new Map();
         let client, unsubscribe, selected = '', entries = [], loaded = false, visible = false;
         let details = null, busy = false, requestSequence = 0, session = 0;
+        let requestedReviewMissing = false;
 
         const owner = user => user?.uid === ownerUid && !user.isAnonymous;
         const subjectName = subject => subjects.get(subject) || subject;
@@ -287,6 +289,25 @@
             paintDetail();
         }
 
+        function showInboxStatus() {
+            inboxStatus.textContent = requestedReviewMissing ? 'Эта версия уже недоступна для проверки.'
+                : entries.length ? '' : 'Новых версий на проверку пока нет.';
+        }
+
+        function openRequestedReview() {
+            if (!loaded || !visible || location.hash !== '#reviews') return false;
+            const url = new URL(location.href);
+            const id = url.searchParams.get('review');
+            if (!id || !reviewIdPattern.test(id)) return false;
+            url.searchParams.delete('review');
+            history.replaceState(history.state, '', url.href);
+            const available = entries.some(entry => entry.id === id);
+            requestedReviewMissing = !available;
+            openReview(available ? id : '', available);
+            showInboxStatus();
+            return true;
+        }
+
         function receive(items) {
             const previousIds = new Set(entries.map(entry => entry.id));
             entries = items;
@@ -298,9 +319,10 @@
             }
             loaded = true;
             setCount();
-            inboxStatus.textContent = entries.length ? '' : 'Новых версий на проверку пока нет.';
             inboxRetry.hidden = true;
-            if (!currentEntry()) openReview(entries[0]?.id || '');
+            if (openRequestedReview()) return;
+            showInboxStatus();
+            if (!currentEntry() && !requestedReviewMissing) openReview(entries[0]?.id || '');
             else {
                 paintInbox();
                 paintDetail();
@@ -384,6 +406,10 @@
         inbox.addEventListener('click', event => {
             const id = event.target.closest('[data-review-id]')?.dataset.reviewId;
             if (!id || busy) return;
+            if (requestedReviewMissing) {
+                requestedReviewMissing = false;
+                showInboxStatus();
+            }
             if (id === selected && !detail.hidden) focusDetail();
             else openReview(id, true);
         });
@@ -418,6 +444,7 @@
                 unsubscribe = client = details = null;
                 entries = [];
                 busy = loaded = false;
+                requestedReviewMissing = false;
                 selected = '';
                 closeReturn();
                 detail.hidden = true;
@@ -429,8 +456,9 @@
                 setCount();
             },
             setVisible(next) {
-                if (visible === next) return;
+                const changed = visible !== next;
                 visible = next;
+                if (openRequestedReview() || !changed) return;
                 if (visible && selected && !details) openReview(selected);
                 else detail.hidden = !visible || !selected;
             }

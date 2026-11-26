@@ -31,7 +31,7 @@
         return { figure, scene, canvas, photo: null, photoValue: null, photoState: 'none' };
     }
 
-    function create({ host, client, onPublished, onPendingCount }) {
+    function create({ host, client, reviewId = '', onReviewLinkResolved, onPublished, onPendingCount }) {
         const list = element('ul', 'home-art-review-list');
         list.setAttribute('aria-label', 'Версии фона на проверке');
         const queueStatus = element('p', 'home-art-review-notice');
@@ -42,6 +42,7 @@
 
         const detail = element('section', 'home-art-review-detail');
         const title = element('h3', 'home-art-review-title');
+        title.tabIndex = -1;
         const metadata = element('p', 'home-art-review-meta');
         const comparison = element('div', 'home-art-review-comparison');
         const choices = element('div', 'home-art-review-choices');
@@ -96,6 +97,7 @@
         let pending = null;
         let published;
         let selected = null;
+        let requestedReviewMissing = false;
         let watchError = false;
         let publishedError = false;
         let busy = false;
@@ -129,6 +131,7 @@
             list.replaceChildren();
             if (watchError) queueStatus.textContent = 'Не удалось загрузить версии.';
             else if (pending === null) queueStatus.textContent = 'Загружаем версии…';
+            else if (requestedReviewMissing) queueStatus.textContent = 'Эта версия уже недоступна для проверки.';
             else queueStatus.textContent = pending.length ? '' : 'Фонов на проверке пока нет.';
             retry.hidden = !watchError && !publishedError;
             for (const entry of pending ?? []) {
@@ -233,10 +236,22 @@
                     if (request !== generation) return;
                     watchError = false;
                     pending = entries;
-                    select(currentEntry()?.id ?? entries[0]?.id ?? null);
+                    const linkedEntry = reviewId && entries.find(entry => entry.id === reviewId);
+                    if (reviewId) {
+                        requestedReviewMissing = !linkedEntry;
+                        select(linkedEntry?.id ?? null);
+                        onReviewLinkResolved?.(reviewId);
+                        reviewId = '';
+                    } else if (!requestedReviewMissing) {
+                        select(currentEntry()?.id ?? entries[0]?.id ?? null);
+                    }
                     onPendingCount?.(entries.length);
                     paintList();
                     paintDetail();
+                    if (linkedEntry) {
+                        title.focus({ preventScroll: true });
+                        detail.scrollIntoView({ block: 'nearest', behavior: 'instant' });
+                    }
                 }, () => {
                     if (request !== generation) return;
                     watchError = true;
@@ -325,6 +340,7 @@
         list.addEventListener('click', event => {
             const control = event.target.closest('button[data-id]');
             if (!control || busy) return;
+            requestedReviewMissing = false;
             select(control.dataset.id);
             result.textContent = '';
             paintList();

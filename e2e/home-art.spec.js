@@ -4,16 +4,20 @@ const { test, expect } = require('@playwright/test');
 
 test.use({ serviceWorkers: 'block' });
 
-async function prepareHomepage(page, { actor = 'editor', existing = false } = {}) {
+const reviewSources = { notes: 'noteReviewInbox', art: 'homeArt/submissions' };
+const sharedReviewId = 'pending0000000000000';
+
+async function prepareHomepage(page, { actor = 'editor', existing = false, unavailable = [], initialArt = [] } = {}) {
     await page.route('**/*', route => new URL(route.request().url()).hostname === '127.0.0.1' ? route.continue() : route.abort());
-    await page.addInitScript(({ actor, existing }) => {
+    await page.addInitScript(({ actor, existing, unavailable, initialArt, reviewSources, sharedReviewId }) => {
         const owner = '2M2ZdLQcJAhluPjUVFNJ6MyQrdH2';
         const userFor = uid => uid ? { uid, email: uid + '@example.com', emailVerified: true } : null;
         const publishedStroke = { color: '#78d8b7', size: 15, erase: false, points: [3500, 5000, 6500, 5000] };
         const data = {
             'adminRoles/editor': { contentEditor: true }, 'adminRoles/editor/contentEditor': true,
             'homeArt/published': existing ? { revision: 'published00000000000', drawing: JSON.stringify([publishedStroke]), publishedAt: Date.now() } : null,
-            'homeArt/submissions': {}
+            [reviewSources.art]: {},
+            [reviewSources.notes]: {}
         };
         const snapshot = value => ({
             val: () => value ?? null,
@@ -23,7 +27,11 @@ async function prepareHomepage(page, { actor = 'editor', existing = false } = {}
             }
         });
         const listeners = new Set();
+        const failures = new Set(unavailable.map(kind => reviewSources[kind]));
         const reads = [];
+        const notify = path => {
+            for (const item of listeners) if (item.path === path) item.notify();
+        };
         let subscriptionId = 1;
         function ref(path, childKey, value) {
             function read() {
@@ -34,7 +42,11 @@ async function prepareHomepage(page, { actor = 'editor', existing = false } = {}
                 child: name => ref(path + '/' + name),
                 orderByChild: key => ({ equalTo: expected => ref(path, key, expected) }),
                 once: async () => read(),
-                on(type, fn) {
+                on(type, fn, onError) {
+                    if (failures.has(path)) {
+                        queueMicrotask(() => onError?.(new Error('Test source unavailable')));
+                        return;
+                    }
                     const item = { path, fn, notify: () => fn(read()) };
                     listeners.add(item);
                     queueMicrotask(item.notify);
@@ -47,7 +59,7 @@ async function prepareHomepage(page, { actor = 'editor', existing = false } = {}
                         async set(row) {
                             data[path][key] = { ...row, submittedAt: Date.now() };
                             reads.push(row);
-                            for (const item of listeners) if (item.path === path) item.notify();
+                            notify(path);
                         }
                     };
                 },
@@ -75,21 +87,33 @@ async function prepareHomepage(page, { actor = 'editor', existing = false } = {}
         window.artFixture = {
             switchUser(uid) { auth.currentUser = userFor(uid); authListeners.forEach(callback => callback(auth.currentUser)); },
             submissions: () => reads,
+            reviewListenerCount: () => [...listeners].filter(item => Object.values(reviewSources).includes(item.path)).length,
+            recover(kind) { failures.delete(reviewSources[kind]); },
             publish(row) {
                 data['homeArt/published'] = {
                     revision: 'published00000000000', drawing: row.drawing, photo: row.photo, aspect: row.aspect, publishedAt: Date.now()
                 };
-                for (const item of listeners) if (item.path === 'homeArt/published') item.notify();
+                notify('homeArt/published');
             },
-            incoming() {
-                data['homeArt/submissions']['pending0000000000000'] = {
-                    authorEmail: 'editor@example.com', status: 'pending', baseRevision: 'none',
-                    drawing: JSON.stringify([publishedStroke]), submittedAt: Date.now()
+            incoming(kind = 'art', id = sharedReviewId, fields = {}) {
+                const path = reviewSources[kind];
+                const details = kind === 'notes'
+                    ? { title: 'Тепловые явления', subject: 'physics-10', sectionId: 'heat', revision: 2 }
+                    : { baseRevision: 'none', drawing: JSON.stringify([publishedStroke]) };
+                data[path][id] = {
+                    ...details, authorUid: 'editor', authorEmail: 'editor@example.com',
+                    status: 'pending', submittedAt: Date.now(), ...fields
                 };
-                for (const item of listeners) if (item.path === 'homeArt/submissions') item.notify();
+                notify(path);
+            },
+            resolve(kind, id = sharedReviewId) {
+                const path = reviewSources[kind];
+                data[path][id].status = 'published';
+                notify(path);
             }
         };
-    }, { actor, existing });
+        for (const { id, ...fields } of initialArt) window.artFixture.incoming('art', id, fields);
+    }, { actor, existing, unavailable, initialArt, reviewSources, sharedReviewId });
     await page.goto('/');
     await expect(page.locator('#accountBtn')).toBeVisible();
     await expect(page.locator('#accountBtn')).not.toHaveClass(/\bis-loading\b/);
@@ -239,10 +263,121 @@ test('visitors see the approved art and only the owner receives review notices',
     await prepareHomepage(page, { actor: 'owner', existing: true });
     await expect(page.locator('#homeArtBackground')).toBeVisible();
     await expect(page.getByRole('button', { name: 'Фон главной' })).toBeVisible();
+    const bell = page.locator('#accountNotificationsBtn');
+    await bell.click();
+    const inbox = page.getByRole('dialog', { name: 'Уведомления', exact: true });
+    await expect(inbox.getByText('Нет заявок на проверку')).toBeVisible();
     await page.evaluate(() => window.artFixture.incoming());
-    await expect(page.locator('#accountBtn .account-review-count')).toHaveText('1');
+    await expect(bell.locator('.account-review-count')).toHaveText('1');
+    await expect(inbox.locator('a[data-kind="art"]')).toBeVisible();
+    await page.evaluate(() => window.artFixture.switchUser('student'));
+    await expect(inbox).toBeHidden();
+    await expect(bell).toBeHidden();
+    await expect(page.getByText('editor@example.com', { exact: true })).toHaveCount(0);
+    await expect.poll(() => page.evaluate(() => window.artFixture.reviewListenerCount())).toBe(0);
     await page.evaluate(() => window.artFixture.switchUser(null));
     await expect(page.getByRole('button', { name: 'Фон главной' })).toBeHidden();
     await expect(page.locator('#accountBtn .account-review-count')).toHaveCount(0);
     await expect(page.locator('#homeArtBackground')).toBeVisible();
+});
+
+test('owner sees live grouped review types and exact links from the bell', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await prepareHomepage(page, { actor: 'owner' });
+    await page.evaluate(() => {
+        const yesterday = new Date();
+        yesterday.setDate(yesterday.getDate() - 1);
+        artFixture.incoming('notes', undefined, { submittedAt: yesterday.getTime() });
+        artFixture.incoming('art');
+    });
+
+    const bell = page.locator('#accountNotificationsBtn');
+    const badge = bell.locator('.account-review-count');
+    await expect(badge).toHaveText('2');
+    await bell.focus();
+    await page.keyboard.press('Enter');
+    const inbox = page.getByRole('dialog', { name: 'Уведомления', exact: true });
+    await expect(inbox).toBeVisible();
+    await expect(inbox.getByRole('button', { name: 'Все' })).toHaveAttribute('aria-pressed', 'true');
+    const note = inbox.locator('a[href*="admin.html?review="]');
+    const art = inbox.locator('a[href*="#background-review"][href*="?review="]');
+    await expect(note).toHaveText(/Тепловые явления/);
+    await expect(note).toHaveAttribute('href', new RegExp('admin\\.html\\?review=' + sharedReviewId + '#reviews$'));
+    await expect(art).toHaveAttribute('href', new RegExp('index\\.html\\?review=' + sharedReviewId + '#background-review$'));
+    const reviewUrls = await inbox.locator('a[href*="?review="]').evaluateAll(links => links.map(link => link.hash));
+    expect(reviewUrls).toEqual(['#background-review', '#reviews']);
+    await expect(inbox.getByText(/^Сегодня$/)).toBeVisible();
+    await expect(inbox.getByText(/^Вчера$/)).toBeVisible();
+
+    await inbox.getByRole('button', { name: 'Конспекты' }).click();
+    await expect(note).toBeVisible();
+    await expect(art).toBeHidden();
+    await inbox.getByRole('button', { name: 'Фон', exact: true }).click();
+    await expect(note).toBeHidden();
+    await expect(art).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(inbox).toBeHidden();
+    await expect(bell).toBeFocused();
+    await expect(badge).toHaveText('2');
+    await page.evaluate(() => artFixture.resolve('notes'));
+    await expect(badge).toHaveText('1');
+    await bell.click();
+    await expect(art).toBeVisible();
+    await page.evaluate(() => artFixture.resolve('art'));
+    await expect(inbox.getByText('Нет заявок на проверку')).toBeVisible();
+    await expect(badge).toBeHidden();
+});
+
+test('clicking the older artwork notification opens that version in homepage review', async ({ page }) => {
+    await prepareHomepage(page, {
+        actor: 'owner',
+        initialArt: [
+            { id: 'newer000000000000000', authorEmail: 'newer@example.com' },
+            { id: sharedReviewId, authorEmail: 'target@example.com', submittedAt: Date.now() - 300_000 }
+        ]
+    });
+    await page.locator('#accountNotificationsBtn').click();
+    const inbox = page.getByRole('dialog', { name: 'Уведомления', exact: true });
+    await inbox.locator('a[href*="?review=' + sharedReviewId + '#background-review"]').click();
+    await expect(page.locator('.home-art-review-title')).toContainText('target@example.com');
+    await expect(page).toHaveURL(/index\.html#background-review$/);
+});
+
+test('on a narrow phone the notification panel stays usable while retrying an unavailable source', async ({ page }) => {
+    await page.setViewportSize({ width: 320, height: 568 });
+    await prepareHomepage(page, { actor: 'owner', unavailable: ['notes'] });
+    await page.evaluate(() => {
+        for (let i = 0; i < 11; i++) {
+            artFixture.incoming('art', String(i).padStart(20, '0'), { submittedAt: Date.now() - i * 60_000 });
+        }
+    });
+    const bell = page.locator('#accountNotificationsBtn');
+    await bell.click();
+    const inbox = page.getByRole('dialog', { name: 'Уведомления', exact: true });
+    const retry = inbox.getByRole('button', { name: 'Повторить' });
+    const close = inbox.getByRole('button', { name: 'Закрыть уведомления' });
+    await expect(retry).toBeVisible();
+    await expect(inbox.locator('a[href*="#background-review"][href*="?review="]')).toHaveCount(11);
+    await expect.poll(() => inbox.evaluate(panel => {
+        const bounds = panel.getBoundingClientRect();
+        return bounds.left >= -1 && bounds.right <= innerWidth + 1
+            && bounds.top >= -1 && bounds.bottom <= innerHeight + 1
+            && panel.scrollWidth <= panel.clientWidth + 1
+            && document.documentElement.scrollWidth <= innerWidth + 1;
+    })).toBe(true);
+
+    await page.evaluate(() => {
+        artFixture.incoming('notes');
+        artFixture.recover('notes');
+    });
+    await retry.click();
+    await expect(retry).toBeHidden();
+    await expect(inbox.getByRole('link', { name: /Тепловые явления/ })).toBeVisible();
+    await expect(bell.locator('.account-review-count')).toHaveText('12');
+    const lastCard = inbox.locator('a[href*="#background-review"][href*="?review="]').last();
+    await lastCard.scrollIntoViewIfNeeded();
+    await expect(lastCard).toBeInViewport();
+    await expect(close).toBeInViewport();
+    await close.click();
+    await expect(bell).toBeFocused();
 });

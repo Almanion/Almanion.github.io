@@ -3,7 +3,7 @@
 const { test, expect } = require('@playwright/test');
 const { setupAdmin } = require('./helpers/admin-fixture.cjs');
 
-function reviewFixture() {
+function reviewFixture(reviewLinkId) {
     const revisions = {
         first: {
             id: 'first', authorUid: 'editor-1', authorEmail: 'editor@example.com', subject: 'physics',
@@ -18,6 +18,10 @@ function reviewFixture() {
             sectionId: 'heat', title: 'Теплота', revision: 3, submittedAt: Date.now() - 2000, status: 'publishing'
         }
     };
+    if (reviewLinkId) {
+        revisions[reviewLinkId] = { ...revisions.recovery, id: reviewLinkId };
+        delete revisions.recovery;
+    }
     const listeners = new Set();
     const calls = [];
     const notify = () => {
@@ -74,7 +78,7 @@ async function setupReview(page, options) {
     await setupAdmin(page, options);
     await page.route('**/constructor/review.js*', route => route.fulfill({
         contentType: 'application/javascript',
-        body: '(' + reviewFixture.toString() + ')();'
+        body: '(' + reviewFixture.toString() + ')(' + JSON.stringify(options?.reviewLinkId) + ');'
     }));
 }
 
@@ -135,4 +139,32 @@ test('a new version notifies the owner and the queue detaches on an account chan
     await expect(page.locator('#tab-reviews')).toBeHidden();
     await expect(page.locator('#view-reviews')).toBeHidden();
     expect(await page.evaluate(() => window.reviewFixture.listenerCount())).toBe(0);
+});
+
+test('an owner link opens a specific version once, including a publication in progress', async ({ page }) => {
+    const reviewLinkId = '1234567890abcdefghij';
+    await setupReview(page, { reviewLinkId });
+    const link = '/admin.html?review=' + reviewLinkId + '&keep=1#reviews';
+    await page.goto(link);
+    await expect(page.locator('#reviewTitle')).toHaveText('Теплота');
+    await expect(page.locator('#reviewTitle')).toBeFocused();
+    await expect(page.locator('#reviewPublish')).toHaveText('Проверить публикацию');
+    await expect(page).toHaveURL(/\/admin\.html\?keep=1#reviews$/);
+    await page.locator('[data-review-id="first"]').click();
+    await page.evaluate(() => window.reviewFixture.submit());
+    await expect(page.locator('#reviewTitle')).toHaveText('Механика');
+    await page.goto(link);
+    await expect(page.locator('#reviewTitle')).toHaveText('Теплота');
+});
+
+test('a resolved note link does not select another version for approval', async ({ page }) => {
+    await setupReview(page);
+    await page.goto('/admin.html?review=00000000000000000000#reviews');
+    await expect(page.locator('#reviewInboxStatus')).toHaveText('Эта версия уже недоступна для проверки.');
+    await expect(page.locator('#reviewDetail')).toBeHidden();
+    await page.evaluate(() => window.reviewFixture.submit());
+    await expect(page.locator('#reviewDetail')).toBeHidden();
+    await page.locator('[data-review-id="first"]').click();
+    await expect(page.locator('#reviewTitle')).toHaveText('Механика');
+    await expect(page.locator('#reviewInboxStatus')).toHaveText('');
 });

@@ -1,6 +1,7 @@
 {
   "rootFiles": [
     "account.js",
+    "account-notifications.js",
     "admin-dashboard.js",
     "admin-forecasts.js",
     "admin-reviews.js",

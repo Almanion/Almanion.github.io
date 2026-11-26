@@ -7,6 +7,8 @@
 
     const publicCache = 'almanion:home-art:published';
     const ownerUid = '2M2ZdLQcJAhluPjUVFNJ6MyQrdH2';
+    const reviewHash = '#background-review';
+    const reviewIdPattern = /^[-_A-Za-z0-9]{20}$/;
     const dateFormat = new Intl.DateTimeFormat('ru', { dateStyle: 'medium', timeStyle: 'short' });
     const palette = [
         ['#949aff', 'Сиреневый'], ['#79c6f7', 'Голубой'], ['#78d8b7', 'Мятный'],
@@ -29,7 +31,7 @@
     function load(file, style = false) {
         if (resources.has(file)) return resources.get(file);
         const element = document.createElement(style ? 'link' : 'script');
-        const version = file === 'profile-image.js' ? '20261126-2' : '20261126-3';
+        const version = { 'profile-image.js': '20261126-2', 'home-art-review.js': '20261126-4' }[file] || '20261126-3';
         const source = new URL(file + '?v=' + version, moduleUrl).href;
         if (style) { element.rel = 'stylesheet'; element.href = source; }
         else { element.src = source; element.async = true; }
@@ -253,7 +255,20 @@
         host.append(list);
     }
 
-    async function showPanel(review) {
+    function readReviewLink() {
+        if (location.hash !== reviewHash) return '';
+        const id = new URLSearchParams(location.search).get('review');
+        return id && reviewIdPattern.test(id) ? id : '';
+    }
+
+    function clearReviewLink(id) {
+        if (readReviewLink() !== id) return;
+        const url = new URL(location.href);
+        url.searchParams.delete('review');
+        history.replaceState(history.state, '', url.href);
+    }
+
+    async function showPanel(review, reviewId = '') {
         const current = session;
         if (!current || (review && !current.owner)) return;
         closePhotoMenu();
@@ -274,7 +289,10 @@
             await Promise.all([load('home-art-review.js'), load('styles/home-art-review.css', true)]);
             if (current !== session || byId('Panel').hidden || byId('Review').hidden) return;
             reviewPanel?.stop();
-            reviewPanel = window.AlmanionHomeArtReview.create({ host: byId('Review'), client: current.client });
+            reviewPanel = window.AlmanionHomeArtReview.create({
+                host: byId('Review'), client: current.client, reviewId,
+                onReviewLinkResolved: clearReviewLink
+            });
             reviewPanel.start();
         } catch (_) { byId('Review').textContent = 'Не удалось загрузить рисунки. Откройте список ещё раз.'; }
     }
@@ -319,7 +337,7 @@
                 if (session !== current) return;
                 byId('Own').textContent = 'Не удалось загрузить рисунки.';
             });
-            if (review) showPanel(true);
+            if (review) showPanel(true, readReviewLink());
             else showCanvas();
         } catch (_) {
             if (dialog.open) dialog.close();
@@ -339,7 +357,7 @@
         session = editor = null;
         closePhotoMenu();
         updatePhotoControls();
-        if (location.hash === '#background-review') history.replaceState(history.state, '', location.pathname + location.search);
+        if (location.hash === reviewHash) history.replaceState(history.state, '', location.pathname + location.search);
     }
 
     async function submit() {
@@ -502,7 +520,11 @@
             else closeSession();
             drawPublic();
         }
-        if (location.hash === '#background-review') open(null, true);
+        if (location.hash === reviewHash) {
+            const reviewId = readReviewLink();
+            if (session && reviewId) showPanel(true, reviewId);
+            else open(null, true);
+        }
     }
 
     published = readCache(publicCache);
