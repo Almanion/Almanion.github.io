@@ -217,7 +217,7 @@
             </header>
             <div class="profile-crop-body">
                 <div class="profile-crop-stage" data-crop-stage role="group" aria-label="Кадр фото" aria-describedby="profileCropHelp" tabindex="-1">
-                    <div class="profile-mark profile-crop-mask" data-crop-mask><canvas data-crop-image aria-hidden="true"></canvas></div>
+                    <div class="profile-crop-mask" data-crop-mask><canvas data-crop-image aria-hidden="true"></canvas></div>
                     <p class="profile-crop-status" data-crop-status role="status"></p>
                 </div>
                 <p id="profileCropHelp" class="profile-crop-help">Перетащите фото. <span class="profile-crop-key-help">Стрелки сдвигают кадр, + и − меняют масштаб.</span><span class="profile-crop-touch-help">Разведите пальцы, чтобы приблизить.</span></p>
@@ -236,7 +236,7 @@
             </div>
             <footer class="profile-crop-footer">
                 <div class="profile-crop-preview" data-crop-preview aria-hidden="true">
-                    <div class="profile-mark profile-crop-mask"><canvas></canvas></div><span>В шапке</span>
+                    <div class="profile-crop-mask"><canvas></canvas></div><span>В шапке</span>
                 </div>
                 <button type="button" class="profile-secondary" data-crop-cancel>Отмена</button>
                 <button type="button" class="profile-primary" data-crop-confirm>Применить</button>
@@ -246,7 +246,7 @@
         const stage = query('stage');
         const zoom = query('zoom');
         ui = {
-            dialog, stage, zoom, zoomValue: query('value'), mask: query('mask'), canvas: query('image'),
+            dialog, stage, zoom, zoomValue: query('value'), canvas: query('image'),
             title: dialog.querySelector('h2'), previewBox: query('preview'), preview: query('preview').querySelector('canvas'),
             status: query('status'), error: query('error'), controls: query('tools'), confirm: query('confirm')
         };
@@ -267,7 +267,7 @@
         window.addEventListener('resize', () => { if (session) renderSoon(session); });
     }
 
-    function open({ file, kind, shape = 'circle', trigger }) {
+    function open({ file, kind, trigger }) {
         if (!file || !Object.hasOwn(kinds, kind)) return Promise.resolve(null);
         if (!ui) build();
         finish(null, false);
@@ -277,7 +277,6 @@
             session = current;
             ui.dialog.dataset.kind = kind;
             ui.title.textContent = settings.title;
-            ui.mask.dataset.profileShape = ui.preview.parentElement.dataset.profileShape = shape;
             ui.previewBox.hidden = true;
             ui.stage.dataset.ready = 'false';
             ui.zoom.value = 1;

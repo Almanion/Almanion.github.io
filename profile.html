@@ -16,9 +16,10 @@
     <link rel="stylesheet" href="styles/buttons.css">
     <link rel="stylesheet" href="style-new.css?v=20260929-2">
     <link rel="stylesheet" href="styles/typography.css">
-    <link rel="stylesheet" href="styles/profile-covers.css?v=20261126-1">
-    <link rel="stylesheet" href="styles/profile.css?v=20261126-3">
-    <link rel="stylesheet" href="styles/profile-crop.css?v=20261126-1">
+    <link rel="stylesheet" href="styles/profile-covers.css?v=20261126-2">
+    <link rel="stylesheet" href="styles/profile.css?v=20261126-4">
+    <link rel="stylesheet" href="styles/profile-motion.css?v=20261126-1" data-profile-motion>
+    <link rel="stylesheet" href="styles/profile-crop.css?v=20261126-2">
 </head>
 <body class="profile-page" data-no-math>
     <script>window.AlmanionThemeBootstrap.applyBody();</script>
@@ -61,7 +62,7 @@
             </div>
             <form id="profileForm" class="profile-form" novalidate>
                 <div class="profile-compact" id="profileCompact" data-profile-color="iris">
-                    <div class="profile-compact-cover" id="profileCompactCover" aria-hidden="true"></div>
+                    <div class="profile-compact-cover" id="profileCompactCover" data-profile-cover-live aria-hidden="true"></div>
                     <div id="profileCompactAvatar" aria-hidden="true"></div>
                     <span id="profileCompactName" aria-hidden="true"></span>
                     <button type="button" id="profileShowPreview" class="profile-preview-button" aria-label="Показать профиль" title="Показать профиль">
@@ -84,10 +85,16 @@
                             </div>
                         </div>
                         <p class="profile-error profile-image-error" id="profileAvatarImageError" role="alert" hidden></p>
-                        <fieldset class="profile-choice-group">
-                            <legend>Значок</legend>
-                            <div class="profile-icons" id="profileIcons"></div>
-                        </fieldset>
+                        <div class="profile-icon-collections" id="profileIcons">
+                            <fieldset class="profile-choice-group" id="profileMemeGroup">
+                                <legend>Мемы</legend>
+                                <div class="profile-icons" id="profileMemeIcons"></div>
+                            </fieldset>
+                            <fieldset class="profile-choice-group">
+                                <legend>Значки</legend>
+                                <div class="profile-icons" id="profileClassicIcons"></div>
+                            </fieldset>
+                        </div>
                         <div class="profile-field" id="profileMonogramField">
                             <label for="profileMonogram">Инициалы</label>
                             <input id="profileMonogram" name="monogram" maxlength="2" autocomplete="off" spellcheck="false" aria-describedby="monogramError">
@@ -97,10 +104,6 @@
                             <fieldset class="profile-choice-group">
                                 <legend>Палитра <span id="profileColorName"></span></legend>
                                 <div class="profile-colors" id="profileColors"></div>
-                            </fieldset>
-                            <fieldset class="profile-choice-group">
-                                <legend>Форма</legend>
-                                <div class="profile-shapes" id="profileShapes"></div>
                             </fieldset>
                             <fieldset class="profile-choice-group">
                                 <legend>Фон аватара</legend>
@@ -163,11 +166,11 @@
     <script defer src="https://www.gstatic.com/firebasejs/12.18.0/firebase-auth-compat.js"></script>
     <script defer src="https://www.gstatic.com/firebasejs/12.18.0/firebase-database-compat.js"></script>
     <script defer src="firebase-config.js"></script>
-    <script defer src="account.js?v=20261126-5"></script>
+    <script defer src="account.js?v=20261126-6"></script>
     <script defer src="profile-verification.js"></script>
-    <script defer src="profile-covers.js?v=20261126-1"></script>
+    <script defer src="profile-covers.js?v=20261126-2"></script>
     <script defer src="profile-image.js?v=20261126-1"></script>
-    <script defer src="profile-crop.js?v=20261126-1"></script>
-    <script defer src="profile.js?v=20261126-3"></script>
+    <script defer src="profile-crop.js?v=20261126-2"></script>
+    <script defer src="profile.js?v=20261126-4"></script>
 </body>
 </html>

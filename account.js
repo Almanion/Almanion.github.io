@@ -78,6 +78,16 @@
     // Resolve relative to this script so the menu also works from /watch and file://.
     const profileUrl = new URL('profile.html', document.currentScript?.src || document.baseURI).href;
     const reviewInboxUrl = new URL('admin.html#reviews', profileUrl).href;
+    const memeAvatarIcons = {
+        sixseven: ['67', '<path stroke-width="2.1" d="M9.2 5.5H7.4a3.8 3.8 0 0 0-3.8 3.8v5.4a3.8 3.8 0 1 0 3.8-3.8H3.6m9.9-5.4h7.1l-5.5 13"/>'],
+        zed: ['Z', '<path class="avatar-ink" d="M4 4.5h16v3.2L9.6 16.4H20v3.1H4v-3.2l10.4-8.7H4Z"/>'],
+        notfound: ['404', '<path stroke-width="1.75" d="m5.7 7.6-4 6.7h6m-1.2-3.5V17m13.3-9.4-4 6.7h6m-1.2-3.5V17"/><rect x="9.4" y="7.6" width="5" height="9.4" rx="1.6" stroke-width="1.75"/>'],
+        afk: ['AFK', '<path stroke-width="1.75" d="m1.6 17 2.8-9.4L7.2 17M2.8 13.5h3.3M10.2 17V7.6h4.3m-4.3 4.2h3.6m3.8-4.2V17m4.8-9.4-4.8 5.1 4.8 4.3"/>'],
+        moai: ['Моаи', '<path class="avatar-tint" d="M6.6 3.5h9l1.2 4.2 3.5 4.3-.6 1.7h-2.2v3.4l-2.6 1.3.8 2.6H6.9l.5-4.7H5.6l.6-4.4Z"/><path d="M7.2 8.5h5.4m1.8.5 1 1m-3.3-.4-.6 3.7h1.9m-2.2 3.1h5.9"/>'],
+        goose: ['Гусь', '<path class="avatar-tint" d="m21.9 7.7-4.4-2.1c-.4-1.4-1.4-2.4-2.9-2.4-2.1 0-3.5 1.6-3.5 3.7l.3 4.6C8.3 11.1 5.6 9.9 3 8v4.3c0 4.5 3.7 7.4 8.3 7.4h2.1c2.7 0 4.7-2 4.7-4.3 0-1.9-.9-3.3-2.1-4.7l-.9-1.4 2.7-.6Z"/><circle cx="15.3" cy="5.7" r=".9" class="avatar-ink"/><path d="M6.4 13.2c1.6 2.2 4 3.1 7 2.9"/>'],
+        loading: ['Загрузка', '<g class="avatar-ink"><circle cx="12" cy="4" r="2"/><circle cx="17.7" cy="6.3" r="1.8" opacity=".85"/><circle cx="20" cy="12" r="1.6" opacity=".72"/><circle cx="17.7" cy="17.7" r="1.55" opacity=".6"/><circle cx="12" cy="20" r="1.5" opacity=".5"/><circle cx="6.3" cy="17.7" r="1.45" opacity=".42"/><circle cx="4" cy="12" r="1.4" opacity=".34"/><circle cx="6.3" cy="6.3" r="1.35" opacity=".27"/></g>'],
+        pixelcat: ['Пиксельный кот', '<path class="avatar-ink" fill-rule="evenodd" d="M3 4h4v3h2v2h6V7h2V4h4v13h-3v3H6v-3H3Zm3 8v3h3v-3Zm9 0v3h3v-3Zm-5 4v1h1v1h2v-1h1v-1Z"/>']
+    };
     const avatarIcons = {
         initial: ['Буква', ''],
         compass: ['Компас', '<circle cx="12" cy="12" r="8.9"/><path d="m15.8 8.2-2 5.6-5.6 2 2-5.6Z"/><path class="avatar-ink" d="m15.8 8.2-2 5.6-3.6-3.6Z"/>'],
@@ -96,16 +106,17 @@
         shell: ['Ракушка', '<path class="avatar-tint" d="M9.3 19.2 4 14.3c-2-1.9-1.7-4.5.9-5.2.2-2.9 3-4.1 5-2.9 1.2-2 3-2 4.2 0 2-1.2 4.8 0 5 2.9 2.6.7 2.9 3.3.9 5.2l-5.3 4.9Z"/><path d="m10.8 16.8-3.2-6M12 16V8.2m1.2 8.6 3.2-6"/>'],
         koi: ['Кои', '<path class="avatar-tint" d="M4.3 12c.5-4.4 4.4-7.4 8-6.3 3.5 1.2 4.1 4.6 2.6 7.8l.9 1.5c1.8-.4 3.3.1 4.7 1.7-1.8.9-3.4.7-4.9.1-.5 1.7-1.7 2.6-3.7 3 .2-2 .9-3.2 2.2-4l-.8-1.4c-2.1 1.2-5.5 2-7.7.9-1.1-.5-1.5-1.6-1.3-3.3Z"/><path d="M8.3 10.8h.1m2.2-2.1c.5 1.6.1 3.1-1.3 4"/>'],
         jelly: ['Медуза', '<path class="avatar-tint" d="M4.1 11c0-4.1 3.4-7 7.9-7s7.9 2.9 7.9 7v1.1c-5.2 1.4-10.6 1.4-15.8 0Z"/><path d="M7.1 13c1.6 2.6-1.8 3.5-.2 6.7m5-6.4c1.6 2.6-1.8 3.4-.2 6.7m5-7c1.6 2.6-1.8 3.5-.2 6.7"/>'],
-        key: ['Ключ', '<path class="avatar-tint" d="M13.5 12.5a4.9 4.9 0 1 1 2.9 2.2l-2.3 2.3-1.8-.2.1 1.8-1.4 1.4H7.9v-3.1Z"/><circle class="avatar-ink" cx="17.4" cy="8.8" r="1.4"/>']
+        key: ['Ключ', '<path class="avatar-tint" d="M13.5 12.5a4.9 4.9 0 1 1 2.9 2.2l-2.3 2.3-1.8-.2.1 1.8-1.4 1.4H7.9v-3.1Z"/><circle class="avatar-ink" cx="17.4" cy="8.8" r="1.4"/>'],
+        ...memeAvatarIcons
     };
     const avatarColors = {
         iris: 'Ирис', ocean: 'Океан', mint: 'Мята', amber: 'Янтарь', rose: 'Роза', coral: 'Коралл',
         sky: 'Лёд', slate: 'Сланец', violet: 'Фиалка', jade: 'Нефрит', terracotta: 'Терракота', ink: 'Чернила'
     };
-    const avatarShapes = {
-        circle: 'Круг', tile: 'Квадрат', pebble: 'Камень', shield: 'Щит', arch: 'Арка', diamond: 'Ромб', cushion: 'Подушка'
+    const avatarBackgrounds = {
+        solid: 'Однотонный', glow: 'Свечение', grid: 'Сетка', diagonal: 'Диагонали', dust: 'Звёзды',
+        plasma: 'Плазма', ripples: 'Круги', scan: 'Эфир', stardust: 'Кометы'
     };
-    const avatarBackgrounds = { solid: 'Однотонный', glow: 'Свечение', grid: 'Сетка', diagonal: 'Диагонали', dust: 'Звёзды' };
     let identity = {};
     let identityRef = null;
     let identityListener = null;
@@ -117,15 +128,25 @@
         return 'data:image/jpeg;base64,' + value;
     }
 
+    function loadProfileMotion() {
+        if (document.querySelector('link[data-profile-motion]')) return;
+        const stylesheet = document.createElement('link');
+        stylesheet.dataset.profileMotion = '';
+        stylesheet.rel = 'stylesheet';
+        stylesheet.href = new URL('styles/profile-motion.css?v=20261126-1', profileUrl).href;
+        stylesheet.addEventListener('error', () => stylesheet.remove(), { once: true });
+        document.head.appendChild(stylesheet);
+    }
+
     function avatarMarkup(value, name) {
         const icon = Object.hasOwn(avatarIcons, value?.avatar) ? avatarIcons[value.avatar][1] : '';
         const color = Object.hasOwn(avatarColors, value?.color) ? value.color : 'iris';
-        const shape = Object.hasOwn(avatarShapes, value?.shape) ? value.shape : 'circle';
         const background = Object.hasOwn(avatarBackgrounds, value?.background) ? value.background : 'solid';
         const monogram = String(value?.monogram || '').trim().toLocaleUpperCase('ru');
         const initial = /^[А-ЯЁA-Z0-9]{1,2}$/.test(monogram) ? monogram : Array.from(String(name || '').trim())[0] || 'А';
         const photo = profileImageUrl(value?.avatarImage, 'avatar');
-        return '<span class="account-avatar profile-mark" data-profile-color="' + color + '" data-profile-shape="' + shape +
+        if (!photo && background !== 'solid') loadProfileMotion();
+        return '<span class="account-avatar profile-mark" data-profile-color="' + color +
             '" data-profile-background="' + background + '" aria-hidden="true">' +
             (icon ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round" focusable="false">' +
                 icon + '</svg>' : escapeHtml(initial.toLocaleUpperCase('ru'))) +
@@ -1562,7 +1583,7 @@
         openAccount: function () { if (user) openAccountMenu(); else openLoginModal(false); },
         getUser: function () { return user; },
         isReady: function () { return authStateKnown; },
-        profile: { icons: avatarIcons, colors: avatarColors, shapes: avatarShapes, backgrounds: avatarBackgrounds, avatarMarkup, imageUrl: profileImageUrl },
+        profile: { icons: avatarIcons, memeIcons: Object.keys(memeAvatarIcons), colors: avatarColors, backgrounds: avatarBackgrounds, avatarMarkup, imageUrl: profileImageUrl },
         hasContentEditorAccess: hasContentEditorAccess,
         hasSiteAdminAccess: hasSiteAdminAccess,
         hasEnglishAccess: hasEnglishAccess,

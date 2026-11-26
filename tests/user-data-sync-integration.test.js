@@ -38,7 +38,7 @@ accountPages.forEach((file) => {
 
 const runtime = read('note-runtime.js');
 assert.match(runtime, /dataSync:\s*'data-sync\.js\?v=20260908-1'/);
-assert.match(runtime, /account:\s*'account\.js\?v=20261126-5'/);
+assert.match(runtime, /account:\s*'account\.js\?v=20261126-6'/);
 assert.match(runtime, /bookmarks:\s*'bookmarks\.js\?v=20261122-4'/);
 assert.match(runtime, /bookmarksStyles:\s*'styles\/bookmarks\.css\?v=20260920-2'/);
 const matcenterRuntime = read(path.join('matcenter', 'runtime.js'));

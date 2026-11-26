@@ -15,7 +15,7 @@
     const card = byId('profileCard');
     const compact = byId('profileCompact');
     const defaults = {
-        nickname: '', telegram: '', avatar: 'initial', avatarImage: '', color: 'iris', shape: 'circle',
+        nickname: '', telegram: '', avatar: 'initial', avatarImage: '', color: 'iris',
         background: 'solid', cover: 'orbit', coverImage: '', monogram: '', rankVisible: false
     };
     let session = null;
@@ -49,7 +49,6 @@
     const groups = {
         avatar: [byId('profileIcons'), api.profile.icons],
         color: [byId('profileColors'), api.profile.colors],
-        shape: [byId('profileShapes'), api.profile.shapes],
         background: [byId('profileBackgrounds'), api.profile.backgrounds || { solid: 'Однотонный' }],
         cover: [byId('profileCovers'), art.entries]
     };
@@ -70,6 +69,17 @@
         }];
     }));
     const imageUrl = (value, kind) => api.profile.imageUrl?.(value, kind) || '';
+    const memeIcons = new Set(api.profile.memeIcons || []);
+    const memeGrid = byId('profileMemeIcons');
+    const classicGrid = byId('profileClassicIcons');
+    byId('profileMemeGroup').hidden = memeIcons.size === 0;
+    if (typeof IntersectionObserver === 'function') {
+        const coverVisibility = new IntersectionObserver(entries => {
+            entries.forEach(entry => entry.target.toggleAttribute('data-cover-paused', !entry.isIntersecting));
+        });
+        coverVisibility.observe(coverArt);
+        coverVisibility.observe(compactCover);
+    }
 
     function normalizeTelegram(value) {
         const text = value.trim();
@@ -88,7 +98,6 @@
             avatar: Object.hasOwn(api.profile.icons, identity.avatar) ? identity.avatar : defaults.avatar,
             avatarImage: imageUrl(identity.avatarImage, 'avatar') ? identity.avatarImage : '',
             color: Object.hasOwn(api.profile.colors, identity.color) ? identity.color : defaults.color,
-            shape: Object.hasOwn(api.profile.shapes, identity.shape) ? identity.shape : defaults.shape,
             background: Object.hasOwn(groups.background[1], identity.background) ? identity.background : defaults.background,
             cover: Object.hasOwn(art.entries, record?.cover) ? record.cover : defaults.cover,
             coverImage: imageUrl(record?.coverImage, 'cover') ? record.coverImage : '',
@@ -130,7 +139,8 @@
                 face.append(caption);
             }
             label.append(input, face);
-            container.append(label);
+            const target = group === 'avatar' ? (memeIcons.has(value) ? memeGrid : classicGrid) : container;
+            target.append(label);
         }
     }
 
@@ -380,7 +390,7 @@
             current.editingImage = true;
             imageError(kind, '');
             try {
-                const encoded = await crop.open({ file, kind, shape: current.draft.shape, trigger: control.upload });
+                const encoded = await crop.open({ file, kind, trigger: control.upload });
                 if (!encoded || current !== session || !current.loaded) return;
                 if (!imageUrl(encoded, kind)) {
                     imageError(kind, 'Не удалось подготовить фотографию. Выберите другой файл.');

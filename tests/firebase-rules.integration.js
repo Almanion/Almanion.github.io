@@ -76,18 +76,23 @@ function serverTimestamp() {
         await assertFails(ordinaryDb.ref(profilePath + '/identity/nickname').set('Другой'));
         const sharedIdentity = ordinaryDb.ref(profilePath + '/identity');
         await assertFails(sharedIdentity.once('value'));
-        await assertSucceeds(profile.update({ rankVisible: true, cover: 'waves', 'identity/shape': 'pebble', 'identity/monogram': 'ЛЛ' }));
+        await environment.withSecurityRulesDisabled(async context => {
+            await context.database().ref(profilePath + '/identity/shape').set('pebble');
+        });
+        await assertSucceeds(profile.update({ rankVisible: true, cover: 'waves', 'identity/monogram': 'ЛЛ' }));
         assert.equal((await assertSucceeds(sharedIdentity.once('value'))).val().monogram, 'ЛЛ');
         await assertSucceeds(profile.update({
-            'identity/avatar': 'fox', 'identity/color': 'terracotta', 'identity/shape': 'shield',
-            'identity/background': 'glow', cover: 'garden'
+            'identity/avatar': 'sixseven', 'identity/color': 'terracotta',
+            'identity/background': 'plasma', cover: 'fireflies'
         }));
         const customAppearance = (await assertSucceeds(sharedIdentity.once('value'))).val();
         assert.deepStrictEqual(customAppearance, {
-            nickname: identity.nickname, monogram: 'ЛЛ', avatar: 'fox', color: 'terracotta', shape: 'shield', background: 'glow'
+            nickname: identity.nickname, monogram: 'ЛЛ', avatar: 'sixseven', color: 'terracotta', shape: 'pebble', background: 'plasma'
         });
-        assert.equal((await assertSucceeds(profile.child('cover').once('value'))).val(), 'garden');
+        assert.equal((await assertSucceeds(profile.child('cover').once('value'))).val(), 'fireflies');
         await assertFails(ordinaryDb.ref(profilePath + '/cover').once('value'));
+        await assertFails(profile.child('identity/shape').set('shield'));
+        await assertSucceeds(profile.child('identity/shape').set('tile'));
         const jpegHeader = '/9j/AA==';
         await assertSucceeds(profile.update({ 'identity/avatarImage': jpegHeader, coverImage: jpegHeader }));
         assert.equal((await assertSucceeds(sharedIdentity.once('value'))).val().avatarImage, jpegHeader);

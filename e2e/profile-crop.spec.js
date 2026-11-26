@@ -13,10 +13,10 @@ const pageMarkup = `<!doctype html><html lang="ru"><meta charset="utf-8">
 <button id="choose" type="button">Обновить фото</button>
 <script src="/profile-image.js"></script><script src="/profile-crop.js"></script></html>`;
 
-async function openCrop(page, kind, { invalid = false, shape = 'diamond' } = {}) {
+async function openCrop(page, kind, { invalid = false } = {}) {
     await page.route('**/__profile-crop-fixture.html', route => route.fulfill({ contentType: 'text/html', body: pageMarkup }));
     await page.goto('/__profile-crop-fixture.html');
-    await page.evaluate(async ({ invalid, kind, shape }) => {
+    await page.evaluate(async ({ invalid, kind }) => {
         const canvas = document.createElement('canvas');
         canvas.width = 600;
         canvas.height = 300;
@@ -30,8 +30,8 @@ async function openCrop(page, kind, { invalid = false, shape = 'diamond' } = {})
             : new File([blob], 'three-stripes.png', { type: 'image/png' });
         const trigger = document.getElementById('choose');
         trigger.focus();
-        window.cropResult = AlmanionProfileCrop.open({ file, kind, shape, trigger });
-    }, { kind, invalid, shape });
+        window.cropResult = AlmanionProfileCrop.open({ file, kind, trigger });
+    }, { kind, invalid });
     const dialog = page.getByRole('dialog', { name: /Кадрирование/ });
     await expect(dialog).toBeVisible();
     if (!invalid) await expect(dialog.getByRole('button', { name: 'Применить' })).toBeEnabled();
@@ -65,7 +65,7 @@ async function encodedResult(page) {
     });
 }
 
-test('avatar crop fits a small phone, follows shape and exports the dragged frame', async ({ page }) => {
+test('rounded square avatar crop fits a small phone and exports the dragged frame', async ({ page }) => {
     await page.setViewportSize({ width: 320, height: 568 });
     const dialog = await openCrop(page, 'avatar');
     const stage = dialog.getByRole('group', { name: 'Кадр фото' });
@@ -74,7 +74,8 @@ test('avatar crop fits a small phone, follows shape and exports the dragged fram
     const cancel = await dialog.getByRole('button', { name: 'Отмена' }).boundingBox();
     const apply = await confirm.boundingBox();
     expect(Math.abs(cancel.y - apply.y)).toBeLessThan(2);
-    await expect(stage.locator('[data-crop-mask]')).toHaveCSS('clip-path', /^polygon/);
+    await expect(stage.locator('[data-crop-mask]')).toHaveCSS('border-radius', '25%');
+    await expect(dialog.locator('[data-crop-preview] .profile-crop-mask')).toHaveCSS('border-radius', '25%');
     await expect.poll(() => stageColor(page, .15)).toEqual({ color: 'red', alpha: 255 });
 
     await stage.focus();

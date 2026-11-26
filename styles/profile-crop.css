@@ -52,12 +52,10 @@
     inline-size: 100%;
     block-size: 100%;
     overflow: hidden;
-    clip-path: var(--avatar-clip, none);
+    border-radius: 25%;
     pointer-events: none;
-    filter: none;
 }
-.profile-crop-dialog .profile-crop-mask::before { content: none; }
-.profile-crop-dialog[data-kind="cover"] .profile-crop-mask { border-radius: inherit; clip-path: none; }
+.profile-crop-dialog[data-kind="cover"] .profile-crop-mask { border-radius: inherit; }
 .profile-crop-mask canvas { display: block; width: 100%; height: 100%; }
 .profile-crop-stage[data-ready="false"] .profile-crop-mask { visibility: hidden; }
 .profile-crop-status {

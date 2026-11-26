@@ -81,7 +81,8 @@ test('profile survives sign-out, merges edits from two tabs and clears private f
     await expect(page.locator('#emailTitle')).toHaveText('Почта подтверждена');
     expect(await page.evaluate(async () => (await firebase.auth().currentUser.getIdTokenResult()).claims.email_verified)).toBe(true);
     await page.locator('#profileMonogram').fill('сл');
-    await page.locator('label[title="Камень"]').click();
+    await expect(page.locator('input[name="shape"]')).toHaveCount(0);
+    await expect(page.locator('#profilePreviewAvatar .profile-mark')).toHaveCSS('border-radius', '25%');
     await page.locator('label[title="Волны"]').click();
     await page.locator('#rankVisible').check();
     await expect(page.locator('#profilePreviewAvatar .profile-mark')).toHaveText('СЛ');
@@ -113,17 +114,23 @@ test('profile survives sign-out, merges edits from two tabs and clears private f
     await expect(other.locator('#profileNickname')).toHaveValue('Северный Лис');
     await expect(other.locator('#emailTitle')).toHaveText('Почта подтверждена');
     await expect(other.locator('#profileCard')).toHaveAttribute('data-cover', 'waves');
-    await expect(other.locator('#profilePreviewAvatar .profile-mark')).toHaveAttribute('data-profile-shape', 'pebble');
+    await expect(other.locator('#profilePreviewAvatar .profile-mark')).toHaveCSS('border-radius', '25%');
     await expect(other.locator('#rankVisible')).toBeChecked();
-    for (const [group, value] of [['avatar', 'fox'], ['shape', 'shield'], ['background', 'grid'], ['cover', 'garden']]) {
+    await expect(other.locator('#profileMemeIcons label[title="67"]')).toBeVisible();
+    await expect(other.locator('#profileMemeIcons label[title="Z"]')).toBeVisible();
+    for (const [group, value] of [['avatar', 'sixseven'], ['background', 'plasma'], ['cover', 'fireflies']]) {
         await other.locator(`label:has(input[name="${group}"][value="${value}"])`).click();
     }
     await other.locator('#profileSave').click();
     await expect(other.locator('#profileStatus')).toHaveText('Изменения сохранены');
-    await expect(page.locator('#profileCard')).toHaveAttribute('data-cover', 'garden');
-    await expect(page.locator('#profileCard [data-art="garden"]')).toBeVisible();
-    await expect(page.locator('#accountBtn .profile-mark')).toHaveAttribute('data-profile-background', 'grid');
-    await expect(page.locator('#accountBtn .profile-mark')).toHaveAttribute('data-profile-shape', 'shield');
+    await expect(page.locator('#profileCard')).toHaveAttribute('data-cover', 'fireflies');
+    await expect(page.locator('#profileCard [data-art="fireflies"]')).toBeVisible();
+    await page.locator('#profileCard').scrollIntoViewIfNeeded();
+    await expect(page.locator('#profileCoverArt .profile-cover-float').first()).toHaveCSS('animation-name', 'profile-cover-drift');
+    await expect(page.locator('#profileCoverArt .profile-cover-float').first()).toHaveCSS('animation-play-state', 'running');
+    await expect(page.locator('#profileCovers [data-art="fireflies"] .profile-cover-float').first()).toHaveCSS('animation-name', 'none');
+    await expect(page.locator('#accountBtn .profile-mark')).toHaveAttribute('data-profile-background', 'plasma');
+    await expect(page.locator('#accountBtn .profile-mark')).toHaveCSS('border-radius', '25%');
     await page.locator('#profileNickname').fill('Новый ник');
     await other.locator('label[title="Янтарь"]').click();
     await other.locator('#profileSave').click();
@@ -191,10 +198,10 @@ test('profile survives sign-out, merges edits from two tabs and clears private f
     await expect(avatarPhoto).toBeVisible();
     await expect(coverPhoto).toBeVisible();
     await page.locator('#profileAvatarRemove').click();
-    await page.locator('label[title="Гербарий"]').click();
+    await page.locator('label[title="Светлячки"]').click();
     await expect(avatarPhoto).toHaveCount(0);
     await expect(coverPhoto).toHaveCount(0);
-    await expect(page.locator('#profileCard [data-art="garden"]')).toBeVisible();
+    await expect(page.locator('#profileCard [data-art="fireflies"]')).toBeVisible();
     await page.locator('#profileSave').click();
     await expect(page.locator('#profileStatus')).toHaveText('Изменения сохранены');
     await expect(page.locator('#accountBtn .profile-photo')).toHaveCount(0);

@@ -43,8 +43,33 @@ function mockAvatarAccount(expTheme) {
     window.firebase = { apps: [{}], initializeApp() {}, auth, database };
 }
 
+test('avatar surfaces animate only with full site motion and respect reduced motion', async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'no-preference' });
+    await page.route('**/*', route => new URL(route.request().url()).hostname === '127.0.0.1'
+        ? route.continue() : route.abort());
+    await page.addInitScript(mockAvatarAccount, 'dark');
+    await page.goto('/');
+    await page.waitForFunction(() => window.AlmanionSettings?.ready);
+    const avatar = page.locator('#accountBtn .profile-mark');
+    await expect(avatar).toBeVisible();
+    await expect(page.locator('link[data-profile-motion]')).toHaveCount(0);
+    await page.evaluate(() => {
+        window.AlmanionSettings.update({ animationLevel: 'max' });
+        window.setTestAvatar({ avatar: 'zed', background: 'scan' });
+    });
+    await expect(avatar).toHaveAttribute('data-profile-background', 'scan');
+    const animation = () => avatar.evaluate(mark => getComputedStyle(mark, '::before').animationName);
+    await expect.poll(animation).toBe('avatar-scan');
+    await page.evaluate(() => window.AlmanionSettings.update({ animationLevel: 'medium' }));
+    await expect.poll(animation).toBe('none');
+    await page.evaluate(() => window.AlmanionSettings.update({ animationLevel: 'max' }));
+    await expect.poll(animation).toBe('avatar-scan');
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await expect.poll(animation).toBe('none');
+});
+
 for (const width of [390, 1440]) {
-    test('signed-in avatars keep their chosen shape across headers at ' + width + 'px', async ({ page }) => {
+    test('signed-in avatars stay rounded squares across headers at ' + width + 'px', async ({ page }) => {
         await page.setViewportSize({ width, height: 840 });
         await page.route('**/*', route => new URL(route.request().url()).hostname === '127.0.0.1'
             ? route.continue() : route.abort());
@@ -57,13 +82,12 @@ for (const width of [390, 1440]) {
             }
             const button = page.locator('#accountBtn.signed-in');
             const mark = button.locator('.profile-mark');
-            await expect(mark).toHaveAttribute('data-profile-shape', 'circle');
+            await expect(mark).toHaveCSS('border-radius', '25%');
             await expect(button).toBeInViewport();
 
-            for (const [shape, radius] of [['circle', '50%'], ['tile', '25%'], ['pebble', '45% 60% 38% 56%']]) {
+            for (const shape of ['circle', 'tile', 'pebble', 'shield']) {
                 await page.evaluate(shape => window.setTestAvatarShape(shape), shape);
-                await expect(mark).toHaveAttribute('data-profile-shape', shape);
-                await expect(mark).toHaveCSS('border-radius', radius);
+                await expect(mark).toHaveCSS('border-radius', '25%');
                 const { width, height } = await mark.boundingBox();
                 expect(width).toBeGreaterThan(20);
                 expect(Math.abs(width - height)).toBeLessThan(1);
@@ -77,10 +101,10 @@ for (const width of [390, 1440]) {
             await expect(mark).toHaveCSS('outline-style', 'solid');
             await expect(mark).toHaveCSS('outline-width', '2px');
             await page.keyboard.press('Enter');
-            await expect(page.locator('#accIdentityMark .profile-mark')).toHaveCSS('border-radius', '45% 60% 38% 56%');
+            await expect(page.locator('#accIdentityMark .profile-mark')).toHaveCSS('border-radius', '25%');
             await page.evaluate(() => window.setTestAvatar({ avatar: 'fox', color: 'terracotta', shape: 'shield', background: 'dust' }));
             for (const avatar of [mark, page.locator('#accIdentityMark .profile-mark')]) {
-                await expect(avatar).toHaveAttribute('data-profile-shape', 'shield');
+                await expect(avatar).toHaveCSS('border-radius', '25%');
                 await expect(avatar).toHaveAttribute('data-profile-color', 'terracotta');
                 await expect(avatar).toHaveAttribute('data-profile-background', 'dust');
                 await expect(avatar.locator('svg')).toBeVisible();
@@ -97,7 +121,7 @@ for (const width of [390, 1440]) {
                 const photo = avatar.locator('.profile-photo');
                 await expect(photo).toBeVisible();
                 await expect.poll(() => photo.evaluate(image => image.naturalWidth)).toBe(16);
-                await expect(photo).toHaveCSS('clip-path', /^polygon\(/);
+                await expect(photo).toHaveCSS('border-radius', '25%');
             }
             await page.evaluate(() => window.setTestAvatar({ avatarImage: 'https://example.invalid/other-photo', avatar: 'compass' }));
             await expect(mark.locator('.profile-photo')).toHaveCount(0);
