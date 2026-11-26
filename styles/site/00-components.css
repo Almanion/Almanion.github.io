@@ -1021,7 +1021,8 @@ body.dark-theme .sidebar-header .account-btn:hover { background: rgba(255,255,25
     cursor: pointer; transition: background 0.15s ease, box-shadow 0.15s ease;
 }
 .account-google-btn:hover { background: var(--bg-tertiary); box-shadow: var(--shadow-sm); }
-.account-oauth-buttons { display: grid; gap: 0.55rem; }
+.account-oauth-buttons { display: grid; grid-template-rows: repeat(2, 1fr); gap: 0.55rem; }
+.account-oauth-buttons #accGoogle { grid-row: 2; }
 .account-apple-btn {
     display: grid; place-items: center; width: 100%; min-height: max(44px, 3rem); padding: 0;
     border: 1px solid transparent; border-radius: 10px; background: #000; cursor: pointer;
