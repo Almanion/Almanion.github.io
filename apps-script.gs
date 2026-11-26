@@ -1314,12 +1314,13 @@ function publishNoteFilesAtHead(identity, params, attempt) {
     const parentSha = ref.object && ref.object.sha;
     if (!parentSha) throw new Error('GitHub не вернул текущий commit');
     if (expectedBaseHash !== null) {
+      // A timeout can follow a successful ref update. Use the immutable review id
+      // even if an intervening revert put the original section bytes back.
+      const previousCommit = reviewId && alreadyPublishedReview(repository, sectionPath, parentSha, reviewId, token);
+      if (previousCommit) return json({ success: true, commitSha: previousCommit, alreadyPublished: true });
       const currentSection = readGithubJsonFile(repository, sectionPath, parentSha, token, true);
       const currentHash = currentSection === null ? 'none' : noteReviewHash(currentSection);
       if (currentHash !== expectedBaseHash) {
-        // The client can time out after the non-forced ref update has succeeded.
-        const previousCommit = reviewId && alreadyPublishedReview(repository, sectionPath, parentSha, reviewId, token);
-        if (previousCommit) return json({ success: true, commitSha: previousCommit, alreadyPublished: true });
         return json({ success: false, code: 'stale-base', error: 'Опубликованный раздел изменился после подготовки версии.' });
       }
     }

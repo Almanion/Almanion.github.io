@@ -129,6 +129,9 @@ function mockGithub(options = {}) {
     ] });
     assert.deepStrictEqual(post(request), { success: true, commitSha: committed, alreadyPublished: true });
     assert.deepStrictEqual(retry.writes, []);
+    const reverted = mockGithub({ priorCommits: [{ sha: committed, commit: { message: 'Note-Review: ' + reviewId } }] });
+    assert.strictEqual(post(request).commitSha, committed);
+    assert.deepStrictEqual(reverted.writes, []);
     const collision = mockGithub({ current: base });
     assert.strictEqual(post({ ...request, expectedBaseHash: 'none' }).code, 'stale-base');
     assert.deepStrictEqual(collision.writes, []);
