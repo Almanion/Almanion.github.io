@@ -88,6 +88,11 @@ function serverTimestamp() {
         });
         assert.equal((await assertSucceeds(profile.child('cover').once('value'))).val(), 'garden');
         await assertFails(ordinaryDb.ref(profilePath + '/cover').once('value'));
+        const jpegHeader = '/9j/AA==';
+        await assertSucceeds(profile.update({ 'identity/avatarImage': jpegHeader, coverImage: jpegHeader }));
+        assert.equal((await assertSucceeds(sharedIdentity.once('value'))).val().avatarImage, jpegHeader);
+        assert.equal((await assertSucceeds(profile.child('coverImage').once('value'))).val(), jpegHeader);
+        await assertFails(ordinaryDb.ref(profilePath + '/coverImage').once('value'));
         await assertFails(ordinaryDb.ref(profilePath).once('value'));
         await assertFails(ordinaryDb.ref(profilePath + '/telegram').once('value'));
         await assertFails(ordinaryDb.ref(profilePath + '/rankVisible').set(false));
@@ -102,6 +107,9 @@ function serverTimestamp() {
         for (const patch of [
             { 'identity/shape': 'unknown' }, { 'identity/monogram': '123' }, { 'identity/monogram': '<>' }, { cover: 'other' }, { rankVisible: 'true' },
             { 'identity/background': 'url(https://example.test/)' }, { 'identity/background': { type: 'dust' } },
+            { 'identity/avatarImage': 'data:image/svg+xml;base64,PHN2Zz4=' }, { coverImage: 'https://elsewhere.test/photo' },
+            { 'identity/avatarImage': '/9j/AAA' }, { 'identity/avatarImage': '/9j/' + 'a'.repeat(48000) },
+            { coverImage: '/9j/' + 'a'.repeat(145000) },
             { telegram: 'https://elsewhere.test/x' }, { 'identity/avatar': 'other' }, { 'identity/color': 'blue' },
             { 'identity/nickname': '<tag>' }, { 'identity/nickname': '   ' }, { 'identity/nickname': 'я'.repeat(33) },
             { 'identity/nickname': 'Лис\nДруг' }, { extra: 'private' }, { 'identity/role': 'owner' }

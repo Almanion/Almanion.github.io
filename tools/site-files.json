@@ -88,6 +88,8 @@
     "profile.html",
     "profile.js",
     "profile-covers.js",
+    "profile-image.js",
+    "profile-crop.js",
     "profile-verification.js",
     "pdf-download.js",
     "pdf-block-frames.js",

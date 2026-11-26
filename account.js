@@ -110,6 +110,13 @@
     let identityRef = null;
     let identityListener = null;
 
+    function profileImageUrl(value, kind) {
+        const limit = kind === 'cover' ? 145000 : 48000;
+        if (typeof value !== 'string' || value.length > limit || value.length % 4 ||
+            !/^\/9j\/[A-Za-z0-9+/]+={0,2}$/.test(value)) return '';
+        return 'data:image/jpeg;base64,' + value;
+    }
+
     function avatarMarkup(value, name) {
         const icon = Object.hasOwn(avatarIcons, value?.avatar) ? avatarIcons[value.avatar][1] : '';
         const color = Object.hasOwn(avatarColors, value?.color) ? value.color : 'iris';
@@ -117,10 +124,12 @@
         const background = Object.hasOwn(avatarBackgrounds, value?.background) ? value.background : 'solid';
         const monogram = String(value?.monogram || '').trim().toLocaleUpperCase('ru');
         const initial = /^[А-ЯЁA-Z0-9]{1,2}$/.test(monogram) ? monogram : Array.from(String(name || '').trim())[0] || 'А';
+        const photo = profileImageUrl(value?.avatarImage, 'avatar');
         return '<span class="account-avatar profile-mark" data-profile-color="' + color + '" data-profile-shape="' + shape +
             '" data-profile-background="' + background + '" aria-hidden="true">' +
             (icon ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round" focusable="false">' +
-                icon + '</svg>' : escapeHtml(initial.toLocaleUpperCase('ru'))) + '</span>';
+                icon + '</svg>' : escapeHtml(initial.toLocaleUpperCase('ru'))) +
+            (photo ? '<img class="profile-photo" src="' + photo + '" alt="" decoding="async" draggable="false">' : '') + '</span>';
     }
 
     function refreshIdentity() {
@@ -1553,7 +1562,7 @@
         openAccount: function () { if (user) openAccountMenu(); else openLoginModal(false); },
         getUser: function () { return user; },
         isReady: function () { return authStateKnown; },
-        profile: { icons: avatarIcons, colors: avatarColors, shapes: avatarShapes, backgrounds: avatarBackgrounds, avatarMarkup: avatarMarkup },
+        profile: { icons: avatarIcons, colors: avatarColors, shapes: avatarShapes, backgrounds: avatarBackgrounds, avatarMarkup, imageUrl: profileImageUrl },
         hasContentEditorAccess: hasContentEditorAccess,
         hasSiteAdminAccess: hasSiteAdminAccess,
         hasEnglishAccess: hasEnglishAccess,

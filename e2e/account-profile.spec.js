@@ -155,6 +155,50 @@ test('profile survives sign-out, merges edits from two tabs and clears private f
     await page.locator('#profileReset').click();
     await expect(page.locator('#profileNickname')).toHaveValue('Новый ник');
 
+    await page.setViewportSize({ width: 390, height: 844 });
+    const image = await page.evaluate(() => {
+        const canvas = document.createElement('canvas');
+        canvas.width = 720;
+        canvas.height = 480;
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = '#206ca6';
+        ctx.fillRect(0, 0, 720, 480);
+        ctx.fillStyle = '#f09568';
+        ctx.fillRect(280, 70, 350, 300);
+        return canvas.toDataURL('image/png').split(',')[1];
+    });
+    const file = { name: 'profile-picture.png', mimeType: 'image/png', buffer: Buffer.from(image, 'base64') };
+    for (const [fileInput, label] of [
+        ['#profileAvatarFile', 'Кадрирование аватара'],
+        ['#profileCoverFile', 'Кадрирование обложки']
+    ]) {
+        await page.locator(fileInput).setInputFiles(file);
+        const crop = page.getByRole('dialog', { name: label });
+        const apply = crop.getByRole('button', { name: 'Применить', exact: true });
+        await expect(apply).toBeEnabled();
+        await apply.click();
+        await expect(crop).toBeHidden();
+    }
+    const avatarPhoto = page.locator('#profilePreviewAvatar .profile-photo');
+    const coverPhoto = page.locator('#profileCoverArt .profile-cover-photo');
+    await expect.poll(() => avatarPhoto.evaluate(img => [img.naturalWidth, img.naturalHeight])).toEqual([320, 320]);
+    await expect.poll(() => coverPhoto.evaluate(img => [img.naturalWidth, img.naturalHeight])).toEqual([1080, 360]);
+    await expect(page.locator('#accountBtn .profile-photo')).toHaveCount(0);
+    await page.locator('#profileSave').click();
+    await expect(page.locator('#profileStatus')).toHaveText('Изменения сохранены');
+    await expect(page.locator('#accountBtn .profile-photo')).toBeVisible();
+    await page.reload();
+    await expect(avatarPhoto).toBeVisible();
+    await expect(coverPhoto).toBeVisible();
+    await page.locator('#profileAvatarRemove').click();
+    await page.locator('label[title="Гербарий"]').click();
+    await expect(avatarPhoto).toHaveCount(0);
+    await expect(coverPhoto).toHaveCount(0);
+    await expect(page.locator('#profileCard [data-art="garden"]')).toBeVisible();
+    await page.locator('#profileSave').click();
+    await expect(page.locator('#profileStatus')).toHaveText('Изменения сохранены');
+    await expect(page.locator('#accountBtn .profile-photo')).toHaveCount(0);
+
     await page.goto('/duty-10-1.html');
     await expect(page.locator('#accountBtn')).toHaveAttribute('title', 'Новый ник');
     await page.locator('#accountBtn').click();

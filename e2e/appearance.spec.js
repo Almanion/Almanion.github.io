@@ -85,6 +85,23 @@ for (const width of [390, 1440]) {
                 await expect(avatar).toHaveAttribute('data-profile-background', 'dust');
                 await expect(avatar.locator('svg')).toBeVisible();
             }
+            await page.evaluate(() => {
+                const canvas = document.createElement('canvas');
+                canvas.width = canvas.height = 16;
+                const ctx = canvas.getContext('2d');
+                ctx.fillStyle = '#893a59';
+                ctx.fillRect(0, 0, 16, 16);
+                window.setTestAvatar({ shape: 'shield', avatarImage: canvas.toDataURL('image/jpeg').split(',')[1] });
+            });
+            for (const avatar of [mark, page.locator('#accIdentityMark .profile-mark')]) {
+                const photo = avatar.locator('.profile-photo');
+                await expect(photo).toBeVisible();
+                await expect.poll(() => photo.evaluate(image => image.naturalWidth)).toBe(16);
+                await expect(photo).toHaveCSS('clip-path', /^polygon\(/);
+            }
+            await page.evaluate(() => window.setTestAvatar({ avatarImage: 'https://example.invalid/other-photo', avatar: 'compass' }));
+            await expect(mark.locator('.profile-photo')).toHaveCount(0);
+            await expect(mark.locator('svg')).toBeVisible();
         }
     });
 

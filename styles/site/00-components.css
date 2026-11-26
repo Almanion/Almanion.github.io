@@ -950,8 +950,8 @@ body:not(.no-hover) .kc-answer-remember:hover { background: var(--success-color)
 [data-profile-color="jade"] { --profile-pigment: #288b73; }
 [data-profile-color="terracotta"] { --profile-pigment: #a9523e; }
 [data-profile-color="ink"] { --profile-pigment: #485683; }
-:is(.profile-mark[data-profile-shape="tile"], .profile-choice [data-shape="tile"]) { --profile-avatar-radius: 25%; }
-:is(.profile-mark[data-profile-shape="pebble"], .profile-choice [data-shape="pebble"]) { --profile-avatar-radius: 45% 60% 38% 56%; }
+.profile-mark[data-profile-shape="tile"] { --profile-avatar-radius: 25%; }
+.profile-mark[data-profile-shape="pebble"] { --profile-avatar-radius: 45% 60% 38% 56%; }
 [data-profile-shape="arch"] { --profile-avatar-radius: 48% 48% 19% 19%; }
 [data-profile-shape="cushion"] { --profile-avatar-radius: 34% 34% 42% 42%; }
 [data-profile-shape="shield"] { --avatar-clip: polygon(12% 7%, 50% 1%, 88% 7%, 94% 15%, 91% 64%, 80% 82%, 50% 99%, 20% 82%, 9% 64%, 6% 15%); }
@@ -1015,6 +1015,15 @@ body:not(.no-hover) .kc-answer-remember:hover { background: var(--success-color)
     outline-offset: 2px;
 }
 .profile-mark svg, #accountBtn > .profile-mark svg { width: 60%; height: 60%; }
+.profile-photo {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: inherit;
+    clip-path: var(--avatar-clip, none);
+}
 .account-identity-mark .profile-mark { width: 52px; height: 52px; font-size: 1.5rem; }
 .account-identity { display: flex; align-items: center; gap: 12px; margin: 4px 24px 20px 0; text-align: left; }
 .account-identity > div { min-width: 0; }

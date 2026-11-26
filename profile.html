@@ -17,7 +17,8 @@
     <link rel="stylesheet" href="style-new.css?v=20260929-2">
     <link rel="stylesheet" href="styles/typography.css">
     <link rel="stylesheet" href="styles/profile-covers.css?v=20261126-1">
-    <link rel="stylesheet" href="styles/profile.css?v=20261126-2">
+    <link rel="stylesheet" href="styles/profile.css?v=20261126-3">
+    <link rel="stylesheet" href="styles/profile-crop.css?v=20261126-1">
 </head>
 <body class="profile-page" data-no-math>
     <script>window.AlmanionThemeBootstrap.applyBody();</script>
@@ -69,8 +70,20 @@
                 </div>
                 <fieldset id="profileFields">
                     <legend class="profile-sr">Настройки профиля</legend>
-                    <section class="profile-section">
-                        <h2>Аватар</h2>
+                    <section class="profile-section" aria-labelledby="profileAvatarTitle">
+                        <div class="profile-section-heading">
+                            <h2 id="profileAvatarTitle">Аватар</h2>
+                            <div class="profile-image-actions" data-image-kind="avatar">
+                                <input type="file" id="profileAvatarFile" accept="image/*,.heic,.heif" aria-label="Выбрать фото для аватара" hidden>
+                                <button type="button" class="profile-secondary profile-image-upload" id="profileAvatarUpload" aria-haspopup="dialog" aria-describedby="profileAvatarImageState">
+                                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 16V4m-4 4 4-4 4 4M5 14v5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-5"/></svg>
+                                    <span>Загрузить фото</span>
+                                </button>
+                                <button type="button" class="profile-image-remove" id="profileAvatarRemove" aria-label="Убрать фото аватара" hidden>Убрать</button>
+                                <span class="profile-sr" id="profileAvatarImageState"></span>
+                            </div>
+                        </div>
+                        <p class="profile-error profile-image-error" id="profileAvatarImageError" role="alert" hidden></p>
                         <fieldset class="profile-choice-group">
                             <legend>Значок</legend>
                             <div class="profile-icons" id="profileIcons"></div>
@@ -96,7 +109,19 @@
                         </div>
                     </section>
                     <section class="profile-section" aria-labelledby="profileCoverTitle">
-                        <h2 id="profileCoverTitle">Обложка профиля</h2>
+                        <div class="profile-section-heading">
+                            <h2 id="profileCoverTitle">Обложка профиля</h2>
+                            <div class="profile-image-actions" data-image-kind="cover">
+                                <input type="file" id="profileCoverFile" accept="image/*,.heic,.heif" aria-label="Выбрать фото для обложки" hidden>
+                                <button type="button" class="profile-secondary profile-image-upload" id="profileCoverUpload" aria-haspopup="dialog" aria-describedby="profileCoverImageState">
+                                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 16V4m-4 4 4-4 4 4M5 14v5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-5"/></svg>
+                                    <span>Загрузить обложку</span>
+                                </button>
+                                <button type="button" class="profile-image-remove" id="profileCoverRemove" aria-label="Убрать фото обложки" hidden>Убрать</button>
+                                <span class="profile-sr" id="profileCoverImageState"></span>
+                            </div>
+                        </div>
+                        <p class="profile-error profile-image-error" id="profileCoverImageError" role="alert" hidden></p>
                         <div class="profile-covers" id="profileCovers" role="group" aria-labelledby="profileCoverTitle"></div>
                     </section>
                     <section class="profile-section">
@@ -118,7 +143,7 @@
                     <section class="profile-section">
                         <h2>В прогнозах</h2>
                         <label class="profile-consent"><input name="rankVisible" id="rankVisible" type="checkbox"> Показывать ник и аватар в рейтинге</label>
-                        <p class="profile-hint">По умолчанию другим участникам виден игровой псевдоним.</p>
+                        <p class="profile-hint" id="profileRankHint">По умолчанию другим участникам виден игровой псевдоним.</p>
                     </section>
                 </fieldset>
                 <footer class="profile-actions">
@@ -138,9 +163,11 @@
     <script defer src="https://www.gstatic.com/firebasejs/12.18.0/firebase-auth-compat.js"></script>
     <script defer src="https://www.gstatic.com/firebasejs/12.18.0/firebase-database-compat.js"></script>
     <script defer src="firebase-config.js"></script>
-    <script defer src="account.js?v=20261125-profile"></script>
+    <script defer src="account.js?v=20261126-5"></script>
     <script defer src="profile-verification.js"></script>
     <script defer src="profile-covers.js?v=20261126-1"></script>
-    <script defer src="profile.js?v=20261126-2"></script>
+    <script defer src="profile-image.js?v=20261126-1"></script>
+    <script defer src="profile-crop.js?v=20261126-1"></script>
+    <script defer src="profile.js?v=20261126-3"></script>
 </body>
 </html>

@@ -15,10 +15,12 @@
     const card = byId('profileCard');
     const compact = byId('profileCompact');
     const defaults = {
-        nickname: '', telegram: '', avatar: 'initial', color: 'iris', shape: 'circle',
-        background: 'solid', cover: 'orbit', monogram: '', rankVisible: false
+        nickname: '', telegram: '', avatar: 'initial', avatarImage: '', color: 'iris', shape: 'circle',
+        background: 'solid', cover: 'orbit', coverImage: '', monogram: '', rankVisible: false
     };
     let session = null;
+    let accountVersion = 0;
+    let renderedCover = null;
 
     function warnBeforeLeave(event) {
         event.preventDefault();
@@ -54,7 +56,20 @@
     const samples = [];
     const paintedMarks = new WeakMap();
     const coverArt = byId('profileCoverArt');
-    coverArt.innerHTML = Object.keys(art.entries).map(id => art.markup(id)).join('');
+    const compactCover = byId('profileCompactCover');
+    const largeAvatar = byId('profilePreviewAvatar');
+    const smallAvatar = byId('profileCompactAvatar');
+    const imageControls = Object.fromEntries([...form.querySelectorAll('[data-image-kind]')].map(group => {
+        const kind = group.dataset.imageKind;
+        const prefix = 'profile' + kind[0].toUpperCase() + kind.slice(1);
+        const upload = byId(prefix + 'Upload');
+        return [kind, {
+            group, file: byId(prefix + 'File'), upload, remove: byId(prefix + 'Remove'),
+            caption: upload.querySelector('span'), state: byId(prefix + 'ImageState'),
+            error: byId(prefix + 'ImageError'), initialLabel: upload.textContent.trim(), pickerVersion: null
+        }];
+    }));
+    const imageUrl = (value, kind) => api.profile.imageUrl?.(value, kind) || '';
 
     function normalizeTelegram(value) {
         const text = value.trim();
@@ -71,10 +86,12 @@
             nickname: typeof identity.nickname === 'string' ? identity.nickname : '',
             telegram: typeof record?.telegram === 'string' ? record.telegram : '',
             avatar: Object.hasOwn(api.profile.icons, identity.avatar) ? identity.avatar : defaults.avatar,
+            avatarImage: imageUrl(identity.avatarImage, 'avatar') ? identity.avatarImage : '',
             color: Object.hasOwn(api.profile.colors, identity.color) ? identity.color : defaults.color,
             shape: Object.hasOwn(api.profile.shapes, identity.shape) ? identity.shape : defaults.shape,
             background: Object.hasOwn(groups.background[1], identity.background) ? identity.background : defaults.background,
             cover: Object.hasOwn(art.entries, record?.cover) ? record.cover : defaults.cover,
+            coverImage: imageUrl(record?.coverImage, 'cover') ? record.coverImage : '',
             monogram: identity.monogram || '', rankVisible: record?.rankVisible === true
         };
     }
@@ -126,18 +143,34 @@
         paintedMarks.set(container, markup);
     }
 
+    function paintCover(draft) {
+        if (renderedCover?.preset === draft.cover && renderedCover.image === draft.coverImage) return;
+        renderedCover = { preset: draft.cover, image: draft.coverImage };
+        card.dataset.cover = compact.dataset.cover = draft.cover;
+        const source = imageUrl(draft.coverImage, 'cover');
+        card.toggleAttribute('data-custom-cover', !!source);
+        for (const container of [coverArt, compactCover]) {
+            if (!source) {
+                container.innerHTML = art.markup(draft.cover);
+                continue;
+            }
+            const photo = document.createElement('img');
+            photo.className = 'profile-cover-photo';
+            photo.alt = '';
+            photo.decoding = 'async';
+            photo.src = source;
+            container.replaceChildren(photo);
+        }
+    }
+
     function paintPreview(draft, name) {
         for (const target of [card, compact, byId('profileCovers')]) target.dataset.profileColor = draft.color;
-        if (compact.dataset.cover !== draft.cover) {
-            card.dataset.cover = compact.dataset.cover = draft.cover;
-            for (const drawing of coverArt.children) drawing.toggleAttribute('hidden', drawing.dataset.art !== draft.cover);
-            byId('profileCompactCover').innerHTML = art.markup(draft.cover);
-        }
-        paintMark(byId('profilePreviewAvatar'), draft, name);
-        paintMark(byId('profileCompactAvatar'), draft, name);
+        paintCover(draft);
+        paintMark(largeAvatar, draft, name);
+        paintMark(smallAvatar, draft, name);
         byId('profilePreviewName').textContent = byId('profileCompactName').textContent = name;
         for (const { sample, group, value } of samples) {
-            const appearance = { ...draft, [group]: value };
+            const appearance = { ...draft, [group]: value, avatarImage: '' };
             if (group !== 'avatar') appearance.avatar = 'initial';
             paintMark(sample, appearance, name);
         }
@@ -171,6 +204,32 @@
         return !message;
     }
 
+    function editField(field, value) {
+        session.draft[field] = value;
+        if (normalized(field, value) === session.stored[field]) session.changed.delete(field);
+        else session.changed.add(field);
+        session.message = '';
+        session.failed = false;
+    }
+
+    function imageError(kind, message) {
+        const error = imageControls[kind].error;
+        error.textContent = message;
+        error.hidden = !message;
+    }
+
+    function showImageControls(draft) {
+        for (const [kind, control] of Object.entries(imageControls)) {
+            const custom = !!draft[kind + 'Image'];
+            control.group.toggleAttribute('data-custom', custom);
+            control.caption.textContent = custom ? 'Заменить' : control.initialLabel;
+            if (custom) control.upload.setAttribute('aria-label', kind === 'avatar' ? 'Заменить фото аватара' : 'Заменить фото обложки');
+            else control.upload.removeAttribute('aria-label');
+            control.state.textContent = custom ? 'Выбрана своя фотография' : '';
+            control.remove.hidden = !custom;
+        }
+    }
+
     function displayForm() {
         const { account, draft, changed, saving, connected, message } = session;
         if (changed.size) window.addEventListener('beforeunload', warnBeforeLeave);
@@ -179,16 +238,24 @@
         if (telegram.value !== draft.telegram) telegram.value = draft.telegram;
         if (monogram.value !== draft.monogram) monogram.value = draft.monogram;
         nickname.placeholder = account.displayName || account.email?.split('@')[0] || 'Ваш ник';
-        for (const group of Object.keys(groups)) {
+        for (const [group, [container]] of Object.entries(groups)) {
+            if (draft[group + 'Image']) {
+                for (const option of container.querySelectorAll('input:checked')) option.checked = false;
+                continue;
+            }
             const options = form.elements.namedItem(group);
             if (options instanceof HTMLInputElement) options.checked = options.value === draft[group];
             else options.value = draft[group];
         }
         byId('rankVisible').checked = draft.rankVisible;
-        byId('profileMonogramField').hidden = draft.avatar !== 'initial' && !monogram.hasAttribute('aria-invalid');
+        byId('profileMonogramField').hidden = (draft.avatar !== 'initial' || !!draft.avatarImage) && !monogram.hasAttribute('aria-invalid');
         const name = draft.nickname.trim() || nickname.placeholder;
         const handle = normalizeTelegram(draft.telegram);
         paintPreview(draft, name);
+        showImageControls(draft);
+        byId('profileRankHint').textContent = draft.avatarImage && draft.rankVisible
+            ? 'Другие участники рейтинга увидят выбранное фото аватара.'
+            : 'По умолчанию другим участникам виден игровой псевдоним.';
         monogram.placeholder = (Array.from(name)[0] || 'А').toLocaleUpperCase('ru');
         byId('profileEmail').textContent = account.email || '';
         const contact = byId('profilePreviewTelegram');
@@ -210,17 +277,29 @@
     function setAccount(account) {
         const usable = account && !account.isAnonymous ? account : null;
         if (usable && session?.account.uid === usable.uid) return;
+        accountVersion++;
         if (session) {
             session.ref.off('value', session.onRecord);
             session.connection.off('value', session.onConnection);
         }
         session = null;
+        window.AlmanionProfileCrop?.close?.();
         window.removeEventListener('beforeunload', warnBeforeLeave);
         form.reset();
         fields.disabled = true;
         for (const field of ['nickname', 'telegram', 'monogram']) fieldError(field, '');
-        for (const id of ['profilePreviewAvatar', 'profileCompactAvatar', 'profilePreviewName', 'profileCompactName', 'profileEmail', 'profilePreviewTelegram', 'profileStatus']) byId(id).replaceChildren();
+        for (const id of ['profilePreviewName', 'profileCompactName', 'profileEmail', 'profilePreviewTelegram', 'profileStatus']) byId(id).replaceChildren();
+        for (const avatar of [largeAvatar, smallAvatar]) {
+            avatar.replaceChildren();
+            paintedMarks.delete(avatar);
+        }
+        renderedCover = null;
+        coverArt.replaceChildren();
+        compactCover.replaceChildren();
+        card.removeAttribute('data-custom-cover');
         for (const { sample } of samples) sample.replaceChildren();
+        showImageControls(defaults);
+        for (const kind of Object.keys(imageControls)) imageError(kind, '');
         byId('profilePreviewTelegram').removeAttribute('href');
         byId('profilePreviewTelegram').hidden = true;
         nickname.placeholder = '';
@@ -268,14 +347,61 @@
         const field = event.target.name;
         if (!session?.loaded || session.saving || !Object.hasOwn(defaults, field)) return;
         const value = event.target.type === 'checkbox' ? event.target.checked : event.target.value;
-        session.draft[field] = value;
-        if (normalized(field, value) === session.stored[field]) session.changed.delete(field);
-        else session.changed.add(field);
+        editField(field, value);
+        if (Object.hasOwn(imageControls, field)) {
+            editField(field + 'Image', '');
+            imageError(field, '');
+        }
         if (event.target.hasAttribute('aria-invalid')) validateField(field);
-        session.message = '';
-        session.failed = false;
         displayForm();
     });
+
+    for (const [kind, control] of Object.entries(imageControls)) {
+        control.upload.addEventListener('click', () => {
+            if (!session?.loaded || session.saving || session.editingImage) return;
+            control.pickerVersion = accountVersion;
+            imageError(kind, '');
+            control.file.click();
+        });
+        control.file.addEventListener('cancel', () => { control.pickerVersion = null; });
+        control.file.addEventListener('change', async () => {
+            const pickedFor = control.pickerVersion;
+            control.pickerVersion = null;
+            const file = control.file.files[0];
+            control.file.value = '';
+            const current = session;
+            if (!file || !current?.loaded || current.saving || current.editingImage ||
+                (pickedFor !== null && pickedFor !== accountVersion)) return;
+            const crop = window.AlmanionProfileCrop;
+            if (!crop) {
+                imageError(kind, 'Не удалось открыть кадрирование. Обновите страницу и попробуйте ещё раз.');
+                return;
+            }
+            current.editingImage = true;
+            imageError(kind, '');
+            try {
+                const encoded = await crop.open({ file, kind, shape: current.draft.shape, trigger: control.upload });
+                if (!encoded || current !== session || !current.loaded) return;
+                if (!imageUrl(encoded, kind)) {
+                    imageError(kind, 'Не удалось подготовить фотографию. Выберите другой файл.');
+                    return;
+                }
+                editField(kind + 'Image', encoded);
+                displayForm();
+            } catch (error) {
+                if (current === session) imageError(kind, error?.message || 'Не удалось подготовить фотографию.');
+            } finally {
+                current.editingImage = false;
+            }
+        });
+        control.remove.addEventListener('click', () => {
+            if (!session?.loaded || session.saving) return;
+            editField(kind + 'Image', '');
+            imageError(kind, '');
+            displayForm();
+            control.upload.focus({ preventScroll: true });
+        });
+    }
 
     for (const input of [nickname, telegram, monogram]) {
         input.addEventListener('blur', () => { if (session?.loaded && session.changed.has(input.name)) validateField(input.name); });
@@ -288,8 +414,10 @@
         session.message = '';
         session.failed = false;
         for (const field of ['nickname', 'telegram', 'monogram']) fieldError(field, '');
+        for (const kind of Object.keys(imageControls)) imageError(kind, '');
         displayForm();
-        form.querySelector('input[name="avatar"]:checked').focus({ preventScroll: true });
+        const selected = form.querySelector('input[name="avatar"]:checked') || imageControls.avatar.upload;
+        selected.focus({ preventScroll: true });
     });
 
     byId('profileShowPreview').addEventListener('click', () => {
@@ -300,13 +428,13 @@
     form.addEventListener('submit', async event => {
         event.preventDefault();
         const current = session;
-        if (!current?.loaded || current.saving || !current.connected || !current.changed.size) return;
+        if (!current?.loaded || current.saving || current.editingImage || !current.connected || !current.changed.size) return;
         const invalid = ['nickname', 'telegram', 'monogram'].filter(key => !validateField(key));
         if (invalid.length) { displayForm(); form.elements.namedItem(invalid[0]).focus(); return; }
         const patch = {};
         for (const key of current.changed) {
             const value = normalized(key, current.draft[key]);
-            const path = ['telegram', 'cover', 'rankVisible'].includes(key) ? key : 'identity/' + key;
+            const path = ['telegram', 'cover', 'coverImage', 'rankVisible'].includes(key) ? key : 'identity/' + key;
             patch[path] = value === defaults[key] ? null : value;
         }
         current.saving = true;
