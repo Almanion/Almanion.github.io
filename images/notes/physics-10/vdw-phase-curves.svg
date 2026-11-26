@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 648 565" role="img" aria-labelledby="title desc">
 <title id="title">Диаграмма p(V) с расчётными изотермами и площадками равновесия</title>
-<desc id="desc">На трёх докритических изотермах показаны отрезки ac, a′c′ и a″c″. Точки a и c отвечают Vж и Vг при давлении насыщенного пара, b лежит на площадке, d и e — экстремумы расчётной кривой. Границы сходятся в критической точке K.</desc>
+<desc id="desc">На оси абсцисс отложена величина V с чертой. На трёх докритических изотермах показаны отрезки ac, a′c′ и a″c″. Точки a и c отвечают V̅ж и V̅г при давлении насыщенного пара, b лежит на площадке, d и e — экстремумы расчётной кривой. Границы сходятся в критической точке K.</desc>
 
 <style>
 text{font-family:Arial,Helvetica,sans-serif;font-size:22px;fill:#263747}
@@ -52,6 +52,7 @@ text{font-family:Arial,Helvetica,sans-serif;font-size:22px;fill:#263747}
 <text x="575.0" y="473.0" class="math" text-anchor="end">V</text>
 <text x="114.4" y="475.0" class="math" text-anchor="middle">V<tspan dy="5" font-size="67%">ж</tspan></text>
 <text x="479.1" y="475.0" class="math" text-anchor="middle">V<tspan dy="5" font-size="67%">г</tspan></text>
+<path d="M560 452h16 M100 454h16 M467 454h16" fill="none" stroke="#263747" stroke-width="1.5"/>
 <circle cx="258.3" cy="300.7" r="3" fill="#263747" stroke="#263747" stroke-width="1.8"/>
 <text x="258.3" y="325.7" class="math" text-anchor="middle">b</text>
 <text x="100.0" y="305.7" class="math" text-anchor="end">a</text>
