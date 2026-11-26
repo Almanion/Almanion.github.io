@@ -255,7 +255,7 @@ function build(options) {
             .replace(/((?:src|href)=["'](?:(?:note-runtime|experimental-reader|english-ui|settings|script|print-export|constructor\/index)\.js|(?:style-new|styles\/(?:typography|english|site\/(?:reader|index))|constructor\/index)\.css))(?:\?[^"']*)?(["'])/g, '$1?v=20261123-4$2')
             .replace(/((?:src|href)=["'](?:(?:note-runtime|experimental-reader|english-ui|settings)\.js|(?:style-new|styles\/site\/index)\.css))(?:\?[^"']*)?(["'])/g, '$1?v=20261123-7$2')
             .replace(/(href=["']style-new\.css)(?:\?[^"']*)?(["'])/g, '$1?v=20261123-tech-book$2')
-            .replace(/((?:src|href)=["'](?:\.\.\/)?(?:(?:account|firebase-config|note-runtime)\.js|styles\/site\/(?:index|reader)\.css))(?:\?[^"']*)?(["'])/g, '$1?v=20261126-apple$2');
+            .replace(/((?:src|href)=["'](?:\.\.\/)?(?:(?:account|firebase-config|note-runtime)\.js|styles\/site\/(?:index|reader)\.css))(?:\?[^"']*)?(["'])/g, '$1?v=20261126-1$2');
         let published = updated;
         // The browser decides whether to take a navigation snapshot before
         // deferred scripts run. Make the opt-in available with the first bytes of HTML.
