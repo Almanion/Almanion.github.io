@@ -239,12 +239,12 @@
             let previousIds = new Set();
             const handler = snapshot => {
                 if (user?.uid !== account.uid) return;
-                const records = snapshot.val() || {};
+                const records = snapshot.val?.() || {};
                 const ids = Object.keys(records);
                 const newest = ids.filter(id => !previousIds.has(id))
                     .reduce((latest, id) => !latest || records[id].submittedAt > latest.submittedAt ? records[id] : latest, null);
                 previousIds = new Set(ids);
-                reviewCounts[kind] = ids.length;
+                reviewCounts[kind] = snapshot.numChildren?.() ?? ids.length;
                 if (newest) {
                     let live = document.getElementById('accountReviewAnnouncement');
                     if (!live) {
