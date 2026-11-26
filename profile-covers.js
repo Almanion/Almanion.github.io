@@ -56,6 +56,37 @@
         </g>`).join('');
 
     const signalTrace = 'M-14 128H50l20-8 15 18 13-29 18 41 19-75 20 94 22-130 22 136 20-73 20 31 23-15 27 13 24-24 22 39 19-67 19 87 23-113 23 126 23-96 23 53 21-18 23 8 25-14 23 15 20-54 17 68 21-66 18 70 21-38 19 17 19-9h61';
+    const riverRoute = 'M-30 196c121 47 131-68 251-57 54 6 69 27 119 21 64-8 102-93 176-77 61 14 136 41 227 9';
+
+    function orbitLane({ rx, ry, opacity, color = '', period, phase, radius }) {
+        const ellipse = `<ellipse cx="0" cy="0" rx="${rx}" ry="${ry}" fill="none" stroke="#d7c7fe" opacity="${opacity}"/>`;
+        if (!color) return ellipse;
+        // Rotating in the scaled coordinate system traces the ellipse. The inner
+        // counter-rotation and reciprocal scale preserve the moon's round shape.
+        return `<g class="profile-cover-orbit-lane" style="--cover-time:${period}s;--orbit-start:${phase}deg">
+            ${ellipse}
+            <g transform="scale(1 ${ry / rx})">
+                <g class="profile-cover-orbit-turn">
+                    <g transform="translate(${rx} 0)">
+                        <g class="profile-cover-orbit-upright">
+                            <g transform="scale(1 ${rx / ry})">
+                                <circle r="${radius * 2.25}" fill="${color}" opacity=".16"/>
+                                <circle class="profile-cover-satellite" r="${radius}" fill="${color}"/>
+                                <circle cx="${-radius / 3}" cy="${-radius / 3}" r="${radius / 3}" fill="#fff5e8" opacity=".8"/>
+                            </g>
+                        </g>
+                    </g>
+                </g>
+            </g>
+        </g>`;
+    }
+
+    const orbitTracks = [
+        { rx: 104, ry: 41, opacity: .7, color: '#ffde9e', period: 20, phase: 148, radius: 4.5 },
+        { rx: 151, ry: 62, opacity: .44, color: '#b9d8ff', period: 32, phase: 316, radius: 5.1 },
+        { rx: 208, ry: 88, opacity: .33, color: '#d6b5ff', period: 48, phase: 13, radius: 3.3 },
+        { rx: 267, ry: 113, opacity: .21 }
+    ].map(orbitLane).join('');
 
     const designs = {
         orbit: `
@@ -64,29 +95,27 @@
                     <stop stop-color="#160f33"/><stop offset=".62" stop-color="#3d3673"/><stop offset="1" stop-color="#8a679a"/>
                 </linearGradient>
                 <radialGradient id="@planet" cx=".35" cy=".27" r=".76">
-                    <stop stop-color="#f9d8a3"/><stop offset=".52" stop-color="#de9caa"/><stop offset="1" stop-color="#614579"/>
+                    <stop stop-color="#ffebbf"/><stop offset=".45" stop-color="#e9a8a9"/><stop offset=".68" stop-color="#a06b94"/><stop offset="1" stop-color="#41375e"/>
+                </radialGradient>
+                <radialGradient id="@nebula">
+                    <stop stop-color="#b3a2f1" stop-opacity=".28"/><stop offset="1" stop-color="#b3a2f1" stop-opacity="0"/>
                 </radialGradient>
                 <clipPath id="@planet-cut"><circle cx="386" cy="116" r="44"/></clipPath>
             </defs>
             <rect width="720" height="240" fill="url(#@base)"/>
-            <g fill="none" stroke="#d6c5ff" transform="rotate(-23 386 116)">
-                <ellipse cx="386" cy="116" rx="102" ry="40" opacity=".68"/>
-                <ellipse cx="386" cy="116" rx="151" ry="62" opacity=".46"/>
-                <ellipse cx="386" cy="116" rx="207" ry="88" opacity=".36"/>
-                <ellipse cx="386" cy="116" rx="267" ry="113" opacity=".25"/>
-                <path d="M80 116h612M386-25v290" stroke-dasharray="2 8" opacity=".19"/>
-                <circle class="profile-cover-satellite" cx="386" cy="116" r="4.5" fill="#ffe1a9" transform="translate(-102 0)"
-                    style="--orbit-x:102px;--orbit-y:40px;--orbit-qx:72px;--orbit-qy:28px;--cover-time:25s;--cover-delay:-12.5s"/>
-                <circle class="profile-cover-satellite" cx="386" cy="116" r="5.4" fill="#e1d7ff" transform="translate(107 -44)"
-                    style="--orbit-x:151px;--orbit-y:62px;--orbit-qx:107px;--orbit-qy:44px;--cover-time:37s;--cover-delay:-32.4s"/>
-                <circle cx="583" cy="149" r="3.5" fill="#d6c5ff"/>
+            <ellipse class="profile-cover-shimmer" cx="358" cy="119" rx="291" ry="120" fill="url(#@nebula)"
+                style="--cover-floor:.53;--cover-ceiling:.92;--cover-time:13s"/>
+            <g transform="translate(386 116) rotate(-23)">
+                <path d="M-298 0h596M0-125v250" fill="none" stroke="#c1adef" stroke-dasharray="1 8" opacity=".24"/>
+                ${orbitTracks}
             </g>
             <circle cx="386" cy="116" r="44" fill="url(#@planet)"/>
             <g clip-path="url(#@planet-cut)" fill="none" stroke="#ffe7c5" opacity=".38">
                 <path d="M331 103q37-32 107-21m-103 40q49-33 107-21m-105 47q38-29 99-27m-86 38q32-14 74-17" stroke-width="3"/>
                 <path d="M330 90q30-30 99-25m-102 68q42-32 117-26"/>
             </g>
-            <path fill="#ffeace" d="M245 47l2 6 6 2-6 2-2 6-2-6-6-2 6-2zm278 139 1 3 3 1-3 1-1 3-1-3-3-1 3-1z"/>
+            <path class="profile-cover-shimmer" fill="#ffeace" d="M245 47l2 6 6 2-6 2-2 6-2-6-6-2 6-2zm278 139 1 3 3 1-3 1-1 3-1-3-3-1 3-1z"
+                 style="--cover-floor:.45;--cover-ceiling:.9;--cover-time:6s;--cover-delay:-3s"/>
             <g fill="#e5d6ff" opacity=".63"><circle cx="149" cy="100" r="1.8"/><circle cx="179" cy="176" r="1.2"/><circle cx="593" cy="48" r="1.5"/><circle cx="634" cy="112" r="1.4"/><circle cx="468" cy="34" r="1.1"/><circle cx="272" cy="180" r="1.2"/></g>`,
         hills: `
             <defs>
@@ -94,13 +123,21 @@
                     <stop stop-color="#38485e"/><stop offset=".55" stop-color="#c58680"/><stop offset="1" stop-color="#edb28b"/>
                 </linearGradient>
                 <linearGradient id="@slope" x2=".38" y2="1"><stop stop-color="#597a7c"/><stop offset="1" stop-color="#293c4c"/></linearGradient>
+                <radialGradient id="@sun-haze"><stop stop-color="#fff0c7" stop-opacity=".52"/><stop offset="1" stop-color="#fff0c7" stop-opacity="0"/></radialGradient>
             </defs>
             <rect width="720" height="240" fill="url(#@sky)"/>
+            <ellipse class="profile-cover-shimmer" cx="462" cy="88" rx="154" ry="108" fill="url(#@sun-haze)"
+                style="--cover-floor:.5;--cover-ceiling:.88;--cover-time:14s"/>
             <circle cx="462" cy="88" r="39" fill="#ffe0a4"/>
             <path d="M-18 152 75 86l98 58L249 75 358 167 449 138 542 109l204 46v85H-18Z" fill="#b58f92"/>
             <path d="m-12 208 105-54 47 15L302 64l45-18 45 44 32 12 44 49 68-18 195 53v54H-12Z" fill="url(#@slope)"/>
             <path d="m347 46 45 44-31-10-15 8-16-14-28 7 15-24 30-11Z" fill="#f8d3b1" opacity=".9"/>
             <path d="m347 47-11 22 10 19 25 78-53-40-72 28 54-72 18-24Z" fill="#b6adb1" opacity=".34"/>
+            <g class="profile-cover-float" fill="none" stroke="#efc1a8" stroke-linecap="round" opacity=".25"
+                style="--cover-dx:-18px;--cover-dy:3px;--cover-time:19s;--cover-delay:-8s">
+                <path d="M181 140c37 0 61-7 93-6m133 15c42-4 70-13 108-10" stroke-width="3"/>
+                <path d="M132 153c55-1 97-7 146-7m79-17c51-8 100-11 143-9"/>
+            </g>
             <path d="M-15 224l137-60 113 35 77-9 114-36 62 31 52-10 190 44v21H-15Z" fill="#263d43"/>
             <path d="m-5 237 126-36 83 15 99-13 146 12 72-25 210 30v20H-5Z" fill="#172f38"/>
             <g fill="none" stroke="#f6bf9a" opacity=".48">
@@ -124,6 +161,8 @@
                 <path d="M53 210c113-62 180-127 247-130m-193 118c74-39 128-89 176-94" opacity=".54"/>
                 <path d="M258 131c30-15 45-23 58-19m80 63c67 22 130 3 177-21 67-35 103-45 160-40M399 203c44 9 89 10 137-13" opacity=".46"/>
             </g>
+            <path class="profile-cover-flow" pathLength="100" d="M-20 205c125-49 219-162 306-145 43 8 70 45 41 73"
+                fill="none" stroke="#ecffdf" stroke-width="2.4" stroke-linecap="round" opacity=".63" style="--cover-time:14s"/>
             <g fill="#c6f7e0" opacity=".67"><circle cx="344" cy="100" r="2.5"/><circle cx="343" cy="116" r="1.1"/><circle cx="333" cy="131" r="2"/><circle cx="352" cy="113" r="1.4"/><circle cx="375" cy="155" r="1.3"/><circle cx="573" cy="138" r="2"/></g>`,
         aurora: `
             <defs>
@@ -157,22 +196,29 @@
                 ${contourLines(225, 85, 9, .95)}
                 ${contourLines(554, 192, 10, 2.5)}
             </g>
-            <path d="M-30 196c121 47 131-68 251-57 54 6 69 27 119 21 64-8 102-93 176-77 61 14 136 41 227 9" fill="none" stroke="#b0e7d5" stroke-width="2.3" opacity=".9"/>
-            <path d="M-30 196c121 47 131-68 251-57 54 6 69 27 119 21 64-8 102-93 176-77 61 14 136 41 227 9" fill="none" stroke="#dcd090" stroke-width="6" opacity=".15"/>
+            <path d="${riverRoute}" fill="none" stroke="#b0e7d5" stroke-width="2.3" opacity=".76"/>
+            <path class="profile-cover-flow" pathLength="100" d="${riverRoute}" fill="none" stroke="#e3ffdc" stroke-width="3.6"
+                stroke-linecap="round" opacity=".83" style="--cover-time:17s"/>
             <path d="M73 77h78m-42-24v50m463-52h69m-33-23v45M351 12v65m-32-33h64" fill="none" stroke="#f5dbad" opacity=".45" stroke-dasharray="2 4"/>
             <circle cx="340" cy="160" r="7" fill="#e5a77d"/>
             <g class="profile-cover-beacon" style="--cover-time:5s"><circle cx="340" cy="160" r="12" fill="none" stroke="#e5a77d" opacity=".8"/></g>`,
         terrazzo: `
-            <defs><linearGradient id="@plaster" x2=".8" y2="1"><stop stop-color="#f6dfbf"/><stop offset="1" stop-color="#e6b59e"/></linearGradient></defs>
+            <defs>
+                <linearGradient id="@plaster" x2=".8" y2="1"><stop stop-color="#f6dfbf"/><stop offset="1" stop-color="#e6b59e"/></linearGradient>
+                <linearGradient id="@window-light" x2="1" y2=".6">
+                    <stop stop-color="#fff7db" stop-opacity="0"/><stop offset=".45" stop-color="#fff7db" stop-opacity=".47"/>
+                    <stop offset=".58" stop-color="#fff7db" stop-opacity=".34"/><stop offset="1" stop-color="#fff7db" stop-opacity="0"/>
+                </linearGradient>
+            </defs>
             <rect width="720" height="240" fill="url(#@plaster)"/>
-            <path class="profile-cover-float" d="M45 240 206 0h66L111 240Zm134 0L340 0h27L206 240Z" fill="#fff5df" opacity=".6"
-                style="--cover-dx:198px;--cover-dy:0px;--cover-time:23s"/>
             <path fill="#b8664f" d="m14 37 38-28 46 14 6 40-48 25-46-11zM269-13l61 25 21 52-43 37-39-25-20-55zM453 109l62-22 48 28-5 43-48 18-42-24zM647 166l41-43 53 21-11 75-52 9-45-29Z"/>
             <path fill="#6f8878" d="m110 125 26-43 33 8 23 37-10 30-55 1zM362 53l31-36 58 3 13 54-52 22-43-17zM199 237l37-44 63 3 21 35-13 20h-93zM564 228l-5-42 38-18 31 32-13 42-37 5Z"/>
             <path fill="#414655" d="M-15 190l50-54 47 30-6 48-38 33-53-21ZM198 49l21-31 22 16-12 35-34 3Zm139 103 24-32 42 4 12 39-24 25-44-8zm140 65 52-21 9 23-23 24-54 2zm166-175 42-33 32 17-9 49-42-1Z"/>
             <path fill="#f9ead4" d="m118 18 32-11 34 17-10 38-41 13-18-28zm75 144 31-29 35 11 13 35-62 18zm250-61 28-22 26 5-22 21-21 30zm99-79 45-8 37 17 5 36-42 29-51-29zM91 231l19-34 34-18 45 28-45 38zm334-34 33-23 38 4-42 30z"/>
             <path fill="#bb8d55" d="m77 108 15-15 12 19-8 15zm148-8 16-12 13 23-28 10zm77 73 11-32 19-4 3 32-18 14zm188-126 10-19 24 7-5 26zm107 78 12-19 24 4-13 29-28 5zm58 112 18-12 20 11-10 15z"/>
-            <g fill="#785b57" opacity=".68"><circle cx="53" cy="112" r="2"/><circle cx="104" cy="85" r="2"/><circle cx="189" cy="96" r="3"/><circle cx="167" cy="172" r="2.2"/><circle cx="286" cy="123" r="2.8"/><circle cx="379" cy="199" r="2"/><circle cx="422" cy="105" r="3"/><circle cx="461" cy="35" r="1.7"/><circle cx="546" cy="84" r="3"/><circle cx="634" cy="82" r="2"/><circle cx="662" cy="101" r="3"/><circle cx="623" cy="164" r="2"/><circle cx="545" cy="179" r="2"/></g>`,
+            <g fill="#785b57" opacity=".68"><circle cx="53" cy="112" r="2"/><circle cx="104" cy="85" r="2"/><circle cx="189" cy="96" r="3"/><circle cx="167" cy="172" r="2.2"/><circle cx="286" cy="123" r="2.8"/><circle cx="379" cy="199" r="2"/><circle cx="422" cy="105" r="3"/><circle cx="461" cy="35" r="1.7"/><circle cx="546" cy="84" r="3"/><circle cx="634" cy="82" r="2"/><circle cx="662" cy="101" r="3"/><circle cx="623" cy="164" r="2"/><circle cx="545" cy="179" r="2"/></g>
+            <path class="profile-cover-float" d="M-47 248 149-8h212L164 248Z" fill="url(#@window-light)"
+                style="--cover-dx:425px;--cover-dy:0px;--cover-time:25s;--cover-delay:-6s"/>`,
         ink: `
             <defs>
                 <linearGradient id="@paper" x2=".62" y2="1"><stop stop-color="#efe6dc"/><stop offset="1" stop-color="#b6adc4"/></linearGradient>
@@ -180,7 +226,8 @@
             </defs>
             <rect width="720" height="240" fill="url(#@paper)"/>
             <path d="M-14 208C113 76 156 52 251 75c62 15 75 53 132 53 77 0 74-96 156-111 61-10 122 46 195-4v82c-77 13-137-39-188-24-63 19-76 138-151 147-103 11-121-104-236-62-53 19-107 60-173 84Z" fill="#766088" opacity=".34"/>
-            <path d="M-18 225C116 119 177 77 245 110c51 25 91 69 146 52 63-20 68-109 128-118 51-7 127 51 221 13-60 56-125 31-185 40-41 7-35 54-78 77-59 32-124 51-226-9-84-49-160 36-269 75Z" fill="url(#@stroke)"/>
+            <path class="profile-cover-float" d="M-18 225C116 119 177 77 245 110c51 25 91 69 146 52 63-20 68-109 128-118 51-7 127 51 221 13-60 56-125 31-185 40-41 7-35 54-78 77-59 32-124 51-226-9-84-49-160 36-269 75Z"
+                fill="url(#@stroke)" style="--cover-dx:-5px;--cover-dy:4px;--cover-time:18s;--cover-delay:-9s"/>
             <path d="M-16 232c127-91 190-108 243-92 101 30 151 82 252 13 35-24 45-62 86-63 52-1 106 4 163-30" fill="none" stroke="#9d85aa" stroke-width="1.7" opacity=".57"/>
             <path class="profile-cover-float" d="M63 171c65-63 125-73 160-62 46 15 67 38 96 45m-39 32c98 46 119 28 167 10m23-85c36-70 76-70 134-46" fill="none" stroke="#eee0dd" opacity=".6" stroke-linecap="round" stroke-width="1.3"
                 style="--cover-dx:8px;--cover-dy:6px;--cover-time:12s"/>
@@ -266,6 +313,8 @@
             <path d="${signalTrace}" transform="translate(-4 4)" fill="none" stroke="#7167f0" stroke-width="2.4" stroke-linejoin="round" opacity=".64"/>
             <path class="profile-cover-shimmer" d="${signalTrace}" fill="none" stroke="#7deaff" stroke-width="9" stroke-linejoin="round" style="--cover-floor:.08;--cover-ceiling:.24;--cover-time:7s" opacity=".19"/>
             <path d="${signalTrace}" fill="none" stroke="url(#@trace)" stroke-width="2.7" stroke-linejoin="round"/>
+            <path class="profile-cover-flow" pathLength="100" d="${signalTrace}" fill="none" stroke="#e8faff" stroke-width="3.1"
+                stroke-linejoin="round" opacity=".77" style="--cover-time:20s;--cover-delay:-8s"/>
             <g class="profile-cover-float" fill="#a7dffb" opacity=".6" style="--cover-dx:25px;--cover-dy:0px;--cover-time:8s;--cover-delay:-2s">
                 <path d="M89 60h25v2H89zm460 114h31v2h-31zm31-125h16v2h-16zM134 181h71v2h-71Z"/>
                 <path d="M46 73h6v3h-6zm320 108h11v3h-11zm261-21h12v2h-12z" fill="#f4a8e1"/>
@@ -293,7 +342,8 @@
                 <path d="M371 14v19m0 173v20M266 119h19m171 0h19" opacity=".44"/>
             </g>
             <circle cx="371" cy="119" r="52" fill="url(#@moon)"/>
-            <path d="M322 103a52 52 0 0 1 86-20" fill="none" stroke="#ffebbc" stroke-width="1.3" stroke-linecap="round" opacity=".87"/>
+            <path class="profile-cover-shimmer" d="M322 103a52 52 0 0 1 86-20" fill="none" stroke="#ffebbc" stroke-width="1.3" stroke-linecap="round"
+                style="--cover-floor:.65;--cover-ceiling:.94;--cover-time:5s;--cover-delay:-2s"/>
             <g fill="#f1bf99" opacity=".68">
                 <circle cx="158" cy="118" r="1.4"/><circle cx="185" cy="167" r="2"/><circle cx="201" cy="62" r="1.6"/><circle cx="261" cy="37" r=".9"/>
                 <circle cx="492" cy="44" r="1.3"/><circle cx="540" cy="142" r="1.4"/><circle cx="582" cy="63" r="2"/><circle cx="616" cy="97" r="1.8"/>

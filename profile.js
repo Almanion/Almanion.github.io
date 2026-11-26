@@ -69,10 +69,6 @@
         }];
     }));
     const imageUrl = (value, kind) => api.profile.imageUrl?.(value, kind) || '';
-    const memeIcons = new Set(api.profile.memeIcons || []);
-    const memeGrid = byId('profileMemeIcons');
-    const classicGrid = byId('profileClassicIcons');
-    byId('profileMemeGroup').hidden = memeIcons.size === 0;
     if (typeof IntersectionObserver === 'function') {
         const coverVisibility = new IntersectionObserver(entries => {
             entries.forEach(entry => entry.target.toggleAttribute('data-cover-paused', !entry.isIntersecting));
@@ -95,7 +91,7 @@
         return {
             nickname: typeof identity.nickname === 'string' ? identity.nickname : '',
             telegram: typeof record?.telegram === 'string' ? record.telegram : '',
-            avatar: Object.hasOwn(api.profile.icons, identity.avatar) ? identity.avatar : defaults.avatar,
+            avatar: api.profile.hasIcon(identity.avatar) ? identity.avatar : defaults.avatar,
             avatarImage: imageUrl(identity.avatarImage, 'avatar') ? identity.avatarImage : '',
             color: Object.hasOwn(api.profile.colors, identity.color) ? identity.color : defaults.color,
             background: Object.hasOwn(groups.background[1], identity.background) ? identity.background : defaults.background,
@@ -139,8 +135,7 @@
                 face.append(caption);
             }
             label.append(input, face);
-            const target = group === 'avatar' ? (memeIcons.has(value) ? memeGrid : classicGrid) : container;
-            target.append(label);
+            container.append(label);
         }
     }
 
@@ -249,7 +244,8 @@
         if (monogram.value !== draft.monogram) monogram.value = draft.monogram;
         nickname.placeholder = account.displayName || account.email?.split('@')[0] || 'Ваш ник';
         for (const [group, [container]] of Object.entries(groups)) {
-            if (draft[group + 'Image']) {
+            const retiredIcon = group === 'avatar' && !Object.hasOwn(api.profile.icons, draft.avatar);
+            if (draft[group + 'Image'] || retiredIcon) {
                 for (const option of container.querySelectorAll('input:checked')) option.checked = false;
                 continue;
             }

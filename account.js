@@ -82,37 +82,65 @@
     // Resolve relative to this script so the menu also works from /watch and file://.
     const profileUrl = new URL('profile.html', document.currentScript?.src || document.baseURI).href;
     const reviewInboxUrl = new URL('admin.html#reviews', profileUrl).href;
-    const memeAvatarIcons = {
-        sixseven: ['67', '<path stroke-width="2.1" d="M9.2 5.5H7.4a3.8 3.8 0 0 0-3.8 3.8v5.4a3.8 3.8 0 1 0 3.8-3.8H3.6m9.9-5.4h7.1l-5.5 13"/>'],
-        zed: ['Z', '<path class="avatar-ink" d="M4 4.5h16v3.2L9.6 16.4H20v3.1H4v-3.2l10.4-8.7H4Z"/>'],
-        notfound: ['404', '<path stroke-width="1.75" d="m5.7 7.6-4 6.7h6m-1.2-3.5V17m13.3-9.4-4 6.7h6m-1.2-3.5V17"/><rect x="9.4" y="7.6" width="5" height="9.4" rx="1.6" stroke-width="1.75"/>'],
-        afk: ['AFK', '<path stroke-width="1.75" d="m1.6 17 2.8-9.4L7.2 17M2.8 13.5h3.3M10.2 17V7.6h4.3m-4.3 4.2h3.6m3.8-4.2V17m4.8-9.4-4.8 5.1 4.8 4.3"/>'],
-        moai: ['Моаи', '<path class="avatar-tint" d="M6.6 3.5h9l1.2 4.2 3.5 4.3-.6 1.7h-2.2v3.4l-2.6 1.3.8 2.6H6.9l.5-4.7H5.6l.6-4.4Z"/><path d="M7.2 8.5h5.4m1.8.5 1 1m-3.3-.4-.6 3.7h1.9m-2.2 3.1h5.9"/>'],
-        goose: ['Гусь', '<path class="avatar-tint" d="m21.9 7.7-4.4-2.1c-.4-1.4-1.4-2.4-2.9-2.4-2.1 0-3.5 1.6-3.5 3.7l.3 4.6C8.3 11.1 5.6 9.9 3 8v4.3c0 4.5 3.7 7.4 8.3 7.4h2.1c2.7 0 4.7-2 4.7-4.3 0-1.9-.9-3.3-2.1-4.7l-.9-1.4 2.7-.6Z"/><circle cx="15.3" cy="5.7" r=".9" class="avatar-ink"/><path d="M6.4 13.2c1.6 2.2 4 3.1 7 2.9"/>'],
-        loading: ['Загрузка', '<g class="avatar-ink"><circle cx="12" cy="4" r="2"/><circle cx="17.7" cy="6.3" r="1.8" opacity=".85"/><circle cx="20" cy="12" r="1.6" opacity=".72"/><circle cx="17.7" cy="17.7" r="1.55" opacity=".6"/><circle cx="12" cy="20" r="1.5" opacity=".5"/><circle cx="6.3" cy="17.7" r="1.45" opacity=".42"/><circle cx="4" cy="12" r="1.4" opacity=".34"/><circle cx="6.3" cy="6.3" r="1.35" opacity=".27"/></g>'],
-        pixelcat: ['Пиксельный кот', '<path class="avatar-ink" fill-rule="evenodd" d="M3 4h4v3h2v2h6V7h2V4h4v13h-3v3H6v-3H3Zm3 8v3h3v-3Zm9 0v3h3v-3Zm-5 4v1h1v1h2v-1h1v-1Z"/>']
-    };
     const avatarIcons = {
         initial: ['Буква', ''],
-        compass: ['Компас', '<circle cx="12" cy="12" r="8.9"/><path d="m15.8 8.2-2 5.6-5.6 2 2-5.6Z"/><path class="avatar-ink" d="m15.8 8.2-2 5.6-3.6-3.6Z"/>'],
-        moon: ['Месяц', '<path class="avatar-tint" d="M10.1 3.7a8.7 8.7 0 1 0 10.1 10.9A7.4 7.4 0 0 1 10.1 3.7Z"/><path d="M17 4v5m-2.5-2.5h5"/>'],
-        bolt: ['Молния', '<path class="avatar-ink" d="M13.6 2.8 4.2 13.2a.7.7 0 0 0 .5 1.1h6.1l-1.3 6.8c-.1.5.5.8.8.4l9.4-10.4a.7.7 0 0 0-.5-1.1h-6.1l1.3-6.8c.1-.5-.5-.8-.8-.4Z"/>'],
-        orbit: ['Орбита', '<circle class="avatar-tint" cx="12" cy="12" r="6.3"/><path d="M6 10.5c-2.5 2.3-3.6 4.3-2.9 5.3 1 1.5 5.9.3 10.8-2.8s8-6.7 7-8.2c-.6-.9-2.5-.8-4.8 0"/><circle class="avatar-ink" cx="20.9" cy="12.7" r="1"/>'],
-        book: ['Книга', '<path class="avatar-tint" d="M12 7.2a10.8 10.8 0 0 0-8.7-1.8v12.1a10.8 10.8 0 0 1 8.7 2 10.8 10.8 0 0 1 8.7-2V5.4A10.8 10.8 0 0 0 12 7.2Z"/><path d="M12 7.2v12.3M6.2 9.6a7.4 7.4 0 0 1 2.7.5m6.2 3.6a7.4 7.4 0 0 1 2.7-.5"/>'],
-        peak: ['Горы', '<circle class="avatar-ink" cx="18.8" cy="6" r="1.8"/><path class="avatar-tint" d="m2.7 18.5 7.4-12.7 4.4 7.3 2.1-3.6 4.7 9Z"/><path d="m7.2 10.8 1.5.9 1.4-.9 1.6 1.1 1.1-.7"/>'],
-        spark: ['Искра', '<path class="avatar-ink" d="M10.4 4.8c.8 4.2 2.5 5.9 6.7 6.7-4.2.8-5.9 2.5-6.7 6.7-.8-4.2-2.5-5.9-6.7-6.7 4.2-.8 5.9-2.5 6.7-6.7Z"/><path d="M18.8 3.7v4.8m-2.4-2.4h4.8m-3.7 10v3.5m-1.75-1.75h3.5"/>'],
+        compass: ['Компас',
+            '<circle cx="12" cy="12" r="9.2"/><path d="M12 2.8v2m0 14.4v2m9.2-9.2h-2m-14.4 0h-2"/>' +
+            '<path class="avatar-tint" d="m16.5 7.5-2.1 6.9-6.9 2.1 2.1-6.9Z"/><path class="avatar-ink" d="m16.5 7.5-2.1 6.9-4.8-4.8Z"/>'],
+        moon: ['Месяц',
+            '<path class="avatar-tint" d="M11.2 3.3c-1.8 2.7-1.7 6.1.3 8.5a7.1 7.1 0 0 0 8.9 1.9A8.9 8.9 0 1 1 11.2 3.3Z"/>' +
+            '<path class="avatar-ink" d="M17.7 3.1c.4 1.8 1 2.4 2.8 2.8-1.8.5-2.4 1-2.8 2.8-.4-1.8-1-2.3-2.8-2.8 1.8-.4 2.4-1 2.8-2.8Z"/>'],
+        sixseven: ['67',
+            '<path stroke-width="2.1" d="M9.5 5.2H7.3a3.9 3.9 0 0 0-3.9 3.9v5.6a3.9 3.9 0 1 0 3.9-3.9H3.4M13 5.2h7.6l-5.7 13.4"/>'],
+        bolt: ['Молния',
+            '<path class="avatar-ink" d="M14.1 2.9c.4-.4 1-.1.9.5l-1.3 6.3h5.1c.7 0 1 .7.6 1.2l-9.5 10.2c-.4.4-1.1.1-1-.5l1.1-6.2H5.2c-.7 0-1-.7-.6-1.2Z"/>' +
+            '<path d="m5.8 7.5 2-2.1m8.3 13.1 2.1-2.3" opacity=".72"/>'],
+        orbit: ['Орбита',
+            '<circle class="avatar-tint" cx="12" cy="12" r="5.9"/>' +
+            '<g transform="rotate(-28 12 12)"><path d="M2.7 12a9.3 3.1 0 0 1 4.1-2.5m10.4 0a9.3 3.1 0 0 1 4.1 2.5M2.7 12a9.3 3.1 0 1 0 18.6 0"/>' +
+            '<circle class="avatar-ink" cx="20.2" cy="13.5" r="1.7"/></g>'],
+        moai: ['Моаи',
+            '<path class="avatar-tint" d="M3.1 21.3 4.6 19.3l3.1-.9-1.1-3.9V6.3l1.7-2.6 2.3-1.1 5.1.3 1.7 1.7.5 4.3 2.8 3.5-.8 1.2-2.4.4.1 1.7-.4 1.9-2 1.6 3.2.5 1.9 1.6Z"/>' +
+            '<path class="avatar-ink" opacity=".38" d="m7 6.3 1.7-2.5 2.2-.8-1 5.1.1 6.8 1.7 3.9-1.1 2.2h-7l1.4-1.5 3.2-.9-1.2-4.2Z"/>' +
+            '<path stroke-width="1.8" d="m9.9 8.4 4.6-.3 2.7 1"/>' +
+            '<path d="m14.5 8.7-1.4 4.6 3 .4m-4 2.5 4.7-.1"/>'],
+        book: ['Книга',
+            '<path class="avatar-tint" d="M12 6.8C9.5 4.9 6.6 4.7 3.2 5.6v12.4c3.4-.9 6.3-.6 8.8 1.2 2.5-1.8 5.4-2.1 8.8-1.2V5.6c-3.4-.9-6.3-.7-8.8 1.2Zm0 0v12.4"/>' +
+            '<path d="M6.2 9.1c1.1 0 2.1.2 3 .6m-3 3c1.1 0 2.1.2 3 .6m5.6-3.6c.9-.4 1.9-.6 3-.6m-3 4.2c.9-.4 1.9-.6 3-.6"/>'],
+        peak: ['Горы',
+            '<path class="avatar-tint" d="M2.8 19.1 9.5 6.2l4.2 8 1.8-3.1 5.6 8Z"/><path d="m7.2 10.6 2.3 1.5 2.3-1.5"/>' +
+            '<circle class="avatar-ink" cx="18.1" cy="6.4" r="2.1"/>'],
+        spark: ['Искра',
+            '<path class="avatar-tint" d="M9.7 4.2c.9 4.4 2.1 5.6 6.5 6.5-4.4.9-5.6 2.1-6.5 6.5-.9-4.4-2.1-5.6-6.5-6.5 4.4-.9 5.6-2.1 6.5-6.5Z"/>' +
+            '<path class="avatar-ink" d="M18.6 12.7c.5 2.3 1.3 3.1 3.6 3.6-2.3.5-3.1 1.3-3.6 3.6-.5-2.3-1.3-3.1-3.6-3.6 2.3-.5 3.1-1.3 3.6-3.6Z"/>'],
+        zed: ['Z', '<path class="avatar-ink" d="M4.1 4.5h15.8v2.8L9.3 16.4h10.6v3.1H4.1v-2.8l10.6-9.1H4.1Z"/>'],
+        fox: ['Лис',
+            '<path class="avatar-tint" d="m3.7 4.2 5.8 3h5l5.8-3-1.2 9.2-7.1 6-7.1-6Z"/>' +
+            '<path d="m5 13.4 3.7.2 3.3 5.8 3.3-5.8 3.7-.2m-11.7-2.5 1.5.8m6.4 0 1.5-.8"/>' +
+            '<path class="avatar-ink" d="M10.5 16.4q1.5-.6 3 0L12 18.3Z"/>'],
+        jelly: ['Медуза',
+            '<path class="avatar-tint" d="M3.6 11.7a8.4 7.5 0 0 1 16.8 0c-1.5 1.4-3.1 1.4-4.2 0-1.4 1.4-2.8 1.4-4.2 0-1.4 1.4-2.8 1.4-4.2 0-1.2 1.4-2.8 1.4-4.2 0Z"/>' +
+            '<path d="M7.8 14.9c1.7 2.1-2.3 3.4-.2 5.1M12 14.6c1.8 2.3-2.3 3.6-.2 5.6m4.4-5.3c1.7 2.1-2.3 3.4-.2 5.1"/>'],
+        notfound: ['404',
+            '<path stroke-width="1.75" d="m5.7 7.6-4 6.7h6m-1.2-3.5V17m13.3-9.4-4 6.7h6m-1.2-3.5V17"/><rect x="9.4" y="7.6" width="5" height="9.4" rx="1.6" stroke-width="1.75"/>'],
+        pixelcat: ['Пиксельный кот',
+            '<path class="avatar-ink" fill-rule="evenodd" d="M3 4h4v3h2v2h6V7h2V4h4v13h-3v3H6v-3H3Zm3 8v3h3v-3Zm9 0v3h3v-3Zm-5 4v1h1v1h2v-1h1v-1Z"/>']
+    };
+    // Keep retired icons for profiles that have already saved them.
+    const legacyAvatarIcons = {
+        afk: ['AFK', '<path stroke-width="1.75" d="m1.6 17 2.8-9.4L7.2 17M2.8 13.5h3.3M10.2 17V7.6h4.3m-4.3 4.2h3.6m3.8-4.2V17m4.8-9.4-4.8 5.1 4.8 4.3"/>'],
+        goose: ['Гусь', '<path class="avatar-tint" d="m21.9 7.7-4.4-2.1c-.4-1.4-1.4-2.4-2.9-2.4-2.1 0-3.5 1.6-3.5 3.7l.3 4.6C8.3 11.1 5.6 9.9 3 8v4.3c0 4.5 3.7 7.4 8.3 7.4h2.1c2.7 0 4.7-2 4.7-4.3 0-1.9-.9-3.3-2.1-4.7l-.9-1.4 2.7-.6Z"/><circle cx="15.3" cy="5.7" r=".9" class="avatar-ink"/><path d="M6.4 13.2c1.6 2.2 4 3.1 7 2.9"/>'],
+        loading: ['Загрузка', '<g class="avatar-ink"><circle cx="12" cy="4" r="2"/><circle cx="17.7" cy="6.3" r="1.8" opacity=".85"/><circle cx="20" cy="12" r="1.6" opacity=".72"/><circle cx="17.7" cy="17.7" r="1.55" opacity=".6"/><circle cx="12" cy="20" r="1.5" opacity=".5"/><circle cx="6.3" cy="17.7" r="1.45" opacity=".42"/><circle cx="4" cy="12" r="1.4" opacity=".34"/><circle cx="6.3" cy="6.3" r="1.35" opacity=".27"/></g>'],
         cat: ['Кот', '<path class="avatar-tint" d="M4.8 10.7 4.5 4l5 3.7a10 10 0 0 1 5 0l5-3.7-.3 6.7a6.5 6.5 0 0 1 .8 3.1c0 3.8-3.1 5.7-8 5.7s-8-1.9-8-5.7c0-1.2.3-2.2.8-3.1Z"/><path d="M7.9 13.7h1m6.2 0h1m-5.1 2.6 1 .6 1-.6"/>'],
-        fox: ['Лис', '<path class="avatar-tint" d="m3.6 4.3 6.1 3.3h4.6l6.1-3.3-1 8.6-7.4 6.8-7.4-6.8Z"/><path d="m4.6 12.9 3.9-.5 3.5 7.3 3.5-7.3 3.9.5M7.1 10.5h.1m9.6 0h.1"/>'],
         owl: ['Сова', '<path class="avatar-tint" d="M4 6.1 7.8 7a7.2 7.2 0 0 1 8.4 0l3.8-.9-.9 4.4a8.8 8.8 0 0 1 .6 3.2c0 4-3.2 6.6-7.7 6.6s-7.7-2.6-7.7-6.6c0-1.2.2-2.2.6-3.2Z"/><circle class="avatar-ink" cx="8.7" cy="12.4" r="1.7"/><circle class="avatar-ink" cx="15.3" cy="12.4" r="1.7"/><path d="m10.9 15.5 1.1 1.1 1.1-1.1"/>'],
         fern: ['Папоротник', '<path d="M5 20c7-3.6 10.3-8.8 12.4-15.5"/><path class="avatar-ink" d="M9.3 17.1c-3.7-.2-5.4-2.2-5.3-5 2.9.4 4.8 2.2 5.3 5Zm3.3-3.5c-3.3-.5-4.9-2.8-4.5-5.5 2.6.7 4.2 2.6 4.5 5.5Zm2.5-3.7c-2.1-1.5-2.7-3.7-1.7-6 2 1.3 2.6 3.5 1.7 6Zm-4.9 6.5c2.6-2.1 5.1-1.8 7 .2-2.4 1.5-4.9 1.2-7-.2Zm3.7-4.3c2.4-2.4 5-2.6 7-.8-2 1.8-4.4 2.2-7 .8Zm2.6-4.4c1.1-2.4 2.8-3.4 5.1-3-.8 2.3-2.7 3.3-5.1 3Z"/>'],
         comet: ['Комета', '<path d="m9 10.6-5.7 5.5m8.5-1.4-4.4 4.2m8-1.9-3.1 3"/><circle class="avatar-tint" cx="15.5" cy="7.9" r="5.2"/><path d="M15.5 5.2c1.2 0 2.1.7 2.5 1.5"/>'],
         prism: ['Призма', '<path class="avatar-tint" d="m11.5 4.4 6.9 12.9H4.6Z"/><path d="m2.5 10.5 6.1.8 4.7 1.8 7.9-3m-4.4 4.3 4.4-.1"/>'],
         shell: ['Ракушка', '<path class="avatar-tint" d="M9.3 19.2 4 14.3c-2-1.9-1.7-4.5.9-5.2.2-2.9 3-4.1 5-2.9 1.2-2 3-2 4.2 0 2-1.2 4.8 0 5 2.9 2.6.7 2.9 3.3.9 5.2l-5.3 4.9Z"/><path d="m10.8 16.8-3.2-6M12 16V8.2m1.2 8.6 3.2-6"/>'],
         koi: ['Кои', '<path class="avatar-tint" d="M4.3 12c.5-4.4 4.4-7.4 8-6.3 3.5 1.2 4.1 4.6 2.6 7.8l.9 1.5c1.8-.4 3.3.1 4.7 1.7-1.8.9-3.4.7-4.9.1-.5 1.7-1.7 2.6-3.7 3 .2-2 .9-3.2 2.2-4l-.8-1.4c-2.1 1.2-5.5 2-7.7.9-1.1-.5-1.5-1.6-1.3-3.3Z"/><path d="M8.3 10.8h.1m2.2-2.1c.5 1.6.1 3.1-1.3 4"/>'],
-        jelly: ['Медуза', '<path class="avatar-tint" d="M4.1 11c0-4.1 3.4-7 7.9-7s7.9 2.9 7.9 7v1.1c-5.2 1.4-10.6 1.4-15.8 0Z"/><path d="M7.1 13c1.6 2.6-1.8 3.5-.2 6.7m5-6.4c1.6 2.6-1.8 3.4-.2 6.7m5-7c1.6 2.6-1.8 3.5-.2 6.7"/>'],
         key: ['Ключ', '<path class="avatar-tint" d="M13.5 12.5a4.9 4.9 0 1 1 2.9 2.2l-2.3 2.3-1.8-.2.1 1.8-1.4 1.4H7.9v-3.1Z"/><circle class="avatar-ink" cx="17.4" cy="8.8" r="1.4"/>'],
-        ...memeAvatarIcons
     };
+    const storedAvatarIcons = Object.assign(Object.create(null), legacyAvatarIcons, avatarIcons);
     const avatarColors = {
         iris: 'Ирис', ocean: 'Океан', mint: 'Мята', amber: 'Янтарь', rose: 'Роза', coral: 'Коралл',
         sky: 'Лёд', slate: 'Сланец', violet: 'Фиалка', jade: 'Нефрит', terracotta: 'Терракота', ink: 'Чернила'
@@ -137,13 +165,13 @@
         const stylesheet = document.createElement('link');
         stylesheet.dataset.profileMotion = '';
         stylesheet.rel = 'stylesheet';
-        stylesheet.href = new URL('styles/profile-motion.css?v=20261126-1', profileUrl).href;
+        stylesheet.href = new URL('styles/profile-motion.css?v=20261126-2', profileUrl).href;
         stylesheet.addEventListener('error', () => stylesheet.remove(), { once: true });
         document.head.appendChild(stylesheet);
     }
 
     function avatarMarkup(value, name) {
-        const icon = Object.hasOwn(avatarIcons, value?.avatar) ? avatarIcons[value.avatar][1] : '';
+        const icon = storedAvatarIcons[value?.avatar]?.[1] || '';
         const color = Object.hasOwn(avatarColors, value?.color) ? value.color : 'iris';
         const background = Object.hasOwn(avatarBackgrounds, value?.background) ? value.background : 'solid';
         const monogram = String(value?.monogram || '').trim().toLocaleUpperCase('ru');
@@ -1668,10 +1696,9 @@
     });
 
     window.addEventListener('pageshow', function (event) {
-        if (event.persisted) {
-            updateHomeAccessLinks();
-            watchReviewInbox(user);
-        }
+        if (!event.persisted) return;
+        updateHomeAccessLinks();
+        watchReviewInbox(user);
     });
 
     window.addEventListener('pagehide', function (event) {
@@ -1690,7 +1717,10 @@
         openAccount: function () { if (user) openAccountMenu(); else openLoginModal(false); },
         getUser: function () { return user; },
         isReady: function () { return authStateKnown; },
-        profile: { icons: avatarIcons, memeIcons: Object.keys(memeAvatarIcons), colors: avatarColors, backgrounds: avatarBackgrounds, avatarMarkup, imageUrl: profileImageUrl },
+        profile: {
+            icons: avatarIcons, hasIcon: avatar => Object.hasOwn(storedAvatarIcons, avatar),
+            colors: avatarColors, backgrounds: avatarBackgrounds, avatarMarkup, imageUrl: profileImageUrl
+        },
         hasContentEditorAccess: hasContentEditorAccess,
         hasSiteAdminAccess: hasSiteAdminAccess,
         hasEnglishAccess: hasEnglishAccess,

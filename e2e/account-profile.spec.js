@@ -116,8 +116,33 @@ test('profile survives sign-out, merges edits from two tabs and clears private f
     await expect(other.locator('#profileCard')).toHaveAttribute('data-cover', 'waves');
     await expect(other.locator('#profilePreviewAvatar .profile-mark')).toHaveCSS('border-radius', '25%');
     await expect(other.locator('#rankVisible')).toBeChecked();
-    await expect(other.locator('#profileMemeIcons label[title="67"]')).toBeVisible();
-    await expect(other.locator('#profileMemeIcons label[title="Z"]')).toBeVisible();
+    await other.setViewportSize({ width: 320, height: 740 });
+    const icons = other.getByRole('group', { name: 'Значки аватара' });
+    await expect(icons.getByRole('radio')).toHaveCount(15);
+    await expect(icons.getByRole('radio', { name: '67', exact: true })).toBeVisible();
+    await expect(icons.getByRole('radio', { name: 'Z', exact: true })).toBeVisible();
+    const moai = icons.getByRole('radio', { name: 'Моаи' });
+    await moai.focus();
+    await other.keyboard.press('Space');
+    await expect(moai).toBeChecked();
+    await expect(other.locator('#profilePreviewAvatar svg')).toBeAttached();
+    await expect(other.locator('#profileCompactAvatar svg')).toBeVisible();
+    await other.locator('#profileReset').click();
+
+    // Selecting a removed icon used to be possible. Restoring its record should not overwrite it.
+    const identityPath = await other.evaluate(async () => {
+        const path = 'accountProfiles/' + firebase.auth().currentUser.uid + '/identity';
+        await firebase.database().ref(path).update({ avatar: 'owl' });
+        return path;
+    });
+    await expect(other.locator('#profileIcons input:checked')).toHaveCount(0);
+    await expect(other.locator('#accountBtn .profile-mark svg circle[cx="8.7"]')).toBeVisible();
+    await other.locator('label[title="Фиалка"]').click();
+    await other.locator('#profileSave').click();
+    await expect(other.locator('#profileStatus')).toHaveText('Изменения сохранены');
+    const storedIcon = await other.evaluate(async path => (await firebase.database().ref(path + '/avatar').once('value')).val(), identityPath);
+    expect(storedIcon).toBe('owl');
+
     for (const [group, value] of [['avatar', 'sixseven'], ['background', 'plasma'], ['cover', 'fireflies']]) {
         await other.locator(`label:has(input[name="${group}"][value="${value}"])`).click();
     }

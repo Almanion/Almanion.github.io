@@ -15,8 +15,17 @@
 .profile-cover-shimmer {
     --cover-motion: profile-cover-glow var(--cover-time, 6s) ease-in-out var(--cover-delay, 0s) infinite alternate;
 }
-.profile-cover-satellite {
-    --cover-motion: profile-cover-orbit var(--cover-time) linear var(--cover-delay, 0s) infinite;
+.profile-cover-orbit-upright { --orbit-direction: -1; }
+.profile-cover-orbit-turn, .profile-cover-orbit-upright {
+    --cover-motion: profile-cover-revolve var(--cover-time) linear infinite;
+    transform-box: view-box;
+    transform-origin: 0 0;
+    transform: rotate(calc(var(--orbit-start) * var(--orbit-direction, 1)));
+}
+.profile-cover-flow {
+    --cover-motion: profile-cover-current var(--cover-time, 18s) linear var(--cover-delay, 0s) infinite;
+    stroke-dasharray: 7 93;
+    stroke-dashoffset: -16;
 }
 .profile-cover-sway {
     --cover-motion: profile-cover-breeze 11s ease-in-out infinite alternate;
@@ -39,7 +48,8 @@
         :is(#profileCoverArt, [data-profile-cover-live]):not([hidden]) > .profile-cover-art:not([hidden]) .profile-cover-shimmer,
     html:not([data-page-motion="off"], [data-page-motion="medium"]) .profile-page
         :is(#profileCoverArt, [data-profile-cover-live]):not([hidden]) > .profile-cover-art:not([hidden])
-        :is(.profile-cover-float, .profile-cover-satellite, .profile-cover-sway, .profile-cover-beacon, .profile-cover-scan) {
+        :is(.profile-cover-float, .profile-cover-orbit-turn, .profile-cover-orbit-upright, .profile-cover-flow,
+            .profile-cover-sway, .profile-cover-beacon, .profile-cover-scan) {
         animation: var(--cover-motion);
         animation-play-state: var(--cover-play-state, running);
     }
@@ -56,15 +66,15 @@
     from { opacity: var(--cover-floor, .36); }
     to { opacity: var(--cover-ceiling, 1); }
 }
-@keyframes profile-cover-orbit {
-    0%, 100% { transform: translateX(var(--orbit-x)); }
-    12.5% { transform: translate(var(--orbit-qx), var(--orbit-qy)); }
-    25% { transform: translateY(var(--orbit-y)); }
-    37.5% { transform: translate(calc(-1 * var(--orbit-qx)), var(--orbit-qy)); }
-    50% { transform: translateX(calc(-1 * var(--orbit-x))); }
-    62.5% { transform: translate(calc(-1 * var(--orbit-qx)), calc(-1 * var(--orbit-qy))); }
-    75% { transform: translateY(calc(-1 * var(--orbit-y))); }
-    87.5% { transform: translate(var(--orbit-qx), calc(-1 * var(--orbit-qy))); }
+@keyframes profile-cover-revolve {
+    /* WebKit can fold matching endpoints of a full turn into a stationary transform. */
+    25% { transform: rotate(calc((var(--orbit-start) + .25turn) * var(--orbit-direction, 1))); }
+    50% { transform: rotate(calc((var(--orbit-start) + .5turn) * var(--orbit-direction, 1))); }
+    75% { transform: rotate(calc((var(--orbit-start) + .75turn) * var(--orbit-direction, 1))); }
+    to { transform: rotate(calc((var(--orbit-start) + 1turn) * var(--orbit-direction, 1))); }
+}
+@keyframes profile-cover-current {
+    to { stroke-dashoffset: -116; }
 }
 @keyframes profile-cover-breeze {
     from { transform: rotate(-1.5deg); }
