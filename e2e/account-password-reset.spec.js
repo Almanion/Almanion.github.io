@@ -10,12 +10,34 @@ const accountStyles = fs.readFileSync(path.join(root, 'styles', 'site', '00-comp
 
 // Exercise the real account module with an isolated SDK; never send email or
 // connect to the project's Firebase account/database from these tests.
-function installAccountStub({ persistenceFailure = false } = {}) {
-    const state = window.accountTest = { resetCalls: [], loginCalls: [], registerCalls: [], googleCalls: 0, resetError: '', resetPending: false };
+function installAccountStub({ persistenceFailure = false, appleEnabled = false, signedIn = false } = {}) {
+    const state = window.accountTest = {
+        resetCalls: [], loginCalls: [], registerCalls: [], googleCalls: 0,
+        appleCalls: [], appleLinks: [], resetError: '', resetPending: false
+    };
+    const snapshotProvider = ({ providerId, scopes }) => ({ providerId, scopes });
+    const member = {
+        uid: 'existing-student',
+        email: 'student@example.invalid',
+        emailVerified: true,
+        displayName: 'Ученик',
+        providerData: [{ providerId: 'password' }],
+        linkWithPopup(provider) {
+            state.appleLinks.push({ uid: this.uid, ...snapshotProvider(provider) });
+            this.providerData.push({ providerId: provider.providerId });
+            return Promise.resolve({ user: this });
+        }
+    };
+    const sessionListeners = new Set();
     const auth = {
+        currentUser: signedIn ? member : null,
         useDeviceLanguage() {},
         setPersistence: () => persistenceFailure ? Promise.reject({ code: 'auth/web-storage-unsupported' }) : Promise.resolve(),
-        onAuthStateChanged(callback) { setTimeout(() => callback(null), 0); return () => {}; },
+        onAuthStateChanged(callback) {
+            sessionListeners.add(callback);
+            setTimeout(() => callback(auth.currentUser), 0);
+            return () => sessionListeners.delete(callback);
+        },
         sendPasswordResetEmail(email) {
             state.resetCalls.push(email);
             if (state.resetPending) return new Promise((resolve, reject) => { state.finishReset = code => code ? reject({ code }) : resolve(); });
@@ -23,13 +45,35 @@ function installAccountStub({ persistenceFailure = false } = {}) {
         },
         signInWithEmailAndPassword(email, password) { state.loginCalls.push({ email, password }); return Promise.resolve(); },
         createUserWithEmailAndPassword(email, password) { state.registerCalls.push({ email, password }); return Promise.resolve(); },
-        signInWithPopup() { state.googleCalls++; return Promise.resolve(); }
+        signInWithPopup(provider) {
+            if (provider.providerId !== 'apple.com') { state.googleCalls++; return Promise.resolve(); }
+            state.appleCalls.push(snapshotProvider(provider));
+            return new Promise((resolve, reject) => {
+                state.finishApple = code => {
+                    if (code) { reject({ code, message: 'Private OAuth response' }); return; }
+                    auth.currentUser = {
+                        uid: 'apple-student', email: 'student@privaterelay.appleid.com', emailVerified: true,
+                        providerData: [{ providerId: 'apple.com' }]
+                    };
+                    sessionListeners.forEach(callback => callback(auth.currentUser));
+                    resolve({ user: auth.currentUser });
+                };
+            });
+        }
     };
     const authFactory = () => auth;
     authFactory.Auth = { Persistence: { LOCAL: 'local', SESSION: 'session', NONE: 'none' } };
     authFactory.GoogleAuthProvider = function () { this.setCustomParameters = () => {}; };
+    authFactory.OAuthProvider = class {
+        constructor(providerId) { this.providerId = providerId; this.scopes = []; }
+        addScope(scope) { this.scopes.push(scope); }
+        setCustomParameters() {}
+    };
+    const database = () => ({ ref: () => ({ on() {}, off() {}, set: async () => {}, once: async () => ({ val: () => null }) }) });
+    database.ServerValue = { TIMESTAMP: {} };
+    window.appleAuthEnabled = appleEnabled;
     window.firebaseConfig = {};
-    window.firebase = { apps: [{}], auth: authFactory, database: () => ({ ref: () => ({ on() {}, off() {} }) }) };
+    window.firebase = { apps: [{}], auth: authFactory, database };
 }
 
 async function openAccount(page, options = {}) {
@@ -43,8 +87,9 @@ async function openAccount(page, options = {}) {
     });
     await page.addInitScript(installAccountStub, options);
     await page.goto('/__account-password-reset-test.html');
-    await page.getByRole('button', { name: 'Войти в аккаунт', exact: true }).click();
-    await expect(page.getByRole('dialog', { name: 'Вход в аккаунт' })).toBeVisible();
+    const name = options.signedIn ? 'Аккаунт: Ученик' : 'Войти в аккаунт';
+    await page.getByRole('button', { name, exact: true }).click();
+    await expect(page.getByRole('dialog', { name: options.signedIn ? 'Ученик' : 'Вход в аккаунт' })).toBeVisible();
 }
 
 test.use({ serviceWorkers: 'block' });
@@ -190,4 +235,86 @@ test('registration validation and Google login remain available', async ({ page 
     await expect(page.getByRole('dialog')).toBeHidden();
     expect(await page.evaluate(() => window.accountTest.googleCalls)).toBe(1);
     expect(await page.evaluate(() => window.accountTest.resetCalls)).toEqual([]);
+});
+
+test('Apple login is hidden until the provider is enabled', async ({ page }) => {
+    await openAccount(page);
+    await expect(page.locator('#accApple')).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'Войти через Google' })).toBeEnabled();
+    await expect(page.getByRole('button', { name: 'Войти', exact: true })).toBeEnabled();
+});
+
+test('Apple login requests the expected scopes and opens a registered session', async ({ page }) => {
+    await openAccount(page, { appleEnabled: true });
+    const apple = page.getByRole('button', { name: 'Вход с Apple', exact: true });
+    const google = page.getByRole('button', { name: 'Войти через Google' });
+    const emailLogin = page.getByRole('button', { name: 'Войти', exact: true });
+    await apple.click();
+    expect(await page.evaluate(() => window.accountTest.appleCalls)).toEqual([
+        { providerId: 'apple.com', scopes: expect.arrayContaining(['email', 'name']) }
+    ]);
+    await expect(google).toBeDisabled();
+    await expect(emailLogin).toBeDisabled();
+    await page.evaluate(() => window.accountTest.finishApple());
+    await expect(page.getByRole('dialog')).toBeHidden();
+    await expect(page.getByRole('button', { name: 'Аккаунт: student@privaterelay.appleid.com' })).toBeVisible();
+    expect(await page.evaluate(() => window.AlmanionAccount.getUser().uid)).toBe('apple-student');
+});
+
+for (const [code, fallback] of [
+    ['auth/popup-closed-by-user', 'email'],
+    ['auth/popup-blocked', 'google']
+]) {
+    test(`Apple popup ${code} preserves the form and allows ${fallback} sign-in`, async ({ page }) => {
+        await openAccount(page, { appleEnabled: true });
+        const email = page.getByLabel('Почта', { exact: true });
+        const password = page.getByLabel('Пароль', { exact: true });
+        await email.fill('student@example.invalid');
+        await password.fill('test-password-123');
+        const apple = page.locator('#accApple');
+        const google = page.getByRole('button', { name: 'Войти через Google' });
+        await apple.click();
+        await page.evaluate(error => window.accountTest.finishApple(error), code);
+        await expect(apple).toBeEnabled();
+        await expect(google).toBeEnabled();
+        await expect(email).toHaveValue('student@example.invalid');
+        await expect(password).toHaveValue('test-password-123');
+        const error = page.getByRole('alert');
+        await expect(error).toContainText('Apple');
+        await expect(error).not.toContainText('Private OAuth response');
+        if (fallback === 'google') {
+            await google.click();
+            expect(await page.evaluate(() => window.accountTest.googleCalls)).toBe(1);
+        } else {
+            await page.getByRole('button', { name: 'Войти', exact: true }).click();
+            expect(await page.evaluate(() => window.accountTest.loginCalls)).toEqual([
+                { email: 'student@example.invalid', password: 'test-password-123' }
+            ]);
+        }
+        await expect(page.getByRole('dialog')).toBeHidden();
+    });
+}
+
+test('an existing member can choose to link Apple while retaining the same UID', async ({ page }) => {
+    await openAccount(page, { appleEnabled: true, signedIn: true });
+    const link = page.getByRole('button', { name: 'Привязать Apple', exact: true });
+    await expect(link).toBeHidden();
+    await page.getByText('Добавить вход с Apple', { exact: true }).click();
+    await expect(link).toBeVisible();
+    expect(await page.evaluate(() => window.accountTest.appleLinks)).toEqual([]);
+    await link.click();
+    await expect(page.getByText('Вход с Apple подключён', { exact: true })).toBeVisible();
+    expect(await page.evaluate(() => ({
+        user: window.AlmanionAccount.getUser().uid,
+        links: window.accountTest.appleLinks,
+        logins: window.accountTest.appleCalls
+    }))).toEqual({
+        user: 'existing-student',
+        links: [{ uid: 'existing-student', providerId: 'apple.com', scopes: expect.arrayContaining(['email', 'name']) }],
+        logins: []
+    });
+    await page.getByRole('button', { name: 'Закрыть', exact: true }).click();
+    await page.getByRole('button', { name: 'Аккаунт: Ученик' }).click();
+    await expect(page.getByText('Вход с Apple подключён', { exact: true })).toBeVisible();
+    await expect(link).toHaveCount(0);
 });

@@ -29,10 +29,10 @@
         firebaseApp: 'https://www.gstatic.com/firebasejs/12.18.0/firebase-app-compat.js',
         firebaseDatabase: 'https://www.gstatic.com/firebasejs/12.18.0/firebase-database-compat.js',
         firebaseAuth: 'https://www.gstatic.com/firebasejs/12.18.0/firebase-auth-compat.js',
-        firebaseConfig: 'firebase-config.js?v=20260903-3',
+        firebaseConfig: 'firebase-config.js?v=20261126-apple',
         dataSync: 'data-sync.js?v=20260908-1',
         analytics: 'firebase-analytics.js?v=20261009-4',
-        account: 'account.js?v=20261018-1',
+        account: 'account.js?v=20261126-apple',
         bookmarks: 'bookmarks.js?v=20261122-4',
         editor: 'note-editor.js?v=20261015-1'
     };

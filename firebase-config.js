@@ -17,3 +17,6 @@ const firebaseConfig = {
     messagingSenderId: "441119263666",
     appId: "1:441119263666:web:349dbcd80215e54e6cf2ab"
   };
+
+// Включить после настройки провайдера Apple в Firebase Authentication.
+const appleAuthEnabled = false;

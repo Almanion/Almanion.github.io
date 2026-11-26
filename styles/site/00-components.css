@@ -1021,7 +1021,24 @@ body.dark-theme .sidebar-header .account-btn:hover { background: rgba(255,255,25
     cursor: pointer; transition: background 0.15s ease, box-shadow 0.15s ease;
 }
 .account-google-btn:hover { background: var(--bg-tertiary); box-shadow: var(--shadow-sm); }
+.account-oauth-buttons { display: grid; gap: 0.55rem; }
+.account-apple-btn {
+    display: grid; place-items: center; width: 100%; min-height: max(44px, 3rem); padding: 0;
+    border: 1px solid transparent; border-radius: 10px; background: #000; cursor: pointer;
+}
+.account-apple-btn img { display: block; max-width: 100%; height: auto; }
+.account-apple-btn .account-apple-dark { display: none; }
+body:is(.exp-dark, .dark-theme) .account-apple-btn { background: #fff; }
+body:is(.exp-dark, .dark-theme) .account-apple-light { display: none; }
+body:is(.exp-dark, .dark-theme) .account-apple-dark { display: block; }
+.account-apple-btn:focus-visible { outline: 2px solid var(--accent-color); outline-offset: 2px; }
+.account-oauth-progress { color: var(--text-secondary); font-size: .84rem; }
+.account-provider-link { margin: 0 0 .65rem; padding: .15rem .7rem; border: 1px solid var(--border-color); border-radius: 10px; text-align: start; }
+.account-provider-link summary { min-height: 44px; align-content: center; cursor: pointer; }
+.account-provider-link p { color: var(--text-secondary); font-size: .84rem; line-height: 1.4; }
+.account-provider-link button { margin-bottom: .65rem; }
 .account-google-btn:disabled,
+.account-apple-btn:disabled,
 .account-signout:disabled { opacity: 0.62; cursor: wait; box-shadow: none; }
 
 .account-or { display: flex; align-items: center; gap: 0.6rem; margin: 0.9rem 0; color: var(--text-secondary); font-size: 0.8rem; }

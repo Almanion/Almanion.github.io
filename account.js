@@ -3,7 +3,7 @@
 // ============================================
 //
 // Самодостаточный модуль: добавляет в шапку меню маленькую кнопку-иконку входа,
-// окно входа (Google и почта+пароль) и синхронизирует прогресс «Проверки знаний»
+// окно входа и синхронизирует прогресс «Проверки знаний»
 // (ключи localStorage `kc_fsrs_*`) в Realtime Database под `kc/<uid>`.
 // Требует, чтобы на странице были подключены firebase-app/-auth/-database (compat)
 // и firebase-config.js. Без них модуль молча выключается.
@@ -40,11 +40,12 @@
     let persistenceMode = 'local';
     let persistenceFailure = false;
     let syncGeneration = 0;
-    let googleAttemptId = 0;
+    let popupAttemptId = 0;
     let homeAccessGeneration = 0;
     let homeRolesRef = null;
     let homeRolesHandler = null;
-    const GOOGLE_POPUP_TIMEOUT_MS = 45000;
+    const appleEnabled = typeof appleAuthEnabled !== 'undefined' && appleAuthEnabled === true
+        && typeof firebase.auth.OAuthProvider === 'function';
 
     // Явно закрепляем сессию за устройством. По умолчанию Firebase также использует
     // LOCAL, но явная настройка защищает от унаследованного SESSION/NONE между
@@ -133,6 +134,15 @@
         '<path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.56-2.76c-.98.66-2.23 1.06-3.72 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84A11 11 0 0 0 12 23z"/>' +
         '<path fill="#FBBC05" d="M5.84 14.11a6.6 6.6 0 0 1 0-4.22V7.05H2.18a11 11 0 0 0 0 9.9l3.66-2.84z"/>' +
         '<path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.05l3.66 2.84C6.71 7.31 9.14 5.38 12 5.38z"/></svg>';
+
+    const googleButton = '<button type="button" class="account-google-btn" id="accGoogle">' +
+        IC_GOOGLE + '<span>Войти через Google</span></button>';
+    const appleButtonBlack = new URL('images/sign-in-with-apple-black.png', profileUrl).href;
+    const appleButtonWhite = new URL('images/sign-in-with-apple-white.png', profileUrl).href;
+    const appleButton = '<button type="button" class="account-apple-btn" id="accApple" aria-label="Вход с Apple">' +
+        '<img class="account-apple-light" src="' + appleButtonBlack + '" width="274" height="44" alt="">' +
+        '<img class="account-apple-dark" src="' + appleButtonWhite + '" width="274" height="44" alt="">' +
+        '</button><span class="account-oauth-progress" id="accAppleProgress" role="status" hidden></span>';
 
     // ---------- Кнопка в шапке меню ----------
     function buildButton() {
@@ -311,7 +321,7 @@
                     '<h2 id="accTitle">' + (resetMode ? 'Восстановление пароля' : (mode === 'register' ? 'Регистрация' : 'Вход в аккаунт')) + '</h2>' +
                     (resetMode
                         ? '<p class="account-reset-help" id="accResetHelp">Укажите почту аккаунта. Мы отправим ссылку для выбора нового пароля.</p>'
-                        : '<button type="button" class="account-google-btn" id="accGoogle">' + IC_GOOGLE + '<span>Войти через Google</span></button>' +
+                        : (appleEnabled ? '<div class="account-oauth-buttons">' + appleButton + googleButton + '</div>' : googleButton) +
                           '<div class="account-or"><span>или</span></div>') +
                     '<form id="accForm" autocomplete="on" data-mode="' + mode + '"' + (resetMode ? ' aria-describedby="accResetHelp"' : '') + '>' +
                         '<label class="account-field-label" for="accEmail">Почта</label>' +
@@ -337,6 +347,7 @@
             ov.querySelector('#accClose').addEventListener('click', hideOverlay);
             const google = ov.querySelector('#accGoogle');
             if (google) google.addEventListener('click', signInGoogle);
+            ov.querySelector('#accApple')?.addEventListener('click', function () { popupAuth('apple'); });
             const forgot = ov.querySelector('#accForgot');
             if (forgot) forgot.addEventListener('click', function () { changeMode('reset'); });
             ov.querySelector('#accToggle').addEventListener('click', function () {
@@ -388,7 +399,9 @@
         else setTimeout(function () { try { focusForm(); } catch (_) {} }, 0);
     }
 
-    const PASSWORD_RESET_COMPLETE = 'Если для этой почты доступно восстановление пароля, письмо со ссылкой будет отправлено. Проверьте входящие и папку «Спам». Если вы входили через Google, используйте кнопку «Войти через Google».';
+    const PASSWORD_RESET_COMPLETE = 'Если для этой почты доступно восстановление пароля, письмо со ссылкой будет отправлено. Проверьте входящие и папку «Спам». ' +
+        (appleEnabled ? 'Если вы входили через Google или Apple, выберите прежний способ входа.' :
+            'Если вы входили через Google, используйте кнопку «Войти через Google».');
 
     function passwordResetMessage(err) {
         const code = (err && err.code) || '';
@@ -440,50 +453,79 @@
     }
 
     function signInGoogle() {
+        popupAuth('google');
+    }
+
+    function createOAuthProvider(kind) {
+        if (kind === 'apple') {
+            const provider = new firebase.auth.OAuthProvider('apple.com');
+            provider.addScope('email');
+            provider.addScope('name');
+            return provider;
+        }
+        const provider = new firebase.auth.GoogleAuthProvider();
+        provider.setCustomParameters({ prompt: 'select_account' });
+        return provider;
+    }
+
+    function popupAuth(kind, accountToLink) {
         if (authBusy) return;
         clearError();
         if (!persistenceReady) {
             showError('Хранилище авторизации ещё не готово. Подождите секунду и повторите вход.');
             return;
         }
+        if (kind === 'apple' && !appleEnabled) return;
+        if (accountToLink && auth.currentUser?.uid !== accountToLink.uid) return;
 
-        const attemptId = ++googleAttemptId;
-        const provider = new firebase.auth.GoogleAuthProvider();
-        provider.setCustomParameters({ prompt: 'select_account' });
-        setAuthBusy(true, 'Завершите вход в окне Google', 'google');
+        const brand = kind === 'apple' ? 'Apple' : 'Google';
+        const attemptId = ++popupAttemptId;
+        const dialog = document.getElementById('accountOverlay')?.firstElementChild;
+        const waiting = accountToLink ? 'Подтвердите привязку в окне Apple' : 'Завершите вход в окне ' + brand;
+        setAuthBusy(true, waiting, kind);
 
         // Вызов должен происходить непосредственно из клика: иначе браузер может
         // заблокировать popup. Таймер не отменяет Firebase-запрос, но возвращает
         // управление форме, если встроенный браузер не сообщил о закрытии окна.
         const watchdog = setTimeout(function () {
-            if (attemptId !== googleAttemptId || !authBusy || authBusyTarget !== 'google') return;
-            googleAttemptId++;
+            if (attemptId !== popupAttemptId) return;
+            popupAttemptId++;
             setAuthBusy(false);
-            showError('Окно Google не завершило вход. Закройте его и повторите попытку. Если окно не открылось, разрешите всплывающие окна или войдите по почте.');
-        }, GOOGLE_POPUP_TIMEOUT_MS);
+            if (dialog?.isConnected) showError('Окно ' + brand + ' не завершило вход. Закройте его и повторите попытку. Если окно не открылось, разрешите всплывающие окна или войдите по почте.');
+        }, kind === 'apple' ? 90000 : 45000);
 
         let popupPromise;
         try {
-            popupPromise = auth.signInWithPopup(provider);
+            const provider = createOAuthProvider(kind);
+            popupPromise = accountToLink ? accountToLink.linkWithPopup(provider) : auth.signInWithPopup(provider);
         } catch (err) {
             clearTimeout(watchdog);
-            showError(authMessage(err));
+            showError(authMessage(err, kind));
             setAuthBusy(false);
             return;
         }
 
         popupPromise
-            .then(function () {
-                if (attemptId === googleAttemptId || !authBusy) hideOverlay();
+            .then(function (result) {
+                if (attemptId !== popupAttemptId) return;
+                if (accountToLink) {
+                    const status = document.getElementById('accAppleStatus');
+                    if (user?.uid !== result.user?.uid || !status) return;
+                    const linkMenu = status.parentElement.querySelector('.account-provider-link');
+                    if (linkMenu) linkMenu.hidden = true;
+                    status.hidden = false;
+                    status.textContent = 'Вход с Apple подключён';
+                    if (!status.closest('#accountOverlay').classList.contains('hidden')) status.focus({ preventScroll: true });
+                } else if (document.getElementById('accForm')) {
+                    hideOverlay();
+                }
             })
             .catch(function (err) {
-                if (attemptId !== googleAttemptId) return;
-                console.warn('Almanion account: Google sign-in failed.', err);
-                showError(authMessage(err));
+                if (attemptId === popupAttemptId && dialog?.isConnected) showError(authMessage(err, kind));
             })
             .finally(function () {
                 clearTimeout(watchdog);
-                if (attemptId === googleAttemptId) setAuthBusy(false);
+                if (attemptId === popupAttemptId) setAuthBusy(false);
             });
     }
 
@@ -495,6 +537,9 @@
 
     function updateAuthControls(label) {
         const google = document.getElementById('accGoogle');
+        const apple = document.getElementById('accApple');
+        const appleLink = document.getElementById('accAppleLink');
+        const appleProgress = document.getElementById('accAppleProgress');
         const submit = document.getElementById('accSubmit');
         const signout = document.getElementById('accSignout');
         const notice = document.getElementById('accStorageNotice');
@@ -505,6 +550,15 @@
             if (googleLabel) googleLabel.textContent = authBusyTarget === 'google' && label
                 ? label
                 : 'Войти через Google';
+        }
+        if (apple) apple.disabled = authBusy || !persistenceReady;
+        if (appleLink) {
+            appleLink.disabled = authBusy || !persistenceReady;
+            appleLink.textContent = authBusyTarget === 'apple' ? (label || 'Привязываем…') : 'Привязать Apple';
+        }
+        if (appleProgress) {
+            appleProgress.hidden = authBusyTarget !== 'apple';
+            if (label || !authBusy) appleProgress.textContent = authBusyTarget === 'apple' ? label : '';
         }
         if (submit) {
             submit.disabled = authBusy || (!resetMode && !persistenceReady);
@@ -536,15 +590,23 @@
         const el = document.getElementById('accError');
         if (el) { el.textContent = msg; el.hidden = false; }
     }
-    function authMessage(err) {
+    function authMessage(err, provider) {
         const c = (err && err.code) || '';
+        const brand = provider === 'apple' ? 'Apple' : 'Google';
+        if (provider === 'apple') {
+            if (c === 'auth/account-exists-with-different-credential') return 'Сначала войдите в существующий аккаунт прежним способом, затем добавьте вход с Apple в меню аккаунта.';
+            if (c === 'auth/credential-already-in-use') return 'Этот аккаунт Apple уже связан с другим профилем Almanion.';
+            if (c === 'auth/provider-already-linked') return 'Вход с Apple уже подключён.';
+            if (c === 'auth/operation-not-allowed') return 'Вход с Apple пока недоступен. Войдите другим способом.';
+            if (c === 'auth/invalid-credential') return 'Apple не подтвердил вход. Откройте окно входа снова.';
+        }
         if (c === 'auth/invalid-credential' || c === 'auth/wrong-password' || c === 'auth/user-not-found') return 'Неверная почта или пароль.';
         if (c === 'auth/email-already-in-use') return 'Эта почта уже зарегистрирована — войдите.';
         if (c === 'auth/weak-password') return 'Пароль слишком короткий (мин. 6 символов).';
         if (c === 'auth/invalid-email') return 'Некорректная почта.';
-        if (c === 'auth/popup-closed-by-user') return 'Окно Google закрыто до завершения входа.';
-        if (c === 'auth/popup-blocked') return 'Браузер заблокировал окно Google. Разрешите всплывающие окна для этого сайта и повторите вход.';
-        if (c === 'auth/operation-not-supported-in-this-environment') return 'Этот браузер не поддерживает окно входа Google. Откройте сайт в обычном браузере или войдите по почте.';
+        if (c === 'auth/popup-closed-by-user' || c === 'auth/cancelled-popup-request') return 'Окно ' + brand + ' закрыто до завершения входа.';
+        if (c === 'auth/popup-blocked') return 'Браузер заблокировал окно ' + brand + '. Разрешите всплывающие окна для этого сайта и повторите вход.';
+        if (c === 'auth/operation-not-supported-in-this-environment') return 'Этот браузер не поддерживает окно входа ' + brand + '. Откройте сайт в обычном браузере или войдите по почте.';
         if (c === 'auth/network-request-failed') return 'Нет связи с сервером входа. Проверьте интернет и повторите попытку.';
         if (c === 'auth/web-storage-unsupported') return 'Браузер запретил локальное хранилище, поэтому сохранить вход нельзя. Отключите строгий приватный режим для сайта.';
         if (c === 'auth/too-many-requests') return 'Слишком много попыток входа. Подождите несколько минут и попробуйте снова.';
@@ -560,6 +622,7 @@
     function openAccountMenu() {
         const ov = ensureOverlay();
         const email = (user && user.email) || 'Аккаунт';
+        const appleLinked = user.providerData?.some(function (provider) { return provider.providerId === 'apple.com'; });
         ov.innerHTML =
             '<div class="auth-modal account-modal account-session-modal" role="dialog" aria-modal="true" aria-labelledby="accIdentityName">' +
                 '<button class="kc-close" id="accClose" aria-label="Закрыть">' + IC_CLOSE + '</button>' +
@@ -571,6 +634,13 @@
                 '<a class="auth-submit account-editor-link" id="accProfile">Мой профиль</a>' +
                 '<div class="account-editor-slot" id="accountEditorSlot"></div>' +
                 '<a class="auth-submit account-editor-link" href="/watch/connect.html">Мои часы</a>' +
+                (appleEnabled
+                    ? '<p class="account-notice" id="accAppleStatus" role="status" tabindex="-1"' + (appleLinked ? '>Вход с Apple подключён' : ' hidden>') + '</p>' +
+                      (appleLinked ? '' :
+                          '<details class="account-provider-link"><summary>Добавить вход с Apple</summary>' +
+                          '<p>Аккаунт Apple и адрес, которым вы поделитесь, будут связаны с этим профилем Almanion.</p>' +
+                          '<button type="button" class="account-google-btn" id="accAppleLink">Привязать Apple</button></details>')
+                    : '') +
                 '<button type="button" class="auth-submit account-signout" id="accSignout">Выйти</button>' +
             '</div>';
         ov.querySelector('#accProfile').href = profileUrl;
@@ -580,6 +650,8 @@
             verifyLink.addEventListener('click', hideOverlay);
         }
         refreshIdentity();
+        const activeAccount = user;
+        ov.querySelector('#accAppleLink')?.addEventListener('click', function () { popupAuth('apple', activeAccount); });
         ov.querySelector('#accClose').addEventListener('click', hideOverlay);
         ov.querySelector('#accSignout').addEventListener('click', function () {
             if (authBusy) return;
@@ -592,6 +664,7 @@
         showContentEditorLink(ov);
         ov.classList.remove('hidden');
         ov.setAttribute('aria-hidden', 'false');
+        if (appleEnabled) updateAuthControls();
         ov.querySelector('#accProfile').focus({ preventScroll: true });
     }
 
