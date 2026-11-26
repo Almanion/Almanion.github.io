@@ -2,9 +2,12 @@
 
 const { test, expect } = require('@playwright/test');
 
-function reviewFixture(withPhotos) {
+function reviewFixture({ withPhotos, withAspect }) {
     const now = Date.now();
-    const stroke = { color: '#5651e6', size: 5, erase: false, points: [1000, 1500, 8000, 7600] };
+    const points = withAspect
+        ? [1000, 1000, 9000, 1000, 9000, 9000, 1000, 9000, 1000, 1000]
+        : [1000, 1500, 8000, 7600];
+    const stroke = { color: '#5651e6', size: 5, erase: false, points };
     const drawing = JSON.stringify([stroke]);
     function photo(color) {
         const canvas = document.createElement('canvas');
@@ -22,7 +25,8 @@ function reviewFixture(withPhotos) {
     const entries = [
         {
             id: 'first', authorEmail: 'editor@example.com', baseRevision: 'original', submittedAt: now,
-            drawing: withPhotos ? '[]' : drawing, ...(withPhotos ? { photo: afterPhoto } : {})
+            drawing: withPhotos ? '[]' : drawing, ...(withPhotos ? { photo: afterPhoto } : {}),
+            ...(withAspect ? { aspect: .5 } : {})
         },
         { id: 'second', authorEmail: 'writer@example.com', baseRevision: 'older', submittedAt: now - 2000, drawing }
     ];
@@ -34,7 +38,10 @@ function reviewFixture(withPhotos) {
     const publishedListeners = new Set();
     const calls = [];
     const counts = [];
-    let published = { revision: 'original', drawing, publishedAt: now, ...(withPhotos ? { photo: beforePhoto } : {}) };
+    let published = {
+        revision: 'original', drawing, publishedAt: now, ...(withPhotos ? { photo: beforePhoto } : {}),
+        ...(withAspect ? { aspect: 2.4 } : {})
+    };
     let denyPending = true;
     const notifyPending = () => pendingListeners.forEach(({ callback }) => callback([...entries]));
     const notifyPublished = () => publishedListeners.forEach(callback => callback(published));
@@ -58,7 +65,11 @@ function reviewFixture(withPhotos) {
         async readPublished() { return published; },
         async approve(entry) {
             calls.push({ id: entry.id, status: 'published' });
-            published = { revision: entry.id, drawing: entry.drawing, publishedAt: Date.now(), ...(entry.photo ? { photo: entry.photo } : {}) };
+            published = {
+                revision: entry.id, drawing: entry.drawing, publishedAt: Date.now(),
+                ...(entry.photo ? { photo: entry.photo } : {}),
+                ...(entry.aspect ? { aspect: entry.aspect } : {})
+            };
             remove(entry.id);
             notifyPublished();
         },
@@ -79,7 +90,7 @@ function reviewFixture(withPhotos) {
     review.start();
 }
 
-async function startReview(page, { withPhotos = false } = {}) {
+async function startReview(page, options = {}) {
     await page.route('**/home-art-review-fixture.html', route => route.fulfill({
         contentType: 'text/html',
         body: `<!doctype html>
@@ -88,7 +99,7 @@ async function startReview(page, { withPhotos = false } = {}) {
             <script src="/home-art-store.js"></script>
             <script src="/home-art-canvas.js"></script>
             <script src="/home-art-review.js"></script>
-            <script>(${reviewFixture.toString()})(${JSON.stringify(withPhotos)});</script></body></html>`
+            <script>(${reviewFixture.toString()})(${JSON.stringify(options)});</script></body></html>`
     }));
     await page.goto('/home-art-review-fixture.html');
     await expect(page.getByText('Не удалось загрузить версии.')).toBeVisible();
@@ -182,4 +193,42 @@ test('owner can compare and publish a photo-only homepage background', async ({ 
     expect(await page.evaluate(() => window.homeArtReviewFixture.hasPublishedPhoto())).toBe(true);
     await page.evaluate(() => window.homeArtReviewFixture.stop());
     await expect(page.locator('.home-art-review-photo')).toHaveCount(0);
+});
+
+test('review contains the original drawing proportions on a phone and desktop', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await startReview(page, { withAspect: true });
+    const current = page.locator('#homeArtReviewCurrent canvas');
+    const proposal = page.locator('#homeArtReviewProposed canvas');
+
+    async function expectCenteredArt(canvas, aspect) {
+        await expect.poll(() => canvas.evaluate((element, wanted) => {
+            const { width, height } = element;
+            if (width < 40 || height < 40) return false;
+            const rgba = element.getContext('2d').getImageData(0, 0, width, height).data;
+            let left = width, top = height, right = -1, bottom = -1;
+            for (let y = 0; y < height; y++) {
+                for (let x = 0; x < width; x++) {
+                    if (rgba[(y * width + x) * 4 + 3] < 32) continue;
+                    left = Math.min(left, x);
+                    top = Math.min(top, y);
+                    right = Math.max(right, x);
+                    bottom = Math.max(bottom, y);
+                }
+            }
+            return right >= left && bottom >= top &&
+                Math.abs((right - left + 1) / (bottom - top + 1) - wanted) < .07 &&
+                Math.abs(left + right + 1 - width) < 5 &&
+                Math.abs(top + bottom + 1 - height) < 5;
+        }, aspect)).toBe(true);
+    }
+
+    await expectCenteredArt(current, 2.4);
+    await expectCenteredArt(proposal, .5);
+    await page.setViewportSize({ width: 320, height: 740 });
+    await expectCenteredArt(proposal, .5);
+    await page.getByRole('button', { name: 'На сайте', exact: true }).click();
+    await expectCenteredArt(current, 2.4);
+    await page.getByRole('button', { name: /writer@example/ }).click();
+    await expectCenteredArt(proposal, 16 / 9);
 });

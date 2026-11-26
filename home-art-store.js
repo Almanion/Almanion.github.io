@@ -6,6 +6,7 @@
     const ID = /^[-_A-Za-z0-9]{20}$/;
     const JPEG = /^\/9j\/[A-Za-z0-9+/]*([A-Za-z0-9+/]|[AEIMQUYcgkosw048]=|[AQgw]==)$/;
     const serverTime = () => ({ '.sv': 'timestamp' });
+    const readAspect = value => Number.isFinite(value) && value >= .1 && value <= 10 ? value : null;
 
     function photoUrl(photo) {
         if (typeof photo !== 'string' || photo.length > MAX_PHOTO_LENGTH || photo.length % 4 ||
@@ -52,7 +53,7 @@
             return (await published.once('value')).val();
         }
 
-        async function submit({ drawing, baseRevision, photo }) {
+        async function submit({ drawing, baseRevision, photo, aspect }) {
             const authorUid = actorId();
             if (typeof drawing !== 'string' || drawing.length > MAX_DRAWING_LENGTH) {
                 throw new Error('Не удалось сохранить рисунок. Упростите его и попробуйте ещё раз.');
@@ -62,10 +63,12 @@
             }
             const hasPhoto = photo != null && photo !== '';
             if (hasPhoto && !photoUrl(photo)) throw new Error('Не удалось сохранить фото. Выберите другое изображение.');
+            if (aspect != null && readAspect(aspect) === null) throw new Error('Не удалось сохранить пропорции фона.');
             const proposal = submissions.push();
             await proposal.set({
                 authorUid, authorEmail: actor.email, baseRevision, drawing,
                 ...(hasPhoto ? { photo } : {}),
+                ...(aspect != null ? { aspect } : {}),
                 submittedAt: serverTime(), status: 'pending'
             });
             return proposal.key;
@@ -80,6 +83,10 @@
             if (entry.photo != null) {
                 if (!photoUrl(entry.photo)) throw new Error('Фото в этой версии недоступно.');
                 next.photo = entry.photo;
+            }
+            if (entry.aspect != null) {
+                if (readAspect(entry.aspect) === null) throw new Error('Пропорции фона в этой версии недоступны.');
+                next.aspect = entry.aspect;
             }
             const changes = { published: next };
             Object.entries(update).forEach(([field, value]) => {
@@ -117,5 +124,5 @@
         });
     }
 
-    root.AlmanionHomeArtStore = Object.freeze({ create, photoUrl });
+    root.AlmanionHomeArtStore = Object.freeze({ create, photoUrl, readAspect });
 })(window);

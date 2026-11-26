@@ -14,9 +14,6 @@
     ];
     const statuses = { pending: 'На проверке', returned: 'На доработку', published: 'Опубликован', withdrawn: 'Отозван' };
     const resources = new Map();
-    const changedAssets = new Set([
-        'home-art-store.js', 'home-art-review.js', 'styles/home-art.css', 'styles/home-art-review.css', 'profile-image.js'
-    ]);
     const moduleUrl = document.currentScript.src;
     const photoAction = byId('PhotoAction');
     const photoFile = byId('PhotoFile');
@@ -32,7 +29,7 @@
     function load(file, style = false) {
         if (resources.has(file)) return resources.get(file);
         const element = document.createElement(style ? 'link' : 'script');
-        const version = changedAssets.has(file) ? '20261126-2' : '20261126-1';
+        const version = file === 'profile-image.js' ? '20261126-2' : '20261126-3';
         const source = new URL(file + '?v=' + version, moduleUrl).href;
         if (style) { element.rel = 'stylesheet'; element.href = source; }
         else { element.src = source; element.async = true; }
@@ -66,8 +63,14 @@
         byId('Notice').textContent = message;
     }
 
+    function drawingAspect(record) {
+        if (!record?.drawing || record.drawing === '[]') return null;
+        return window.AlmanionHomeArtStore?.readAspect?.(record.aspect) ?? 16 / 9;
+    }
+
     function sameBackground(first, second) {
-        return (first?.drawing || '[]') === (second?.drawing || '[]') && (first?.photo || '') === (second?.photo || '');
+        return (first?.drawing || '[]') === (second?.drawing || '[]') &&
+            (first?.photo || '') === (second?.photo || '') && drawingAspect(first) === drawingAspect(second);
     }
 
     function renderPhoto(image, photo) {
@@ -117,7 +120,7 @@
         const needsPhoto = initial?.photo && byId('BackgroundPhoto');
         const dependencies = [];
         if (needsCanvas && !publicCanvas) dependencies.push(load('home-art-canvas.js'));
-        if (needsPhoto && !window.AlmanionHomeArtStore) dependencies.push(load('home-art-store.js'));
+        if ((needsPhoto || needsCanvas) && !window.AlmanionHomeArtStore) dependencies.push(load('home-art-store.js'));
         if (needsCanvas || needsPhoto) dependencies.push(load('styles/home-art.css', true));
         if (dependencies.length) {
             try { await Promise.all(dependencies); }
@@ -129,6 +132,7 @@
         }
         const strokes = (publicCanvas && window.AlmanionHomeArtCanvas.decode(current?.drawing)) || [];
         byId('Background').hidden = !strokes.length;
+        publicCanvas?.setAspect(drawingAspect(current));
         publicCanvas?.setStrokes(strokes);
         renderPhoto(byId('BackgroundPhoto'), current?.photo);
     }
@@ -146,13 +150,10 @@
                 if (session && (!session.dirty || sameBackground(session, record))) {
                     const matchesDraft = session.dirty;
                     session.baseRevision = record?.revision || 'none';
-                    session.drawing = record?.drawing || '[]';
-                    session.photo = record?.photo || '';
                     session.dirty = false;
                     showNotice('');
                     if (matchesDraft) storeDraft();
-                    else editor?.setStrokes(window.AlmanionHomeArtCanvas.decode(session.drawing));
-                    updatePhotoControls();
+                    else replaceDraftBackground(record);
                 }
                 drawPublic();
                 updateSubmit();
@@ -165,7 +166,18 @@
     function storeDraft() {
         if (!session) return;
         const { key, drawing, baseRevision, photo } = session;
-        if (!writeCache(key, { drawing, baseRevision, photo })) showNotice('Не удалось сохранить черновик на устройстве.');
+        if (!writeCache(key, { drawing, baseRevision, photo, aspect: drawingAspect(session) })) {
+            showNotice('Не удалось сохранить черновик на устройстве.');
+        }
+    }
+
+    function replaceDraftBackground(record) {
+        session.drawing = record?.drawing || '[]';
+        session.aspect = drawingAspect(record);
+        session.photo = window.AlmanionHomeArtStore.photoUrl(record?.photo) ? record.photo : '';
+        editor.setAspect(session.aspect);
+        editor.setStrokes(window.AlmanionHomeArtCanvas.decode(session.drawing));
+        updatePhotoControls();
     }
 
     function canvasChanged(strokes, state) {
@@ -176,6 +188,7 @@
         const drawing = JSON.stringify(strokes);
         if (session.drawing !== drawing) {
             session.drawing = drawing;
+            session.aspect = editor?.getAspect() ?? null;
             session.dirty = true;
             showNotice('');
             storeDraft();
@@ -282,12 +295,9 @@
             const draft = readCache(key);
             const hasDraft = Boolean(draft && (!publicReady || !sameBackground(draft, published)));
             const source = hasDraft ? draft : published;
-            const drawing = source?.drawing || '[]';
-            const candidatePhoto = source?.photo;
-            const photo = window.AlmanionHomeArtStore.photoUrl(candidatePhoto) ? candidatePhoto : '';
             const baseRevision = (hasDraft ? draft.baseRevision : published?.revision) || 'none';
             const client = window.AlmanionHomeArtStore.create(firebase.database(), user);
-            session = { key, uid: user.uid, owner: user.uid === ownerUid, baseRevision, drawing, photo, client, own: [], dirty: hasDraft };
+            session = { key, uid: user.uid, owner: user.uid === ownerUid, baseRevision, client, own: [], dirty: hasDraft };
             byId('ReviewButton').hidden = !session.owner;
             dialog.showModal();
             editor = window.AlmanionHomeArtCanvas.create(byId('Canvas'), {
@@ -295,8 +305,7 @@
                 onChange: canvasChanged,
                 onLimit: () => showNotice('На холсте много штрихов. Освободите место отменой или очисткой.')
             });
-            editor.setStrokes(window.AlmanionHomeArtCanvas.decode(drawing));
-            updatePhotoControls();
+            replaceDraftBackground(source);
             applyBrush();
             showNotice(publicReady ? '' : 'Подключаем общий фон…');
             const current = session;
@@ -343,7 +352,9 @@
             if (session === current) showNotice('Отправка продолжится при подключении.');
         }, 8000);
         try {
-            await current.client.submit({ drawing: current.drawing, photo: current.photo, baseRevision: current.baseRevision });
+            await current.client.submit({
+                drawing: current.drawing, photo: current.photo, aspect: drawingAspect(current), baseRevision: current.baseRevision
+            });
             if (session === current) showNotice('Фон отправлен на проверку.');
         } catch (_) {
             if (session === current) showNotice('Не удалось отправить фон. Повторите попытку.');
@@ -359,11 +370,7 @@
     function rebase(usePublished) {
         if (!session || !publicReady) return;
         session.baseRevision = published?.revision || 'none';
-        if (usePublished) {
-            session.photo = published?.photo || '';
-            editor.setStrokes(window.AlmanionHomeArtCanvas.decode(published?.drawing));
-            updatePhotoControls();
-        }
+        if (usePublished) replaceDraftBackground(published);
         session.dirty = !usePublished;
         showNotice('');
         storeDraft();

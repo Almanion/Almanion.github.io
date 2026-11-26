@@ -16,7 +16,7 @@ const drawing = JSON.stringify([{ color: '#aabbff', size: 5, erase: false, point
 const projectRoot = path.join(__dirname, '..');
 const window = {};
 vm.runInNewContext(fs.readFileSync(path.join(projectRoot, 'home-art-store.js'), 'utf8'), { window });
-const { create: createStore, photoUrl } = window.AlmanionHomeArtStore;
+const { create: createStore, photoUrl, readAspect } = window.AlmanionHomeArtStore;
 const photo = '/9j/2Q==';
 const altPhoto = '/9j/AA==';
 const cappedPhoto = '/9j/' + 'A'.repeat(191996);
@@ -73,6 +73,10 @@ function role(uid, extra = {}) {
         for (const invalid of ['/9j/AAa=', '/9j/AB==', '/9j/AAA\n', 'data:image/jpeg;base64,' + photo, oversizedPhoto]) {
             assert.equal(photoUrl(invalid), '');
         }
+        for (const aspect of [.1, 16 / 9, 10]) assert.equal(readAspect(aspect), aspect);
+        for (const invalid of [null, undefined, NaN, Infinity, .09, 10.01, '1.6', false]) {
+            assert.equal(readAspect(invalid), null);
+        }
 
         const draft = editor.ref('homeArt/submissions').push();
         const draftPath = 'homeArt/submissions/' + draft.key;
@@ -105,6 +109,7 @@ function role(uid, extra = {}) {
         await assertFails(owner.ref('homeArt/published').set({ revision: id, drawing, publishedAt: serverTime() }));
         await assertFails(ownerStore.approve({ ...entry, drawing: '[]' }));
         await assertFails(ownerStore.approve({ ...entry, photo }));
+        await assertFails(ownerStore.approve({ ...entry, aspect: 1 }));
 
         await assertSucceeds(ownerStore.approve(entry));
         await assertSucceeds(ownerStore.approve(entry));
@@ -139,39 +144,54 @@ function role(uid, extra = {}) {
         for (const invalid of ['/9j/AB==', '/9j/AAA\n', 'data:image/jpeg;base64,' + photo, oversizedPhoto]) {
             await assertFails(draft.set(input(EDITOR, { baseRevision: clearId, photo: invalid })));
         }
+        for (const invalid of [.09, 10.01, '1.6', false]) {
+            await assertFails(draft.set(input(EDITOR, { baseRevision: clearId, aspect: invalid })));
+        }
         await assert.rejects(editorStore.submit({ drawing: '[]', baseRevision: clearId, photo: oversizedPhoto }), /Не удалось сохранить фото/);
+        await assert.rejects(editorStore.submit({ drawing: '[]', baseRevision: clearId, aspect: '1.6' }), /Не удалось сохранить пропорции/);
         await assertFails(viewer.ref(draftPath).set(input(viewerId, { baseRevision: clearId, photo })));
-        const photoId = await assertSucceeds(editorStore.submit({ drawing: '[]', baseRevision: clearId, photo: cappedPhoto }));
+        const photoId = await assertSucceeds(editorStore.submit({ drawing: '[]', baseRevision: clearId, photo: cappedPhoto, aspect: .1 }));
         const photoPath = 'homeArt/submissions/' + photoId;
         const photoEntry = { id: photoId, ...(await owner.ref(photoPath).once('value')).val() };
         assert.ok(photoEntry.photo === cappedPhoto);
+        assert.equal(photoEntry.aspect, .1);
         await assertFails(guest.ref(photoPath + '/photo').once('value'));
         await assertFails(other.ref(photoPath + '/photo').once('value'));
         await assertFails(editor.ref(photoPath).update({ ...decision(EDITOR, 'withdrawn'), photo: null }));
         await assertFails(owner.ref(photoPath).update({ ...decision(OWNER, 'returned', 'Выберите другой фон.'), photo: altPhoto }));
+        await assertFails(editor.ref(photoPath).update({ ...decision(EDITOR, 'withdrawn'), aspect: null }));
+        await assertFails(owner.ref(photoPath).update({ ...decision(OWNER, 'returned', 'Проверьте формат.'), aspect: 10 }));
         await assertFails(editorStore.approve(photoEntry));
         await assertFails(ownerStore.approve({ ...photoEntry, photo: altPhoto }));
         await assertFails(ownerStore.approve({ ...photoEntry, photo: undefined }));
+        await assertFails(ownerStore.approve({ ...photoEntry, aspect: 1 }));
+        await assertFails(ownerStore.approve({ ...photoEntry, aspect: undefined }));
         assert.equal((await publicStore.readPublished()).revision, clearId);
         assert.equal((await owner.ref(photoPath + '/status').once('value')).val(), 'pending');
 
         await assertSucceeds(ownerStore.approve(photoEntry));
-        assert.ok((await publicStore.readPublished()).photo === cappedPhoto);
+        const photoPublished = await publicStore.readPublished();
+        assert.ok(photoPublished.photo === cappedPhoto);
+        assert.equal(photoPublished.aspect, .1);
         assert.equal((await owner.ref(photoPath + '/status').once('value')).val(), 'published');
-        const removePhotoId = await assertSucceeds(ownerStore.submit({ drawing, baseRevision: photoId, photo: null }));
+        const removePhotoId = await assertSucceeds(ownerStore.submit({ drawing, baseRevision: photoId, photo: null, aspect: 10 }));
         const removePhoto = { id: removePhotoId, ...(await owner.ref('homeArt/submissions/' + removePhotoId).once('value')).val() };
         await assertSucceeds(ownerStore.approve(removePhoto));
         const latest = await publicStore.readPublished();
         assert.equal(latest.revision, removePhotoId);
         assert.equal(latest.drawing, drawing);
+        assert.equal(latest.aspect, 10);
         assert.equal(Object.hasOwn(latest, 'photo'), false);
+        const legacyId = await assertSucceeds(ownerStore.submit({ drawing, baseRevision: removePhotoId, aspect: null }));
+        await assertSucceeds(ownerStore.approve({ id: legacyId, drawing, baseRevision: removePhotoId }));
+        assert.equal(Object.hasOwn(await publicStore.readPublished(), 'aspect'), false);
 
         await assertSucceeds(owner.ref('adminRoles/' + EDITOR + '/contentEditor').set(false));
-        await assertFails(editorStore.submit({ drawing, baseRevision: removePhotoId, photo }));
+        await assertFails(editorStore.submit({ drawing, baseRevision: legacyId, photo }));
     } finally {
         await environment.cleanup();
     }
-    console.log('Home art rules passed author privacy, immutable submissions, photo validation, and atomic owner approval.');
+    console.log('Home art rules passed author privacy, immutable submissions, photo and aspect validation, and atomic owner approval.');
 })().catch(error => {
     console.error(error);
     process.exitCode = 1;

@@ -6,8 +6,18 @@
     const maxStrokes = 250;
     const maxHistory = 40;
     const maxDrawingLength = 120000;
+    const minAspect = .1;
+    const maxAspect = 10;
     const defaultColor = '#838cf4';
     const colorPattern = /^#[0-9a-f]{6}$/i;
+    const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
+
+    function fitFrame(width, height, aspect) {
+        if (aspect === null) return { left: 0, top: 0, width, height };
+        const frameWidth = Math.min(width, height * aspect);
+        const frameHeight = frameWidth / aspect;
+        return { left: (width - frameWidth) / 2, top: (height - frameHeight) / 2, width: frameWidth, height: frameHeight };
+    }
 
     function validateStrokes(raw) {
         if (!Array.isArray(raw) || raw.length > maxStrokes) return null;
@@ -55,41 +65,45 @@
         let frame = 0;
         let needsRedraw = true;
         let destroyed = false;
-        let width = 0;
-        let height = 0;
+        let aspect = null;
+        let drawingFrame = fitFrame(0, 0, aspect);
 
         function paint(stroke, from = 0) {
             const points = stroke.points;
             if (from >= points.length) return;
+            const { width, height, left, top } = drawingFrame;
             const scaleX = width / coordinateMax;
             const scaleY = height / coordinateMax;
             const brushWidth = Math.max(1, Math.min(width, height) * stroke.size / 600);
+            context.save();
+            context.beginPath();
+            context.rect(left, top, width, height);
+            context.clip();
             context.globalCompositeOperation = stroke.erase ? 'destination-out' : 'source-over';
             context.strokeStyle = context.fillStyle = stroke.color;
             context.lineWidth = stroke.erase ? brushWidth * 2.5 : brushWidth;
             context.lineCap = context.lineJoin = 'round';
-            if (points.length === 2) {
-                context.beginPath();
-                context.arc(points[0] * scaleX, points[1] * scaleY, context.lineWidth / 2, 0, 2 * Math.PI);
-                context.fill();
-                return;
-            }
             context.beginPath();
-            const start = Math.max(0, from - 2);
-            context.moveTo(points[start] * scaleX, points[start + 1] * scaleY);
-            for (let index = start + 2; index < points.length; index += 2) {
-                context.lineTo(points[index] * scaleX, points[index + 1] * scaleY);
+            if (points.length === 2) {
+                context.arc(left + points[0] * scaleX, top + points[1] * scaleY, context.lineWidth / 2, 0, 2 * Math.PI);
+                context.fill();
+            } else {
+                const start = Math.max(0, from - 2);
+                context.moveTo(left + points[start] * scaleX, top + points[start + 1] * scaleY);
+                for (let index = start + 2; index < points.length; index += 2) {
+                    context.lineTo(left + points[index] * scaleX, top + points[index + 1] * scaleY);
+                }
+                context.stroke();
             }
-            context.stroke();
+            context.restore();
         }
 
         function render() {
             frame = 0;
             if (needsRedraw) {
-                const rect = canvas.getBoundingClientRect();
-                width = rect.width;
-                height = rect.height;
+                const { width, height } = canvas.getBoundingClientRect();
                 if (!width || !height) return;
+                drawingFrame = fitFrame(width, height, aspect);
                 const ratio = Math.min(window.devicePixelRatio || 1, 2, Math.sqrt(4000000 / (width * height)));
                 const pixelWidth = Math.max(1, Math.round(width * ratio));
                 const pixelHeight = Math.max(1, Math.round(height * ratio));
@@ -103,7 +117,7 @@
                 if (active) active.painted = 0;
                 needsRedraw = false;
             }
-            if (active && width && height) {
+            if (active && drawingFrame.width && drawingFrame.height) {
                 paint(active.stroke, active.painted);
                 active.painted = active.stroke.points.length;
             }
@@ -141,7 +155,7 @@
             const { stroke, limited } = active;
             if (keep && stroke.points.length) {
                 // Finish the current path before replacing it with history.
-                if (!needsRedraw && width && height) paint(stroke, active.painted);
+                if (!needsRedraw && drawingFrame.width && drawingFrame.height) paint(stroke, active.painted);
                 active = null;
                 commit([...strokes, stroke], needsRedraw);
             } else {
@@ -155,6 +169,14 @@
             finish(false);
             past.length = future.length = 0;
             setDrawing(sanitizeStrokes(raw));
+        }
+
+        function setAspect(value = null) {
+            if (value !== null && (!Number.isFinite(value) || value < minAspect || value > maxAspect)) return;
+            if (aspect === value) return;
+            finish(false);
+            aspect = value;
+            queueRender(true);
         }
 
         function undo() {
@@ -190,16 +212,15 @@
             return brush.erase || (event.pointerType === 'pen' && Boolean(event.buttons & (2 | 32)));
         }
 
-        function addSamples(events) {
-            const rect = canvas.getBoundingClientRect();
-            if (!rect.width || !rect.height) return;
+        function addSamples(events, rect = canvas.getBoundingClientRect(), fitted = fitFrame(rect.width, rect.height, aspect)) {
+            if (!fitted.width || !fitted.height) return;
             const points = active.stroke.points;
             const before = points.length;
-            const unitX = coordinateMax / rect.width;
-            const unitY = coordinateMax / rect.height;
+            const unitX = coordinateMax / fitted.width;
+            const unitY = coordinateMax / fitted.height;
             for (const event of events) {
-                const x = Math.min(coordinateMax, Math.max(0, Math.round((event.clientX - rect.left) * unitX)));
-                const y = Math.min(coordinateMax, Math.max(0, Math.round((event.clientY - rect.top) * unitY)));
+                const x = clamp(Math.round((event.clientX - rect.left - fitted.left) * unitX), 0, coordinateMax);
+                const y = clamp(Math.round((event.clientY - rect.top - fitted.top) * unitY), 0, coordinateMax);
                 if (!Number.isFinite(x) || !Number.isFinite(y)) continue;
                 const last = points.length - 2;
                 if (last >= 0 && Math.hypot((x - points[last]) / unitX, (y - points[last + 1]) / unitY) < 1.2) continue;
@@ -230,10 +251,18 @@
             }
             const erase = isErasing(event);
             if (erase && !strokes.length) return;
+            const rect = canvas.getBoundingClientRect();
+            if (!rect.width || !rect.height) return;
+            const nextAspect = aspect ?? clamp(rect.width / rect.height, minAspect, maxAspect);
+            const fitted = fitFrame(rect.width, rect.height, nextAspect);
+            const x = event.clientX - rect.left - fitted.left;
+            const y = event.clientY - rect.top - fitted.top;
+            if (x < 0 || x > fitted.width || y < 0 || y > fitted.height) return;
+            setAspect(nextAspect);
             const stroke = { ...brush, erase, points: [] };
             active = { id, type, stroke, painted: 0, limited: false };
             if (capture && type !== 'touch') canvas.setPointerCapture(id);
-            addSamples([event]);
+            addSamples([event], rect, fitted);
         }
 
         function move(event) {
@@ -292,7 +321,7 @@
             canvas.addEventListener('touchstart', event => event.preventDefault(), { ...options, passive: false });
         }
         queueRender(true);
-        return { getStrokes, getState, setStrokes, undo, redo, clear, setBrush, destroy };
+        return { getStrokes, getState, setStrokes, setAspect, getAspect: () => aspect, undo, redo, clear, setBrush, destroy };
     }
 
     window.AlmanionHomeArtCanvas = { create, decode, sanitizeStrokes };

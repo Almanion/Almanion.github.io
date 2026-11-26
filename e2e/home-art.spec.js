@@ -77,7 +77,7 @@ async function prepareHomepage(page, { actor = 'editor', existing = false } = {}
             submissions: () => reads,
             publish(row) {
                 data['homeArt/published'] = {
-                    revision: 'published00000000000', drawing: row.drawing, photo: row.photo, publishedAt: Date.now()
+                    revision: 'published00000000000', drawing: row.drawing, photo: row.photo, aspect: row.aspect, publishedAt: Date.now()
                 };
                 for (const item of listeners) if (item.path === 'homeArt/published') item.notify();
             },
@@ -173,6 +173,8 @@ test('phone editor keeps a photo beneath the drawing and sends the same composit
     await page.mouse.up();
     await dialog.getByRole('button', { name: 'Предпросмотр', exact: true }).click();
     await expect(publicPhoto).toBeVisible();
+    await expect(publicPhoto).toHaveCSS('object-fit', 'cover');
+    await expect(publicPhoto).toHaveCSS('object-position', '50% 50%');
     await expect(page.locator('#homeArtBackground')).toBeVisible();
     await page.getByRole('button', { name: 'К холсту' }).click();
     await expect(publicPhoto).toBeHidden();
@@ -186,6 +188,7 @@ test('phone editor keeps a photo beneath the drawing and sends the same composit
     const entry = await page.evaluate(() => window.artFixture.submissions()[0]);
     expect('data:image/jpeg;base64,' + entry.photo).toBe(src);
     expect(JSON.parse(entry.drawing)).toHaveLength(1);
+    expect(entry.aspect).toBeCloseTo(320 / 740, 4);
 
     await dialog.getByRole('button', { name: 'Фото фона', exact: true }).click();
     await dialog.getByRole('button', { name: 'Убрать фото', exact: true }).click();
@@ -196,6 +199,40 @@ test('phone editor keeps a photo beneath the drawing and sends the same composit
     await expect(dialog).toBeHidden();
     await expect(publicPhoto).toHaveAttribute('src', src);
     await expect(publicPhoto).toBeVisible();
+});
+
+test('homepage drawings keep their proportions from portrait to a wide display', async ({ page }) => {
+    await page.setViewportSize({ width: 320, height: 740 });
+    await prepareHomepage(page);
+    await page.getByRole('button', { name: 'Фон главной' }).click();
+    const dialog = page.getByRole('dialog', { name: 'Фон главной' });
+    await expect(dialog).toBeVisible();
+    await page.mouse.move(104, 250);
+    await page.mouse.down();
+    for (const [x, y] of [[194, 250], [194, 340], [104, 340], [104, 250]]) {
+        await page.mouse.move(x, y, { steps: 6 });
+    }
+    await page.mouse.up();
+    await dialog.getByRole('button', { name: 'Предпросмотр', exact: true }).click();
+    const canvas = page.locator('#homeArtBackground');
+    await expect(canvas).toBeVisible();
+    await page.setViewportSize({ width: 1060, height: 690 });
+    await expect.poll(() => canvas.evaluate(scene => {
+        if (scene.width / scene.height < 1.5) return false;
+        const { width, height } = scene;
+        const pixels = scene.getContext('2d').getImageData(0, 0, width, height).data;
+        let left = width, top = height, right = -1, bottom = -1;
+        for (let offset = 3; offset < pixels.length; offset += 4) {
+            if (pixels[offset] < 32) continue;
+            const index = (offset - 3) / 4;
+            const x = index % width, y = Math.floor(index / width);
+            left = Math.min(left, x);
+            right = Math.max(right, x);
+            top = Math.min(top, y);
+            bottom = Math.max(bottom, y);
+        }
+        return right > left && bottom > top && Math.abs((right - left) / (bottom - top) - 1) < .037;
+    })).toBe(true);
 });
 
 test('visitors see the approved art and only the owner receives review notices', async ({ page }) => {

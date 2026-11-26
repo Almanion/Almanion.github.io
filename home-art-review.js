@@ -4,6 +4,7 @@
     const dates = new Intl.DateTimeFormat('ru-RU', {
         dateStyle: 'medium', timeStyle: 'short', timeZone: 'Europe/Moscow'
     });
+    const legacyAspect = 16 / 9;
 
     function element(tag, className, text) {
         const node = win.document.createElement(tag);
@@ -170,6 +171,11 @@
             view.scene.prepend(image);
         }
 
+        function paintDrawing(engine, strokes, aspect) {
+            engine?.setAspect?.(win.AlmanionHomeArtStore?.readAspect?.(aspect) ?? legacyAspect);
+            engine?.setStrokes(strokes ?? []);
+        }
+
         function paintDetail() {
             const entry = currentEntry();
             detail.hidden = !entry;
@@ -178,8 +184,8 @@
             if (!entry) return;
             const currentStrokes = published ? canvasApi.decode(published.drawing) : [];
             const suggestedStrokes = canvasApi.decode(entry.drawing);
-            engines[0]?.setStrokes(currentStrokes ?? []);
-            engines[1]?.setStrokes(suggestedStrokes ?? []);
+            paintDrawing(engines[0], currentStrokes, published?.aspect);
+            paintDrawing(engines[1], suggestedStrokes, entry.aspect);
             const date = Number.isFinite(entry.submittedAt) ? dates.format(entry.submittedAt) : '';
             title.textContent = entry.authorEmail || 'Редактор';
             metadata.textContent = date;
