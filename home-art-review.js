@@ -21,11 +21,13 @@
     function createPreview(label, id) {
         const figure = element('figure', 'home-art-review-figure');
         figure.id = id;
+        const scene = element('div', 'home-art-review-scene');
         const canvas = element('canvas', 'home-art-review-canvas');
         canvas.setAttribute('role', 'img');
         canvas.setAttribute('aria-label', label);
-        figure.append(canvas, element('figcaption', '', label));
-        return { figure, canvas };
+        scene.append(canvas);
+        figure.append(scene, element('figcaption', '', label));
+        return { figure, scene, canvas, photo: null, photoValue: null, photoState: 'none' };
     }
 
     function create({ host, client, onPublished, onPendingCount }) {
@@ -143,9 +145,36 @@
             }
         }
 
+        function paintPhoto(view, value) {
+            const photo = value ?? null;
+            if (view.photoValue === photo) return;
+            view.photoValue = photo;
+            view.photo?.remove();
+            view.photo = null;
+            const source = win.AlmanionHomeArtStore?.photoUrl?.(photo);
+            view.photoState = photo ? (source ? 'loading' : 'failed') : 'none';
+            if (!source) return;
+            const image = element('img', 'home-art-review-photo');
+            image.alt = '';
+            image.decoding = 'async';
+            view.photo = image;
+            for (const [event, state] of [['load', 'ready'], ['error', 'failed']]) {
+                image.addEventListener(event, () => {
+                    if (view.photo !== image || !active) return;
+                    view.photoState = state;
+                    image.hidden = state === 'failed';
+                    paintDetail();
+                }, { once: true });
+            }
+            image.src = source;
+            view.scene.prepend(image);
+        }
+
         function paintDetail() {
             const entry = currentEntry();
             detail.hidden = !entry;
+            paintPhoto(before, entry ? published?.photo : null);
+            paintPhoto(after, entry?.photo);
             if (!entry) return;
             const currentStrokes = published ? canvasApi.decode(published.drawing) : [];
             const suggestedStrokes = canvasApi.decode(entry.drawing);
@@ -159,10 +188,14 @@
             else if (published === undefined) notice.textContent = 'Загружаем текущий фон…';
             else if (stale(entry)) notice.textContent = 'Фон уже обновился. Верните рисунок редактору для сверки.';
             else if (!suggestedStrokes) notice.textContent = 'Не удалось прочитать предложенный рисунок.';
+            else if (after.photoState === 'loading') notice.textContent = 'Загружаем предложенное фото…';
+            else if (after.photoState === 'failed') notice.textContent = 'Не удалось прочитать предложенное фото.';
+            else if (before.photoState === 'failed') notice.textContent = 'Не удалось прочитать фото текущего фона.';
             else if (!currentStrokes) notice.textContent = 'Не удалось прочитать текущий рисунок.';
             else if (engines.some(engine => !engine)) notice.textContent = 'Предпросмотр недоступен в этом браузере.';
             approve.disabled = busy || published === undefined || publishedError || stale(entry)
-                || !suggestedStrokes || engines.some(engine => !engine);
+                || !suggestedStrokes || after.photoState === 'loading' || after.photoState === 'failed'
+                || engines.some(engine => !engine);
             returnButton.disabled = busy;
             sendBack.disabled = busy;
             cancel.disabled = busy;
@@ -234,6 +267,7 @@
             watchError = publishedError = busy = false;
             list.replaceChildren();
             detail.hidden = true;
+            for (const view of [before, after]) paintPhoto(view, null);
             closeForm();
         }
 

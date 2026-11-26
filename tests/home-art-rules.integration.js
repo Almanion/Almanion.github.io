@@ -16,7 +16,11 @@ const drawing = JSON.stringify([{ color: '#aabbff', size: 5, erase: false, point
 const projectRoot = path.join(__dirname, '..');
 const window = {};
 vm.runInNewContext(fs.readFileSync(path.join(projectRoot, 'home-art-store.js'), 'utf8'), { window });
-const createStore = window.AlmanionHomeArtStore.create;
+const { create: createStore, photoUrl } = window.AlmanionHomeArtStore;
+const photo = '/9j/2Q==';
+const altPhoto = '/9j/AA==';
+const cappedPhoto = '/9j/' + 'A'.repeat(191996);
+const oversizedPhoto = '/9j/' + 'A'.repeat(192000);
 
 function input(authorUid, extra = {}) {
     return {
@@ -64,6 +68,11 @@ function role(uid, extra = {}) {
         await assertSucceeds(owner.ref('adminRoles/' + viewerId).set(role(viewerId, { siteAdmin: true })));
         assert.equal(await assertSucceeds(publicStore.readPublished()), null);
         await assertFails(guest.ref('homeArt').once('value'));
+        assert.equal(photoUrl(photo), 'data:image/jpeg;base64,' + photo);
+        assert.ok(photoUrl(cappedPhoto));
+        for (const invalid of ['/9j/AAa=', '/9j/AB==', '/9j/AAA\n', 'data:image/jpeg;base64,' + photo, oversizedPhoto]) {
+            assert.equal(photoUrl(invalid), '');
+        }
 
         const draft = editor.ref('homeArt/submissions').push();
         const draftPath = 'homeArt/submissions/' + draft.key;
@@ -95,6 +104,7 @@ function role(uid, extra = {}) {
         await assertFails(owner.ref(entryPath).update(decision(OWNER, 'published')));
         await assertFails(owner.ref('homeArt/published').set({ revision: id, drawing, publishedAt: serverTime() }));
         await assertFails(ownerStore.approve({ ...entry, drawing: '[]' }));
+        await assertFails(ownerStore.approve({ ...entry, photo }));
 
         await assertSucceeds(ownerStore.approve(entry));
         await assertSucceeds(ownerStore.approve(entry));
@@ -126,12 +136,42 @@ function role(uid, extra = {}) {
         assert.equal((await owner.ref('homeArt/submissions').orderByChild('status').equalTo('pending').once('value')).exists(), false);
         assert.equal((await editor.ref('homeArt/submissions').orderByChild('authorUid').equalTo(EDITOR).once('value')).numChildren(), 3);
 
+        for (const invalid of ['/9j/AB==', '/9j/AAA\n', 'data:image/jpeg;base64,' + photo, oversizedPhoto]) {
+            await assertFails(draft.set(input(EDITOR, { baseRevision: clearId, photo: invalid })));
+        }
+        await assert.rejects(editorStore.submit({ drawing: '[]', baseRevision: clearId, photo: oversizedPhoto }), /Не удалось сохранить фото/);
+        await assertFails(viewer.ref(draftPath).set(input(viewerId, { baseRevision: clearId, photo })));
+        const photoId = await assertSucceeds(editorStore.submit({ drawing: '[]', baseRevision: clearId, photo: cappedPhoto }));
+        const photoPath = 'homeArt/submissions/' + photoId;
+        const photoEntry = { id: photoId, ...(await owner.ref(photoPath).once('value')).val() };
+        assert.ok(photoEntry.photo === cappedPhoto);
+        await assertFails(guest.ref(photoPath + '/photo').once('value'));
+        await assertFails(other.ref(photoPath + '/photo').once('value'));
+        await assertFails(editor.ref(photoPath).update({ ...decision(EDITOR, 'withdrawn'), photo: null }));
+        await assertFails(owner.ref(photoPath).update({ ...decision(OWNER, 'returned', 'Выберите другой фон.'), photo: altPhoto }));
+        await assertFails(editorStore.approve(photoEntry));
+        await assertFails(ownerStore.approve({ ...photoEntry, photo: altPhoto }));
+        await assertFails(ownerStore.approve({ ...photoEntry, photo: undefined }));
+        assert.equal((await publicStore.readPublished()).revision, clearId);
+        assert.equal((await owner.ref(photoPath + '/status').once('value')).val(), 'pending');
+
+        await assertSucceeds(ownerStore.approve(photoEntry));
+        assert.ok((await publicStore.readPublished()).photo === cappedPhoto);
+        assert.equal((await owner.ref(photoPath + '/status').once('value')).val(), 'published');
+        const removePhotoId = await assertSucceeds(ownerStore.submit({ drawing, baseRevision: photoId, photo: null }));
+        const removePhoto = { id: removePhotoId, ...(await owner.ref('homeArt/submissions/' + removePhotoId).once('value')).val() };
+        await assertSucceeds(ownerStore.approve(removePhoto));
+        const latest = await publicStore.readPublished();
+        assert.equal(latest.revision, removePhotoId);
+        assert.equal(latest.drawing, drawing);
+        assert.equal(Object.hasOwn(latest, 'photo'), false);
+
         await assertSucceeds(owner.ref('adminRoles/' + EDITOR + '/contentEditor').set(false));
-        await assertFails(editorStore.submit({ drawing, baseRevision: clearId }));
+        await assertFails(editorStore.submit({ drawing, baseRevision: removePhotoId, photo }));
     } finally {
         await environment.cleanup();
     }
-    console.log('Home art rules passed author privacy, immutable submissions, and atomic owner approval.');
+    console.log('Home art rules passed author privacy, immutable submissions, photo validation, and atomic owner approval.');
 })().catch(error => {
     console.error(error);
     process.exitCode = 1;

@@ -2,19 +2,39 @@
 
 const { test, expect } = require('@playwright/test');
 
-function reviewFixture() {
+function reviewFixture(withPhotos) {
     const now = Date.now();
     const stroke = { color: '#5651e6', size: 5, erase: false, points: [1000, 1500, 8000, 7600] };
     const drawing = JSON.stringify([stroke]);
+    function photo(color) {
+        const canvas = document.createElement('canvas');
+        canvas.width = 80;
+        canvas.height = 48;
+        const context = canvas.getContext('2d');
+        context.fillStyle = color;
+        context.fillRect(0, 0, 80, 48);
+        context.fillStyle = '#f9d89c';
+        context.fillRect(25, 15, 34, 19);
+        return canvas.toDataURL('image/jpeg', .8).split(',')[1];
+    }
+    const beforePhoto = withPhotos ? photo('#237b70') : '';
+    const afterPhoto = withPhotos ? photo('#545bc0') : '';
     const entries = [
-        { id: 'first', authorEmail: 'editor@example.com', baseRevision: 'original', submittedAt: now, drawing },
+        {
+            id: 'first', authorEmail: 'editor@example.com', baseRevision: 'original', submittedAt: now,
+            drawing: withPhotos ? '[]' : drawing, ...(withPhotos ? { photo: afterPhoto } : {})
+        },
         { id: 'second', authorEmail: 'writer@example.com', baseRevision: 'older', submittedAt: now - 2000, drawing }
     ];
+    if (withPhotos) entries.push({
+        id: 'broken', authorEmail: 'broken@example.com', baseRevision: 'original',
+        submittedAt: now - 4000, drawing: '[]', photo: 'not-a-jpeg'
+    });
     const pendingListeners = new Set();
     const publishedListeners = new Set();
     const calls = [];
     const counts = [];
-    let published = { revision: 'original', drawing, publishedAt: now };
+    let published = { revision: 'original', drawing, publishedAt: now, ...(withPhotos ? { photo: beforePhoto } : {}) };
     let denyPending = true;
     const notifyPending = () => pendingListeners.forEach(({ callback }) => callback([...entries]));
     const notifyPublished = () => publishedListeners.forEach(callback => callback(published));
@@ -38,7 +58,7 @@ function reviewFixture() {
         async readPublished() { return published; },
         async approve(entry) {
             calls.push({ id: entry.id, status: 'published' });
-            published = { revision: entry.id, drawing: entry.drawing, publishedAt: Date.now() };
+            published = { revision: entry.id, drawing: entry.drawing, publishedAt: Date.now(), ...(entry.photo ? { photo: entry.photo } : {}) };
             remove(entry.id);
             notifyPublished();
         },
@@ -53,20 +73,22 @@ function reviewFixture() {
         resume: () => { denyPending = false; },
         reads: () => ({ calls, counts }),
         stop: () => review.stop(),
+        hasPublishedPhoto: () => !!afterPhoto && published.photo === afterPhoto && published.drawing === '[]',
         subscriptions: () => pendingListeners.size + publishedListeners.size
     };
     review.start();
 }
 
-async function startReview(page) {
+async function startReview(page, { withPhotos = false } = {}) {
     await page.route('**/home-art-review-fixture.html', route => route.fulfill({
         contentType: 'text/html',
         body: `<!doctype html>
             <html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
             <link rel="stylesheet" href="/styles/home-art-review.css"></head><body><main></main>
+            <script src="/home-art-store.js"></script>
             <script src="/home-art-canvas.js"></script>
             <script src="/home-art-review.js"></script>
-            <script>(${reviewFixture.toString()})();</script></body></html>`
+            <script>(${reviewFixture.toString()})(${JSON.stringify(withPhotos)});</script></body></html>`
     }));
     await page.goto('/home-art-review-fixture.html');
     await expect(page.getByText('Не удалось загрузить версии.')).toBeVisible();
@@ -123,4 +145,41 @@ test('owner can compare both previews at once and closing the review detaches li
     await page.evaluate(() => window.homeArtReviewFixture.stop());
     expect(await page.evaluate(() => window.homeArtReviewFixture.subscriptions())).toBe(0);
     await expect(page.getByRole('button', { name: 'Опубликовать фон' })).toBeHidden();
+});
+
+test('owner can compare and publish a photo-only homepage background', async ({ page }) => {
+    await page.setViewportSize({ width: 320, height: 740 });
+    await startReview(page, { withPhotos: true });
+    const current = page.locator('#homeArtReviewCurrent');
+    const proposal = page.locator('#homeArtReviewProposed');
+    const photo = proposal.locator('.home-art-review-photo');
+    const publish = page.getByRole('button', { name: 'Опубликовать фон' });
+
+    await expect(photo).toBeVisible();
+    await expect(photo).toHaveAttribute('src', /^data:image\/jpeg;base64,/);
+    await expect(photo).toHaveCSS('object-fit', 'cover');
+    await expect(publish).toBeEnabled();
+    expect(await photo.evaluate(image => image.naturalWidth > 0 && image.nextElementSibling.tagName === 'CANVAS')).toBe(true);
+    await expect.poll(() => proposal.locator('canvas').evaluate(canvas => {
+        const context = canvas.getContext('2d');
+        return canvas.width > 0 && canvas.height > 0 &&
+            !context.getImageData(0, 0, canvas.width, canvas.height).data.some(Boolean);
+    })).toBe(true);
+
+    await page.getByRole('button', { name: 'На сайте', exact: true }).click();
+    const currentPhoto = current.locator('.home-art-review-photo');
+    await expect(currentPhoto).toBeVisible();
+    expect(await currentPhoto.getAttribute('src')).not.toBe(await photo.getAttribute('src'));
+
+    await page.getByRole('button', { name: /broken@example/ }).click();
+    await expect(page.getByText('Не удалось прочитать предложенное фото.')).toBeVisible();
+    await expect(publish).toBeDisabled();
+    await expect(photo).toHaveCount(0);
+    await page.getByRole('button', { name: /editor@example/ }).click();
+    await expect(publish).toBeEnabled();
+    await publish.click();
+    await expect(page.getByText('Фон опубликован.')).toBeVisible();
+    expect(await page.evaluate(() => window.homeArtReviewFixture.hasPublishedPhoto())).toBe(true);
+    await page.evaluate(() => window.homeArtReviewFixture.stop());
+    await expect(page.locator('.home-art-review-photo')).toHaveCount(0);
 });

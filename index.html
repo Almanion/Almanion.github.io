@@ -23,7 +23,7 @@
     <link rel="stylesheet" href="styles/typography.css?v=20261002-1">
     <link rel="stylesheet" href="styles/home-motion.css?v=20261121-1">
     <link rel="stylesheet" href="styles/home-dashboard.css?v=20261126-3">
-    <script defer src="home-art.js?v=20261126-1"></script>
+    <script defer src="home-art.js?v=20261126-2"></script>
 </head>
 <body class="home-page">
     <script>
@@ -415,8 +415,10 @@
             </p>
         </footer>
     </main>
+    <img class="home-art-background home-art-background-photo" id="homeArtBackgroundPhoto" alt="" decoding="async" draggable="false" hidden>
     <canvas class="home-art-background" id="homeArtBackground" aria-hidden="true" hidden></canvas>
     <dialog class="home-art-dialog" id="homeArtDialog" aria-labelledby="homeArtTitle">
+        <img class="home-art-canvas-photo" id="homeArtCanvasPhoto" alt="" decoding="async" draggable="false" hidden>
         <canvas class="home-art-canvas" id="homeArtCanvas" aria-label="Холст для рисования"></canvas>
         <header class="home-art-header" id="homeArtHeader">
             <h2 id="homeArtTitle" tabindex="-1">Фон главной</h2>
@@ -430,7 +432,19 @@
         </header>
         <div class="home-art-controls" id="homeArtControls">
             <div class="home-art-tools" role="group" aria-label="Инструменты рисования">
-                <div class="home-art-colors" id="homeArtColors" role="group" aria-label="Цвет кисти"></div>
+                <div class="home-art-palette">
+                    <div class="home-art-colors" id="homeArtColors" role="group" aria-label="Цвет кисти"></div>
+                    <div class="home-art-photo">
+                        <button type="button" class="home-art-button home-art-icon" id="homeArtPhotoAction" aria-label="Загрузить фото" title="Загрузить фото" aria-controls="homeArtPhotoMenu" aria-expanded="false">
+                            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="4.5" width="17" height="15" rx="3"/><circle cx="9" cy="9.5" r="1.4"/><path d="m4 16 4-3.5 3.4 3 4.2-4.5 4.9 5"/></svg>
+                        </button>
+                        <input type="file" id="homeArtPhotoFile" accept="image/*,.heic,.heif" hidden>
+                        <div class="home-art-photo-menu" id="homeArtPhotoMenu" role="group" aria-label="Фото для фона" hidden>
+                            <button type="button" class="home-art-button" id="homeArtPhotoChoose">Заменить фото</button>
+                            <button type="button" class="home-art-button" id="homeArtPhotoRemove">Убрать фото</button>
+                        </div>
+                    </div>
+                </div>
                 <label class="home-art-size">
                     <span class="home-art-sr">Толщина кисти</span>
                     <input type="range" id="homeArtSize" min="2" max="24" value="7">

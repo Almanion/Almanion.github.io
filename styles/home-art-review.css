@@ -115,17 +115,32 @@
     background: var(--bg-primary);
 }
 
-.home-art-review-canvas {
-    display: block;
-    width: 100%;
-    height: auto;
+.home-art-review-scene {
+    position: relative;
+    overflow: hidden;
     aspect-ratio: 16 / 10;
-    opacity: var(--home-art-opacity, .46);
 }
 
+.home-art-review-photo,
+.home-art-review-canvas {
+    position: absolute;
+    inset: 0;
+    display: block;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+}
+
+.home-art-review-photo {
+    object-fit: cover;
+    opacity: var(--home-art-photo-opacity, .33);
+}
+
+.home-art-review-canvas { opacity: var(--home-art-opacity, .46); }
+body.experimental:not(.exp-dark) .home-art-review-photo { opacity: var(--home-art-photo-opacity, .26); }
 body.experimental:not(.exp-dark) .home-art-review-canvas { opacity: var(--home-art-opacity, .39); }
-body.exp-graphite .home-art-review-canvas,
-html[data-palette="graphite"] .home-art-review-canvas { filter: grayscale(1); }
+body.exp-graphite :is(.home-art-review-photo, .home-art-review-canvas),
+html[data-palette="graphite"] :is(.home-art-review-photo, .home-art-review-canvas) { filter: grayscale(1); }
 
 .home-art-review-figure figcaption {
     padding: .48rem .68rem;

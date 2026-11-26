@@ -183,32 +183,50 @@
         reader.readAsDataURL(blob);
     });
 
-    async function encode(source, crop, kind) {
-        const error = 'Не удалось подготовить изображение. Попробуйте другой файл.';
-        if (!source || !crop || !Object.hasOwn(sizes, kind) ||
-            ![crop.x, crop.y, crop.width, crop.height].every(Number.isFinite) ||
-            crop.x < 0 || crop.y < 0 || crop.width <= 0 || crop.height <= 0 ||
-            ![0, 90, 180, 270].includes(crop.rotation ?? 0)) throw new Error(error);
-        const { width, height, limit } = sizes[kind];
+    const encodeError = 'Не удалось подготовить изображение. Попробуйте другой файл.';
+
+    async function encodeImage(source, crop, { width, height, limit }) {
         const canvas = document.createElement('canvas');
         try {
             for (const scale of [1, .8, .6]) {
-                canvas.width = Math.round(width * scale);
-                canvas.height = Math.round(height * scale);
+                canvas.width = Math.max(1, Math.round(width * scale));
+                canvas.height = Math.max(1, Math.round(height * scale));
                 const ctx = canvas.getContext('2d', { alpha: false });
                 if (!ctx) break;
                 paint(ctx, source, crop, canvas.width, canvas.height);
                 for (const quality of [.9, .8, .69, .57, .45]) {
                     const blob = await toJpeg(canvas, quality);
-                    if (!blob || blob.type !== 'image/jpeg') throw new Error(error);
+                    if (!blob || blob.type !== 'image/jpeg') throw new Error(encodeError);
                     if (4 * Math.ceil(blob.size / 3) <= limit) return await base64(blob);
                 }
             }
         } catch (_) {
-            throw new Error(error);
+            throw new Error(encodeError);
         }
-        throw new Error(error);
+        throw new Error(encodeError);
     }
 
-    window.AlmanionProfileImage = Object.freeze({ load, frame, paint, encode });
+    async function encode(source, crop, kind) {
+        if (!source || !crop || !Object.hasOwn(sizes, kind) ||
+            ![crop.x, crop.y, crop.width, crop.height].every(Number.isFinite) ||
+            crop.x < 0 || crop.y < 0 || crop.width <= 0 || crop.height <= 0 ||
+            ![0, 90, 180, 270].includes(crop.rotation ?? 0)) throw new Error(encodeError);
+        return encodeImage(source, crop, sizes[kind]);
+    }
+
+    async function encodeBackground(file) {
+        const image = await load(file);
+        const scale = Math.min(1, 1728 / Math.max(image.width, image.height));
+        try {
+            return await encodeImage(image.source, { x: 0, y: 0, width: image.width, height: image.height }, {
+                width: image.width * scale,
+                height: image.height * scale,
+                limit: 192000
+            });
+        } finally {
+            image.release();
+        }
+    }
+
+    window.AlmanionProfileImage = Object.freeze({ load, frame, paint, encode, encodeBackground });
 })();

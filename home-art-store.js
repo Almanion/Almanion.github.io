@@ -2,8 +2,16 @@
     'use strict';
 
     const MAX_DRAWING_LENGTH = 120000;
+    const MAX_PHOTO_LENGTH = 192000;
     const ID = /^[-_A-Za-z0-9]{20}$/;
+    const JPEG = /^\/9j\/[A-Za-z0-9+/]*([A-Za-z0-9+/]|[AEIMQUYcgkosw048]=|[AQgw]==)$/;
     const serverTime = () => ({ '.sv': 'timestamp' });
+
+    function photoUrl(photo) {
+        if (typeof photo !== 'string' || photo.length > MAX_PHOTO_LENGTH || photo.length % 4 ||
+            photo.includes('\n') || photo.includes('\r') || !JPEG.test(photo)) return '';
+        return 'data:image/jpeg;base64,' + photo;
+    }
 
     function staleBackground() {
         const error = new Error('Общий фон обновился после отправки этой версии.');
@@ -44,7 +52,7 @@
             return (await published.once('value')).val();
         }
 
-        async function submit({ drawing, baseRevision }) {
+        async function submit({ drawing, baseRevision, photo }) {
             const authorUid = actorId();
             if (typeof drawing !== 'string' || drawing.length > MAX_DRAWING_LENGTH) {
                 throw new Error('Не удалось сохранить рисунок. Упростите его и попробуйте ещё раз.');
@@ -52,9 +60,12 @@
             if (!Array.isArray(JSON.parse(drawing)) || (baseRevision !== 'none' && !ID.test(baseRevision))) {
                 throw new Error('Версия фона недоступна.');
             }
+            const hasPhoto = photo != null && photo !== '';
+            if (hasPhoto && !photoUrl(photo)) throw new Error('Не удалось сохранить фото. Выберите другое изображение.');
             const proposal = submissions.push();
             await proposal.set({
                 authorUid, authorEmail: actor.email, baseRevision, drawing,
+                ...(hasPhoto ? { photo } : {}),
                 submittedAt: serverTime(), status: 'pending'
             });
             return proposal.key;
@@ -66,6 +77,10 @@
             if (current?.revision === entry.id) return;
             if ((current?.revision || 'none') !== entry.baseRevision) throw staleBackground();
             const next = { revision: entry.id, drawing: entry.drawing, publishedAt: serverTime() };
+            if (entry.photo != null) {
+                if (!photoUrl(entry.photo)) throw new Error('Фото в этой версии недоступно.');
+                next.photo = entry.photo;
+            }
             const changes = { published: next };
             Object.entries(update).forEach(([field, value]) => {
                 changes['submissions/' + entry.id + '/' + field] = value;
@@ -102,5 +117,5 @@
         });
     }
 
-    root.AlmanionHomeArtStore = Object.freeze({ create });
+    root.AlmanionHomeArtStore = Object.freeze({ create, photoUrl });
 })(window);

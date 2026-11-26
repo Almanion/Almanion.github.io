@@ -46,7 +46,7 @@ async function prepareHomepage(page, { actor = 'editor', existing = false } = {}
                         key,
                         async set(row) {
                             data[path][key] = { ...row, submittedAt: Date.now() };
-                            reads.push(row.drawing);
+                            reads.push(row);
                             for (const item of listeners) if (item.path === path) item.notify();
                         }
                     };
@@ -75,6 +75,12 @@ async function prepareHomepage(page, { actor = 'editor', existing = false } = {}
         window.artFixture = {
             switchUser(uid) { auth.currentUser = userFor(uid); authListeners.forEach(callback => callback(auth.currentUser)); },
             submissions: () => reads,
+            publish(row) {
+                data['homeArt/published'] = {
+                    revision: 'published00000000000', drawing: row.drawing, photo: row.photo, publishedAt: Date.now()
+                };
+                for (const item of listeners) if (item.path === 'homeArt/published') item.notify();
+            },
             incoming() {
                 data['homeArt/submissions']['pending0000000000000'] = {
                     authorEmail: 'editor@example.com', status: 'pending', baseRevision: 'none',
@@ -131,8 +137,65 @@ test('editor can draw, preview on the actual homepage, and submit a restored dra
     await expect(dialog.getByRole('button', { name: 'Отправлено' })).toBeDisabled();
     await dialog.getByRole('button', { name: 'Мои рисунки' }).click();
     await expect(dialog.locator('#homeArtOwn')).toContainText('На проверке');
-    expect(await page.evaluate(() => JSON.parse(window.artFixture.submissions()[0])[0].color)).toBe('#78d8b7');
+    expect(await page.evaluate(() => JSON.parse(window.artFixture.submissions()[0].drawing)[0].color)).toBe('#78d8b7');
     expect(errors).toEqual([]);
+});
+
+test('phone editor keeps a photo beneath the drawing and sends the same composition for approval', async ({ page }) => {
+    await page.setViewportSize({ width: 320, height: 740 });
+    await prepareHomepage(page);
+    const open = page.getByRole('button', { name: 'Фон главной' });
+    const dialog = page.getByRole('dialog', { name: 'Фон главной' });
+    await open.click();
+    const photoAction = dialog.getByRole('button', { name: 'Загрузить фото' });
+    await expect(photoAction).toBeVisible();
+    const image = await page.evaluate(() => {
+        const canvas = document.createElement('canvas');
+        canvas.width = 900;
+        canvas.height = 600;
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = '#3a668b';
+        ctx.fillRect(0, 0, 900, 600);
+        ctx.fillStyle = '#f1b66b';
+        ctx.fillRect(300, 220, 340, 190);
+        return canvas.toDataURL('image/png').split(',')[1];
+    });
+    const chooser = page.waitForEvent('filechooser');
+    await photoAction.click();
+    await (await chooser).setFiles({ name: 'wallpaper.png', mimeType: 'image/png', buffer: Buffer.from(image, 'base64') });
+    const editorPhoto = dialog.locator('#homeArtCanvasPhoto');
+    await expect.poll(() => editorPhoto.evaluate(el => el.naturalWidth)).toBe(900);
+    const publicPhoto = page.locator('#homeArtBackgroundPhoto');
+    await expect(publicPhoto).toBeHidden();
+    await page.mouse.move(38, 235);
+    await page.mouse.down();
+    await page.mouse.move(235, 347, { steps: 12 });
+    await page.mouse.up();
+    await dialog.getByRole('button', { name: 'Предпросмотр', exact: true }).click();
+    await expect(publicPhoto).toBeVisible();
+    await expect(page.locator('#homeArtBackground')).toBeVisible();
+    await page.getByRole('button', { name: 'К холсту' }).click();
+    await expect(publicPhoto).toBeHidden();
+    await dialog.getByRole('button', { name: 'Закрыть редактор' }).click();
+    await page.reload();
+    await open.click();
+    await expect(editorPhoto).toBeVisible();
+    const src = await editorPhoto.getAttribute('src');
+    await dialog.getByRole('button', { name: 'На проверку', exact: true }).click();
+    await expect(dialog.getByRole('button', { name: 'Отправлено', exact: true })).toBeDisabled();
+    const entry = await page.evaluate(() => window.artFixture.submissions()[0]);
+    expect('data:image/jpeg;base64,' + entry.photo).toBe(src);
+    expect(JSON.parse(entry.drawing)).toHaveLength(1);
+
+    await dialog.getByRole('button', { name: 'Фото фона', exact: true }).click();
+    await dialog.getByRole('button', { name: 'Убрать фото', exact: true }).click();
+    await expect(editorPhoto).toBeHidden();
+    await expect(dialog.getByRole('button', { name: 'На проверку', exact: true })).toBeEnabled();
+    await page.evaluate(row => window.artFixture.publish(row), entry);
+    await page.evaluate(() => window.artFixture.switchUser(null));
+    await expect(dialog).toBeHidden();
+    await expect(publicPhoto).toHaveAttribute('src', src);
+    await expect(publicPhoto).toBeVisible();
 });
 
 test('visitors see the approved art and only the owner receives review notices', async ({ page }) => {
