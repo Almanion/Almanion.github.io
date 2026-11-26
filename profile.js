@@ -10,9 +10,14 @@
     const nickname = byId('profileNickname');
     const telegram = byId('profileTelegram');
     const monogram = byId('profileMonogram');
-    const covers = { orbit: 'Орбиты', hills: 'Вершины', waves: 'Волны', plain: 'Без рисунка' };
+    const art = window.AlmanionProfileCovers;
     const status = byId('profileStatus');
-    const defaults = { nickname: '', telegram: '', avatar: 'initial', color: 'iris', shape: 'circle', cover: 'orbit', monogram: '', rankVisible: false };
+    const card = byId('profileCard');
+    const compact = byId('profileCompact');
+    const defaults = {
+        nickname: '', telegram: '', avatar: 'initial', color: 'iris', shape: 'circle',
+        background: 'solid', cover: 'orbit', monogram: '', rankVisible: false
+    };
     let session = null;
 
     function warnBeforeLeave(event) {
@@ -34,6 +39,22 @@
         showGate('Не удалось подключиться к аккаунту.', 'Повторить', () => location.reload());
         return;
     }
+    if (!art) {
+        showGate('Не удалось загрузить оформление профиля.', 'Повторить', () => location.reload());
+        return;
+    }
+
+    const groups = {
+        avatar: [byId('profileIcons'), api.profile.icons],
+        color: [byId('profileColors'), api.profile.colors],
+        shape: [byId('profileShapes'), api.profile.shapes],
+        background: [byId('profileBackgrounds'), api.profile.backgrounds || { solid: 'Однотонный' }],
+        cover: [byId('profileCovers'), art.entries]
+    };
+    const samples = [];
+    const paintedMarks = new WeakMap();
+    const coverArt = byId('profileCoverArt');
+    coverArt.innerHTML = Object.keys(art.entries).map(id => art.markup(id)).join('');
 
     function normalizeTelegram(value) {
         const text = value.trim();
@@ -52,7 +73,8 @@
             avatar: Object.hasOwn(api.profile.icons, identity.avatar) ? identity.avatar : defaults.avatar,
             color: Object.hasOwn(api.profile.colors, identity.color) ? identity.color : defaults.color,
             shape: Object.hasOwn(api.profile.shapes, identity.shape) ? identity.shape : defaults.shape,
-            cover: Object.hasOwn(covers, record?.cover) ? record.cover : defaults.cover,
+            background: Object.hasOwn(groups.background[1], identity.background) ? identity.background : defaults.background,
+            cover: Object.hasOwn(art.entries, record?.cover) ? record.cover : defaults.cover,
             monogram: identity.monogram || '', rankVisible: record?.rankVisible === true
         };
     }
@@ -71,31 +93,55 @@
             const face = document.createElement('span');
             face.className = 'profile-choice-face';
             face.setAttribute('aria-hidden', 'true');
-            if (group === 'avatar') {
-                face.innerHTML = api.profile.avatarMarkup({ avatar: value }, 'А');
-            } else if (group === 'color') {
-                const swatch = document.createElement('span');
-                swatch.className = 'profile-choice-swatch';
-                swatch.dataset.profileColor = value;
-                face.append(swatch);
+            const sample = document.createElement('span');
+            sample.className = 'profile-choice-sample';
+            face.append(sample);
+            if (group === 'color') {
+                sample.classList.add('profile-choice-swatch');
+                sample.dataset.profileColor = value;
+            } else if (group === 'cover') {
+                sample.classList.add('profile-cover-sample');
+                sample.dataset.cover = value;
+                sample.innerHTML = art.markup(value);
             } else {
-                const sample = document.createElement('i');
-                sample.dataset[group] = value;
-                if (group === 'cover') {
-                    const art = byId('profileCard').querySelector('[data-art="' + value + '"]');
-                    if (art) sample.append(art.cloneNode(true));
-                }
-                face.append(sample, document.createTextNode(name));
+                samples.push({ sample, group, value });
+            }
+            if (group !== 'color') {
+                const caption = document.createElement('span');
+                caption.className = 'profile-choice-name';
+                caption.textContent = name;
+                face.append(caption);
             }
             label.append(input, face);
             container.append(label);
         }
     }
 
-    buildOptions(byId('profileIcons'), 'avatar', api.profile.icons);
-    buildOptions(byId('profileColors'), 'color', api.profile.colors);
-    buildOptions(byId('profileShapes'), 'shape', api.profile.shapes);
-    buildOptions(byId('profileCovers'), 'cover', covers);
+    for (const [group, [container, entries]] of Object.entries(groups)) buildOptions(container, group, entries);
+
+    function paintMark(container, value, name) {
+        const markup = api.profile.avatarMarkup(value, name);
+        if (paintedMarks.get(container) === markup && container.firstChild) return;
+        container.innerHTML = markup;
+        paintedMarks.set(container, markup);
+    }
+
+    function paintPreview(draft, name) {
+        for (const target of [card, compact, byId('profileCovers')]) target.dataset.profileColor = draft.color;
+        if (compact.dataset.cover !== draft.cover) {
+            card.dataset.cover = compact.dataset.cover = draft.cover;
+            for (const drawing of coverArt.children) drawing.toggleAttribute('hidden', drawing.dataset.art !== draft.cover);
+            byId('profileCompactCover').innerHTML = art.markup(draft.cover);
+        }
+        paintMark(byId('profilePreviewAvatar'), draft, name);
+        paintMark(byId('profileCompactAvatar'), draft, name);
+        byId('profilePreviewName').textContent = byId('profileCompactName').textContent = name;
+        for (const { sample, group, value } of samples) {
+            const appearance = { ...draft, [group]: value };
+            if (group !== 'avatar') appearance.avatar = 'initial';
+            paintMark(sample, appearance, name);
+        }
+    }
 
     function fieldError(field, message) {
         const input = form.elements.namedItem(field);
@@ -133,17 +179,17 @@
         if (telegram.value !== draft.telegram) telegram.value = draft.telegram;
         if (monogram.value !== draft.monogram) monogram.value = draft.monogram;
         nickname.placeholder = account.displayName || account.email?.split('@')[0] || 'Ваш ник';
-        for (const group of ['avatar', 'color', 'shape', 'cover']) form.elements.namedItem(group).value = draft[group];
+        for (const group of Object.keys(groups)) {
+            const options = form.elements.namedItem(group);
+            if (options instanceof HTMLInputElement) options.checked = options.value === draft[group];
+            else options.value = draft[group];
+        }
         byId('rankVisible').checked = draft.rankVisible;
         byId('profileMonogramField').hidden = draft.avatar !== 'initial' && !monogram.hasAttribute('aria-invalid');
         const name = draft.nickname.trim() || nickname.placeholder;
         const handle = normalizeTelegram(draft.telegram);
-        byId('profileCard').dataset.profileColor = draft.color;
-        byId('profileCard').dataset.cover = draft.cover;
-        byId('profilePreviewAvatar').innerHTML = api.profile.avatarMarkup(draft, name);
+        paintPreview(draft, name);
         monogram.placeholder = (Array.from(name)[0] || 'А').toLocaleUpperCase('ru');
-        byId('profileIcons').querySelector('.profile-mark').textContent = draft.monogram.trim().toUpperCase() || monogram.placeholder;
-        byId('profilePreviewName').textContent = name;
         byId('profileEmail').textContent = account.email || '';
         const contact = byId('profilePreviewTelegram');
         contact.hidden = !handle;
@@ -152,11 +198,13 @@
         else contact.removeAttribute('href');
         byId('profileColorName').textContent = api.profile.colors[draft.color];
         fields.disabled = saving;
+        form.toggleAttribute('data-dirty', changed.size > 0);
         byId('profileSave').disabled = saving || !changed.size || !connected;
         byId('profileSave').textContent = saving ? 'Сохраняем…' : 'Сохранить';
         byId('profileReset').hidden = !changed.size || saving;
         status.dataset.state = session.failed ? 'error' : '';
-        status.textContent = !connected ? (saving ? 'Ждём соединения для сохранения…' : 'Нет связи. Изменения можно сохранить после подключения.') : message;
+        const feedback = message || (changed.size && !saving ? 'Изменения не сохранены' : '');
+        status.textContent = !connected ? (saving ? 'Ждём соединения для сохранения…' : 'Нет связи. Изменения можно сохранить после подключения.') : feedback;
     }
 
     function setAccount(account) {
@@ -171,12 +219,12 @@
         form.reset();
         fields.disabled = true;
         for (const field of ['nickname', 'telegram', 'monogram']) fieldError(field, '');
-        for (const id of ['profilePreviewAvatar', 'profilePreviewName', 'profileEmail', 'profilePreviewTelegram', 'profileStatus']) byId(id).replaceChildren();
+        for (const id of ['profilePreviewAvatar', 'profileCompactAvatar', 'profilePreviewName', 'profileCompactName', 'profileEmail', 'profilePreviewTelegram', 'profileStatus']) byId(id).replaceChildren();
+        for (const { sample } of samples) sample.replaceChildren();
         byId('profilePreviewTelegram').removeAttribute('href');
         byId('profilePreviewTelegram').hidden = true;
         nickname.placeholder = '';
         monogram.placeholder = '';
-        byId('profileIcons').querySelector('.profile-mark').textContent = 'А';
         if (!usable) {
             showGate('Войдите, чтобы открыть свой профиль.', 'Войти', api.openLogin);
             return;
@@ -242,6 +290,11 @@
         for (const field of ['nickname', 'telegram', 'monogram']) fieldError(field, '');
         displayForm();
         form.querySelector('input[name="avatar"]:checked').focus({ preventScroll: true });
+    });
+
+    byId('profileShowPreview').addEventListener('click', () => {
+        card.focus({ preventScroll: true });
+        card.scrollIntoView({ block: 'start' });
     });
 
     form.addEventListener('submit', async event => {

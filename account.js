@@ -80,17 +80,32 @@
     const reviewInboxUrl = new URL('admin.html#reviews', profileUrl).href;
     const avatarIcons = {
         initial: ['Буква', ''],
-        compass: ['Компас', '<circle cx="12" cy="12" r="9"/><path d="m16.5 7.5-2.8 6.2-6.2 2.8 2.8-6.2Z"/>'],
-        moon: ['Месяц', '<path d="M19.8 15.6A8.6 8.6 0 0 1 8.4 4.2 8.6 8.6 0 1 0 19.8 15.6Z"/><path d="m17 4 .7 1.8 1.8.7-1.8.7L17 9l-.7-1.8-1.8-.7 1.8-.7Z"/>'],
-        bolt: ['Молния', '<path d="m14 2-10 12h7l-1 8 10-13h-7l1-7Z"/>'],
-        orbit: ['Орбита', '<circle cx="12" cy="12" r="6.6"/><ellipse cx="12" cy="12" rx="10.3" ry="3.2" transform="rotate(-32 12 12)"/>'],
-        book: ['Книга', '<path d="M12 6.5c-2.5-2-5.6-2.3-9-1.7v13.5c3.6-.6 6.4 0 9 1.9 2.6-1.9 5.4-2.5 9-1.9V4.8c-3.4-.6-6.5-.3-9 1.7Zm0 0v13.7"/>'],
-        peak: ['Горы', '<path d="m2.2 19 7.6-14 5 8.9 2.5-4.2L22 19H2.2Z"/><path d="m6.7 10.6 2.1.9 1.8-1.5 2 1"/>'],
-        spark: ['Искра', '<path d="M12 2.7c.7 5.8 3.3 8.4 9.3 9.3-6 .9-8.6 3.5-9.3 9.3-.9-5.8-3.5-8.4-9.3-9.3 5.8-.9 8.4-3.5 9.3-9.3Z"/>'],
-        cat: ['Кот', '<path d="m4.3 10-.1-6.1 5 3a13 13 0 0 1 5.6 0l5-3-.1 6.1c2.7 6.6-1.3 10-7.7 10s-10.4-3.4-7.7-10Z"/><path d="M8.7 12.8h.2m6.2 0h.2M11 15.6l1 .7 1-.7"/>']
+        compass: ['Компас', '<circle cx="12" cy="12" r="8.9"/><path d="m15.8 8.2-2 5.6-5.6 2 2-5.6Z"/><path class="avatar-ink" d="m15.8 8.2-2 5.6-3.6-3.6Z"/>'],
+        moon: ['Месяц', '<path class="avatar-tint" d="M10.1 3.7a8.7 8.7 0 1 0 10.1 10.9A7.4 7.4 0 0 1 10.1 3.7Z"/><path d="M17 4v5m-2.5-2.5h5"/>'],
+        bolt: ['Молния', '<path class="avatar-ink" d="M13.6 2.8 4.2 13.2a.7.7 0 0 0 .5 1.1h6.1l-1.3 6.8c-.1.5.5.8.8.4l9.4-10.4a.7.7 0 0 0-.5-1.1h-6.1l1.3-6.8c.1-.5-.5-.8-.8-.4Z"/>'],
+        orbit: ['Орбита', '<circle class="avatar-tint" cx="12" cy="12" r="6.3"/><path d="M6 10.5c-2.5 2.3-3.6 4.3-2.9 5.3 1 1.5 5.9.3 10.8-2.8s8-6.7 7-8.2c-.6-.9-2.5-.8-4.8 0"/><circle class="avatar-ink" cx="20.9" cy="12.7" r="1"/>'],
+        book: ['Книга', '<path class="avatar-tint" d="M12 7.2a10.8 10.8 0 0 0-8.7-1.8v12.1a10.8 10.8 0 0 1 8.7 2 10.8 10.8 0 0 1 8.7-2V5.4A10.8 10.8 0 0 0 12 7.2Z"/><path d="M12 7.2v12.3M6.2 9.6a7.4 7.4 0 0 1 2.7.5m6.2 3.6a7.4 7.4 0 0 1 2.7-.5"/>'],
+        peak: ['Горы', '<circle class="avatar-ink" cx="18.8" cy="6" r="1.8"/><path class="avatar-tint" d="m2.7 18.5 7.4-12.7 4.4 7.3 2.1-3.6 4.7 9Z"/><path d="m7.2 10.8 1.5.9 1.4-.9 1.6 1.1 1.1-.7"/>'],
+        spark: ['Искра', '<path class="avatar-ink" d="M10.4 4.8c.8 4.2 2.5 5.9 6.7 6.7-4.2.8-5.9 2.5-6.7 6.7-.8-4.2-2.5-5.9-6.7-6.7 4.2-.8 5.9-2.5 6.7-6.7Z"/><path d="M18.8 3.7v4.8m-2.4-2.4h4.8m-3.7 10v3.5m-1.75-1.75h3.5"/>'],
+        cat: ['Кот', '<path class="avatar-tint" d="M4.8 10.7 4.5 4l5 3.7a10 10 0 0 1 5 0l5-3.7-.3 6.7a6.5 6.5 0 0 1 .8 3.1c0 3.8-3.1 5.7-8 5.7s-8-1.9-8-5.7c0-1.2.3-2.2.8-3.1Z"/><path d="M7.9 13.7h1m6.2 0h1m-5.1 2.6 1 .6 1-.6"/>'],
+        fox: ['Лис', '<path class="avatar-tint" d="m3.6 4.3 6.1 3.3h4.6l6.1-3.3-1 8.6-7.4 6.8-7.4-6.8Z"/><path d="m4.6 12.9 3.9-.5 3.5 7.3 3.5-7.3 3.9.5M7.1 10.5h.1m9.6 0h.1"/>'],
+        owl: ['Сова', '<path class="avatar-tint" d="M4 6.1 7.8 7a7.2 7.2 0 0 1 8.4 0l3.8-.9-.9 4.4a8.8 8.8 0 0 1 .6 3.2c0 4-3.2 6.6-7.7 6.6s-7.7-2.6-7.7-6.6c0-1.2.2-2.2.6-3.2Z"/><circle class="avatar-ink" cx="8.7" cy="12.4" r="1.7"/><circle class="avatar-ink" cx="15.3" cy="12.4" r="1.7"/><path d="m10.9 15.5 1.1 1.1 1.1-1.1"/>'],
+        fern: ['Папоротник', '<path d="M5 20c7-3.6 10.3-8.8 12.4-15.5"/><path class="avatar-ink" d="M9.3 17.1c-3.7-.2-5.4-2.2-5.3-5 2.9.4 4.8 2.2 5.3 5Zm3.3-3.5c-3.3-.5-4.9-2.8-4.5-5.5 2.6.7 4.2 2.6 4.5 5.5Zm2.5-3.7c-2.1-1.5-2.7-3.7-1.7-6 2 1.3 2.6 3.5 1.7 6Zm-4.9 6.5c2.6-2.1 5.1-1.8 7 .2-2.4 1.5-4.9 1.2-7-.2Zm3.7-4.3c2.4-2.4 5-2.6 7-.8-2 1.8-4.4 2.2-7 .8Zm2.6-4.4c1.1-2.4 2.8-3.4 5.1-3-.8 2.3-2.7 3.3-5.1 3Z"/>'],
+        comet: ['Комета', '<path d="m9 10.6-5.7 5.5m8.5-1.4-4.4 4.2m8-1.9-3.1 3"/><circle class="avatar-tint" cx="15.5" cy="7.9" r="5.2"/><path d="M15.5 5.2c1.2 0 2.1.7 2.5 1.5"/>'],
+        prism: ['Призма', '<path class="avatar-tint" d="m11.5 4.4 6.9 12.9H4.6Z"/><path d="m2.5 10.5 6.1.8 4.7 1.8 7.9-3m-4.4 4.3 4.4-.1"/>'],
+        shell: ['Ракушка', '<path class="avatar-tint" d="M9.3 19.2 4 14.3c-2-1.9-1.7-4.5.9-5.2.2-2.9 3-4.1 5-2.9 1.2-2 3-2 4.2 0 2-1.2 4.8 0 5 2.9 2.6.7 2.9 3.3.9 5.2l-5.3 4.9Z"/><path d="m10.8 16.8-3.2-6M12 16V8.2m1.2 8.6 3.2-6"/>'],
+        koi: ['Кои', '<path class="avatar-tint" d="M4.3 12c.5-4.4 4.4-7.4 8-6.3 3.5 1.2 4.1 4.6 2.6 7.8l.9 1.5c1.8-.4 3.3.1 4.7 1.7-1.8.9-3.4.7-4.9.1-.5 1.7-1.7 2.6-3.7 3 .2-2 .9-3.2 2.2-4l-.8-1.4c-2.1 1.2-5.5 2-7.7.9-1.1-.5-1.5-1.6-1.3-3.3Z"/><path d="M8.3 10.8h.1m2.2-2.1c.5 1.6.1 3.1-1.3 4"/>'],
+        jelly: ['Медуза', '<path class="avatar-tint" d="M4.1 11c0-4.1 3.4-7 7.9-7s7.9 2.9 7.9 7v1.1c-5.2 1.4-10.6 1.4-15.8 0Z"/><path d="M7.1 13c1.6 2.6-1.8 3.5-.2 6.7m5-6.4c1.6 2.6-1.8 3.4-.2 6.7m5-7c1.6 2.6-1.8 3.5-.2 6.7"/>'],
+        key: ['Ключ', '<path class="avatar-tint" d="M13.5 12.5a4.9 4.9 0 1 1 2.9 2.2l-2.3 2.3-1.8-.2.1 1.8-1.4 1.4H7.9v-3.1Z"/><circle class="avatar-ink" cx="17.4" cy="8.8" r="1.4"/>']
     };
-    const avatarColors = { iris: 'Ирис', ocean: 'Океан', mint: 'Мята', amber: 'Янтарь', rose: 'Роза', coral: 'Коралл', sky: 'Лёд', slate: 'Сланец' };
-    const avatarShapes = { circle: 'Круг', tile: 'Квадрат', pebble: 'Камень' };
+    const avatarColors = {
+        iris: 'Ирис', ocean: 'Океан', mint: 'Мята', amber: 'Янтарь', rose: 'Роза', coral: 'Коралл',
+        sky: 'Лёд', slate: 'Сланец', violet: 'Фиалка', jade: 'Нефрит', terracotta: 'Терракота', ink: 'Чернила'
+    };
+    const avatarShapes = {
+        circle: 'Круг', tile: 'Квадрат', pebble: 'Камень', shield: 'Щит', arch: 'Арка', diamond: 'Ромб', cushion: 'Подушка'
+    };
+    const avatarBackgrounds = { solid: 'Однотонный', glow: 'Свечение', grid: 'Сетка', diagonal: 'Диагонали', dust: 'Звёзды' };
     let identity = {};
     let identityRef = null;
     let identityListener = null;
@@ -99,9 +114,13 @@
         const icon = Object.hasOwn(avatarIcons, value?.avatar) ? avatarIcons[value.avatar][1] : '';
         const color = Object.hasOwn(avatarColors, value?.color) ? value.color : 'iris';
         const shape = Object.hasOwn(avatarShapes, value?.shape) ? value.shape : 'circle';
-        const initial = value?.monogram || Array.from(String(name || '').trim())[0] || 'А';
-        return '<span class="account-avatar profile-mark" data-profile-color="' + color + '" data-profile-shape="' + shape + '" aria-hidden="true">' +
-            (icon ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round">' + icon + '</svg>' : escapeHtml(initial.toLocaleUpperCase('ru'))) + '</span>';
+        const background = Object.hasOwn(avatarBackgrounds, value?.background) ? value.background : 'solid';
+        const monogram = String(value?.monogram || '').trim().toLocaleUpperCase('ru');
+        const initial = /^[А-ЯЁA-Z0-9]{1,2}$/.test(monogram) ? monogram : Array.from(String(name || '').trim())[0] || 'А';
+        return '<span class="account-avatar profile-mark" data-profile-color="' + color + '" data-profile-shape="' + shape +
+            '" data-profile-background="' + background + '" aria-hidden="true">' +
+            (icon ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round" focusable="false">' +
+                icon + '</svg>' : escapeHtml(initial.toLocaleUpperCase('ru'))) + '</span>';
     }
 
     function refreshIdentity() {
@@ -1534,7 +1553,7 @@
         openAccount: function () { if (user) openAccountMenu(); else openLoginModal(false); },
         getUser: function () { return user; },
         isReady: function () { return authStateKnown; },
-        profile: { icons: avatarIcons, colors: avatarColors, shapes: avatarShapes, avatarMarkup: avatarMarkup },
+        profile: { icons: avatarIcons, colors: avatarColors, shapes: avatarShapes, backgrounds: avatarBackgrounds, avatarMarkup: avatarMarkup },
         hasContentEditorAccess: hasContentEditorAccess,
         hasSiteAdminAccess: hasSiteAdminAccess,
         hasEnglishAccess: hasEnglishAccess,

@@ -454,13 +454,14 @@
           ".read": "auth != null && auth.token.firebase.sign_in_provider !== 'anonymous' && data.parent().child('rankVisible').val() === true",
           ".validate": "newData.hasChildren()",
           "nickname": { ".validate": "newData.isString() && newData.val().length <= 32 && newData.val().matches(/^[^ <>]([^<>]*[^ <>])?$/) && !newData.val().contains('\\n') && !newData.val().contains('\\r') && !newData.val().contains('\\t')" },
-          "avatar": { ".validate": "newData.isString() && newData.val().matches(/^(initial|orbit|book|peak|spark|cat|compass|moon|bolt)$/)" },
-          "color": { ".validate": "newData.isString() && newData.val().matches(/^(iris|ocean|mint|amber|rose|coral|sky|slate)$/)" },
-          "shape": { ".validate": "newData.isString() && newData.val().matches(/^(circle|tile|pebble)$/)" },
+          "avatar": { ".validate": "newData.isString() && newData.val().matches(/^(initial|orbit|book|peak|spark|cat|compass|moon|bolt|fox|owl|fern|comet|prism|shell|koi|jelly|key)$/)" },
+          "color": { ".validate": "newData.isString() && newData.val().matches(/^(iris|ocean|mint|amber|rose|coral|sky|slate|violet|jade|terracotta|ink)$/)" },
+          "shape": { ".validate": "newData.isString() && newData.val().matches(/^(circle|tile|pebble|shield|arch|diamond|cushion)$/)" },
+          "background": { ".validate": "newData.isString() && newData.val().matches(/^(solid|glow|grid|diagonal|dust)$/)" },
           "monogram": { ".validate": "newData.isString() && newData.val().matches(/^[А-Яа-яЁёA-Za-z0-9]{1,2}$/)" },
           "$other": { ".validate": false }
         },
-        "cover": { ".validate": "newData.isString() && newData.val().matches(/^(orbit|hills|waves|plain)$/)" },
+        "cover": { ".validate": "newData.isString() && newData.val().matches(/^(orbit|hills|waves|plain|aurora|contours|terrazzo|ink|garden|eclipse)$/)" },
         "rankVisible": {
           ".read": "auth != null && auth.token.firebase.sign_in_provider !== 'anonymous'",
           ".validate": "newData.isBoolean()"

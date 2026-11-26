@@ -946,19 +946,53 @@ body:not(.no-hover) .kc-answer-remember:hover { background: var(--success-color)
 [data-profile-color="coral"] { --profile-pigment: #d37a5c; }
 [data-profile-color="sky"] { --profile-pigment: #56a6b9; }
 [data-profile-color="slate"] { --profile-pigment: #828c9f; }
+[data-profile-color="violet"] { --profile-pigment: #ae64bc; }
+[data-profile-color="jade"] { --profile-pigment: #288b73; }
+[data-profile-color="terracotta"] { --profile-pigment: #a9523e; }
+[data-profile-color="ink"] { --profile-pigment: #485683; }
 :is(.profile-mark[data-profile-shape="tile"], .profile-choice [data-shape="tile"]) { --profile-avatar-radius: 25%; }
 :is(.profile-mark[data-profile-shape="pebble"], .profile-choice [data-shape="pebble"]) { --profile-avatar-radius: 45% 60% 38% 56%; }
+[data-profile-shape="arch"] { --profile-avatar-radius: 48% 48% 19% 19%; }
+[data-profile-shape="cushion"] { --profile-avatar-radius: 34% 34% 42% 42%; }
+[data-profile-shape="shield"] { --avatar-clip: polygon(12% 7%, 50% 1%, 88% 7%, 94% 15%, 91% 64%, 80% 82%, 50% 99%, 20% 82%, 9% 64%, 6% 15%); }
+[data-profile-shape="diamond"] { --avatar-clip: polygon(45% 4%, 55% 4%, 96% 45%, 96% 55%, 55% 96%, 45% 96%, 4% 55%, 4% 45%); }
 .profile-mark {
+    position: relative;
+    isolation: isolate;
     display: inline-grid;
     place-items: center;
     aspect-ratio: 1;
     flex-shrink: 0;
     border-radius: var(--profile-avatar-radius, 50%);
-    color: color-mix(in srgb, var(--text-primary) 65%, var(--profile-pigment));
-    background: color-mix(in srgb, var(--profile-pigment) 24%, var(--bg-secondary));
+    color: color-mix(in srgb, var(--text-primary) 89%, var(--profile-pigment));
+    --avatar-ground: color-mix(in srgb, var(--profile-pigment) 29%, var(--bg-secondary));
+    --avatar-sheen: color-mix(in srgb, var(--profile-pigment) 37%, transparent);
     font-weight: 720;
     line-height: 1;
 }
+.profile-mark::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    border-radius: inherit;
+    clip-path: var(--avatar-clip, none);
+    background: var(--avatar-pattern, none) var(--avatar-ground);
+}
+[data-profile-background="glow"] { --avatar-pattern: radial-gradient(at 75% 20%, var(--avatar-sheen), transparent 70%); }
+[data-profile-background="grid"] {
+    --avatar-pattern: repeating-linear-gradient(0deg, var(--avatar-sheen) 0 1px, transparent 1px 24%),
+        repeating-linear-gradient(90deg, var(--avatar-sheen) 0 1px, transparent 1px 24%);
+}
+[data-profile-background="diagonal"] { --avatar-pattern: linear-gradient(135deg, var(--avatar-sheen) 33%, transparent 33% 74%, var(--avatar-sheen) 74%); }
+[data-profile-background="dust"] {
+    --avatar-pattern: radial-gradient(circle at 24% 33%, var(--avatar-sheen) 0 1px, transparent 1.5px),
+        radial-gradient(circle at 70% 21%, var(--avatar-sheen) 0 1.2px, transparent 1.7px),
+        radial-gradient(circle at 76% 72%, var(--avatar-sheen) 0 .9px, transparent 1.4px);
+}
+.exp-graphite .profile-mark { filter: grayscale(1); }
+.avatar-tint { fill: color-mix(in srgb, currentColor 18%, transparent); }
+.avatar-ink { fill: currentColor; stroke: none; }
 /* Experimental headers set their button fills with !important. The mark supplies the signed-in surface. */
 #accountBtn.signed-in {
     background: transparent !important;
@@ -972,7 +1006,7 @@ body:not(.no-hover) .kc-answer-remember:hover { background: var(--success-color)
 }
 @media (hover: hover) {
     #accountBtn.signed-in:hover > .profile-mark {
-        background-color: color-mix(in srgb, var(--profile-pigment) 32%, var(--bg-secondary));
+        --avatar-ground: color-mix(in srgb, var(--profile-pigment) 37%, var(--bg-secondary));
     }
 }
 #accountBtn.signed-in:focus-visible { outline: none; }
@@ -980,7 +1014,7 @@ body:not(.no-hover) .kc-answer-remember:hover { background: var(--success-color)
     outline: 2px solid var(--accent-color);
     outline-offset: 2px;
 }
-.profile-mark svg, #accountBtn > .profile-mark svg { width: 55%; height: 55%; }
+.profile-mark svg, #accountBtn > .profile-mark svg { width: 60%; height: 60%; }
 .account-identity-mark .profile-mark { width: 52px; height: 52px; font-size: 1.5rem; }
 .account-identity { display: flex; align-items: center; gap: 12px; margin: 4px 24px 20px 0; text-align: left; }
 .account-identity > div { min-width: 0; }

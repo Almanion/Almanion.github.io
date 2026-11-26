@@ -115,6 +115,15 @@ test('profile survives sign-out, merges edits from two tabs and clears private f
     await expect(other.locator('#profileCard')).toHaveAttribute('data-cover', 'waves');
     await expect(other.locator('#profilePreviewAvatar .profile-mark')).toHaveAttribute('data-profile-shape', 'pebble');
     await expect(other.locator('#rankVisible')).toBeChecked();
+    for (const [group, value] of [['avatar', 'fox'], ['shape', 'shield'], ['background', 'grid'], ['cover', 'garden']]) {
+        await other.locator(`label:has(input[name="${group}"][value="${value}"])`).click();
+    }
+    await other.locator('#profileSave').click();
+    await expect(other.locator('#profileStatus')).toHaveText('Изменения сохранены');
+    await expect(page.locator('#profileCard')).toHaveAttribute('data-cover', 'garden');
+    await expect(page.locator('#profileCard [data-art="garden"]')).toBeVisible();
+    await expect(page.locator('#accountBtn .profile-mark')).toHaveAttribute('data-profile-background', 'grid');
+    await expect(page.locator('#accountBtn .profile-mark')).toHaveAttribute('data-profile-shape', 'shield');
     await page.locator('#profileNickname').fill('Новый ник');
     await other.locator('label[title="Янтарь"]').click();
     await other.locator('#profileSave').click();

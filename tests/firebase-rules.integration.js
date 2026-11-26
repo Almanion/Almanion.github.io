@@ -78,6 +78,16 @@ function serverTimestamp() {
         await assertFails(sharedIdentity.once('value'));
         await assertSucceeds(profile.update({ rankVisible: true, cover: 'waves', 'identity/shape': 'pebble', 'identity/monogram': 'ЛЛ' }));
         assert.equal((await assertSucceeds(sharedIdentity.once('value'))).val().monogram, 'ЛЛ');
+        await assertSucceeds(profile.update({
+            'identity/avatar': 'fox', 'identity/color': 'terracotta', 'identity/shape': 'shield',
+            'identity/background': 'glow', cover: 'garden'
+        }));
+        const customAppearance = (await assertSucceeds(sharedIdentity.once('value'))).val();
+        assert.deepStrictEqual(customAppearance, {
+            nickname: identity.nickname, monogram: 'ЛЛ', avatar: 'fox', color: 'terracotta', shape: 'shield', background: 'glow'
+        });
+        assert.equal((await assertSucceeds(profile.child('cover').once('value'))).val(), 'garden');
+        await assertFails(ordinaryDb.ref(profilePath + '/cover').once('value'));
         await assertFails(ordinaryDb.ref(profilePath).once('value'));
         await assertFails(ordinaryDb.ref(profilePath + '/telegram').once('value'));
         await assertFails(ordinaryDb.ref(profilePath + '/rankVisible').set(false));
@@ -91,6 +101,7 @@ function serverTimestamp() {
         await assertFails(anonDb.ref('accountProfiles/' + anonUid).once('value'));
         for (const patch of [
             { 'identity/shape': 'unknown' }, { 'identity/monogram': '123' }, { 'identity/monogram': '<>' }, { cover: 'other' }, { rankVisible: 'true' },
+            { 'identity/background': 'url(https://example.test/)' }, { 'identity/background': { type: 'dust' } },
             { telegram: 'https://elsewhere.test/x' }, { 'identity/avatar': 'other' }, { 'identity/color': 'blue' },
             { 'identity/nickname': '<tag>' }, { 'identity/nickname': '   ' }, { 'identity/nickname': 'я'.repeat(33) },
             { 'identity/nickname': 'Лис\nДруг' }, { extra: 'private' }, { 'identity/role': 'owner' }

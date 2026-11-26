@@ -87,6 +87,7 @@
     "print-export.js",
     "profile.html",
     "profile.js",
+    "profile-covers.js",
     "profile-verification.js",
     "pdf-download.js",
     "pdf-block-frames.js",

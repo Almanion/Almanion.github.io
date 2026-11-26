@@ -11,6 +11,9 @@ function mockAvatarAccount(expTheme) {
     window.setTestAvatarShape = shape => {
         for (const listener of identityListeners) listener(identitySnapshot(shape));
     };
+    window.setTestAvatar = appearance => {
+        for (const listener of identityListeners) listener({ val: () => appearance });
+    };
     const auth = () => ({
         currentUser: user,
         useDeviceLanguage() {},
@@ -75,6 +78,13 @@ for (const width of [390, 1440]) {
             await expect(mark).toHaveCSS('outline-width', '2px');
             await page.keyboard.press('Enter');
             await expect(page.locator('#accIdentityMark .profile-mark')).toHaveCSS('border-radius', '45% 60% 38% 56%');
+            await page.evaluate(() => window.setTestAvatar({ avatar: 'fox', color: 'terracotta', shape: 'shield', background: 'dust' }));
+            for (const avatar of [mark, page.locator('#accIdentityMark .profile-mark')]) {
+                await expect(avatar).toHaveAttribute('data-profile-shape', 'shield');
+                await expect(avatar).toHaveAttribute('data-profile-color', 'terracotta');
+                await expect(avatar).toHaveAttribute('data-profile-background', 'dust');
+                await expect(avatar.locator('svg')).toBeVisible();
+            }
         }
     });
 
