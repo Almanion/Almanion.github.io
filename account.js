@@ -44,6 +44,10 @@
     let homeAccessGeneration = 0;
     let homeRolesRef = null;
     let homeRolesHandler = null;
+    let reviewInboxRef = null;
+    let reviewInboxHandler = null;
+    let reviewCount = 0;
+    let reviewInboxIds = new Set();
     const appleEnabled = typeof appleAuthEnabled !== 'undefined' && appleAuthEnabled === true
         && typeof firebase.auth.OAuthProvider === 'function';
 
@@ -74,6 +78,7 @@
     const IC_USER = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>';
     // Resolve relative to this script so the menu also works from /watch and file://.
     const profileUrl = new URL('profile.html', document.currentScript?.src || document.baseURI).href;
+    const reviewInboxUrl = new URL('admin.html#reviews', profileUrl).href;
     const avatarIcons = {
         initial: ['Буква', ''],
         compass: ['Компас', '<circle cx="12" cy="12" r="9"/><path d="m16.5 7.5-2.8 6.2-6.2 2.8 2.8-6.2Z"/>'],
@@ -185,14 +190,75 @@
             const name = identity.nickname || user.displayName || user.email || '';
             btn.classList.add('signed-in');
             btn.title = name || 'Аккаунт';
-            btn.setAttribute('aria-label', 'Аккаунт: ' + (name || 'вошли'));
+            btn.setAttribute('aria-label', 'Аккаунт: ' + (name || 'вошли') +
+                (reviewCount ? '. Версий на проверке: ' + reviewCount : ''));
             btn.innerHTML = avatarMarkup(identity, name);
+            if (reviewCount) {
+                const count = document.createElement('span');
+                count.className = 'account-review-count';
+                count.setAttribute('aria-hidden', 'true');
+                count.textContent = reviewCount > 99 ? '99+' : String(reviewCount);
+                btn.appendChild(count);
+            }
         } else {
             btn.classList.remove('signed-in');
             btn.title = 'Войти';
             btn.setAttribute('aria-label', 'Войти в аккаунт');
             btn.innerHTML = IC_USER;
         }
+    }
+
+    function isReviewOwner(account) {
+        return account?.uid === '2M2ZdLQcJAhluPjUVFNJ6MyQrdH2';
+    }
+
+    function showReviewCount(count) {
+        if (reviewCount === count) return;
+        reviewCount = count;
+        updateButton();
+        const link = document.getElementById('accountReviewLink');
+        if (link) link.textContent = count ? 'Версии на проверке · ' + count : 'Проверка версий';
+    }
+
+    function watchReviewInbox(account) {
+        if (isReviewOwner(account) && reviewInboxRef) return;
+        if (reviewInboxRef) reviewInboxRef.off('value', reviewInboxHandler);
+        reviewInboxRef = reviewInboxHandler = null;
+        reviewInboxIds = new Set();
+        const announcement = document.getElementById('accountReviewAnnouncement');
+        if (announcement) announcement.textContent = '';
+        showReviewCount(0);
+        if (!isReviewOwner(account)) return;
+        const query = db.ref('noteReviewInbox').orderByChild?.('status')?.equalTo?.('pending');
+        if (!query) return;
+        reviewInboxRef = query;
+        reviewInboxHandler = snapshot => {
+            if (reviewInboxRef !== query || user?.uid !== account.uid) return;
+            const incoming = snapshot.numChildren?.() ?? Object.keys(snapshot.val() || {}).length;
+            const ids = new Set();
+            let newest = null;
+            snapshot.forEach?.(entry => {
+                ids.add(entry.key);
+                const proposal = entry.val();
+                if (!reviewInboxIds.has(entry.key) && (!newest || proposal.submittedAt > newest.submittedAt)) newest = proposal;
+            });
+            reviewInboxIds = ids;
+            if (newest || incoming > reviewCount) {
+                let live = document.getElementById('accountReviewAnnouncement');
+                if (!live) {
+                    live = document.createElement('span');
+                    live.id = 'accountReviewAnnouncement';
+                    live.className = 'account-review-sr';
+                    live.setAttribute('role', 'status');
+                    document.body.appendChild(live);
+                }
+                live.textContent = newest?.title ? 'Новая версия на проверке. ' + newest.title : 'Версий конспектов на проверке: ' + incoming;
+            }
+            showReviewCount(incoming);
+        };
+        query.on('value', reviewInboxHandler, () => {
+            if (reviewInboxRef === query) showReviewCount(0);
+        });
     }
 
     function onAccountClick() {
@@ -631,6 +697,7 @@
                 '<div class="account-error" id="accError" hidden></div>' +
                 '<a class="auth-submit account-editor-link" id="accProfile">Мой профиль</a>' +
                 '<div class="account-editor-slot" id="accountEditorSlot"></div>' +
+                (isReviewOwner(user) ? '<a class="auth-submit account-editor-link" id="accountReviewLink"></a>' : '') +
                 '<a class="auth-submit account-editor-link" href="/watch/connect.html">Мои часы</a>' +
                 (appleEnabled
                     ? '<p class="account-notice" id="accAppleStatus" role="status" tabindex="-1"' + (appleLinked ? '>Вход с Apple подключён' : ' hidden>') + '</p>' +
@@ -642,6 +709,11 @@
                 '<button type="button" class="auth-submit account-signout" id="accSignout">Выйти</button>' +
             '</div>';
         ov.querySelector('#accProfile').href = profileUrl;
+        const reviewLink = ov.querySelector('#accountReviewLink');
+        if (reviewLink) {
+            reviewLink.href = reviewInboxUrl;
+            reviewLink.textContent = reviewCount ? 'Версии на проверке · ' + reviewCount : 'Проверка версий';
+        }
         const verifyLink = ov.querySelector('#accVerifyEmail');
         if (verifyLink) {
             verifyLink.href = profileUrl + '#email';
@@ -1402,6 +1474,7 @@
         }
         user = u;
         watchIdentity(u);
+        watchReviewInbox(u);
         if (kcStorage) kcStorage.setScope(u ? u.uid : 'guest');
         updateButton();
         updateHomeAccessLinks();
@@ -1418,6 +1491,7 @@
         authStateKnown = true;
         user = null;
         watchIdentity(null);
+        watchReviewInbox(null);
         hideOverlay();
         if (kcStorage) kcStorage.setScope('guest');
         updateButton();

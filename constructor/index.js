@@ -15,10 +15,13 @@
         section: query.get('section') || '',
         subsection: query.get('subsection') || '',
         embedded: query.get('embedded') === '1',
+        focusReview: query.get('review') === '1',
         applied: false
     };
     const BLOCK_ICONS = { up: '↑', down: '↓', indent: '↳', outdent: '↰', add: '+', duplicate: '⧉', remove: '×' };
     const STATUS_LABELS = { draft: 'Черновик', ready: 'К проверке', published: 'Опубликовано', pending: 'Сайт обновляется', delayed: 'Публикация задерживается', failed: 'Ошибка сборки' };
+    const REVIEW_LABELS = { pending: 'На проверке', publishing: 'Публикуется', published: 'Принята', returned: 'На доработку', withdrawn: 'Отозвана' };
+    const reviewDateFormat = new Intl.DateTimeFormat('ru-RU', { dateStyle: 'medium', timeStyle: 'short' });
     const BLOCK_PICKER_GROUPS = [
         { title: 'Текст и структура', types: ['paragraph', 'heading', 'list', 'formula', 'image'] },
         { title: 'Учебные блоки', types: ['definition', 'theorem', 'lemma', 'statement', 'corollary', 'properties', 'proof', 'derivation', 'example', 'exercise', 'experiment', 'remark', 'reminder'] }
@@ -39,6 +42,8 @@
         currentSubsectionId: '',
         publishedManifest: null,
         publishedSections: [],
+        publishedBaseHashes: new Map(),
+        publishedBaseLoaded: false,
         deployedVersions: new Map(),
         publicationChecks: new Map(),
         hydrated: false,
@@ -60,7 +65,12 @@
         knownSnapshots: new Map(),
         pendingRevisionLabel: 'Автосохранение',
         cloudAssets: new Map(),
-        publication: null
+        publication: null,
+        review: null,
+        reviewStop: null,
+        reviewRecords: [],
+        reviewOutboxMessage: '',
+        sendingReview: false
     };
 
     const el = id => document.getElementById(id);
@@ -103,7 +113,7 @@
         if (!state.publication || !publicationPending(section) || publicationFor(section)) return Promise.resolve();
         const key = sectionKey(section.subject, section.id);
         if (!state.publicationChecks.has(key)) {
-            const value = clone(section); delete value.review;
+            const value = clone(section); delete value.review; delete value.reviewBaseHash;
             state.publicationChecks.set(key, state.publication.track(section.subject, section.id, '', value)
                 .catch(() => {}).finally(() => state.publicationChecks.delete(key)));
         }
@@ -175,8 +185,15 @@
 
     async function onAuthState(user) {
         state.publication?.stop();
+        state.reviewStop?.();
+        state.reviewStop = null;
+        state.review = null;
+        state.reviewRecords = [];
+        state.sendingReview = false;
+        el('reviewOutboxButton').hidden = true;
+        if (el('reviewOutbox').open) el('reviewOutbox').close();
         state.user = user || null;
-        state.publication = user && window.NotePublication ? window.NotePublication.create({ owner: user.uid, storage: localStorage, fetch: window.fetch.bind(window), normalize(value) { const section = Model.normalizeSection(value, value.subject); delete section.review; return section; }, onChange() { if (state.current) { renderWorkflow(); renderSections(); } } }) : null;
+        state.publication = user && window.NotePublication ? window.NotePublication.create({ owner: user.uid, storage: localStorage, fetch: window.fetch.bind(window), normalize(value) { const section = Model.normalizeSection(value, value.subject); delete section.review; delete section.reviewBaseHash; return section; }, onChange() { if (state.current) { renderWorkflow(); renderSections(); } } }) : null;
         state.isOwner = !!user && user.uid === OWNER_UID;
         if (!user) {
             showGate('Войдите в аккаунт редактора, чтобы открыть конструктор.', true);
@@ -188,10 +205,18 @@
                 showGate('У этого аккаунта нет роли «Редактор конспектов». Назначить её может главный администратор.', false);
                 return;
             }
+            if (state.user !== user) return;
             el('builderGate').hidden = true;
             el('builderShell').hidden = false;
             el('publishButton').hidden = !state.isOwner;
             await initializeWorkspace();
+            if (state.user !== user) return;
+            if (!state.isOwner && window.NoteReview) startReviewOutbox(user);
+            if (requestedContext.focusReview && !el('submitReviewButton').hidden) {
+                const submit = el('submitReviewButton');
+                submit.scrollIntoView({ block: 'center' });
+                submit.focus({ preventScroll: true });
+            }
             state.publication?.start();
         } catch (error) {
             console.error('Constructor access:', error);
@@ -271,6 +296,7 @@
     async function loadPublished(subject) {
         const manifest = await fetchJson('content/' + subject + '/manifest.json');
         const entries = Array.isArray(manifest.sections) ? manifest.sections : [];
+        const baseHashes = new Map();
         const sections = await Promise.all(entries.map(async (entry, index) => {
             const id = typeof entry === 'string' ? entry : entry.id;
             const raw = await fetchJson('content/' + subject + '/sections/' + id + '.json');
@@ -294,10 +320,27 @@
             }
             const section = Model.normalizeSection(raw, subject);
             section.reviewStatus = 'published';
+            delete section.reviewBaseHash;
+            if (window.NoteReview) {
+                const hash = await window.NoteReview.hashSection(raw).catch(() => '');
+                if (hash) baseHashes.set(id, hash);
+            }
             section.order = Number(raw.order) || (index + 1) * 1000;
             return section;
         }));
-        return { manifest, sections };
+        return { manifest, sections, baseHashes };
+    }
+
+    function publishedBaseFor(section) {
+        if (section.subject !== state.subject || !state.publishedBaseLoaded) return '';
+        return state.publishedBaseHashes.get(section.id) || (isPublishedSection(section.id) ? '' : 'none');
+    }
+
+    function pinReviewBase(section) {
+        if (!section.reviewBaseHash) {
+            const hash = publishedBaseFor(section);
+            if (hash) section.reviewBaseHash = hash;
+        }
     }
 
     async function loadRemoteDrafts(subject) {
@@ -337,6 +380,8 @@
         state.currentSubsectionId = '';
         state.sections = [];
         state.publishedSections = [];
+        state.publishedBaseHashes = new Map();
+        state.publishedBaseLoaded = false;
         state.deployedVersions.clear();
         localStorage.setItem('note-constructor-subject', subject);
         setSaveState('saving', 'Загружаем разделы…');
@@ -352,6 +397,8 @@
         const published = publishedResult.status === 'fulfilled'
             ? publishedResult.value
             : { manifest: { schemaVersion: 1, subject, title: subject, sections: [] }, sections: [] };
+        state.publishedBaseLoaded = publishedResult.status === 'fulfilled';
+        state.publishedBaseHashes = published.baseHashes || new Map();
         const deletions = deletionResult.status === 'fulfilled' ? deletionResult.value : [];
         const deletionById = new Map(deletions.map(deletion => [deletion.id, deletion]));
         const survivesDeletion = section => !Model.deletionCoversSection(deletionById.get(section.id), section);
@@ -551,11 +598,97 @@
         '</article>';
     }
 
+    function reviewIsActive(record) {
+        return record.status === 'pending' || record.status === 'publishing';
+    }
+
+    function recordsFor(section) {
+        return state.reviewRecords.filter(record => record.subject === section.subject && record.sectionId === section.id);
+    }
+
+    function startReviewOutbox(user) {
+        const client = window.NoteReview.create({ database: window.AlmanionAccount.database, user });
+        state.review = client;
+        state.reviewOutboxMessage = 'Загружаем отправленные версии…';
+        el('reviewOutboxButton').hidden = false;
+        renderReviewOutbox();
+        const showLoadError = () => {
+            if (state.review !== client) return;
+            state.reviewOutboxMessage = 'Не удалось загрузить отправленные версии.';
+            renderReviewOutbox();
+        };
+        const loaded = records => {
+            if (state.review !== client) return;
+            state.reviewRecords = records.slice().sort((a, b) => b.submittedAt - a.submittedAt);
+            state.reviewOutboxMessage = records.length ? '' : 'Отправленных версий пока нет.';
+            renderReviewOutbox();
+            renderWorkflow();
+            renderSections();
+        };
+        try { state.reviewStop = client.watchMine(loaded, showLoadError); }
+        catch (_) { showLoadError(); }
+        renderWorkflow();
+    }
+
+    function renderReviewOutbox() {
+        el('reviewOutboxState').textContent = state.reviewOutboxMessage;
+        const count = state.reviewRecords.filter(reviewIsActive).length;
+        const badge = el('reviewOutboxCount');
+        badge.hidden = !count;
+        badge.textContent = count > 99 ? '99+' : String(count);
+        el('reviewOutboxButton').setAttribute('aria-label', count ? 'Мои версии, на проверке: ' + count : 'Мои версии');
+        const focusedWithdrawal = document.activeElement?.dataset?.withdrawReview || '';
+        const fragment = document.createDocumentFragment();
+        state.reviewRecords.forEach(record => {
+            const item = document.createElement('article');
+            item.className = 'builder-outbox-item';
+            const heading = document.createElement('div');
+            const open = document.createElement('a');
+            const url = new URL('constructor.html', location.href);
+            url.searchParams.set('subject', record.subject);
+            url.searchParams.set('section', record.sectionId);
+            open.href = url.href;
+            open.textContent = record.title;
+            const status = document.createElement('span');
+            status.className = 'builder-workflow-status is-' + ({
+                pending: 'ready', publishing: 'pending', published: 'published', returned: 'failed'
+            }[record.status] || 'draft');
+            status.textContent = REVIEW_LABELS[record.status] || record.status;
+            heading.append(open, status);
+            const meta = document.createElement('p');
+            const date = Number(record.submittedAt);
+            const title = state.subjects.find(entry => entry.id === record.subject)?.title || record.subject;
+            meta.textContent = title + ' · Версия ' + record.revision + (Number.isFinite(date) && date > 0 ? ' · ' + reviewDateFormat.format(date) : '');
+            item.append(heading, meta);
+            if (record.note) {
+                const note = document.createElement('p');
+                note.className = 'builder-outbox-note';
+                note.textContent = record.note;
+                item.append(note);
+            }
+            if (record.status === 'pending') {
+                const withdraw = document.createElement('button');
+                withdraw.type = 'button';
+                withdraw.className = 'builder-button is-quiet';
+                withdraw.dataset.withdrawReview = record.id;
+                withdraw.textContent = 'Отозвать версию';
+                item.append(withdraw);
+            }
+            fragment.append(item);
+        });
+        const list = el('reviewOutboxList');
+        list.replaceChildren(fragment);
+        if (focusedWithdrawal && el('reviewOutbox').open) {
+            const next = Array.from(list.querySelectorAll('[data-withdraw-review]')).find(button => button.dataset.withdrawReview === focusedWithdrawal);
+            (next || el('reviewOutbox').querySelector('header button'))?.focus({ preventScroll: true });
+        }
+    }
+
     function renderWorkflow() {
         const subsection = activeSubsection();
         const workflow = el('builderWorkflow');
         const notes = el('reviewNotes');
-        if (!state.current || subsection || state.current.compatibilityReadOnly) {
+        if (!state.current || (subsection && state.isOwner) || state.current.compatibilityReadOnly) {
             workflow.hidden = true;
             notes.hidden = true;
             el('publishButton').hidden = true;
@@ -576,10 +709,21 @@
             labels.published = [STATUS_LABELS[publication?.stage] || STATUS_LABELS.pending, publication?.error || 'Проверяем, когда эта версия станет доступна читателям.'];
             ensurePublication(state.current);
         }
+        const ownRecords = state.isOwner ? [] : recordsFor(state.current);
+        const ownLatest = ownRecords[0];
+        const sentCurrent = ownRecords.some(record => record.revision === state.current.revision && reviewIsActive(record));
         const meta = labels[status] || labels.draft;
+        if (ownLatest && status !== 'published') {
+            meta[0] = REVIEW_LABELS[ownLatest.status] || meta[0];
+            meta[1] = ownLatest.note || ('Версия ' + ownLatest.revision +
+                (ownLatest.revision === state.current.revision ? '' : ' · есть более новый черновик'));
+        }
         const badge = el('workflowStatus');
         badge.textContent = meta[0];
-        badge.className = 'builder-workflow-status is-' + (pending ? publication?.stage || 'pending' : status);
+        const reviewStatus = ownLatest?.status === 'returned' ? 'failed'
+            : ownLatest?.status === 'published' ? 'published'
+            : ownLatest && reviewIsActive(ownLatest) ? 'ready' : status;
+        badge.className = 'builder-workflow-status is-' + (pending ? publication?.stage || 'pending' : reviewStatus);
         el('workflowHint').textContent = meta[1];
         let publicationActions = el('publicationActions');
         if (!publicationActions) {
@@ -614,9 +758,12 @@
             }
         }
         const submit = el('submitReviewButton');
-        submit.hidden = status === 'published' || (state.isOwner && status === 'ready');
-        submit.dataset.action = status === 'ready' ? 'withdraw' : 'submit';
-        submit.textContent = status === 'ready' ? 'Отозвать с проверки' : 'Отправить на проверку';
+        submit.hidden = status === 'published' || (state.isOwner ? status === 'ready' : !state.review);
+        submit.dataset.action = state.isOwner ? (status === 'ready' ? 'withdraw' : 'submit') : 'send-version';
+        submit.disabled = !state.isOwner && (state.sendingReview || sentCurrent);
+        submit.textContent = state.isOwner
+            ? (status === 'ready' ? 'Отозвать с проверки' : 'Отправить на проверку')
+            : (state.sendingReview ? 'Отправляем…' : sentCurrent ? 'Версия отправлена' : 'Отправить версию');
         const returnButton = el('returnReviewButton');
         returnButton.hidden = !state.isOwner || status !== 'ready';
         el('publishButton').hidden = !state.isOwner || status !== 'ready';
@@ -815,6 +962,7 @@
         if (!change.skipUndo && previous) {
             undoManager(key).record(previous, change.label || (structural ? 'Изменена структура' : 'Изменён текст'), change.mergeKey || '');
         }
+        pinReviewBase(state.current);
         const reviewStatus = state.current.reviewStatus;
         Model.touch(state.current, state.user.uid);
         if (change.preserveReviewStatus) state.current.reviewStatus = reviewStatus;
@@ -1018,6 +1166,13 @@
         if (!state.current || !snapshot) return false;
         const previousRevision = Number(state.current.revision) || 1;
         const replacement = Model.normalizeSection(snapshot, state.subject);
+        const published = state.publishedSections.find(section => section.id === replacement.id);
+        if (published && sameVersion(published, versionOf(replacement))) {
+            delete replacement.reviewBaseHash;
+        } else if (!replacement.reviewBaseHash && state.current.reviewBaseHash) {
+            replacement.reviewBaseHash = state.current.reviewBaseHash;
+        }
+        pinReviewBase(replacement);
         replacement.revision = Math.max(previousRevision, Number(replacement.revision) || 1);
         replacement.updatedBy = state.user.uid;
         Model.touch(replacement, state.user.uid);
@@ -1105,7 +1260,50 @@
         toast('Версия восстановлена. Предыдущий вариант можно вернуть через Ctrl+Z.');
     }
 
+    async function sendReviewVersion() {
+        const target = state.current;
+        const user = state.user;
+        const client = state.review;
+        if (!target || !client || state.isOwner || state.sendingReview || target.reviewStatus === 'published') return;
+        if (recordsFor(target).some(record => record.revision === target.revision && reviewIsActive(record))) return;
+        const errors = Model.validateSection(target);
+        if (errors.length) return toast(errors[0], true);
+
+        const frozen = clone(target);
+        const baseHash = frozen.reviewBaseHash || publishedBaseFor(frozen);
+        if (!baseHash) return toast('Не удалось проверить опубликованную версию. Обновите раздел и повторите отправку.', true);
+        const version = versionOf(frozen);
+        const isCurrent = () => state.user === user && state.current === target && sameVersion(state.current, version);
+
+        state.sendingReview = true;
+        renderWorkflow();
+        try {
+            if (await saveNow() === false) throw new Error('Сохраните черновик в облаке перед отправкой.');
+            if (!isCurrent()) throw new Error('Черновик изменился. Проверьте его и повторите отправку.');
+            const base = await window.NoteReview.readBase({ subject: frozen.subject, sectionId: frozen.id });
+            if (base.hash !== baseHash) throw new Error('На сайте уже другая версия раздела. Обновите страницу, откройте опубликованный раздел в истории и перенесите свои правки.');
+            const cloud = await window.AlmanionAccount.database.ref('noteDrafts/' + frozen.subject + '/' + frozen.id).once('value');
+            if (!sameVersion(cloud.val(), version)) throw new Error('Облачный черновик уже изменился. Сверьте версии перед отправкой.');
+            if (!isCurrent()) throw new Error('Черновик изменился. Проверьте его и повторите отправку.');
+            const bundle = await publicationFiles(false, frozen);
+            if (!isCurrent()) throw new Error('Черновик изменился. Проверьте его и повторите отправку.');
+            await client.submit({ section: frozen, files: bundle.files, baseHash });
+            if (state.user === user) toast('Версия ' + frozen.revision + ' отправлена на проверку');
+        } catch (error) {
+            if (state.user === user) toast(error.message || 'Не удалось отправить версию.', true);
+        } finally {
+            if (state.user === user) {
+                state.sendingReview = false;
+                renderWorkflow();
+            }
+        }
+    }
+
     function changeReview(action) {
+        if (!state.isOwner) {
+            if (action === 'send-version') sendReviewVersion();
+            return;
+        }
         if (!state.current) return;
         try {
             History.transitionReview(state.current, action, state.user, state.isOwner);
@@ -1140,6 +1338,7 @@
         if (deletion) section.revision = Math.max(section.revision, Number(deletion.revision) + 1);
         section.order = state.sections.length ? Math.max(...state.sections.map(item => Number(item.order) || 0)) + 1000 : 1000;
         section.updatedBy = state.user.uid;
+        pinReviewBase(section);
         state.sections.push(section);
         state.sections.sort(compareSections);
         state.current = section;
@@ -1657,19 +1856,23 @@
         }
     }
 
-    async function publicationFiles(markPublished) {
-        const section = clone(state.current);
+    async function publicationFiles(markPublished, frozen) {
+        const section = clone(frozen || state.current);
+        const user = state.user;
         if (markPublished) History.transitionReview(section, 'publish', state.user, true);
-        section.updatedAt = Date.now();
-        section.updatedBy = state.user.uid;
+        if (!frozen) {
+            section.updatedAt = Date.now();
+            section.updatedBy = user.uid;
+        }
         const publishedSection = clone(section);
         delete publishedSection.review;
+        delete publishedSection.reviewBaseHash;
         const manifest = manifestWithCurrent(publishedSection);
         const files = [
-            { path: 'content/' + state.subject + '/sections/' + section.id + '.json', content: JSON.stringify(publishedSection, null, 2) + '\n', encoding: 'utf-8' },
-            { path: 'content/' + state.subject + '/manifest.json', content: JSON.stringify(manifest, null, 2) + '\n', encoding: 'utf-8' }
+            { path: 'content/' + section.subject + '/sections/' + section.id + '.json', content: JSON.stringify(publishedSection, null, 2) + '\n', encoding: 'utf-8' },
+            { path: 'content/' + section.subject + '/manifest.json', content: JSON.stringify(manifest, null, 2) + '\n', encoding: 'utf-8' }
         ];
-        const assets = await Storage.listAssets(state.user.uid, state.subject, section.id).catch(() => []);
+        const assets = await Storage.listAssets(user.uid, section.subject, section.id).catch(() => []);
         const referencedImages = collectImagePaths(section);
         assets.filter(asset => referencedImages.has(String(asset.path || '').replace(/\\/g, '/'))).forEach(asset => {
             const comma = asset.dataUrl.indexOf(',');
@@ -1750,6 +1953,7 @@
                 const draft = state.sections.find(s => s.id === section.id);
                 if (draft && sameVersion(draft, expectedVersion)) {
                     Object.assign(draft, section);
+                    delete draft.reviewBaseHash;
                     rememberSnapshot(draft);
                     await Storage.putDraft(user.uid, draft);
                     await queueRemoteSave(clone(draft), ++state.saveGeneration, 'Изменения отправлены');
@@ -1941,6 +2145,23 @@
         });
         el('submitReviewButton').addEventListener('click', event => changeReview(event.currentTarget.dataset.action || 'submit'));
         el('returnReviewButton').addEventListener('click', () => changeReview('return'));
+        el('reviewOutboxButton').addEventListener('click', () => {
+            const dialog = el('reviewOutbox');
+            if (!dialog.open) dialog.showModal();
+        });
+        el('reviewOutboxList').addEventListener('click', async event => {
+            const button = event.target.closest('[data-withdraw-review]');
+            if (!button || !state.review || button.disabled) return;
+            const client = state.review;
+            button.disabled = true;
+            try {
+                await client.decide(button.dataset.withdrawReview, { status: 'withdrawn' });
+            } catch (error) {
+                if (state.review === client) el('reviewOutboxState').textContent = error.message || 'Не удалось отозвать версию.';
+            } finally {
+                button.disabled = false;
+            }
+        });
         el('reviewCommentForm').addEventListener('submit', event => {
             event.preventDefault();
             if (!state.current) return;

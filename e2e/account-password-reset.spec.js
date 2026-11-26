@@ -10,14 +10,14 @@ const accountStyles = fs.readFileSync(path.join(root, 'styles', 'site', '00-comp
 
 // Exercise the real account module with an isolated SDK; never send email or
 // connect to the project's Firebase account/database from these tests.
-function installAccountStub({ persistenceFailure = false, appleEnabled = false, signedIn = false } = {}) {
+function installAccountStub({ persistenceFailure = false, appleEnabled = false, signedIn = false, siteOwner = false } = {}) {
     const state = window.accountTest = {
         resetCalls: [], loginCalls: [], registerCalls: [], googleCalls: 0,
         appleCalls: [], appleLinks: [], resetError: '', resetPending: false
     };
     const snapshotProvider = ({ providerId, scopes }) => ({ providerId, scopes });
     const member = {
-        uid: 'existing-student',
+        uid: siteOwner ? '2M2ZdLQcJAhluPjUVFNJ6MyQrdH2' : 'existing-student',
         email: 'student@example.invalid',
         emailVerified: true,
         displayName: 'Ученик',
@@ -37,6 +37,10 @@ function installAccountStub({ persistenceFailure = false, appleEnabled = false, 
             sessionListeners.add(callback);
             setTimeout(() => callback(auth.currentUser), 0);
             return () => sessionListeners.delete(callback);
+        },
+        async signOut() {
+            auth.currentUser = null;
+            sessionListeners.forEach(callback => callback(null));
         },
         sendPasswordResetEmail(email) {
             state.resetCalls.push(email);
@@ -69,7 +73,23 @@ function installAccountStub({ persistenceFailure = false, appleEnabled = false, 
         addScope(scope) { this.scopes.push(scope); }
         setCustomParameters() {}
     };
-    const database = () => ({ ref: () => ({ on() {}, off() {}, set: async () => {}, once: async () => ({ val: () => null }) }) });
+    const reviewListeners = new Set();
+    state.reviewSubscriptions = 0;
+    state.showReviews = count => {
+        reviewListeners.forEach(callback => callback({ numChildren: () => count }));
+    };
+    const database = () => ({ ref: path => {
+        if (path === 'noteReviewInbox') {
+            const query = {
+                orderByChild() { return query; },
+                equalTo() { return query; },
+                on(_event, callback) { state.reviewSubscriptions++; reviewListeners.add(callback); },
+                off(_event, callback) { reviewListeners.delete(callback); }
+            };
+            return query;
+        }
+        return { on() {}, off() {}, set: async () => {}, once: async () => ({ val: () => null }) };
+    } });
     database.ServerValue = { TIMESTAMP: {} };
     window.appleAuthEnabled = appleEnabled;
     window.firebaseConfig = {};
@@ -93,6 +113,25 @@ async function openAccount(page, options = {}) {
 }
 
 test.use({ serviceWorkers: 'block' });
+
+test('only the site owner receives review notifications and the badge clears on sign-out', async ({ page }) => {
+    await openAccount(page, { signedIn: true, siteOwner: true });
+    const notice = page.locator('#accountReviewLink');
+    await expect(notice).toHaveAttribute('href', /admin\.html#reviews$/);
+    await page.evaluate(() => accountTest.showReviews(2));
+    await expect(notice).toHaveText('Версии на проверке · 2');
+    await expect(page.locator('#accountBtn .account-review-count')).toHaveText('2');
+    await page.getByRole('button', { name: 'Выйти', exact: true }).click();
+    await expect(page.getByRole('button', { name: 'Войти в аккаунт' })).toBeVisible();
+    await page.evaluate(() => accountTest.showReviews(3));
+    await expect(page.locator('#accountBtn .account-review-count')).toHaveCount(0);
+});
+
+test('a regular account does not subscribe to the review inbox', async ({ page }) => {
+    await openAccount(page, { signedIn: true });
+    await expect(page.locator('#accountReviewLink')).toHaveCount(0);
+    expect(await page.evaluate(() => accountTest.reviewSubscriptions)).toBe(0);
+});
 
 test('forecast login on a phone waits for an input tap and fits above the keyboard', async ({ page }) => {
     await page.setViewportSize({ width: 320, height: 568 });

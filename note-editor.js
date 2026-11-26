@@ -49,6 +49,12 @@
         };
     }
 
+    function sameVersion(section, expected) {
+        const actual = versionOf(section);
+        if (!actual || !expected) return actual === expected;
+        return actual.revision === expected.revision && actual.updatedAt === expected.updatedAt && actual.updatedBy === expected.updatedBy;
+    }
+
     async function resolveSubject() {
         const page = fileName(location.pathname);
         const response = await fetch('content/subjects.json?v=' + Date.now(), { cache: 'no-store' });
@@ -104,8 +110,9 @@
 
     function loadDependencies() {
         if (!dependenciesPromise) {
-            dependenciesPromise = loadScript('constructor/model.js?v=20261014-1', () => !!window.NoteModel)
-                .then(() => loadScript('constructor/storage.js?v=20260904-inline-2', () => !!window.NoteStorage));
+            dependenciesPromise = loadScript('constructor/model.js?v=20261126-2', () => !!window.NoteModel)
+                .then(() => loadScript('constructor/storage.js?v=20260904-inline-2', () => !!window.NoteStorage))
+                .then(() => loadScript('constructor/review.js?v=20261126-2', () => !!window.NoteReview).catch(() => {}));
         }
         return dependenciesPromise;
     }
@@ -149,8 +156,12 @@
             });
         }
         candidates.sort((a, b) => b.timestamp - a.timestamp);
+        const section = clone(candidates[0].section);
+        const publishedBaseHash = await window.NoteReview?.hashSection(published.raw).catch(() => '');
+        if (publishedBaseHash && !section.reviewBaseHash) section.reviewBaseHash = publishedBaseHash;
         return {
-            section: clone(candidates[0].section),
+            section,
+            publishedBaseHash,
             remoteVersion: versionOf(remoteRaw),
             source: candidates[0] === published ? 'published' : (candidates[0].raw === remoteRaw ? 'cloud' : 'local')
         };
@@ -291,7 +302,7 @@
             '</div>' +
             '<div class="note-inline-editor-footer">' +
                 '<button type="button" class="note-inline-add-root" data-action="open-picker" data-parent-id="">+ Добавить блок</button>' +
-                '<span>Изменения сохраняются как черновик. Опубликованная версия не меняется.</span>' +
+                (isLocalDemo ? '' : '<button type="button" class="note-inline-submit" data-action="review">На проверку</button>') +
             '</div>' + renderPicker() +
         '</div>';
     }
@@ -390,6 +401,7 @@
         editingSession.remoteQueue = editingSession.remoteQueue
             .catch(() => {})
             .then(() => saveRemote(editingSession, snapshot, generation));
+        return editingSession.remoteQueue;
     }
 
     async function saveRemote(editingSession, section, generation) {
@@ -398,6 +410,11 @@
         let conflict = false;
         try {
             const reference = window.AlmanionAccount.database.ref('noteDrafts/' + section.subject + '/' + section.id);
+            const snapshot = await reference.once('value');
+            if (!sameVersion(snapshot.val(), expected)) {
+                showConflict(editingSession);
+                return false;
+            }
             const result = await reference.transaction(remote => {
                 if (!window.NoteModel.canReplaceRemoteDraft(remote, expected, section)) {
                     conflict = true;
@@ -445,6 +462,7 @@
             return;
         }
         session.section = window.NoteModel.normalizeSection(snapshot.val(), subject.id);
+        if (session.publishedBaseHash && !session.section.reviewBaseHash) session.section.reviewBaseHash = session.publishedBaseHash;
         session.remoteVersion = versionOf(snapshot.val());
         session.conflict = false;
         session.dirty = false;
@@ -518,6 +536,7 @@
             if (!button) return;
             const action = button.dataset.action;
             if (action === 'close') return closeEditor();
+            if (action === 'review') return continueToReview(button);
             if (action === 'open-picker') return openPicker(button);
             if (action === 'add-type') return addBlock(button.dataset.type);
             if (action === 'load-cloud') {
@@ -527,6 +546,37 @@
             }
             changeStructure(action, button.dataset.blockId);
         });
+    }
+
+    async function continueToReview(button) {
+        if (!session || !currentUser || isLocalDemo || button.disabled) return;
+        if (session.section.reviewStatus === 'published') return setSaveState('saved', 'Сначала внесите изменения в раздел');
+        if (session.conflict) return setSaveState('error', 'Сверьте черновик с облачной версией');
+        const editingSession = session;
+        const actor = currentUser;
+        const generation = ++editingSession.saveGeneration;
+        const sameSession = () => session === editingSession && currentUser === actor;
+        const unchanged = () => sameSession() && generation === editingSession.saveGeneration;
+        const snapshot = clone(editingSession.section);
+        const link = new URL(constructorUrl(editingSession.context));
+        link.searchParams.delete('subsection');
+        link.searchParams.set('review', '1');
+        button.disabled = true;
+        window.clearTimeout(editingSession.remoteTimer);
+        setSaveState('saving', 'Готовим версию…');
+        try {
+            await window.NoteStorage.putDraft(actor.uid, snapshot);
+            if (!unchanged()) return;
+            if (editingSession.dirty && !await queueRemoteSave(generation)) {
+                if (unchanged() && !editingSession.conflict) setSaveState('local', 'Черновик на устройстве. Повторите отправку после подключения.');
+                return;
+            }
+            if (unchanged()) location.assign(link.href);
+        } catch (error) {
+            if (unchanged() && !editingSession.conflict) setSaveState('error', 'Не удалось подготовить черновик');
+        } finally {
+            if (sameSession()) button.disabled = false;
+        }
     }
 
     function closeEditor() {
@@ -574,11 +624,12 @@
                 trigger,
                 section: loaded.section,
                 source: loaded.source,
+                publishedBaseHash: loaded.publishedBaseHash,
                 remoteVersion: loaded.remoteVersion,
                 saveGeneration: 0,
                 remoteTimer: 0,
                 remoteQueue: Promise.resolve(),
-                dirty: false,
+                dirty: loaded.source === 'local' && !sameVersion(loaded.section, loaded.remoteVersion),
                 conflict: false,
                 pickerParentId: '',
                 editor: null

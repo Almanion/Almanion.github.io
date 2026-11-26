@@ -15,6 +15,7 @@
     <link rel="stylesheet" href="styles/typography.css?v=20261002-1">
     <link rel="stylesheet" href="styles/physics-forecast.css?v=20261126-phone-layout">
     <link rel="stylesheet" href="styles/admin.css?v=20261125-balances">
+    <link rel="stylesheet" href="styles/admin-reviews.css?v=20261126-1">
 </head>
 <body class="admin-page">
 <script>window.AlmanionThemeBootstrap.applyBody();</script>
@@ -36,6 +37,7 @@
 <button id="tab-analytics" class="admin-nav-item" role="tab" type="button" aria-controls="view-analytics" aria-selected="false" tabindex="-1" data-admin-view="analytics" aria-label="Статистика"><span class="eic eic-calendar" aria-hidden="true"></span><span class="admin-nav-full">Статистика</span><span class="admin-nav-short">Отчёты</span></button>
 <button id="tab-polls" class="admin-nav-item" role="tab" type="button" aria-controls="view-polls" aria-selected="false" tabindex="-1" data-admin-view="polls"><span class="eic eic-chat" aria-hidden="true"></span><span>Опросы</span></button>
 <button id="tab-forecasts" class="admin-nav-item" role="tab" type="button" aria-controls="view-forecasts" aria-selected="false" tabindex="-1" data-admin-view="forecasts" aria-label="Прогнозы" hidden><svg class="admin-forecast-icon" viewBox="0 0 20 20" aria-hidden="true"><path d="M3 4v12h14M5 12h3V9h4V6h5"/></svg><span class="admin-nav-full">Прогнозы</span><span class="admin-nav-short">Прогнозы</span></button>
+<button id="tab-reviews" class="admin-nav-item" role="tab" type="button" aria-controls="view-reviews" aria-selected="false" tabindex="-1" data-admin-view="reviews" aria-label="Редакция" hidden><span class="eic eic-pen" aria-hidden="true"></span><span>Редакция</span><span class="review-count" id="reviewTabCount" hidden></span></button>
 <button id="tab-data" class="admin-nav-item" role="tab" type="button" aria-controls="view-data" aria-selected="false" tabindex="-1" data-admin-view="data"><span class="eic eic-gear" aria-hidden="true"></span><span>Данные</span></button></div><a class="admin-nav-home" href="index.html">← Открыть сайт</a></nav>
         <main class="admin-main">
             <section class="admin-view" id="view-overview" role="tabpanel" aria-labelledby="tab-overview" tabindex="0"><div class="admin-view-heading"><h1 tabindex="-1">Обзор</h1><span class="admin-date" id="adminDate"></span></div><div class="stats-grid">
@@ -348,6 +350,44 @@
                     <dialog id="chartDialog" aria-labelledby="chartDialogQuestion chartTitle"></dialog>
                 </div>
             </section>
+            <section class="admin-view" id="view-reviews" role="tabpanel" aria-labelledby="tab-reviews" tabindex="0" hidden>
+                <div class="admin-view-heading"><h1 tabindex="-1">Редакция</h1><a class="btn btn-outline" href="constructor.html">Открыть конструктор</a></div>
+                <div class="admin-review-workspace">
+                    <section class="section admin-review-inbox" aria-labelledby="reviewInboxTitle">
+                        <header class="admin-review-inbox-header">
+                            <h2 class="section-title" id="reviewInboxTitle">На проверке</h2>
+                            <span class="review-count" id="reviewInboxCount" aria-live="polite" hidden></span>
+                        </header>
+                        <p id="reviewInboxStatus" class="admin-review-notice" role="status">Загрузка…</p>
+                        <button type="button" class="btn btn-outline" id="reviewInboxRetry" hidden>Повторить</button>
+                        <ol class="admin-review-list" id="reviewInboxList"></ol>
+                    </section>
+                    <section class="section admin-review-detail" id="reviewDetail" aria-labelledby="reviewTitle" aria-busy="false" hidden>
+                        <header>
+                            <p class="admin-review-context" id="reviewContext"></p>
+                            <h2 class="section-title" id="reviewTitle" tabindex="-1"></h2>
+                            <p class="admin-review-author" id="reviewAuthor"></p>
+                        </header>
+                        <p class="admin-review-notice" id="reviewDetailStatus" role="status"></p>
+                        <p class="admin-review-notice review-stale" id="reviewStale" role="status" hidden></p>
+                        <button type="button" class="btn btn-outline" id="reviewDetailRetry" hidden>Повторить загрузку</button>
+                        <div id="reviewDiff"></div>
+                        <div class="admin-review-actions" id="reviewActions" hidden>
+                            <button type="button" class="btn btn-primary" id="reviewPublish">Утвердить и опубликовать</button>
+                            <button type="button" class="btn btn-outline" id="reviewReturn" aria-controls="reviewReturnForm" aria-expanded="false">Вернуть на доработку</button>
+                        </div>
+                        <form class="admin-review-return" id="reviewReturnForm" hidden>
+                            <label for="reviewReturnNote">Комментарий редактору</label>
+                            <textarea id="reviewReturnNote" maxlength="1200" rows="3" required></textarea>
+                            <div class="admin-review-actions">
+                                <button type="submit" class="btn btn-primary" id="reviewReturnSubmit">Вернуть версию</button>
+                                <button type="button" class="btn btn-outline" id="reviewReturnCancel">Отмена</button>
+                            </div>
+                        </form>
+                        <p class="admin-review-error" id="reviewActionError" role="alert" hidden></p>
+                    </section>
+                </div>
+            </section>
             <section class="admin-view" id="view-data" role="tabpanel" aria-labelledby="tab-data" tabindex="0" hidden><div class="admin-view-heading"><h1 tabindex="-1">Данные</h1></div><div class="section"><h2 class="section-title">Обслуживание</h2>
         <div class="admin-data-row"><div><h3>Список онлайн</h3><p>Активные подключения появятся снова автоматически.</p></div><button class="btn btn-outline" type="button" data-admin-command="clear-presence">Сбросить онлайн</button></div>
         <div class="admin-data-row"><div><h3>Дневная статистика</h3><p>Удалить счётчики активности за все дни.</p></div><button class="btn btn-outline" type="button" data-admin-command="clear-daily-stats">Очистить статистику</button></div></div>
@@ -367,6 +407,10 @@
     <script src="physics-forecast-chart.js?v=20261126-phone-layout"></script>
     <script src="physics-forecast-admin.js?v=20261126-liquidity"></script>
     <script src="admin-forecasts.js?v=20261126-liquidity"></script>
-    <script src="admin-dashboard.js?v=20261125-forecasts"></script>
+    <script src="constructor/config.js?v=20261126-1"></script>
+    <script src="constructor/model.js?v=20261126-1"></script>
+    <script src="constructor/review.js?v=20261126-1"></script>
+    <script src="admin-reviews.js?v=20261126-1"></script>
+    <script src="admin-dashboard.js?v=20261126-reviews"></script>
 </body>
 </html>

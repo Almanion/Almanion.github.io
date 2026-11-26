@@ -14,11 +14,13 @@
     let activeView = 'overview';
     let forecasts = null;
     let forecastOwner = false;
+    let reviews = null;
+    let reviewOwner = false;
 
     function byId(id) { return document.getElementById(id); }
 
     function selectView(name, options = {}) {
-        if (!byId('view-' + name) || (name === 'forecasts' && !forecastOwner)) name = 'overview';
+        if (!byId('view-' + name) || (name === 'forecasts' && !forecastOwner) || (name === 'reviews' && !reviewOwner)) name = 'overview';
         viewScroll.set(activeView, window.scrollY);
         activeView = name;
         document.querySelectorAll('.admin-view').forEach(panel => {
@@ -32,6 +34,7 @@
         if (options.history && location.hash !== '#' + name) history.pushState(null, '', '#' + name);
         if (options.scroll) window.scrollTo({ top: viewScroll.get(name) || 0, behavior: 'instant' });
         if (options.focus) byId('view-' + name).querySelector('h1').focus({ preventScroll: true });
+        reviews?.setVisible(name === 'reviews');
         if (name === 'forecasts') {
             forecasts ??= window.createAdminForecasts({
                 database: db, currentUser: () => auth.currentUser,
@@ -852,6 +855,16 @@
         forecastOwner = isOwner(user) && !user.isAnonymous;
         byId('tab-forecasts').hidden = !forecastOwner;
         forecasts?.stop();
+        reviewOwner = forecastOwner && typeof window.createAdminReviews === 'function' && typeof window.NoteReview?.create === 'function';
+        byId('tab-reviews').hidden = !reviewOwner;
+        reviews?.stop();
+        if (reviewOwner) {
+            reviews ??= window.createAdminReviews({
+                database: db, currentUser: () => auth.currentUser, ownerUid: SITE_OWNER_UID,
+                accountName: uid => accountDirectory[uid]?.displayName || accountDirectory[uid]?.email
+            });
+            reviews.start();
+        }
         selectView(location.hash.slice(1));
         analyticsLoading = false;
         accountDirectoryLoading = false;

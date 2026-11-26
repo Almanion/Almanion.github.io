@@ -185,6 +185,8 @@
             createdAt: Number(source.createdAt) || now,
             updatedAt: Number(source.updatedAt) || now,
             updatedBy: String(source.updatedBy || ''),
+            ...(typeof source.reviewBaseHash === 'string' && /^(?:none|[a-f0-9]{64})$/.test(source.reviewBaseHash)
+                ? { reviewBaseHash: source.reviewBaseHash } : {}),
             reviewStatus: ['draft', 'ready', 'published'].includes(source.reviewStatus) ? source.reviewStatus : 'draft',
             review: {
                 submittedAt: Number(sourceReview.submittedAt) || 0,

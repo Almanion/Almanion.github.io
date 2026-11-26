@@ -11,7 +11,7 @@
         experiments: 'experiment-notebook.js?v=20261014-1',
         featureStyles: 'styles/site/features.css?v=20261123-7',
         bookmarksStyles: 'styles/bookmarks.css?v=20260920-2',
-        editorStyles: 'styles/note-editor.css?v=20260929-2',
+        editorStyles: 'styles/note-editor.css?v=20261126-2',
         readerToolsStyles: 'styles/reader-tools.css?v=20261002-2',
         personalNotes: 'personal-notes.js?v=20261121-4',
         offline: 'offline-library.js?v=20261114',
@@ -32,9 +32,9 @@
         firebaseConfig: 'firebase-config.js?v=20261126-1',
         dataSync: 'data-sync.js?v=20260908-1',
         analytics: 'firebase-analytics.js?v=20261009-4',
-        account: 'account.js?v=20261126-1',
+        account: 'account.js?v=20261126-2',
         bookmarks: 'bookmarks.js?v=20261122-4',
-        editor: 'note-editor.js?v=20261015-1'
+        editor: 'note-editor.js?v=20261126-2'
     };
 
     function loadResource(key, isStyle) {

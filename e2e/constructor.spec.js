@@ -59,6 +59,115 @@ test('editor creates and reloads a draft, previews it and cannot publish', async
     expect(errors).toEqual([]);
 });
 
+test('a delegated editor sends the saved revision, can keep editing and can withdraw the immutable version', async ({ page }) => {
+    await open(page, 'editor');
+    await create(page, 'Queued section');
+    const content = page.locator('[data-block-field="content"]').first();
+    await content.fill('Send this exact version');
+    await page.getByRole('button', { name: 'Отправить версию' }).click();
+    await expect(page.locator('#submitReviewButton')).toBeDisabled();
+    await expect(page.locator('#workflowStatus')).toHaveText('На проверке');
+    await expect(page.locator('#publishButton')).toBeHidden();
+    const submitted = await page.evaluate(() => {
+        const [[id, header]] = Object.entries(window.testCloud.read('noteReviewInbox'));
+        const record = window.testCloud.read('noteReviewVersions/' + id);
+        const files = JSON.parse(record.bundle);
+        const section = JSON.parse(files.find(file => file.path.endsWith('/sections/queued-section.json')).content);
+        return { id, header, section, baseHash: record.baseHash };
+    });
+    expect(submitted.header.authorUid).toBe('test-editor');
+    expect(submitted.header.status).toBe('pending');
+    expect(submitted.baseHash).toBe('none');
+    expect(submitted.section.blocks[0].content).toBe('Send this exact version');
+    expect(submitted.section.revision).toBe(submitted.header.revision);
+    expect(submitted.section.reviewBaseHash).toBeUndefined();
+
+    await content.fill('Later working draft');
+    await expect(page.locator('#saveStateText')).toHaveText('Все изменения сохранены');
+    await expect(page.locator('#submitReviewButton')).toBeEnabled();
+    await page.setViewportSize({ width: 390, height: 750 });
+    await page.locator('#reviewOutboxButton').click();
+    const outbox = page.getByRole('dialog', { name: 'Мои версии' });
+    await expect(outbox.getByRole('link', { name: 'Queued section' })).toBeVisible();
+    await outbox.getByRole('button', { name: 'Отозвать версию' }).click();
+    await expect(outbox.getByText('Отозвана')).toBeVisible();
+    const after = await page.evaluate(id => ({
+        status: window.testCloud.read('noteReviewInbox/' + id).status,
+        draft: window.testCloud.read('noteDrafts/chemistry-10/queued-section'),
+        bundle: window.testCloud.read('noteReviewVersions/' + id).bundle
+    }), submitted.id);
+    expect(after.status).toBe('withdrawn');
+    expect(after.draft.blocks[0].content).toBe('Later working draft');
+    expect(JSON.parse(JSON.parse(after.bundle).find(file => file.path.endsWith('/sections/queued-section.json')).content)).toEqual(submitted.section);
+});
+
+test('a previously saved draft keeps its original canonical base after the published section changes', async ({ page }) => {
+    const id = 'already-published';
+    const canonical = {
+        schemaVersion: 1, id, subject: 'chemistry-10', title: 'Published section', navTitle: 'Published section',
+        order: 1000, revision: 1, updatedAt: 1, createdAt: 1, updatedBy: 'owner', reviewStatus: 'published',
+        blocks: [{ id: 'first-block', type: 'paragraph', content: 'First published version' }]
+    };
+    await page.route('**/content/chemistry-10/manifest.json?*', route => route.fulfill({
+        json: { schemaVersion: 1, subject: 'chemistry-10', sections: [{ id }] }
+    }));
+    await page.route('**/content/chemistry-10/sections/' + id + '.json?*', route => route.fulfill({ json: canonical }));
+    await open(page, 'editor');
+    const content = page.locator('[data-block-field="content"]').first();
+    await content.fill('Editor’s version based on the first publication');
+    await expect(page.locator('#saveStateText')).toHaveText('Все изменения сохранены');
+    const base = await page.evaluate(id => window.testCloud.read('noteDrafts/chemistry-10/' + id).reviewBaseHash, id);
+    expect(base).toMatch(/^[a-f0-9]{64}$/);
+
+    // A canonical update with an earlier clock than the current work must not silently rebase that work on reload.
+    canonical.revision = 2;
+    canonical.updatedAt = 2;
+    canonical.blocks[0].content = 'Second published version';
+    await page.reload();
+    await expect(content).toHaveValue('Editor’s version based on the first publication');
+    await page.getByRole('button', { name: 'Отправить версию' }).click();
+    await expect(page.locator('.builder-toast.is-error')).toContainText('На сайте уже другая версия раздела');
+    expect(await page.evaluate(id => window.testCloud.read('noteDrafts/chemistry-10/' + id).reviewBaseHash, id)).toBe(base);
+    expect(await page.evaluate(() => window.testCloud.read('noteReviewInbox'))).toBeNull();
+    await page.locator('#historyButton').click();
+    await page.locator('.builder-history-item').filter({ hasText: 'Опубликованная версия' })
+        .getByRole('button', { name: 'Восстановить эту версию' }).click();
+    await expect(content).toHaveValue('Second published version');
+    await content.fill('Editor’s revised text based on the second publication');
+    await page.getByRole('button', { name: 'Отправить версию' }).click();
+    await expect(page.locator('#workflowStatus')).toHaveText('На проверке');
+    expect(await page.evaluate(id => window.testCloud.read('noteDrafts/chemistry-10/' + id).reviewBaseHash, id)).not.toBe(base);
+});
+
+test('inline editor saves the current changes and opens the section on its review action', async ({ page }) => {
+    const id = 'inline-review';
+    const canonical = {
+        schemaVersion: 1, id, subject: 'chemistry-10', title: 'Inline section', navTitle: 'Inline section',
+        order: 1000, revision: 1, updatedAt: 1, createdAt: 1, updatedBy: 'owner', reviewStatus: 'published',
+        blocks: [{ id: 'first-block', type: 'paragraph', content: 'Original inline note' }]
+    };
+    await page.addInitScript(() => { window.testDefaultRole = 'editor'; });
+    await page.route('**/chemistry-10.html', route => route.fulfill({
+        contentType: 'text/html',
+        body: '<!DOCTYPE html><html lang="ru"><meta charset="utf-8"><body><section class="constructor-content-section" id="inline-review" data-constructor-section="inline-review"><h2>Inline section</h2><p>Original inline note</p></section><script src="/account.js?test=1"></script><script src="/note-editor.js"></script></body></html>'
+    }));
+    await page.route('**/content/chemistry-10/manifest.json?*', route => route.fulfill({
+        json: { schemaVersion: 1, subject: 'chemistry-10', sections: [{ id }] }
+    }));
+    await page.route('**/content/chemistry-10/sections/' + id + '.json?*', route => route.fulfill({ json: canonical }));
+    await page.goto('/chemistry-10.html');
+    await page.getByRole('button', { name: 'Редактировать этот раздел' }).click();
+    await page.locator('.note-inline-editor [data-field="content"]').fill('Edited inside the note');
+    await page.getByRole('button', { name: 'На проверку', exact: true }).click();
+    await expect(page).toHaveURL(/constructor\.html\?.*section=inline-review.*review=1/);
+    await expect(page.locator('#submitReviewButton')).toBeFocused();
+    await expect(page.locator('[data-block-field="content"]').first()).toHaveValue('Edited inside the note');
+    expect(await page.evaluate(id => {
+        const draft = window.testCloud.read('noteDrafts/chemistry-10/' + id);
+        return { text: draft.blocks[0].content, hasBase: /^[a-f0-9]{64}$/.test(draft.reviewBaseHash) };
+    }, id)).toEqual({ text: 'Edited inside the note', hasBase: true });
+});
+
 test('publication sends the canonical bundle and recovers from a server error', async ({ page }) => {
     await open(page);
     await create(page);

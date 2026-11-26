@@ -953,6 +953,44 @@
       }
     },
 
+    "noteReviewInbox": {
+      ".indexOn": ["status", "authorUid"],
+      ".read": "auth != null && auth.token.firebase.sign_in_provider !== 'anonymous' && (auth.uid === '2M2ZdLQcJAhluPjUVFNJ6MyQrdH2' || (query.orderByChild === 'authorUid' && query.equalTo === auth.uid))",
+      "$reviewId": {
+        ".read": "auth != null && auth.token.firebase.sign_in_provider !== 'anonymous' && data.child('authorUid').val() === auth.uid",
+        ".write": "auth != null && auth.token.firebase.sign_in_provider !== 'anonymous' && newData.exists() && ((!data.exists() && newData.child('status').val() === 'pending' && newData.child('authorUid').val() === auth.uid && newData.child('authorEmail').val() === auth.token.email && newData.child('submittedAt').val() === now && (auth.uid === '2M2ZdLQcJAhluPjUVFNJ6MyQrdH2' || root.child('adminRoles').child(auth.uid).child('contentEditor').val() === true)) || (data.child('status').val() === 'pending' && ((auth.uid === '2M2ZdLQcJAhluPjUVFNJ6MyQrdH2' && (newData.child('status').val() === 'publishing' || newData.child('status').val() === 'returned')) || (data.child('authorUid').val() === auth.uid && newData.child('status').val() === 'withdrawn'))) || (data.child('status').val() === 'publishing' && auth.uid === '2M2ZdLQcJAhluPjUVFNJ6MyQrdH2' && (newData.child('status').val() === 'pending' || newData.child('status').val() === 'published')))",
+        ".validate": "$reviewId.matches(/^[-_A-Za-z0-9]{20}$/) && newData.hasChildren(['authorUid', 'authorEmail', 'subject', 'sectionId', 'title', 'revision', 'submittedAt', 'status']) && ((!data.exists() && newData.parent().parent().child('noteReviewVersions').child($reviewId).child('authorUid').val() === auth.uid && newData.parent().parent().child('noteReviewVersions').child($reviewId).child('subject').val() === newData.child('subject').val() && newData.parent().parent().child('noteReviewVersions').child($reviewId).child('sectionId').val() === newData.child('sectionId').val()) || (data.exists() && newData.child('authorUid').val() === data.child('authorUid').val() && newData.child('authorEmail').val() === data.child('authorEmail').val() && newData.child('subject').val() === data.child('subject').val() && newData.child('sectionId').val() === data.child('sectionId').val() && newData.child('title').val() === data.child('title').val() && newData.child('revision').val() === data.child('revision').val() && newData.child('submittedAt').val() === data.child('submittedAt').val())) && ((newData.child('status').val() === 'pending' || newData.child('status').val() === 'publishing') ? (!newData.child('decisionBy').exists() && !newData.child('decidedAt').exists() && !newData.child('note').exists() && !newData.child('commit').exists()) : newData.hasChildren(['decisionBy', 'decidedAt', 'note', 'commit'])) && ((newData.child('status').val() === 'publishing' || newData.child('status').val() === 'published') ? newData.child('claimAt').exists() : !newData.child('claimAt').exists())",
+        "authorUid": { ".validate": "newData.isString() && newData.val().length <= 128" },
+        "authorEmail": { ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 254" },
+        "subject": { ".validate": "newData.isString() && newData.val().matches(/^(physics|math|geometry|chemistry|likbez|physics-10|chemistry-10|literature-10)$/)" },
+        "sectionId": { ".validate": "newData.isString() && newData.val().matches(/^[a-z0-9][a-z0-9-]{1,63}$/)" },
+        "title": { ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 140" },
+        "revision": { ".validate": "newData.isNumber() && newData.val() >= 1 && newData.val() % 1 === 0" },
+        "submittedAt": { ".validate": "newData.isNumber() && newData.val() > 0" },
+        "status": { ".validate": "newData.val() === 'pending' || newData.val() === 'publishing' || newData.val() === 'published' || newData.val() === 'returned' || newData.val() === 'withdrawn'" },
+        "claimAt": { ".validate": "newData.isNumber() && (data.exists() ? newData.val() === data.val() : newData.val() === now)" },
+        "decisionBy": { ".validate": "newData.val() === auth.uid" },
+        "decidedAt": { ".validate": "newData.isNumber() && newData.val() === now" },
+        "note": { ".validate": "newData.isString() && newData.val().length <= 1200" },
+        "commit": { ".validate": "newData.isString() && (newData.parent().child('status').val() === 'published' ? newData.val().matches(/^[0-9a-f]{40}$/) : newData.val() === '')" },
+        "$other": { ".validate": false }
+      }
+    },
+
+    "noteReviewVersions": {
+      "$reviewId": {
+        ".read": "auth != null && auth.token.firebase.sign_in_provider !== 'anonymous' && (auth.uid === '2M2ZdLQcJAhluPjUVFNJ6MyQrdH2' || data.child('authorUid').val() === auth.uid)",
+        ".write": "auth != null && auth.token.firebase.sign_in_provider !== 'anonymous' && !data.exists() && newData.exists() && newData.child('authorUid').val() === auth.uid && (auth.uid === '2M2ZdLQcJAhluPjUVFNJ6MyQrdH2' || root.child('adminRoles').child(auth.uid).child('contentEditor').val() === true)",
+        ".validate": "$reviewId.matches(/^[-_A-Za-z0-9]{20}$/) && newData.hasChildren(['authorUid', 'subject', 'sectionId', 'baseHash', 'bundle']) && newData.parent().parent().child('noteReviewInbox').child($reviewId).child('authorUid').val() === auth.uid && newData.parent().parent().child('noteReviewInbox').child($reviewId).child('status').val() === 'pending' && newData.parent().parent().child('noteReviewInbox').child($reviewId).child('subject').val() === newData.child('subject').val() && newData.parent().parent().child('noteReviewInbox').child($reviewId).child('sectionId').val() === newData.child('sectionId').val()",
+        "authorUid": { ".validate": "newData.val() === auth.uid" },
+        "subject": { ".validate": "newData.isString() && newData.val().matches(/^(physics|math|geometry|chemistry|likbez|physics-10|chemistry-10|literature-10)$/)" },
+        "sectionId": { ".validate": "newData.isString() && newData.val().matches(/^[a-z0-9][a-z0-9-]{1,63}$/)" },
+        "baseHash": { ".validate": "newData.isString() && newData.val().matches(/^(none|[0-9a-f]{64})$/)" },
+        "bundle": { ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 9961472" },
+        "$other": { ".validate": false }
+      }
+    },
+
     "noteDrafts": {
       "$subject": {
         ".read": "auth != null && (auth.uid === '2M2ZdLQcJAhluPjUVFNJ6MyQrdH2' || root.child('adminRoles').child(auth.uid).child('contentEditor').val() === true)",
@@ -972,6 +1010,7 @@
           "updatedAt": { ".validate": "newData.isNumber()" },
           "updatedBy": { ".validate": "newData.isString() && newData.val() === auth.uid" },
           "reviewStatus": { ".validate": "newData.val() === 'draft' || newData.val() === 'ready' || (newData.val() === 'published' && (auth.uid === '2M2ZdLQcJAhluPjUVFNJ6MyQrdH2'))" },
+          "reviewBaseHash": { ".validate": "newData.isString() && newData.val().matches(/^(none|[0-9a-f]{64})$/)" },
           "review": {
             ".validate": "newData.hasChildren(['submittedAt', 'submittedBy', 'returnedAt', 'returnedBy', 'publishedAt', 'publishedBy'])",
             "submittedAt": { ".validate": "newData.isNumber() && newData.val() >= 0" },

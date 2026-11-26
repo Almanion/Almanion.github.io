@@ -67,6 +67,7 @@ function handle(e, method) {
         academicYearsReady: !!scriptProperties.getProperty('MATCENTER_ACADEMIC_YEAR_SPREADSHEET_IDS'),
         notePublisher: true,
         noteDeletion: true,
+        noteReviewBaseCheck: true,
         plannerTelegram: true,
         deeplTranslate: true,
         deeplReady: !!scriptProperties.getProperty('DEEPL_API_KEY')
@@ -81,7 +82,8 @@ function handle(e, method) {
         success: true,
         owner: publisherIdentity.email,
         ready: !!PropertiesService.getScriptProperties().getProperty('GITHUB_TOKEN'),
-        noteDeletion: true
+        noteDeletion: true,
+        noteReviewBaseCheck: true
       });
     }
 
@@ -1130,9 +1132,10 @@ function removeNoteManifestSection(currentManifest, subject, sectionId) {
   });
 }
 
-function readGithubJsonFile(repository, path, ref, token) {
+function readGithubJsonFile(repository, path, ref, token, allowMissing) {
   const encodedPath = path.split('/').map(encodeURIComponent).join('/');
-  const payload = githubRequest('get', repository, '/contents/' + encodedPath + '?ref=' + encodeURIComponent(ref), token);
+  const payload = githubRequest('get', repository, '/contents/' + encodedPath + '?ref=' + encodeURIComponent(ref), token, undefined, allowMissing);
+  if (payload === null && allowMissing) return null;
   if (!payload || payload.encoding !== 'base64' || !payload.content) throw new Error('GitHub did not return ' + path);
   const text = Utilities.newBlob(Utilities.base64Decode(String(payload.content).replace(/\s/g, ''))).getDataAsString('UTF-8');
   try {
@@ -1142,7 +1145,114 @@ function readGithubJsonFile(repository, path, ref, token) {
   }
 }
 
+function noteReviewHash(section) {
+  return Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, JSON.stringify(section), Utilities.Charset.UTF_8)
+    .map(function (byte) { return ('0' + (byte & 255).toString(16)).slice(-2); }).join('');
+}
+
+function alreadyPublishedReview(repository, path, parentSha, reviewId, token) {
+  const commits = githubRequest('get', repository, '/commits?sha=' + encodeURIComponent(parentSha) +
+    '&path=' + encodeURIComponent(path) + '&per_page=50', token);
+  const trailer = 'Note-Review: ' + reviewId;
+  if (!Array.isArray(commits)) throw new Error('GitHub не вернул историю раздела');
+  const previous = commits.find(function (commit) {
+    return String(commit.commit && commit.commit.message || '').split('\n').includes(trailer);
+  });
+  return previous && previous.sha || '';
+}
+
+function reviewAssetFiles(files, section, manifestPath, sectionPath) {
+  if (section.sourceFormat === 'html-fragment-v1') throw new Error('Проверка принимает только разделы конструктора');
+  if (new Set(files.map(function (file) { return file.path; })).size !== files.length) {
+    throw new Error('Файлы отправленной версии повторяются');
+  }
+  const references = new Set();
+  const visit = function (blocks) {
+    if (!Array.isArray(blocks)) return;
+    blocks.forEach(function (block) {
+      if (!block || typeof block !== 'object') return;
+      if (block.type === 'image') references.add(String(block.src || '').replace(/\\/g, '/'));
+      visit(block.children);
+    });
+  };
+  visit(section.blocks);
+  (Array.isArray(section.subsections) ? section.subsections : []).forEach(function (item) { visit(item && item.children); });
+  return files.filter(function (file) { return file.path !== sectionPath && file.path !== manifestPath; }).map(function (file) {
+    const extension = file.path.split('.').pop().toLowerCase();
+    if (file.encoding !== 'base64' || !references.has(file.path) || !/^(?:png|jpe?g|webp|gif|svg)$/.test(extension)) {
+      throw new Error('В версию можно включить только изображения, используемые в её разделе');
+    }
+    const bytes = Utilities.base64Decode(file.content);
+    if (bytes.length === 0 || bytes.length > 2621440) throw new Error('Некорректный размер изображения');
+    if (extension === 'svg') validateReviewSvg(bytes);
+    else validateReviewRaster(bytes, extension);
+    const header = Utilities.newBlob('blob ' + bytes.length + '\0').getBytes();
+    const sha = Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_1, header.concat(bytes))
+      .map(function (byte) { return ('0' + (byte & 255).toString(16)).slice(-2); }).join('');
+    return { path: file.path, sha: sha };
+  });
+}
+
+function validateReviewRaster(bytes, extension) {
+  const matches = function (offset, signature) {
+    return signature.every(function (byte, index) {
+      return offset + index < bytes.length && (bytes[offset + index] & 255) === byte;
+    });
+  };
+  const valid = extension === 'png' ? matches(0, [137, 80, 78, 71, 13, 10, 26, 10]) :
+    extension === 'gif' ? matches(0, [71, 73, 70, 56]) :
+    extension === 'webp' ? matches(0, [82, 73, 70, 70]) && matches(8, [87, 69, 66, 80]) :
+    matches(0, [255, 216, 255]);
+  if (!valid) throw new Error('Формат изображения не соответствует имени файла');
+}
+
+function validateReviewSvg(bytes) {
+  const text = Utilities.newBlob(bytes).getDataAsString('UTF-8');
+  if (/<!DOCTYPE|<!ENTITY|<\?(?!xml\s)/i.test(text)) throw new Error('SVG должен содержать только статическое изображение');
+  const root = XmlService.parse(text).getRootElement();
+  const allowed = new Set('svg g defs symbol use title desc path rect circle ellipse line polyline polygon text tspan textPath clipPath mask pattern linearGradient radialGradient stop marker filter feBlend feColorMatrix feComponentTransfer feComposite feFlood feGaussianBlur feMerge feMergeNode feOffset feFuncR feFuncG feFuncB feFuncA'.split(' '));
+  const pending = [root];
+  if (root.getName() !== 'svg') throw new Error('Некорректное изображение SVG');
+  while (pending.length) {
+    const element = pending.pop();
+    if (element.getNamespace().getURI() !== 'http://www.w3.org/2000/svg' || !allowed.has(element.getName())) {
+      throw new Error('SVG должен содержать только статическое изображение');
+    }
+    element.getAttributes().forEach(function (attribute) {
+      const name = attribute.getName().toLowerCase();
+      const value = attribute.getValue();
+      const withoutLocalReferences = value.replace(/url\(\s*["']?#[\w:.-]+["']?\s*\)/gi, '');
+      if (name === 'base' || /^on/.test(name) || (name === 'href' && !/^#[\w:.-]+$/.test(value)) ||
+          /url\s*\(/i.test(withoutLocalReferences) || (name === 'style' && /[@\\]|\/\*/.test(value))) {
+        throw new Error('SVG должен содержать только статическое изображение');
+      }
+    });
+    element.getChildren().forEach(function (child) { pending.push(child); });
+  }
+}
+
+function checkReviewAssets(repository, assets, parentSha, token) {
+  assets.forEach(function (asset) {
+    const path = asset.path.split('/').map(encodeURIComponent).join('/');
+    const existing = githubRequest('get', repository, '/contents/' + path + '?ref=' + encodeURIComponent(parentSha),
+      token, undefined, true);
+    if (existing && existing.sha !== asset.sha) throw new Error('Имя изображения уже занято. Загрузите его под новым именем.');
+  });
+}
+
 function publishNoteFiles(identity, params) {
+  const attempt = { updatingRef: false };
+  try {
+    return publishNoteFilesAtHead(identity, params, attempt);
+  } catch (error) {
+    if (params.reviewId && !attempt.updatingRef) {
+      return json({ success: false, code: 'review-rejected', error: String(error && error.message || error) });
+    }
+    throw error;
+  }
+}
+
+function publishNoteFilesAtHead(identity, params, attempt) {
   const files = Array.isArray(params.files) ? params.files : [];
   if (!files.length || files.length > 24) throw new Error('Некорректный набор файлов публикации');
 
@@ -1150,6 +1260,14 @@ function publishNoteFiles(identity, params) {
   const sectionId = String(params.sectionId || '');
   if (!/^(physics|math|geometry|chemistry|likbez|physics-10|chemistry-10|literature-10)$/.test(subject)) throw new Error('Неизвестный предмет');
   if (!/^[a-z0-9][a-z0-9-]{1,63}$/.test(sectionId)) throw new Error('Некорректный адрес раздела');
+  const expectedBaseHash = params.expectedBaseHash === undefined ? null : String(params.expectedBaseHash);
+  const reviewId = params.reviewId === undefined ? '' : String(params.reviewId);
+  if (expectedBaseHash !== null && !/^(none|[0-9a-f]{64})$/.test(expectedBaseHash)) {
+    throw new Error('Некорректный отпечаток исходной версии');
+  }
+  if (reviewId && (expectedBaseHash === null || !/^[-_A-Za-z0-9]{20}$/.test(reviewId))) {
+    throw new Error('Некорректный адрес версии на проверке');
+  }
 
   let totalLength = 0;
   const normalizedFiles = files.map(function (file) {
@@ -1179,6 +1297,7 @@ function publishNoteFiles(identity, params) {
     throw new Error('Section file does not match publication request');
   }
   if (totalLength > 9 * 1024 * 1024) throw new Error('Пакет публикации слишком велик');
+  const assets = reviewId ? reviewAssetFiles(normalizedFiles, requestedSection, manifestPath, sectionPath) : [];
 
   const properties = PropertiesService.getScriptProperties();
   const token = properties.getProperty('GITHUB_TOKEN') || '';
@@ -1194,11 +1313,22 @@ function publishNoteFiles(identity, params) {
     const ref = githubRequest('get', repository, '/git/ref/heads/' + branch, token);
     const parentSha = ref.object && ref.object.sha;
     if (!parentSha) throw new Error('GitHub не вернул текущий commit');
+    if (expectedBaseHash !== null) {
+      const currentSection = readGithubJsonFile(repository, sectionPath, parentSha, token, true);
+      const currentHash = currentSection === null ? 'none' : noteReviewHash(currentSection);
+      if (currentHash !== expectedBaseHash) {
+        // The client can time out after the non-forced ref update has succeeded.
+        const previousCommit = reviewId && alreadyPublishedReview(repository, sectionPath, parentSha, reviewId, token);
+        if (previousCommit) return json({ success: true, commitSha: previousCommit, alreadyPublished: true });
+        return json({ success: false, code: 'stale-base', error: 'Опубликованный раздел изменился после подготовки версии.' });
+      }
+    }
     const parentCommit = githubRequest('get', repository, '/git/commits/' + parentSha, token);
     const baseTreeSha = parentCommit.tree && parentCommit.tree.sha;
     if (!baseTreeSha) throw new Error('GitHub не вернул дерево файлов');
 
     const currentManifest = readGithubJsonFile(repository, manifestPath, parentSha, token);
+    checkReviewAssets(repository, assets, parentSha, token);
     manifestFiles[0].content = JSON.stringify(
       mergeNoteManifest(currentManifest, requestedManifest, subject, sectionId, requestedSection),
       null,
@@ -1217,11 +1347,12 @@ function publishNoteFiles(identity, params) {
       tree: treeItems
     });
     const commit = githubRequest('post', repository, '/git/commits', token, {
-      message: 'Publish ' + subject + ' notes: ' + sectionId,
+      message: 'Publish ' + subject + ' notes: ' + sectionId + (reviewId ? '\n\nNote-Review: ' + reviewId : ''),
       tree: tree.sha,
       parents: [parentSha],
       author: { name: 'Конструктор конспектов', email: identity.email }
     });
+    attempt.updatingRef = true;
     githubRequest('patch', repository, '/git/refs/heads/' + branch, token, {
       sha: commit.sha,
       force: false
@@ -1333,7 +1464,7 @@ function isAllowedNoteDeletePath(path, subject, sectionId) {
   return new RegExp('^images/notes/' + subject + '/[a-zA-Z0-9][a-zA-Z0-9._-]{0,119}$').test(path);
 }
 
-function githubRequest(method, repository, resource, token, body) {
+function githubRequest(method, repository, resource, token, body, allowMissing) {
   const options = {
     method: method,
     headers: {
@@ -1349,6 +1480,7 @@ function githubRequest(method, repository, resource, token, body) {
   }
   const response = UrlFetchApp.fetch('https://api.github.com/repos/' + repository + resource, options);
   const code = response.getResponseCode();
+  if (code === 404 && allowMissing) return null;
   const text = response.getContentText() || '{}';
   let payload;
   try { payload = JSON.parse(text); } catch (_) { payload = {}; }

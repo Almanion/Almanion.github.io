@@ -3,6 +3,7 @@
     "account.js",
     "admin-dashboard.js",
     "admin-forecasts.js",
+    "admin-reviews.js",
     "admin-dialogs.js",
     "admin-app.js",
     "admin.html",

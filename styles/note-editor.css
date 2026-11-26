@@ -135,6 +135,7 @@ body:not(.no-hover) .note-inline-edit-button:hover {
 .note-inline-open-builder,
 .note-inline-close,
 .note-inline-add-root,
+.note-inline-submit,
 .note-inline-add-child,
 .note-inline-picker button,
 .note-inline-conflict button {
@@ -159,6 +160,7 @@ body:not(.no-hover) .note-inline-edit-button:hover {
 body:not(.no-hover) .note-inline-open-builder:hover,
 body:not(.no-hover) .note-inline-close:hover,
 body:not(.no-hover) .note-inline-add-root:hover,
+body:not(.no-hover) .note-inline-submit:hover,
 body:not(.no-hover) .note-inline-add-child:hover,
 body:not(.no-hover) .note-inline-picker button:hover {
     color: var(--exp-accent, #555ce7);
@@ -323,7 +325,8 @@ body:not(.no-hover) .note-inline-block-actions button.is-danger:hover { color: #
 }
 
 body:not(.no-hover) .note-inline-add-root:hover { color: #fff; filter: brightness(1.04); }
-.note-inline-editor-footer > span { color: var(--exp-text-dim, #656978); font-size: .72rem; line-height: 1.4; }
+.note-inline-submit { min-height: 2.5rem; margin-inline-start: auto; padding: .6rem .8rem; }
+.note-inline-submit:disabled { cursor: wait; opacity: .6; }
 
 .note-inline-picker {
     margin: 0 1rem 1rem;
@@ -395,6 +398,7 @@ body:not(.no-hover) .note-inline-add-root:hover { color: #fff; filter: brightnes
     .note-inline-block { padding: .65rem; }
     .note-inline-block-actions { gap: .08rem; }
     .note-inline-editor-footer { align-items: stretch; flex-direction: column; padding: 0 .75rem .75rem; }
+    .note-inline-submit { min-height: 44px; margin-inline-start: 0; }
     .note-inline-add-root { width: 100%; }
     .note-inline-picker { margin: 0 .75rem .75rem; }
     .note-inline-conflict { align-items: flex-start; flex-direction: column; margin: .65rem .75rem 0; }

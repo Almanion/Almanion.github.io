@@ -928,6 +928,14 @@ body:not(.no-hover) .kc-answer-remember:hover { background: var(--success-color)
 .account-btn:hover { background: var(--border-color); color: var(--text-primary); }
 .account-btn.signed-in { background: var(--accent-color); color: #fff; }
 .account-btn.is-loading { opacity: 0.62; cursor: progress; }
+.account-btn:has(.account-review-count) { position: relative; overflow: visible; }
+.account-review-count {
+    position: absolute; z-index: 1; inset: -4px -4px auto auto; display: grid; place-items: center;
+    min-width: 20px; min-height: 20px; padding: 0 4px; border: 2px solid var(--bg-primary); border-radius: 20px;
+    background: var(--accent-color); color: var(--exp-accent-contrast, #fff);
+    font-size: .66rem; font-weight: 750; font-variant-numeric: tabular-nums; line-height: 1;
+}
+.account-review-sr { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip-path: inset(50%); }
 .account-verify-link { display: inline-block; margin-top: .25rem; padding-block: .22rem; color: var(--text-primary); font-size: .88rem; text-underline-offset: .18em; }
 .account-avatar { font-size: 0.85rem; font-weight: 700; line-height: 1; }
 [data-profile-color="iris"] { --profile-pigment: #8478e0; }
