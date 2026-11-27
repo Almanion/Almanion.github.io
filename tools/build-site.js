@@ -258,8 +258,8 @@ function build(options) {
             .replace(/((?:src|href)=["'](?:\.\.\/)?(?:(?:account|firebase-config|note-runtime)\.js|styles\/site\/(?:index|reader)\.css|constructor\/(?:index\.css|(?:index|model|review)\.js)))(?:\?[^"']*)?(["'])/g, '$1?v=20261126-2$2');
         let published = updated
             .replace(/(href=["'](?:\.\.\/)?styles\/site\/(?:index|reader|features)\.css)(?:\?[^"']*)?(["'])/g, '$1?v=20261127-1$2')
-            .replace(/(src=["'](?:\.\.\/)?(?:note-runtime|settings)\.js)(?:\?[^"']*)?(["'])/g, '$1?v=20261127-1$2')
-            .replace(/(src=["'](?:\.\.\/)?account\.js)(?:\?[^"']*)?(["'])/g, '$1?v=20261126-9$2');
+            .replace(/(src=["'](?:\.\.\/)?settings\.js)(?:\?[^"']*)?(["'])/g, '$1?v=20261127-1$2')
+            .replace(/(src=["'](?:\.\.\/)?(?:account|note-runtime)\.js)(?:\?[^"']*)?(["'])/g, '$1?v=20261127-forecast-inbox$2');
         // The browser decides whether to take a navigation snapshot before
         // deferred scripts run. Make the opt-in available with the first bytes of HTML.
         const transitionLink = /[ \t]*<link rel="stylesheet" href="styles\/page-transitions\.css[^"]*">\n/;
