@@ -57,12 +57,21 @@ body.home-page .home-header h1 .almanion-wordmark { display: block; width: clamp
     border: 0;
     border-radius: 5px;
     background: transparent;
+    -webkit-tap-highlight-color: transparent;
     touch-action: manipulation;
     user-select: none;
     -webkit-user-select: none;
     cursor: pointer;
 }
 .home-wordmark-button:focus-visible { outline: 2px solid var(--accent-color); outline-offset: 4px; }
+@media (any-pointer: coarse) {
+    .home-wordmark-button:active > .almanion-wordmark {
+        --wordmark-highlight: color-mix(in srgb, var(--accent-color) 16%, var(--bg-primary));
+        border-radius: 4px;
+        background-color: var(--wordmark-highlight);
+        box-shadow: 0 0 0 4px var(--wordmark-highlight);
+    }
+}
 body.home-page .home-controls { display: flex; align-items: center; gap: 8px; min-height: 44px; }
 body.home-page .settings-button {
     position: static;
