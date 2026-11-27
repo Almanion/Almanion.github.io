@@ -94,7 +94,7 @@ test('profile survives sign-out, merges edits from two tabs and clears private f
     await expect(page.locator('#telegramError')).toBeVisible();
     await page.locator('#profileTelegram').fill('https://t.me/north_reader/');
     await page.locator('label[title="Орбита"]').click();
-    await page.locator('label[title="Мята"]').click();
+    await page.locator('#profileColors label:has(input[value="mint"])').click();
     await expect(page.locator('#profilePreviewName')).toHaveText('Северный Лис');
     await expect(page.locator('#profilePreviewTelegram')).toHaveAttribute('href', 'https://t.me/north_reader');
     await page.locator('#profileSave').click();
@@ -137,7 +137,7 @@ test('profile survives sign-out, merges edits from two tabs and clears private f
     });
     await expect(other.locator('#profileIcons input:checked')).toHaveCount(0);
     await expect(other.locator('#accountBtn .profile-mark svg circle[cx="8.7"]')).toBeVisible();
-    await other.locator('label[title="Фиалка"]').click();
+    await other.locator('#profileColors label:has(input[value="violet"])').click();
     await other.locator('#profileSave').click();
     await expect(other.locator('#profileStatus')).toHaveText('Изменения сохранены');
     const storedIcon = await other.evaluate(async path => (await firebase.database().ref(path + '/avatar').once('value')).val(), identityPath);
@@ -157,9 +157,9 @@ test('profile survives sign-out, merges edits from two tabs and clears private f
     await expect(page.locator('#accountBtn .profile-mark')).toHaveAttribute('data-profile-background', 'plasma');
     await expect(page.locator('#accountBtn .profile-mark')).toHaveCSS('border-radius', '25%');
     await page.locator('#profileNickname').fill('Новый ник');
-    await other.locator('label[title="Янтарь"]').click();
+    await other.locator('#profileColors label:has(input[value="amber"])').click();
     await other.locator('#profileSave').click();
-    await expect(page.locator('#profileColorName')).toHaveText('Янтарь');
+    await expect(page.locator('#profileColorName')).toHaveText('Золотой');
     await expect(page.locator('#profileNickname')).toHaveValue('Новый ник');
     // A rejected save must leave the typed name available for a second attempt.
     await page.evaluate(() => {

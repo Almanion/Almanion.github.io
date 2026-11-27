@@ -92,7 +92,8 @@ function isNoteContent(file) {
 const appearanceFiles = new Set([
   "images/almanion-wordmark.svg", "favicon.ico", "home-stars.js", "tools/build-favicons.js",
   "e2e/appearance.spec.js", "e2e/star-waves.spec.js", "tests/star-waves.test.js", "tests/site-branding.test.js",
-  "tests/favicon-theme.test.js", "e2e/profile-cover-motion.spec.js",
+  "tests/favicon-theme.test.js", "e2e/profile-cover-motion.spec.js", "e2e/account-profile.spec.js",
+  "e2e/profile-textures.spec.js",
 ]);
 
 function isAppearanceAsset(file) {
@@ -103,12 +104,35 @@ function isAppearanceAsset(file) {
 }
 
 function mayReferenceAppearance(file) {
-  return file.endsWith(".html") || ["manifest.json", "performance/sw-shell.json", "favicon-theme.js", "profile-covers.js"].includes(file);
+  return file.endsWith(".html") || ["manifest.json", "performance/sw-shell.json", "favicon-theme.js",
+    "profile-covers.js", "profile.js", "account.js"].includes(file);
 }
 
 // Compare the complete contents of mixed files. A logo revision or its intrinsic
 // dimensions can change, but even a one-line change to a handler must remain visible.
 function normalizeAppearanceReferences(file, source) {
+  if (file === "account.js") {
+    return source.replace(/^    const avatarColors = \{\n([^}]+)\n    \};$/m, (block, fields) => {
+      const keys = fields.split(",").map(field => field.match(/^\s*([a-z]+): '[А-ЯЁа-яё -]+'\s*$/)?.[1]);
+      if (keys.includes(undefined) || new Set(keys).size !== keys.length) return block;
+      return "    const avatarColors = {" + keys.sort().join(",") + "};";
+    });
+  }
+  if (file === "profile.js") {
+    // Treat only the visibility of the existing caption as presentation.
+    const caption = [
+      "const caption = document.createElement('span');",
+      "caption.className = 'profile-choice-name';",
+      "caption.textContent = name;",
+      "face.append(caption);",
+    ];
+    const guard = ["            if (group !== 'color') {",
+      ...caption.map(line => "                " + line), "            }"].join("\n");
+    return source.replace(guard, caption.map(line => "            " + line).join("\n"));
+  }
+  if (file === "profile.html") {
+    source = source.replace(/((?:account|profile)\.js)\?v=[\w.-]+(?=")/g, "$1");
+  }
   if (file === "favicon-theme.js") {
     return source.replace(/^(\s*var ASSET_VERSION = ')[\w.-]+(';\s*)$/m, "$1VERSION$2");
   }

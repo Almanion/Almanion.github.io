@@ -110,6 +110,7 @@ for (const [file, before, after] of [
   ["physics.html", original, revised],
   ["profile.html", '<script src="profile-covers.js?v=one"></script>', '<script src="profile-covers.js?v=two"></script>'],
   ["games/orbital-courier/offline.html", embedded("YWJj"), embedded("ZGVm")],
+  ["profile.html", '<script src="account.js?v=one"></script>', '<script src="account.js?v=two"></script>'],
   ["manifest.json", '"src":"/favicons/app-icon.svg?v=one"', '"src":"/favicons/app-icon.svg?v=two"'],
   ["favicon-theme.js", "var ASSET_VERSION = 'one';", "var ASSET_VERSION = 'two';"],
 ]) {
@@ -119,6 +120,25 @@ for (const [file, before, after] of [
 }
 assert.notEqual(normalizeAppearanceReferences("index.html", revised.replace("images/", "other/")),
   normalizeAppearanceReferences("index.html", revised));
+const paletteTable = fields => "    const avatarColors = {\n        " + fields + "\n    };";
+const normalizePalette = value => normalizeAppearanceReferences("account.js", value);
+const oldPalette = paletteTable("mint: 'Мята', iris: 'Ирис'");
+const newPalette = paletteTable("iris: 'Сиреневый', mint: 'Мятный'");
+assert.equal(normalizePalette(oldPalette), normalizePalette(newPalette));
+assert.notEqual(normalizePalette(oldPalette), normalizePalette(paletteTable("mint: 'Мятный'")));
+assert.notEqual(normalizePalette(oldPalette), normalizePalette(paletteTable("iris: 'Сиреневый', mint: getName()")));
+assert.notEqual(normalizePalette(oldPalette), normalizePalette(newPalette + "\nchangeAccount();"));
+const plainCaption = [
+  "            const caption = document.createElement('span');",
+  "            caption.className = 'profile-choice-name';",
+  "            caption.textContent = name;",
+  "            face.append(caption);",
+];
+const conditionalCaption = ["            if (group !== 'color') {",
+  ...plainCaption.map(line => "    " + line), "            }"].join("\n");
+const normalizeProfile = value => normalizeAppearanceReferences("profile.js", value);
+assert.equal(normalizeProfile(conditionalCaption), normalizeProfile(plainCaption.join("\n")));
+assert.notEqual(normalizeProfile(conditionalCaption), normalizeProfile(plainCaption.concat("save();").join("\n")));
 const profileArtwork = content => 'const designs = {\n        aurora: `\n' + content + '`,\n};';
 const normalizeProfileArt = value => normalizeAppearanceReferences("profile-covers.js", value);
 const coverBefore = profileArtwork('<path d="M0 0H12"/>');

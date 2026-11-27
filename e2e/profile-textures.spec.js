@@ -41,7 +41,7 @@ test('avatar textures render at 32 px and only animate visible generated marks i
     const controls = '#accountBtn .profile-mark';
     const active = await textureState(controls);
     expect(active.every(({ width, height }) => width === 32 && height === 32)).toBe(true);
-    expect(active[0]).toMatchObject({ pattern: 'none', animation: 'none' });
+    expect(active[0]).toMatchObject({ pattern: expect.stringContaining('linear-gradient('), animation: 'none' });
     const animated = active.slice(1, -1);
     expect(animated.every(({ pattern, animation }) => pattern !== 'none' && animation !== 'none')).toBe(true);
     expect(new Set(animated.map(({ animation }) => animation)).size).toBe(animated.length);

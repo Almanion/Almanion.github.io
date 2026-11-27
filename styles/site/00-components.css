@@ -938,18 +938,22 @@ body:not(.no-hover) .kc-answer-remember:hover { background: var(--success-color)
 .account-review-sr { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip-path: inset(50%); }
 .account-verify-link { display: inline-block; margin-top: .25rem; padding-block: .22rem; color: var(--text-primary); font-size: .88rem; text-underline-offset: .18em; }
 .account-avatar { font-size: 0.85rem; font-weight: 700; line-height: 1; }
-[data-profile-color="iris"] { --profile-pigment: #8478e0; }
-[data-profile-color="ocean"] { --profile-pigment: #438ac7; }
-[data-profile-color="mint"] { --profile-pigment: #369c82; }
-[data-profile-color="amber"] { --profile-pigment: #bf8831; }
-[data-profile-color="rose"] { --profile-pigment: #c46c8c; }
-[data-profile-color="coral"] { --profile-pigment: #d37a5c; }
-[data-profile-color="sky"] { --profile-pigment: #56a6b9; }
-[data-profile-color="slate"] { --profile-pigment: #828c9f; }
-[data-profile-color="violet"] { --profile-pigment: #ae64bc; }
-[data-profile-color="jade"] { --profile-pigment: #288b73; }
-[data-profile-color="terracotta"] { --profile-pigment: #a9523e; }
-[data-profile-color="ink"] { --profile-pigment: #485683; }
+[data-profile-color] {
+    --profile-gradient: linear-gradient(150deg, var(--profile-pigment), var(--profile-shade));
+    --profile-ink: #151322;
+}
+[data-profile-color="terracotta"] { --profile-pigment: #fa8c8b; --profile-shade: #e36472; }
+[data-profile-color="coral"] { --profile-pigment: #ffad73; --profile-shade: #e57745; }
+[data-profile-color="amber"] { --profile-pigment: #f8cb6e; --profile-shade: #da983b; }
+[data-profile-color="jade"] { --profile-pigment: #8cdb79; --profile-shade: #459e5c; }
+[data-profile-color="mint"] { --profile-pigment: #64ddb5; --profile-shade: #29a48b; }
+[data-profile-color="sky"] { --profile-pigment: #78daf8; --profile-shade: #359fce; }
+[data-profile-color="ocean"] { --profile-pigment: #70b5ff; --profile-shade: #4387dc; }
+[data-profile-color="ink"] { --profile-pigment: #526abe; --profile-shade: #364c97; --profile-ink: #fff; }
+[data-profile-color="iris"] { --profile-pigment: #ada0ff; --profile-shade: #8878e4; }
+[data-profile-color="violet"] { --profile-pigment: #ce90f7; --profile-shade: #af69d9; }
+[data-profile-color="rose"] { --profile-pigment: #fb96c2; --profile-shade: #db6496; }
+[data-profile-color="slate"] { --profile-pigment: #b4becf; --profile-shade: #7788a0; }
 .profile-mark {
     position: relative;
     isolation: isolate;
@@ -958,8 +962,8 @@ body:not(.no-hover) .kc-answer-remember:hover { background: var(--success-color)
     aspect-ratio: 1;
     flex-shrink: 0;
     border-radius: 25%;
-    color: color-mix(in srgb, var(--text-primary) 89%, var(--profile-pigment));
-    --avatar-ground: color-mix(in srgb, var(--profile-pigment) 29%, var(--bg-secondary));
+    color: color-mix(in srgb, var(--text-primary) 94%, var(--profile-shade));
+    --avatar-ground: color-mix(in srgb, var(--profile-shade) 29%, var(--bg-secondary));
     --avatar-sheen: color-mix(in srgb, var(--profile-pigment) 37%, transparent);
     font-weight: 720;
     line-height: 1;
@@ -971,6 +975,11 @@ body:not(.no-hover) .kc-answer-remember:hover { background: var(--success-color)
     z-index: -1;
     border-radius: inherit;
     background: var(--avatar-pattern, none) var(--avatar-ground);
+}
+.profile-mark[data-profile-background="solid"] {
+    --avatar-ground: var(--profile-shade);
+    --avatar-pattern: var(--profile-gradient);
+    color: var(--profile-ink);
 }
 [data-profile-background="glow"] { --avatar-pattern: radial-gradient(at 75% 20%, var(--avatar-sheen), transparent 70%); }
 [data-profile-background="grid"] {
@@ -998,8 +1007,11 @@ body:not(.no-hover) .kc-answer-remember:hover { background: var(--success-color)
     font-size: .9rem;
 }
 @media (hover: hover) {
-    #accountBtn.signed-in:hover > .profile-mark {
-        --avatar-ground: color-mix(in srgb, var(--profile-pigment) 37%, var(--bg-secondary));
+    #accountBtn.signed-in:hover > .profile-mark:not([data-profile-background="solid"]) {
+        --avatar-ground: color-mix(in srgb, var(--profile-shade) 37%, var(--bg-secondary));
+    }
+    #accountBtn.signed-in:hover > .profile-mark[data-profile-background="solid"]::before {
+        filter: brightness(1.04);
     }
 }
 #accountBtn.signed-in:focus-visible { outline: none; }

@@ -245,7 +245,7 @@
     gap: 7px;
 }
 .profile-icons { grid-template-columns: repeat(5, minmax(0, 1fr)); }
-.profile-colors { grid-template-columns: repeat(auto-fill, minmax(44px, 1fr)); gap: 4px; }
+.profile-colors { grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 6px; }
 .profile-backgrounds { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .profile-covers { grid-template-columns: repeat(5, minmax(0, 1fr)); }
 .profile-choice { position: relative; min-width: 0; display: block; cursor: pointer; }
@@ -304,23 +304,41 @@
     box-shadow: inset 0 0 0 1px var(--accent-color);
 }
 .profile-choice :disabled + .profile-choice-face { cursor: wait; }
-.profile-colors .profile-choice-face { min-height: 44px; padding: 4px; border-radius: 10px; }
+.profile-colors .profile-choice-face {
+    min-height: 58px;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: 26px 1fr;
+    gap: 5px;
+    padding: 5px 4px 6px;
+    border-radius: 11px;
+}
+.profile-colors .profile-choice-name {
+    align-self: center;
+    font-size: .73rem;
+    text-align: center;
+    text-wrap: balance;
+    white-space: normal;
+    overflow-wrap: anywhere;
+}
 .profile-choice-swatch {
     width: 100%;
-    max-width: 36px;
-    height: 25px;
-    border-radius: 6px;
-    background: var(--profile-pigment);
+    height: 100%;
+    border-radius: 7px;
+    background: var(--profile-shade) var(--profile-gradient);
+    box-shadow: inset 0 0 0 1px rgb(255 255 255 / 14%);
 }
 .profile-colors input:checked + .profile-choice-face .profile-choice-swatch::after {
-    content: '';
-    display: block;
-    width: 7px;
-    height: 5px;
-    border: solid #fff;
-    border-width: 0 0 2px 2px;
-    transform: translateY(-1px) rotate(-45deg);
-    filter: drop-shadow(0 1px 2px #000);
+    content: '✓';
+    display: grid;
+    place-items: center;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: #151322;
+    color: #fff;
+    font-size: .72rem;
+    font-weight: 750;
+    line-height: 1;
 }
 .profile-covers .profile-choice-face { padding: 4px 4px 8px; align-content: start; }
 .profile-cover-sample {
@@ -414,6 +432,9 @@
     .profile-primary:hover:not(:disabled) { background: var(--accent-hover); }
     .profile-secondary:hover, .profile-choice:hover input:not(:checked) + .profile-choice-face { background: var(--bg-tertiary); }
 }
+@media (max-width: 1020px) {
+    .profile-colors { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
 @media (max-width: 980px) {
     .profile-covers { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 }
@@ -489,4 +510,7 @@
     .profile-icons .profile-choice-sample { width: 37px; }
     .profile-choice-face { border-radius: 10px; }
     #profileStatus { flex-basis: 100%; }
+}
+@media (max-width: 420px) {
+    .profile-colors { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }

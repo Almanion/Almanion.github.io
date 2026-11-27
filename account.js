@@ -144,8 +144,18 @@
     };
     const storedAvatarIcons = Object.assign(Object.create(null), legacyAvatarIcons, avatarIcons);
     const avatarColors = {
-        iris: 'Ирис', ocean: 'Океан', mint: 'Мята', amber: 'Янтарь', rose: 'Роза', coral: 'Коралл',
-        sky: 'Лёд', slate: 'Сланец', violet: 'Фиалка', jade: 'Нефрит', terracotta: 'Терракота', ink: 'Чернила'
+        terracotta: 'Красный',
+        coral: 'Оранжевый',
+        amber: 'Золотой',
+        jade: 'Зелёный',
+        mint: 'Мятный',
+        sky: 'Голубой',
+        ocean: 'Синий',
+        ink: 'Тёмно-синий',
+        iris: 'Сиреневый',
+        violet: 'Фиолетовый',
+        rose: 'Розовый',
+        slate: 'Серый'
     };
     const avatarBackgrounds = {
         solid: 'Однотонный', glow: 'Свечение', grid: 'Сетка', diagonal: 'Диагонали', dust: 'Звёзды',

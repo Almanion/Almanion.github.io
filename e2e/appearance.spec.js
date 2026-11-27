@@ -24,7 +24,9 @@ function mockAvatarAccount(expTheme) {
     const database = () => ({
         ref(key) {
             const isIdentity = key === 'accountProfiles/' + user.uid + '/identity';
-            const snapshot = { val: () => null, exists: () => false };
+            const record = key === 'accountProfiles/' + user.uid ? { identity: { color: 'ink' } }
+                : key === '.info/connected' ? true : null;
+            const snapshot = { val: () => record, exists: () => record !== null };
             return {
                 once: async () => snapshot,
                 set: async () => {},
@@ -67,6 +69,44 @@ test('avatar surfaces animate only with full site motion and respect reduced mot
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await expect.poll(animation).toBe('none');
 });
+
+for (const { width, theme, columns } of [
+    { width: 320, theme: 'dark', columns: 3 },
+    { width: 390, theme: 'light', columns: 3 },
+    { width: 768, theme: 'light', columns: 4 },
+    { width: 1440, theme: 'dark', columns: 6 }
+]) {
+    test('profile palette is labeled and matches the avatar preview at ' + width + 'px', async ({ page }) => {
+        await page.setViewportSize({ width, height: 840 });
+        await page.route('**/*', route => new URL(route.request().url()).hostname === '127.0.0.1'
+            ? route.continue() : route.abort());
+        await page.addInitScript(mockAvatarAccount, theme);
+        await page.goto('/profile.html');
+        const palette = page.locator('#profileColors');
+        const caption = palette.locator('.profile-choice-name');
+        await expect(caption).toHaveText([
+            'Красный', 'Оранжевый', 'Золотой', 'Зелёный', 'Мятный', 'Голубой',
+            'Синий', 'Тёмно-синий', 'Сиреневый', 'Фиолетовый', 'Розовый', 'Серый'
+        ]);
+        await expect(palette.getByRole('radio', { name: 'Тёмно-синий', exact: true })).toBeChecked();
+        const layout = await palette.evaluate(element => ({
+            columns: getComputedStyle(element).gridTemplateColumns.split(' ').length,
+            overflow: document.documentElement.scrollWidth - innerWidth,
+            clipped: [...element.querySelectorAll('.profile-choice-name')].some(name =>
+                !name.getClientRects().length || name.scrollWidth > name.clientWidth + 1 || name.scrollHeight > name.clientHeight + 1)
+        }));
+        expect(layout).toEqual({ columns, overflow: 0, clipped: false });
+        const gold = palette.locator('.profile-choice').filter({ hasText: 'Золотой' });
+        await gold.click();
+        await expect(gold.getByRole('radio', { name: 'Золотой' })).toBeChecked();
+        await expect(page.locator('#profileColorName')).toHaveText('Золотой');
+        const preview = page.locator('#profilePreviewAvatar .profile-mark');
+        await expect(preview).toHaveAttribute('data-profile-color', 'amber');
+        const swatch = await gold.locator('.profile-choice-swatch').evaluate(node => getComputedStyle(node).backgroundImage);
+        expect(swatch).toContain('linear-gradient(');
+        expect(await preview.evaluate(node => getComputedStyle(node, '::before').backgroundImage)).toBe(swatch);
+    });
+}
 
 for (const width of [390, 1440]) {
     test('signed-in avatars stay rounded squares across headers at ' + width + 'px', async ({ page }) => {

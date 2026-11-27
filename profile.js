@@ -128,12 +128,10 @@
             } else {
                 samples.push({ sample, group, value });
             }
-            if (group !== 'color') {
-                const caption = document.createElement('span');
-                caption.className = 'profile-choice-name';
-                caption.textContent = name;
-                face.append(caption);
-            }
+            const caption = document.createElement('span');
+            caption.className = 'profile-choice-name';
+            caption.textContent = name;
+            face.append(caption);
             label.append(input, face);
             container.append(label);
         }
