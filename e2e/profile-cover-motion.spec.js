@@ -87,15 +87,13 @@ test('illustrated covers load and animate their own layers only in the live prev
     await page.setViewportSize({ width: 390, height: 844 });
     await openCovers(page);
     const live = page.locator('#profileCoverArt');
-    for (const [id, layer, name, property] of [
-        ['hills', '.profile-cover-wind', 'profile-cover-wind', 'transform'],
-        ['terrazzo', '.profile-cover-lustre', 'profile-cover-lustre', 'transform'],
-        ['waves', '.profile-cover-swell', 'profile-cover-swell', 'transform'],
-        ['eclipse', '.profile-cover-shimmer', 'profile-cover-glow', 'opacity'],
-        ['aurora', '.profile-cover-veil', 'profile-cover-fold', 'transform']
+    for (const [id, image, layer, name] of [
+        ['terrazzo', 'terrazzo-cel.webp', '.profile-cover-lustre', 'profile-cover-lustre'],
+        ['waves', 'waves-detailed.webp', '.profile-cover-swell', 'profile-cover-swell'],
+        ['aurora', 'aurora-cel.webp', '.profile-cover-veil', 'profile-cover-fold']
     ]) {
         await page.emulateMedia({ reducedMotion: 'no-preference' });
-        const download = page.waitForResponse(response => response.url().endsWith('/' + id + '-cel.webp'));
+        const download = page.waitForResponse(response => response.url().endsWith('/images/profile-covers/' + image));
         await live.evaluate((element, preset) => {
             const markup = window.AlmanionProfileCovers.markup;
             element.innerHTML = markup(preset);
@@ -107,16 +105,16 @@ test('illustrated covers load and animate their own layers only in the live prev
         const animated = live.locator(layer).first();
         await expect(animated).toHaveCSS('animation-name', name);
         await expect(page.locator('#thumbnail ' + layer).first()).toHaveCSS('animation-name', 'none');
-        const frames = await animated.evaluate(async (element, cssProperty) => {
+        const frames = await animated.evaluate(async element => {
             const animation = element.getAnimations()[0];
             animation.pause();
             await animation.ready;
             const { delay, duration } = animation.effect.getTiming();
             return [0.2, 0.75].map(phase => {
                 animation.currentTime = delay + duration * phase;
-                return getComputedStyle(element).getPropertyValue(cssProperty);
+                return getComputedStyle(element).transform;
             });
-        }, property);
+        });
         expect(frames[0]).not.toBe(frames[1]);
 
         await live.evaluate(element => element.setAttribute('data-cover-paused', ''));
@@ -125,4 +123,38 @@ test('illustrated covers load and animate their own layers only in the live prev
         await page.emulateMedia({ reducedMotion: 'reduce' });
         await expect(animated).toHaveCSS('animation-name', 'none');
     }
+});
+
+test('the eclipse moves the moon across a stationary sun and aligns both discs at midpass', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await openCovers(page);
+    const live = page.locator('#profileCoverArt');
+    await live.evaluate(element => { element.innerHTML = window.AlmanionProfileCovers.markup('eclipse'); });
+
+    const moon = live.locator('.profile-cover-eclipse-moon');
+    const corona = live.locator('.profile-cover-eclipse-corona');
+    await expect(moon).toHaveCSS('animation-name', 'profile-cover-eclipse-pass');
+    await expect(corona).toHaveCSS('animation-name', 'profile-cover-corona-shift');
+    const [rise, center, set] = await moon.evaluate(async element => {
+        const sun = element.closest('svg').querySelector('.profile-cover-eclipse-sun');
+        const motion = element.getAnimations()[0];
+        motion.pause();
+        await motion.ready;
+        const { delay, duration } = motion.effect.getTiming();
+        return [0, .5, .99].map(fraction => {
+            motion.currentTime = delay + duration * (2 + fraction);
+            const { x, y } = new DOMPoint().matrixTransform(element.getScreenCTM()).matrixTransform(sun.getScreenCTM().inverse());
+            return [x, y];
+        });
+    });
+    expect(rise[0]).toBeLessThan(-15);
+    expect(rise[1]).toBeGreaterThan(4);
+    expect(center[0]).toBeCloseTo(0);
+    expect(center[1]).toBeCloseTo(0);
+    expect(set[0]).toBeGreaterThan(15);
+    expect(set[1]).toBeLessThan(-4);
+
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await expect(moon).toHaveCSS('animation-name', 'none');
+    await expect(corona).toHaveCSS('animation-name', 'none');
 });

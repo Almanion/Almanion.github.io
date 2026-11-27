@@ -128,41 +128,30 @@
             </g>`,
         hills: `
             <defs>
-                <radialGradient id="@morning">
-                    <stop stop-color="#fff1b3" stop-opacity=".45"/>
-                    <stop offset=".38" stop-color="#ffca9a" stop-opacity=".22"/>
-                    <stop offset="1" stop-color="#ffaf88" stop-opacity="0"/>
-                </radialGradient>
-                <linearGradient id="@high-cloud">
-                    <stop stop-color="#f0c4c5" stop-opacity="0"/>
-                    <stop offset=".57" stop-color="#ffe2cf" stop-opacity=".71"/>
-                    <stop offset="1" stop-color="#ffe2cf" stop-opacity="0"/>
+                <linearGradient id="@sky" x2="0" y2="1">
+                    <stop stop-color="#38485e"/><stop offset=".55" stop-color="#c58680"/><stop offset="1" stop-color="#edb28b"/>
                 </linearGradient>
-                <linearGradient id="@valley-mist">
-                    <stop stop-color="#92dce4" stop-opacity="0"/>
-                    <stop offset=".45" stop-color="#c6edfd" stop-opacity=".52"/>
-                    <stop offset=".7" stop-color="#b3dcea" stop-opacity=".38"/>
-                    <stop offset="1" stop-color="#85c8df" stop-opacity="0"/>
-                </linearGradient>
+                <linearGradient id="@slope" x2=".38" y2="1"><stop stop-color="#597a7c"/><stop offset="1" stop-color="#293c4c"/></linearGradient>
+                <radialGradient id="@sun-haze"><stop stop-color="#fff0c7" stop-opacity=".52"/><stop offset="1" stop-color="#fff0c7" stop-opacity="0"/></radialGradient>
             </defs>
-            <rect width="720" height="240" fill="#254877"/>
-            <image href="images/profile-covers/hills-cel.webp" width="720" height="240"/>
-            <ellipse class="profile-cover-shimmer" cx="454" cy="66" rx="57" ry="45" fill="url(#@morning)" opacity=".54"
-                style="--cover-floor:.2;--cover-ceiling:.92;--cover-time:9s;--cover-delay:-2s"/>
-            <g class="profile-cover-wind" fill="url(#@high-cloud)" opacity=".41"
-                style="--cover-from:-106px;--cover-to:136px;--cover-time:31s;--cover-delay:-13s">
-                <path d="M4 46c38-2 62-1 105-4 32-2 57 2 83 1-36 6-64 2-88 5-44 5-65 1-100-2Z"/>
-                <path d="M69 57c56-6 103-2 151-7-34 7-105 9-151 7Z"/>
+            <rect width="720" height="240" fill="url(#@sky)"/>
+            <ellipse class="profile-cover-shimmer" cx="462" cy="88" rx="154" ry="108" fill="url(#@sun-haze)"
+                style="--cover-floor:.5;--cover-ceiling:.88;--cover-time:14s"/>
+            <circle cx="462" cy="88" r="39" fill="#ffe0a4"/>
+            <path d="M-18 152 75 86l98 58L249 75 358 167 449 138 542 109l204 46v85H-18Z" fill="#b58f92"/>
+            <path d="m-12 208 105-54 47 15L302 64l45-18 45 44 32 12 44 49 68-18 195 53v54H-12Z" fill="url(#@slope)"/>
+            <path d="m347 46 45 44-31-10-15 8-16-14-28 7 15-24 30-11Z" fill="#f8d3b1" opacity=".9"/>
+            <path d="m347 47-11 22 10 19 25 78-53-40-72 28 54-72 18-24Z" fill="#b6adb1" opacity=".34"/>
+            <g class="profile-cover-float" fill="none" stroke="#efc1a8" stroke-linecap="round" opacity=".25"
+                style="--cover-dx:-18px;--cover-dy:3px;--cover-time:19s;--cover-delay:-8s">
+                <path d="M181 140c37 0 61-7 93-6m133 15c42-4 70-13 108-10" stroke-width="3"/>
+                <path d="M132 153c55-1 97-7 146-7m79-17c51-8 100-11 143-9"/>
             </g>
-            <g class="profile-cover-wind" fill="url(#@valley-mist)" opacity=".48"
-                style="--cover-from:-105px;--cover-to:102px;--cover-time:24s;--cover-delay:-5s">
-                <path d="M165 180c63 8 89-14 145-9 32 2 55 13 92 10 29-2 48-9 86-6-39 4-64 14-105 11-27-1-54-11-80-9-67 3-92 20-138 3Z"/>
-                <path d="M272 192c46-5 58-5 102 0 65 6 112-15 177-12-76 6-115 27-178 17-42-7-62-3-101-5Z"/>
-            </g>
-            <g class="profile-cover-wind" fill="url(#@valley-mist)" opacity=".41"
-                style="--cover-from:-88px;--cover-to:140px;--cover-time:19s;--cover-delay:-10s">
-                <path d="M263 209c43-11 101 1 153-5 42-4 79-18 140-15 33 2 51 6 93 3-31 8-59 4-91 2
-                    -53-2-84 16-150 16-52 0-92-7-145-1Z"/>
+            <path d="M-15 224l137-60 113 35 77-9 114-36 62 31 52-10 190 44v21H-15Z" fill="#263d43"/>
+            <path d="m-5 237 126-36 83 15 99-13 146 12 72-25 210 30v20H-5Z" fill="#172f38"/>
+            <g fill="none" stroke="#f6bf9a" opacity=".48">
+                <g class="profile-cover-float" style="--cover-dx:23px;--cover-dy:-3px;--cover-time:15s"><path d="M189 52h49m-49 8h22m318 6h70m-39 7h29M50 109h148M505 103h172"/></g>
+                <path d="M402 202c27 2 44 7 69 6m-144 11c21 3 78 2 110 5" opacity=".46"/>
             </g>`,
         waves: `
             <defs>
@@ -175,7 +164,7 @@
             </defs>
             <rect width="720" height="240" fill="#092857"/>
             <g class="profile-cover-swell" style="--cover-time:13s;--cover-delay:-3s">
-                <image href="images/profile-covers/waves-cel.webp" width="720" height="240"/>
+                <image href="images/profile-covers/waves-detailed.webp" width="720" height="240"/>
                 <path class="profile-cover-flow" pathLength="100"
                     d="M477 177C423 184 380 163 362 144c-15-17-9-36 14-43 17-5 37 0 50 10"
                     fill="none" stroke="url(#@sea-light)" stroke-width="2.4" stroke-linecap="round"
@@ -380,24 +369,82 @@
             </g>`,
         eclipse: `
             <defs>
-                <radialGradient id="@corona">
-                    <stop offset=".56" stop-color="#ffca92" stop-opacity="0"/>
-                    <stop offset=".61" stop-color="#ffd18e" stop-opacity=".32"/>
-                    <stop offset=".75" stop-color="#fa7d55" stop-opacity=".16"/>
-                    <stop offset="1" stop-color="#eb567b" stop-opacity="0"/>
+                <linearGradient id="@eclipse-night" x2="1" y2=".76">
+                    <stop stop-color="#100e23"/>
+                    <stop offset=".54" stop-color="#30172f"/>
+                    <stop offset="1" stop-color="#171229"/>
+                </linearGradient>
+                <radialGradient id="@eclipse-air">
+                    <stop stop-color="#f5a578" stop-opacity=".26"/>
+                    <stop offset=".55" stop-color="#bd6c83" stop-opacity=".20"/>
+                    <stop offset="1" stop-color="#995e87" stop-opacity="0"/>
                 </radialGradient>
+                <linearGradient id="@eclipse-sun" x1=".17" y1="0" x2=".79" y2="1">
+                    <stop stop-color="#fff4d6"/>
+                    <stop offset=".32" stop-color="#f8cf8a"/>
+                    <stop offset=".74" stop-color="#eb925a"/>
+                    <stop offset="1" stop-color="#da685e"/>
+                </linearGradient>
+                <radialGradient id="@eclipse-moon-ink" cx=".62" cy=".34" r=".72">
+                    <stop stop-color="#221528"/>
+                    <stop offset="1" stop-color="#100e22"/>
+                </radialGradient>
+                <linearGradient id="@eclipse-plume-ink" gradientUnits="userSpaceOnUse" x1="-240" y1="32" x2="-51" y2="-13">
+                    <stop stop-color="#985e9d" stop-opacity="0"/>
+                    <stop offset=".37" stop-color="#b871a9" stop-opacity=".39"/>
+                    <stop offset=".70" stop-color="#dc867e" stop-opacity=".74"/>
+                    <stop offset="1" stop-color="#fac28a" stop-opacity=".91"/>
+                </linearGradient>
+                <linearGradient id="@eclipse-thread-ink" gradientUnits="userSpaceOnUse" x1="-240" y1="32" x2="-48" y2="15">
+                    <stop stop-color="#c189bb" stop-opacity="0"/>
+                    <stop offset=".40" stop-color="#dea5b9" stop-opacity=".53"/>
+                    <stop offset="1" stop-color="#ffe7ba" stop-opacity=".86"/>
+                </linearGradient>
+                <path id="@eclipse-plume" d="M-44-30c-35-27-73-15-111 2-33 15-63 30-108 19
+                    36 24 74 13 108-1 29-11 54-12 79 0-29-3-56 8-84 23-28 15-52 21-82 20
+                    49 16 80-10 118-18 24-5 48-4 76 8l17-25Z"/>
+                <path id="@eclipse-threads" d="M-248-5c62 19 98-43 151-38 22 2 39 11 52 19
+                    M-228 28c49 2 83-48 135-37 15 3 29 12 39 19
+                    M-189 35c55-30 91-26 141-10m-80-66c30-14 64-6 90 14"/>
+                <clipPath id="@moon-portrait"><circle r="60.5"/></clipPath>
             </defs>
-            <rect width="720" height="240" fill="#1e0a20"/>
-            <image href="images/profile-covers/eclipse-cel.webp" width="720" height="240"/>
-            <circle class="profile-cover-shimmer" cx="360" cy="120" r="122" fill="url(#@corona)" opacity=".56"
-                style="--cover-floor:.28;--cover-ceiling:1;--cover-time:6.4s;--cover-delay:-1.6s"/>
-            <circle class="profile-cover-flow" cx="360" cy="120" r="70.5" pathLength="100"
-                fill="none" stroke="#fff8d9" stroke-width="2.2" stroke-linecap="round" opacity=".92"
-                style="--cover-time:17s;--cover-delay:-5s"/>
-            <g class="profile-cover-float" style="--cover-dx:6px;--cover-dy:-5px;--cover-time:12s;--cover-delay:-7s">
-                <g class="profile-cover-shimmer" fill="none" stroke="#ffd197" stroke-width="1" stroke-linecap="round" opacity=".49"
-                    style="--cover-floor:.19;--cover-ceiling:.69;--cover-time:4s;--cover-delay:-1s">
-                    <path d="M439 87c13-8 27-21 44-28m-224 65c-15 5-25 8-40 6m234 43c12 8 24 12 38 15"/>
+            <rect width="720" height="240" fill="url(#@eclipse-night)"/>
+            <g transform="translate(360 120)" style="--eclipse-cycle:21s;--eclipse-phase:-5s">
+                <ellipse class="profile-cover-shimmer" rx="214" ry="116" fill="url(#@eclipse-air)" opacity=".73"
+                    style="--cover-floor:.56;--cover-ceiling:1;--cover-time:12s;--cover-delay:-4s"/>
+                <g fill="none" stroke="#c89ab9" stroke-width=".85" opacity=".24">
+                    <path d="M-258 64c57-17 119-51 190-79m154-26c66-20 101-19 152-12
+                        M-208 90c50-13 123-52 154-70m125-42c65-22 106-25 154-19"/>
+                </g>
+                <g class="profile-cover-eclipse-corona">
+                    <use href="#@eclipse-plume" transform="rotate(-13) scale(1.04 .96)" fill="url(#@eclipse-plume-ink)"/>
+                    <use href="#@eclipse-plume" transform="rotate(159) scale(.87 1.03)" fill="url(#@eclipse-plume-ink)"/>
+                    <use href="#@eclipse-plume" transform="rotate(57) scale(.42 .75)" fill="url(#@eclipse-plume-ink)" opacity=".56"/>
+                    <use href="#@eclipse-plume" transform="rotate(-118) scale(.42 .9)" fill="url(#@eclipse-plume-ink)" opacity=".39"/>
+                    <g fill="none" stroke="url(#@eclipse-thread-ink)" stroke-linecap="round" stroke-width="1.2">
+                        <use href="#@eclipse-threads" transform="rotate(-13) scale(1.04 .96)"/>
+                        <use href="#@eclipse-threads" transform="rotate(159) scale(.87 1.03)"/>
+                    </g>
+                </g>
+                <g fill="#dfb6cf" opacity=".64">
+                    <circle cx="-188" cy="-63" r="1.2"/><circle cx="-153" cy="68" r="1.25"/>
+                    <circle cx="-225" cy="11" r=".95"/><circle cx="-114" cy="-48" r="1.55"/>
+                    <circle cx="-59" cy="-81" r=".8"/><circle cx="82" cy="68" r="1.15"/>
+                    <circle cx="144" cy="60" r=".9"/><circle cx="205" cy="-29" r="1.3"/>
+                    <circle cx="232" cy="46" r="1.6"/><circle cx="171" cy="-74" r=".9"/>
+                    <path d="M-153-45l1.2 3.8 3.8 1.2-3.8 1.2-1.2 3.8-1.2-3.8-3.8-1.2 3.8-1.2Zm266 95 1.3 3.7 3.7 1.3-3.7 1.3-1.3 3.7-1.3-3.7-3.7-1.3 3.7-1.3Z" fill="#f3d6cf"/>
+                </g>
+                <circle r="69" fill="none" stroke="#eea57f" stroke-width=".8" stroke-opacity=".37"/>
+                <circle class="profile-cover-eclipse-sun" r="62" fill="url(#@eclipse-sun)"/>
+                <path d="M-52-28c13-27 42-37 69-31m-54 106c21 14 50 14 71-1" fill="none"
+                    stroke="#fff0c7" stroke-width="1.5" stroke-linecap="round" opacity=".68"/>
+                <g class="profile-cover-eclipse-moon">
+                    <circle r="60.5" fill="url(#@eclipse-moon-ink)"/>
+                    <g clip-path="url(#@moon-portrait)">
+                        <path d="M-70 44C-28 43-8 19 21 12c17-4 30-2 55 6v55H-70Z" fill="#27162c" opacity=".38"/>
+                        <path d="M-50 34c24-1 49-28 80-25 8 1 19 3 28 6M-43 44c24-6 40-26 65-29"
+                            fill="none" stroke="#84526d" stroke-linecap="round" opacity=".22"/>
+                    </g>
                 </g>
             </g>`
     };
