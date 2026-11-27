@@ -132,12 +132,13 @@ test('guest password session keeps the real account sign-in available', async ({
 
 test('published HTML must not reuse the old cached Matcenter runtime for printing',async({page})=>{
     const errors=await setup(page);
-    await page.route('**/matcenter/runtime.js?v=20261014-print2',route=>route.fulfill({contentType:'application/javascript',
+    await page.route('**/matcenter/runtime.js?v=20261123-7',route=>route.fulfill({contentType:'application/javascript',
         body:'window.MatcenterRuntime={ensure:()=>Promise.reject(new Error("Stale cached runtime"))};'}));
     await page.goto('/matcenter.html?grade=grade-10'); await ready(page);
-    await expect(page.locator('script[src^="matcenter/runtime.js"]')).toHaveAttribute('src','matcenter/runtime.js?v=20261123-7');
+    await expect(page.locator('script[src^="matcenter/runtime.js"]')).toHaveAttribute('src','matcenter/runtime.js?v=20261127-task-picker');
     await page.locator('#mcPrintButton').click();
     await expect(page.locator('#mcPrintDialog')).toBeVisible();
+    await expect(page.locator('script[data-matcenter-feature="print"]')).toHaveAttribute('src','matcenter/75-print.js?v=20261127-task-picker');
     expect(errors).toEqual([]);
 });
 
@@ -200,6 +201,26 @@ test('multiple series print in list order; unreviewed compilation uses shared st
     await expect(page.locator('#mcPrintPreview')).toBeVisible();
     expect(await page.evaluate(()=>window.__printSnapshot.handouts.map(h=>h.tasks.map(t=>t.number)))).toEqual([[110,111,112],[16,17]]);
     await page.getByRole('button',{name:'Назад',exact:true}).click();
+
+    const newerSeries = page.getByRole('checkbox', {name:'Серия 12', exact:true});
+    await page.getByRole('button',{name:'Состав — Серия 12',exact:true}).click();
+    await page.getByRole('checkbox',{name:'Задача 111',exact:true}).uncheck();
+    await expect(newerSeries).toHaveJSProperty('indeterminate',true);
+    await page.getByRole('button',{name:'Состав — Серия 2',exact:true}).click();
+    await expect(page.getByRole('group',{name:'Задачи — Серия 12',exact:true})).toBeHidden();
+    await page.getByRole('checkbox',{name:'Задача 17',exact:true}).uncheck();
+    await page.getByRole('checkbox',{name:'Задача 16',exact:true}).uncheck();
+    await expect(page.getByRole('checkbox',{name:'Серия 2',exact:true})).not.toBeChecked();
+    await expect(page.locator('#mcPrintCount')).toHaveText('2 задачи');
+    await page.locator('[data-mc-print-action="preview"]').click();
+    await expect(page.locator('#mcPrintPreview')).toBeVisible();
+    expect(await page.evaluate(()=>window.__printSnapshot.handouts.map(h=>h.tasks.map(t=>t.number)))).toEqual([[110,112]]);
+    await page.getByRole('button',{name:'Назад',exact:true}).click();
+    await page.locator('#mcPrintSelectAll').click();
+    await expect(newerSeries).toBeChecked();
+    await expect(newerSeries).toHaveJSProperty('indeterminate',false);
+    await expect(page.getByRole('checkbox',{name:'Задача 16',exact:true})).toBeChecked();
+
     await page.getByRole('radio',{name:'Неразобранные',exact:true}).check();
     await expect(page.locator('#mcPrintSeriesSelection')).toBeHidden();
     await expect(page.locator('#mcPrintCount')).toContainText('3 задачи');
@@ -213,11 +234,55 @@ test('multiple series print in list order; unreviewed compilation uses shared st
     await page.keyboard.press('Escape');expect(errors).toEqual([]);
 });
 
+test('selected tasks print together across series and from the legacy archive',async({page})=>{
+    const archiveTask = {number:25,numberText:'25*',grade:'grade-10',description:'Условие из архива. $x^2=4$.'};
+    const seriesTasks = future.map(task=>({...task,description:task.seriesTitle+' — '+task.description}));
+    const errors = await setup(page,{tasks:[archiveTask,...seriesTasks]});
+    await page.goto('/matcenter.html?grade=grade-10'); await ready(page);
+    await page.locator('#mcPrintButton').click();
+    await page.getByRole('radio',{name:'Задачи',exact:true}).check();
+    const search = page.getByRole('searchbox',{name:'Номера задач'});
+    await search.fill('12');
+    const first = page.getByRole('checkbox',{name:'Задача 12 · Серия 1. Геометрия',exact:true});
+    await expect(first).toBeVisible();
+    await page.getByRole('checkbox',{name:'Задача 12 · Серия 2. Геометрия',exact:true}).check();
+    await expect(first).not.toBeChecked();
+    await search.fill('№ 25, 40–42');
+    await expect(page.getByRole('checkbox',{name:'Задача 25*',exact:true})).toBeVisible();
+    await page.getByRole('button',{name:'Выбрать найденные',exact:true}).click();
+    await search.clear();
+    await page.getByRole('checkbox',{name:'Только выбранные',exact:true}).check();
+    await expect(page.locator('#mcPrintTaskList input')).toHaveCount(2);
+    await expect(page.locator('#mcPrintCount')).toHaveText('2 задачи');
+
+    await page.getByRole('radio',{name:'Серии',exact:true}).check();
+    await expect(page.locator('[data-mc-print-action="preview"]')).toBeDisabled();
+    await page.getByRole('radio',{name:'Задачи',exact:true}).check();
+    await expect(page.locator('#mcPrintCount')).toHaveText('2 задачи');
+    await page.evaluate(()=>{window.AlmanionPdfDownload={generateHandouts:async(handouts,title)=>{
+        window.__printSnapshot={handouts,title}; return new Blob(['test'],{type:'application/pdf'});
+    }};});
+    await page.locator('[data-mc-print-action="preview"]').click();
+    await expect(page.locator('#mcPrintPreview')).toBeVisible();
+    const snapshot = await page.evaluate(()=>window.__printSnapshot);
+    expect(snapshot.title).toContain('Выбранные задачи');
+    expect(snapshot.handouts).toEqual([{heading:'',tasks:[
+        {number:12,numberText:'12',description:seriesTasks.find(task=>task.taskId==='new-2-12').description},
+        {number:25,numberText:'25*',description:archiveTask.description}
+    ]}]);
+    await page.getByRole('button',{name:'Назад',exact:true}).click();
+    await page.getByRole('checkbox',{name:'Задача 25*',exact:true}).click();
+    await expect(page.getByRole('checkbox',{name:'Задача 12 · Серия 2. Геометрия',exact:true})).toBeFocused();
+    await page.locator('#mcPrintClearPicked').click();
+    await expect(page.locator('[data-mc-print-action="preview"]')).toBeDisabled();
+    expect(errors).toEqual([]);
+});
+
 test('legacy archives can print unreviewed tasks without invented series',async({page})=>{
     const errors=await setup(page);
     await page.goto('/matcenter.html?grade=grade-9');await ready(page);
     await page.locator('#mcPrintButton').click();
-    await expect(page.getByRole('radio',{name:'Целые серии',exact:true})).toBeDisabled();
+    await expect(page.getByRole('radio',{name:'Серии',exact:true})).toBeDisabled();
     await expect(page.getByRole('radio',{name:'Неразобранные',exact:true})).toBeChecked();
     await expect(page.locator('#mcPrintCount')).toContainText('130 задач');
     await expect(page.locator('[data-mc-print-action="print"]')).toBeEnabled();
@@ -330,25 +395,43 @@ for (const old of [false,true]) test(`series print dialog is usable at 320px, ol
     const button=await page.locator('#mcPrintButton').boundingBox();
     expect(button.x).toBeGreaterThanOrEqual(0); expect(button.x+button.width).toBeLessThanOrEqual(320);
     await page.keyboard.press('Control+p');
-    await expect(page.getByRole('radio',{name:'Целые серии',exact:true})).toBeFocused();
+    await expect(page.getByRole('radio',{name:'Серии',exact:true})).toBeFocused();
     await expect(page.locator('[data-mc-print-action="print"]')).toBeDisabled();
     await page.getByRole('checkbox',{name:'Серия 1. Геометрия',exact:true}).check();
     await expect(page.locator('[data-mc-print-action="print"]')).toBeEnabled();
+    await page.getByRole('button',{name:'Состав — Серия 1. Геометрия',exact:true}).click();
+    await page.getByRole('checkbox',{name:'Задача 2',exact:true}).uncheck();
+    await expect(page.locator('#mcPrintCount')).toHaveText('2 задачи');
     const bounds=await page.locator('#mcPrintDialog .print-export-dialog').boundingBox();
     expect(bounds.x).toBeGreaterThanOrEqual(0); expect(bounds.x+bounds.width).toBeLessThanOrEqual(320);
     expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBeLessThanOrEqual(320);
     await page.screenshot({path:info.outputPath(`print-dialog-320-${old}.png`)});
+    await page.getByRole('radio',{name:'Задачи',exact:true}).check();
+    await page.getByRole('searchbox',{name:'Номера задач'}).fill('1, 12');
+    await page.getByRole('checkbox',{name:'Задача 12 · Серия 2. Геометрия',exact:true}).check();
+    expect(await page.locator('.mc-print-footer-actions').evaluate(node=>node.scrollWidth<=node.clientWidth)).toBe(true);
+    await page.screenshot({path:info.outputPath(`print-task-picker-320-${old}.png`)});
     await page.keyboard.press('Escape'); expect(errors).toEqual([]);
 });
 
-test('real series PDF keeps serif Cyrillic and math, no invented heading/footer; print uses PDF action',async({page},info)=>{
+test('real PDF prints two edited series in A4 halves with original Cyrillic, math and numbers',async({page},info)=>{
     test.setTimeout(90000);
-    const yearTasks=[16,25].map(number=>({number,grade:'grade-10',taskId:`pdf-${number}`,seriesId:'pdf-series',seriesTitle:'Серия 2',academicYear:'2026/2027',
-        description:number===16?'Даны числа $a,b>0$. Докажите, что $\\frac{a^2+b^2}{2} \\geq ab$.':'Найдите $x \\in \\mathbb{R}$.\n$$\\left[\\begin{aligned}x^2&=4\\\\y&=1.\\end{aligned}\\right.$$\nСохраните условие.'}));
+    const descriptions = {
+        16:'Даны числа $a,b>0$. Докажите, что $\\frac{a^2+b^2}{2} \\geq ab$.',
+        19:'Исключённое условие с некорректной формулой $\\frac{1}$.',
+        25:'Найдите $x \\in \\mathbb{R}$.\n$$\\left[\\begin{aligned}x^2&=4\\\\y&=1.\\end{aligned}\\right.$$\nСохраните условие.',
+        31:'Верхняя серия. Вычислите $\\sum_{i=1}^n i$.'
+    };
+    const yearTasks = [16,19,25,31].map(number => ({number,grade:'grade-10',taskId:`pdf-${number}`,
+        seriesId:number===31?'pdf-newer':'pdf-older',seriesTitle:number===31?'Серия 3':'Серия 2',
+        academicYear:'2026/2027',description:descriptions[number]}));
     const errors=await setup(page,{tasks:[],yearTasks});
     await page.goto('/matcenter.html?grade=grade-10'); await ready(page);
     await page.locator('#mcPrintButton').click();
-    await page.getByRole('checkbox',{name:'Серия 2',exact:true}).check();
+    await page.locator('#mcPrintSelectAll').click();
+    await page.getByRole('button',{name:'Состав — Серия 2',exact:true}).click();
+    await page.getByRole('checkbox',{name:'Задача 19',exact:true}).uncheck();
+    await expect(page.locator('#mcPrintCount')).toHaveText('3 задачи');
     await page.evaluate(()=>{window.print=()=>{throw Error('Do not print cards')};});
     await page.locator('[data-mc-print-action="print"]').click();
     await expect(page.locator('#mcPrintPreview')).toBeVisible({timeout:80000});
@@ -357,6 +440,7 @@ test('real series PDF keeps serif Cyrillic and math, no invented heading/footer;
     require('node:fs').writeFileSync(info.outputPath('series-print.pdf'),bytes);
     expect(source).toMatch(/^%PDF-/); expect(source).toMatch(/CMUSerif/);
     expect(source).toMatch(/\/S\s+\/Named\s+\/N\s+\/Print/);
+    expect(source.match(/\/Type\s+\/Page\b/g)).toHaveLength(1);
     expect(bytes.length).toBeGreaterThan(10000);
     await page.evaluate(()=>logout());
     await expect(page.locator('#mcPrintDialog')).toBeHidden();

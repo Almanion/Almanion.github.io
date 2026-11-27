@@ -1,24 +1,182 @@
-/* Reuse the main site's print controls; keep the series toolbar compact. */
+/* Matcenter task selection inside the shared print dialog. */
 body.matcenter-page #mcPrintButton { width:auto; min-height:36px; padding:.5rem .65rem; margin-left:auto; flex:0 0 auto; }
 body.matcenter-page #mcPrintButton svg { width:17px; height:17px; }
-.mc-print-selection { display:grid; gap:.6rem; color:var(--mc-ink); }
-.mc-print-modes { display:flex; flex-wrap:wrap; gap:.4rem; margin:0; padding:0; border:0; }
-.mc-print-modes label { display:flex; align-items:center; gap:.45rem; padding:.55rem .7rem; border:1px solid var(--mc-line); border-radius:10px; cursor:pointer; font-size:.85rem; }
-.mc-print-modes label:has(:checked) { color:var(--mc-accent); background:color-mix(in srgb,var(--mc-accent) 10%,var(--mc-surface)); border-color:var(--mc-accent); }
-.mc-print-selection input { accent-color:var(--mc-accent); flex:0 0 auto; width:17px; height:17px; margin:0; }
-.mc-print-list-tools { display:flex; gap:.5rem; margin-bottom:.35rem; }
-.mc-print-list-tools button { padding:.35rem .4rem; color:var(--mc-accent); background:none; border:0; font:inherit; font-size:.78rem; cursor:pointer; }
-#mcPrintSeries { max-height:min(290px,36dvh); overflow:auto; border:1px solid var(--mc-line); border-radius:12px; padding:4px; }
-#mcPrintSeries label { display:flex; align-items:center; gap:.65rem; min-height:44px; padding:.4rem .6rem; border-radius:8px; cursor:pointer; }
-#mcPrintSeries label:has(:checked), #mcPrintSeries label:hover { background:color-mix(in srgb,var(--mc-accent) 10%,var(--mc-surface)); }
-#mcPrintSeries label span { flex:1; min-width:0; font-size:.86rem; }
-#mcPrintSeries label small { color:var(--mc-muted); white-space:nowrap; font-variant-numeric:tabular-nums; }
-.mc-print-selection input:focus-visible, .mc-print-list-tools button:focus-visible { outline:2px solid var(--mc-accent); outline-offset:3px; }
-.mc-print-selection p { margin:0; font-size:.8rem; color:var(--mc-muted); }
-#mcPrintStatus { margin:0; min-height:1.2em; font-size:.8rem; color:var(--mc-muted); }
-#mcPrintDialog .print-export-dialog { grid-template-rows:auto minmax(0,1fr) auto; }
-#mcPrintDialog .print-export-dialog-footer { flex-wrap:wrap; }
-#mcPrintDialog .print-export-dialog-footer > div { flex-wrap:wrap; }
+.mc-print-selection {
+    --mc-print-tint: color-mix(in srgb, var(--mc-accent) 10%, var(--mc-surface));
+    --mc-print-panel: color-mix(in srgb, var(--mc-line) 23%, var(--mc-surface));
+    display: grid;
+    gap: .7rem;
+    color: var(--mc-ink);
+}
+.mc-print-modes {
+    display: flex;
+    gap: 3px;
+    width: min(100%, 26rem);
+    min-width: 0;
+    margin: 0;
+    padding: 3px;
+    background: var(--mc-print-panel);
+    border: 1px solid var(--mc-line);
+    border-radius: 12px;
+}
+.mc-print-modes label {
+    position: relative;
+    flex: 1 1 auto;
+    display: grid;
+    place-items: center;
+    min-height: 36px;
+    padding: .3rem .45rem;
+    color: var(--mc-muted);
+    border: 1px solid transparent;
+    border-radius: 8px;
+    font-size: .82rem;
+    font-weight: 650;
+    cursor: pointer;
+}
+.mc-print-modes label:has(:checked) {
+    color: var(--mc-ink);
+    background: var(--mc-surface);
+    border-color: var(--mc-line);
+    box-shadow: 0 1px 3px rgb(0 0 0 / .1);
+}
+.mc-print-modes label:has(:disabled) { cursor: default; opacity: .55; }
+.mc-print-modes label:has(:focus-visible) { outline: 2px solid var(--mc-accent); outline-offset: -2px; }
+.mc-print-modes input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; margin: 0; cursor: inherit; }
+.mc-print-selection input[type="checkbox"] { accent-color: var(--mc-accent); }
+
+.mc-print-list-tools { display: flex; flex-wrap: wrap; align-items: center; gap: .15rem .5rem; margin-bottom: .3rem; }
+.mc-print-list-tools button, #mcPrintTaskMore {
+    min-height: 32px;
+    padding: .25rem .45rem;
+    color: var(--mc-accent);
+    background: none;
+    border: 0;
+    border-radius: 7px;
+    font: inherit;
+    font-size: .78rem;
+    font-weight: 650;
+    cursor: pointer;
+}
+.mc-print-list-tools button:disabled { color: var(--mc-muted); opacity: .65; cursor: default; }
+.mc-print-list-tools button:not(:disabled):hover, #mcPrintTaskMore:hover { background: var(--mc-print-tint); }
+.mc-print-list {
+    max-height: min(340px, 43dvh);
+    overflow: auto;
+    overscroll-behavior: contain;
+    border: 1px solid var(--mc-line);
+    border-radius: 12px;
+    padding: 4px;
+}
+.mc-print-series-item + .mc-print-series-item { margin-top: 3px; }
+.mc-print-series-row { display: flex; align-items: center; gap: .3rem; border-radius: 8px; }
+.mc-print-series-row:has(input:checked, input:indeterminate), .mc-print-series-row:has(button[aria-expanded="true"]) {
+    background: var(--mc-print-panel);
+}
+.mc-print-series-master {
+    display: flex;
+    align-items: center;
+    gap: .65rem;
+    flex: 1;
+    min-width: 0;
+    min-height: 48px;
+    padding: .4rem .6rem;
+    border-radius: 8px;
+    cursor: pointer;
+}
+.mc-print-series-master > span { display: grid; gap: 2px; min-width: 0; }
+.mc-print-series-master strong { font-size: .86rem; font-weight: 650; overflow-wrap: anywhere; line-height: 1.3; }
+.mc-print-series-master small, .mc-print-result-detail small { color: var(--mc-muted); font-size: .72rem; }
+.mc-print-series-master small, .mc-print-task-id { font-variant-numeric: tabular-nums; }
+.mc-print-series-expand {
+    display: flex;
+    align-items: center;
+    gap: .3rem;
+    flex: 0 0 auto;
+    min-height: 36px;
+    margin-right: 4px;
+    padding: .3rem .5rem;
+    color: var(--mc-ink);
+    background: var(--mc-surface);
+    border: 1px solid var(--mc-line);
+    border-radius: 8px;
+    font: inherit;
+    font-size: .77rem;
+    cursor: pointer;
+}
+.mc-print-series-expand[aria-expanded="true"] { color: var(--mc-accent); }
+.mc-print-selection svg { flex: 0 0 auto; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+.mc-print-series-expand[aria-expanded="true"] svg { transform: rotate(180deg); }
+.mc-print-numbers {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(3.5rem, 1fr));
+    gap: .35rem;
+    padding: .5rem .45rem .65rem;
+}
+.mc-print-number, .mc-print-result { display: flex; align-items: center; gap: .4rem; border-radius: 7px; cursor: pointer; }
+.mc-print-number { min-height: 36px; padding: .15rem .35rem; border: 1px solid var(--mc-line); overflow-wrap: anywhere; }
+.mc-print-task-id { font-size: .8rem; font-weight: 700; }
+#mcPrintDialog .mc-print-number input, #mcPrintDialog .mc-print-task-tools input { width: 14px; height: 14px; }
+.mc-print-number:has(:checked), .mc-print-result:has(:checked) { background: var(--mc-print-tint); }
+.mc-print-number:has(:checked) { border-color: color-mix(in srgb, var(--mc-accent) 45%, var(--mc-line)); }
+.mc-print-series-master:hover, .mc-print-series-expand:hover, .mc-print-number:hover, .mc-print-result:hover { background: var(--mc-print-tint); }
+
+.mc-print-search {
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    min-height: 40px;
+    margin-bottom: .3rem;
+    padding: 0 .65rem;
+    color: var(--mc-muted);
+    background: var(--mc-surface);
+    border: 1px solid var(--mc-line);
+    border-radius: 9px;
+    cursor: text;
+}
+.mc-print-search:focus-within { border-color: var(--mc-accent); box-shadow: inset 0 0 0 1px var(--mc-accent); }
+.mc-print-search input[type="search"] {
+    flex: 1;
+    width: 0;
+    min-width: 0;
+    min-height: 38px;
+    padding: 0;
+    color: var(--mc-ink);
+    background: transparent;
+    border: 0;
+    border-radius: 0;
+    font: inherit;
+    font-size: .85rem;
+}
+#mcPrintDialog .mc-print-search input:focus-visible { outline: 0; }
+.mc-print-search input::placeholder { color: var(--mc-muted); }
+.mc-print-task-tools label {
+    display: flex;
+    align-items: center;
+    gap: .4rem;
+    min-height: 32px;
+    padding: .25rem .35rem;
+    color: var(--mc-muted);
+    font-size: .78rem;
+    cursor: pointer;
+}
+.mc-print-result { min-height: 43px; padding: .35rem .6rem; gap: .6rem; }
+.mc-print-result .mc-print-task-id { min-width: 3ch; }
+.mc-print-result-detail { display: grid; flex: 1; gap: 2px; min-width: 0; font-size: .8rem; line-height: 1.35; }
+.mc-print-result-detail > * { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mc-print-result + .mc-print-result { margin-top: 2px; }
+#mcPrintTaskMore { display: block; width: 100%; margin-top: 4px; }
+#mcPrintTaskEmpty { padding: .5rem; }
+.mc-print-selection p { margin: 0; font-size: .82rem; color: var(--mc-muted); }
+
+#mcPrintDialog .print-export-dialog { width: min(680px, 100%); }
+#mcPrintDialog .print-export-dialog-footer { gap: .7rem; }
+#mcPrintDialog .mc-print-footer-info { display: grid; gap: .25rem; }
+.mc-print-footer-info p { margin: 0; line-height: 1.35; }
+#mcPrintCount { color: var(--mc-ink); font-size: .83rem; font-weight: 650; }
+#mcPrintStatus { color: var(--mc-muted); font-size: .78rem; }
+#mcPrintStatus:empty { display: none; }
+#mcPrintDialog .mc-print-footer-actions { flex-shrink: 0; }
+#mcPrintDialog .mc-print-footer-actions button { min-width: 0; min-height: 40px; padding: .45rem .7rem; font-size: .8rem; }
 #mcPrintPreview { position:absolute; inset:0; z-index:1; display:grid; grid-template-rows:auto minmax(0,1fr); gap:10px; padding:14px; background:var(--mc-surface); }
 #mcPrintPreview[hidden] { display:none; }
 #mcPrintPreview iframe { width:100%; height:100%; min-height:380px; border:1px solid var(--mc-line); border-radius:6px; background:white; }
@@ -27,7 +185,10 @@ body.matcenter-page #mcPrintButton svg { width:17px; height:17px; }
 @media(max-width:768px) {
     body.matcenter-page .mc-series-row { grid-template-columns:auto minmax(0,1fr) auto; }
     body.matcenter-page #mcPrintButton { grid-column:3; grid-row:1; margin:0; font-size:.75rem; gap:.3rem; }
-    #mcPrintDialog .print-export-dialog-footer > div { display:flex; width:100%; }
-    #mcPrintDialog .print-export-dialog-footer button { flex:1 1 auto; width:auto; min-width:0; }
     #mcPrintPreview iframe { min-height:0; }
+}
+@media (max-width: 680px) {
+    #mcPrintDialog .mc-print-footer-actions { display: grid; grid-template-columns: 1.2fr 1fr .8fr; gap: .35rem; }
+    #mcPrintDialog .mc-print-footer-actions button { padding-right: .3rem; padding-left: .3rem; }
+    .mc-print-number, .mc-print-series-expand { min-height: 40px; }
 }

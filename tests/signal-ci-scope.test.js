@@ -91,6 +91,8 @@ const matcenterInterface = ["matcenter.html", "matcenter/50-render.js",
   "styles/matcenter-refresh.css", "e2e/matcenter-workspace.spec.js"];
 assert.deepEqual(classify([...matcenterInterface, "script.js", "note-runtime.js", "styles/note-filter.css"]),
   { suite: "reader", campaign: false });
+assert.deepEqual(classify([...matcenterInterface, "matcenter/runtime.js", "matcenter/75-print.js",
+  "styles/matcenter-print.css", "tests/matcenter-performance.test.js"]), { suite: "reader", campaign: false });
 assert.deepEqual(classify([...matcenterInterface, "game-source/signal-frontier/src/engine.js"]),
   { suite: "all", campaign: true });
 assert.deepEqual(classify(["matcenter/unreviewed.js"]), { suite: "all", campaign: true });

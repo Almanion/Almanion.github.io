@@ -1,19 +1,17 @@
-/* Private, client-only series handouts. Never collect cards, hints or marks. */
+/* Client-only handouts from the authenticated task data. */
 (function (root) {
     'use strict';
-    let overlay, lastFocus, previewUrl, pdfModule, stylesReady, busy = false, revision = 0;
+    let overlay, lastFocus, previewUrl, pdfModule, stylesReady, draft, busy = false, revision = 0;
+    const taskPageSize = 40;
     const background = new Map();
     const $ = id => document.getElementById(id);
-    const available = () => authToken ? MatcenterWorkspaceModel.seriesList(allTasks, currentGrade) : [];
-    const sourceTasks = () => authToken ? getTasksForCurrentGrade() : [];
-    const unsolvedMode = () => overlay.querySelector('[name="mcPrintSource"]:checked')?.value === 'unsolved';
-    const selected = () => {
-        const keys = new Set([...$('mcPrintSeries').querySelectorAll('input:checked')].map(input => input.value));
-        return available().filter(series => keys.has(series.key));
-    };
+    const sourceTasks = () => authToken ? getTasksForCurrentGrade().filter(task => Number.isInteger(task.number)) : [];
+    const sourceMode = () => overlay.querySelector('[name="mcPrintSource"]:checked').value;
+    const byTaskNumber = (a, b) => a.number - b.number;
+    const taskNumber = task => String(task.numberText ?? task.number);
 
     function loadStyles() {
-        if (!stylesReady) stylesReady = Promise.all(['styles/print.css?v=20261006-1', 'styles/matcenter-print.css?v=20261013-3'].map(href => new Promise((resolve, reject) => {
+        if (!stylesReady) stylesReady = Promise.all(['styles/print.css?v=20261006-1', 'styles/matcenter-print.css?v=20261127-task-picker'].map(href => new Promise((resolve, reject) => {
             const link = document.createElement('link'); link.rel = 'stylesheet'; link.href = href;
             link.onload = resolve; link.onerror = () => { link.remove(); reject(new Error('Печатное оформление не загрузилось.')); };
             document.head.append(link);
@@ -41,35 +39,174 @@
         overlay.querySelectorAll('.print-export-dialog-header,.print-export-dialog-body,.print-export-dialog-footer').forEach(node => { node.inert = false; });
     }
 
-    function update() {
-        const series = selected(), unsolved = unsolvedMode();
-        const count = unsolved ? sourceTasks().filter(t => ['Н', 'От', 'П'].includes(t.status)).length
-            : series.reduce((sum, item) => sum + item.tasks.length, 0);
-        $('mcPrintSeriesSelection').hidden = unsolved;
-        $('mcPrintUnsolvedNote').hidden = !unsolved;
-        overlay.querySelectorAll('input').forEach(input => { input.disabled = busy || input.value === 'series' && !available().length; });
-        $('mcPrintSelectAll').disabled = busy; $('mcPrintClear').disabled = busy;
-        overlay.querySelectorAll('[data-mc-print-action]').forEach(button => { button.disabled = busy || !count; });
-        $('mcPrintCount').textContent = count ? `${count} ${pluralizeTasks(count)} · исходная нумерация`
-            : unsolved ? 'В этом разделе нет неразобранных задач.' : 'Выберите одну или несколько серий.';
+    function selectionChanged() {
+        $('mcPrintStatus').textContent = '';
+        update();
     }
 
-    async function exportSeries(mode) {
-        if (busy || !isOpen()) return;
-        const series = selected(), unsolved = unsolvedMode();
-        const groups = unsolved ? [{ tasks: sourceTasks().filter(t => ['Н', 'От', 'П'].includes(t.status)), heading: '' }]
-            : series.map(item => ({ tasks: item.tasks, heading: /^Добавка\s*№/u.test(item.title) ? item.title : '' }));
-        if (!groups.length || groups.some(group => !group.tasks.length)) return;
+    function setSeriesIncluded(series, checked) {
+        series.included.clear();
+        if (checked) series.tasks.forEach(task => series.included.add(task));
+    }
+
+    function createTaskOption(task, included, showCondition = false) {
+        const label = document.createElement('label');
+        label.className = showCondition ? 'mc-print-result' : 'mc-print-number';
+        const input = document.createElement('input');
+        const number = document.createElement('span');
+        input.type = 'checkbox';
+        number.className = 'mc-print-task-id';
+        number.textContent = taskNumber(task);
+        const seriesTitle = showCondition ? task.series?.title : '';
+        input.setAttribute('aria-label', `Задача ${number.textContent}${seriesTitle ? ' · ' + seriesTitle : ''}`);
+        input.checked = included.has(task);
+        label.append(input, number);
+        if (showCondition) {
+            const detail = document.createElement('span');
+            detail.className = 'mc-print-result-detail';
+            const condition = document.createElement('span');
+            condition.textContent = task.description;
+            detail.append(condition);
+            if (seriesTitle) {
+                const series = document.createElement('small');
+                series.textContent = seriesTitle;
+                detail.append(series);
+            }
+            label.append(detail);
+        }
+        input.addEventListener('change', () => {
+            if (input.checked) included.add(task);
+            else included.delete(task);
+            if (showCondition && !input.checked && $('mcPrintOnlyPicked').checked) {
+                const index = [...label.parentElement.children].indexOf(label);
+                renderTaskResults(index);
+            }
+            selectionChanged();
+        });
+        return { label, input, task };
+    }
+
+    function createSeriesOption(series, index) {
+        const item = document.createElement('div');
+        item.className = 'mc-print-series-item';
+        item.innerHTML = `<div class="mc-print-series-row">
+            <label class="mc-print-series-master"><input type="checkbox"><span><strong></strong><small></small></span></label>
+            <button type="button" class="mc-print-series-expand" aria-expanded="false">Состав
+                <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="m4 6 4 4 4-4"/></svg>
+            </button>
+        </div><div class="mc-print-numbers" role="group" hidden></div>`;
+        const input = item.querySelector('input');
+        const name = item.querySelector('strong');
+        const detail = item.querySelector('small');
+        const toggle = item.querySelector('button');
+        const panel = item.querySelector('.mc-print-numbers');
+        input.value = series.key;
+        input.setAttribute('aria-label', series.title);
+        name.textContent = series.title;
+        const range = matcenterSeriesRange(series);
+        const record = { ...series, input, detail, toggle, panel, range, included: new Set(), options: [] };
+        toggle.setAttribute('aria-label', 'Состав — ' + series.title);
+        panel.id = 'mcPrintNumbers-' + index;
+        panel.setAttribute('aria-label', 'Задачи — ' + series.title);
+        toggle.setAttribute('aria-controls', panel.id);
+        input.addEventListener('change', () => {
+            setSeriesIncluded(record, input.checked);
+            selectionChanged();
+        });
+        toggle.addEventListener('click', () => {
+            const expanded = panel.hidden;
+            if (draft.expanded) {
+                draft.expanded.panel.hidden = true;
+                draft.expanded.toggle.setAttribute('aria-expanded', 'false');
+            }
+            draft.expanded = expanded ? record : null;
+            if (!expanded) return;
+            if (!record.options.length) {
+                record.options = series.tasks.slice().sort(byTaskNumber).map(task => createTaskOption(task, record.included));
+                panel.replaceChildren(...record.options.map(option => option.label));
+            }
+            panel.hidden = false;
+            toggle.setAttribute('aria-expanded', 'true');
+            update();
+            panel.firstElementChild?.scrollIntoView({ block: 'nearest' });
+        });
+        $('mcPrintSeries').append(item);
+        return record;
+    }
+
+    function findTasks(query) {
+        if (!query) return draft.tasks;
+        const ranges = query.replace(/[№#]\s*/g, '').replace(/\s*[-–—]\s*/g, '-')
+            .split(/[\s,;]+/).filter(Boolean).map(token => token.match(/^(\d+)(?:-(\d+))?$/));
+        if (!ranges.length || ranges.some(range => !range)) return [];
+        const limits = ranges.map(([, first, last]) => [Number(first), Number(last ?? first)]);
+        return draft.tasks.filter(task => limits.some(([first, last]) => task.number >= first && task.number <= last));
+    }
+
+    function renderTaskResults(focusIndex) {
+        const filterPicked = $('mcPrintOnlyPicked').checked;
+        const matching = findTasks($('mcPrintTaskSearch').value.trim());
+        draft.matches = filterPicked ? matching.filter(task => draft.picked.has(task)) : matching;
+        const results = draft.matches.slice(0, draft.limit).map(task => createTaskOption(task, draft.picked, true));
+        $('mcPrintTaskList').replaceChildren(...results.map(option => option.label));
+        $('mcPrintTaskMore').hidden = draft.matches.length <= draft.limit;
+        $('mcPrintTaskEmpty').hidden = draft.matches.length > 0;
+        $('mcPrintTaskEmpty').textContent = filterPicked ? 'Нет выбранных задач в этом списке.' : 'Задачи с такими номерами не найдены.';
+        if (focusIndex !== undefined) (results[Math.min(focusIndex, results.length - 1)]?.input || $('mcPrintOnlyPicked')).focus();
+    }
+
+    function update() {
+        const mode = sourceMode();
+        $('mcPrintSeriesSelection').hidden = mode !== 'series';
+        $('mcPrintTaskSelection').hidden = mode !== 'tasks';
+        $('mcPrintUnsolvedNote').hidden = mode !== 'unsolved';
+        if (mode === 'tasks' && !draft.matches) renderTaskResults();
+        overlay.querySelectorAll('input').forEach(input => {
+            input.disabled = busy || (input.name === 'mcPrintSource' && input.value === 'series' && !draft.series.length);
+        });
+        let seriesCount = 0;
+        let seriesTotal = 0;
+        for (const series of draft.series) {
+            const count = series.included.size;
+            const total = series.tasks.length;
+            series.input.checked = count === total;
+            series.input.indeterminate = count > 0 && count < total;
+            series.detail.textContent = series.input.indeterminate ? `${series.range} · ${count} из ${total}` : series.range;
+            series.toggle.disabled = busy;
+            for (const option of series.options) option.input.checked = series.included.has(option.task);
+            seriesCount += count;
+            seriesTotal += total;
+        }
+        const count = mode === 'series' ? seriesCount : mode === 'tasks' ? draft.picked.size : draft.unreviewed.length;
+        $('mcPrintSelectAll').disabled = busy || seriesCount === seriesTotal;
+        $('mcPrintClear').disabled = busy || !seriesCount;
+        $('mcPrintClearPicked').disabled = busy || !draft.picked.size;
+        $('mcPrintPickMatches').hidden = !$('mcPrintTaskSearch').value.trim() || $('mcPrintOnlyPicked').checked || !draft.matches?.length;
+        $('mcPrintPickMatches').disabled = busy || !draft.matches?.some(task => !draft.picked.has(task));
+        $('mcPrintTaskMore').disabled = busy;
+        overlay.querySelectorAll('[data-mc-print-action]').forEach(button => { button.disabled = busy || !count; });
+        const empty = { series: 'Выберите серии или откройте их состав.', tasks: 'Выберите задачи для печати.', unsolved: 'В разделе нет неразобранных задач.' };
+        $('mcPrintCount').textContent = count ? `${count} ${pluralizeTasks(count)}` : empty[mode];
+    }
+
+    async function exportHandouts(mode) {
+        if (busy || !isOpen() || !authToken) return;
+        const source = sourceMode();
+        const series = draft.series.filter(item => item.included.size);
+        const groups = source === 'series'
+            ? series.map(item => ({ tasks: item.tasks.filter(task => item.included.has(task)), heading: /^Добавка\s*№/u.test(item.title) ? item.title : '' }))
+            : [{ tasks: source === 'tasks' ? draft.tasks.filter(task => draft.picked.has(task)) : draft.unreviewed, heading: '' }];
+        if (!groups.length || !groups[0].tasks.length) return;
         const token = ++revision;
-        // Snapshot this series from authenticated data, not the currently
-        // filtered/partially rendered DOM. Do not mutate or renumber any row.
-        const handouts = groups.map(group => ({ heading: group.heading, tasks: group.tasks.slice().sort((a, b) => a.number - b.number).map(task => {
+        // Copy only the original numbers and statements into the PDF.
+        const handouts = groups.map(group => ({ heading: group.heading, tasks: group.tasks.slice().sort(byTaskNumber).map(task => {
             let description = String(task.description ?? '');
             const matches = findUndelimitedMatcenterMath(description);
             for (const match of matches.reverse()) description = description.slice(0, match.start) + '\\(' + match.tex + '\\)' + description.slice(match.end);
             return { number: task.number, numberText: task.numberText, description };
         }) }));
-        const title = [getGradeTitle(currentGrade), unsolved ? 'Неразобранные задачи' : series.map(item => item.title).join(', ')].join(' — ');
+        const titles = { series: series.map(item => item.title).join(', '), tasks: 'Выбранные задачи', unsolved: 'Неразобранные задачи' };
+        const title = [getGradeTitle(draft.grade), titles[source]].join(' — ');
         busy = true;
         update();
         $('mcPrintStatus').textContent = 'Готовим печатный лист…';
@@ -105,19 +242,96 @@
         overlay.id = 'mcPrintDialog';
         overlay.className = 'print-export-overlay';
         overlay.hidden = true;
-        overlay.innerHTML = '<section class="print-export-dialog" role="dialog" aria-modal="true" aria-labelledby="mcPrintTitle" aria-describedby="mcPrintDescription">' +
-            '<header class="print-export-dialog-header"><span class="print-export-dialog-icon">' + $('mcPrintButton').querySelector('svg').outerHTML + '</span><div><p class="print-export-eyebrow">PDF · 2 × A5 на A4</p><h2 id="mcPrintTitle">Печать задач</h2><p id="mcPrintDescription">По две серии на листе: сверху и снизу, в порядке списка. A4, вертикально, масштаб 100%.</p></div><button class="print-export-close" id="mcPrintClose" type="button" aria-label="Закрыть печать">×</button></header>' +
-            '<div class="print-export-dialog-body"><div class="mc-print-selection"><fieldset class="mc-print-modes"><legend class="sr-only">Что печатать</legend><label><input type="radio" name="mcPrintSource" value="series" checked>Целые серии</label><label><input type="radio" name="mcPrintSource" value="unsolved">Неразобранные</label></fieldset><div id="mcPrintSeriesSelection"><div class="mc-print-list-tools"><button type="button" id="mcPrintSelectAll">Выбрать все</button><button type="button" id="mcPrintClear">Снять выбор</button></div><div id="mcPrintSeries" role="group" aria-label="Серии для печати"></div></div><p id="mcPrintUnsolvedNote" hidden>Из всего текущего раздела: текущие и отложенные задачи. Личные отметки «решено» не учитываются.</p><p id="mcPrintCount" role="status" aria-live="polite"></p></div></div>' +
-            '<footer class="print-export-dialog-footer"><p id="mcPrintStatus" role="status" aria-live="polite"></p><div><button class="print-export-cancel" data-mc-print-action="preview" type="button">Предпросмотр</button><button class="print-export-cancel" data-mc-print-action="download" type="button">Скачать PDF</button><button class="print-export-download" data-mc-print-action="print" type="button">Печать</button></div></footer>' +
-            '<section id="mcPrintPreview" hidden aria-label="Предпросмотр печатного листа"><div id="mcPrintPreviewBar"><button type="button" class="print-export-cancel" id="mcPrintPreviewClose">Назад</button><button type="button" class="print-export-cancel" id="mcPrintOpenPdf">Открыть PDF</button></div><iframe id="mcPrintFrame" title="Предпросмотр серии" src="about:blank"></iframe></section></section>';
+        overlay.innerHTML = `<section class="print-export-dialog" role="dialog" aria-modal="true" aria-labelledby="mcPrintTitle" aria-describedby="mcPrintDescription">
+            <header class="print-export-dialog-header">
+                <span class="print-export-dialog-icon">${$('mcPrintButton').querySelector('svg').outerHTML}</span>
+                <div><p class="print-export-eyebrow">PDF · 2 × A5 на A4</p><h2 id="mcPrintTitle">Печать задач</h2>
+                    <p id="mcPrintDescription">По две серии на листе, сверху и снизу.</p></div>
+                <button class="print-export-close" id="mcPrintClose" type="button" aria-label="Закрыть печать">×</button>
+            </header>
+            <div class="print-export-dialog-body">
+                <div class="mc-print-selection">
+                    <fieldset class="mc-print-modes" aria-label="Что печатать">
+                        <label><input type="radio" name="mcPrintSource" value="series" checked>Серии</label>
+                        <label><input type="radio" name="mcPrintSource" value="tasks">Задачи</label>
+                        <label><input type="radio" name="mcPrintSource" value="unsolved">Неразобранные</label>
+                    </fieldset>
+                    <div id="mcPrintSeriesSelection">
+                        <div class="mc-print-list-tools">
+                            <button type="button" id="mcPrintSelectAll">Выбрать все</button>
+                            <button type="button" id="mcPrintClear">Снять выбор</button>
+                        </div>
+                        <div id="mcPrintSeries" class="mc-print-list" role="group" aria-label="Серии для печати"></div>
+                    </div>
+                    <div id="mcPrintTaskSelection" hidden>
+                        <label class="mc-print-search">
+                            <svg viewBox="0 0 20 20" width="17" height="17" aria-hidden="true"><circle cx="8.5" cy="8.5" r="4.75"/><path d="m12 12 4 4"/></svg>
+                            <input id="mcPrintTaskSearch" type="search" aria-label="Номера задач" placeholder="Номера, например 16, 19, 25–30" autocomplete="off">
+                        </label>
+                        <div class="mc-print-list-tools mc-print-task-tools">
+                            <label><input type="checkbox" id="mcPrintOnlyPicked">Только выбранные</label>
+                            <button type="button" id="mcPrintPickMatches" hidden>Выбрать найденные</button>
+                            <button type="button" id="mcPrintClearPicked">Снять выбор</button>
+                        </div>
+                        <div id="mcPrintTaskResults" class="mc-print-list">
+                            <div id="mcPrintTaskList" role="group" aria-label="Задачи для печати"></div>
+                            <p id="mcPrintTaskEmpty" role="status" hidden></p>
+                            <button type="button" id="mcPrintTaskMore" hidden>Показать ещё</button>
+                        </div>
+                    </div>
+                    <p id="mcPrintUnsolvedNote" hidden>Текущие и отложенные задачи из всего раздела. Личные отметки «решено» не учитываются.</p>
+                </div>
+            </div>
+            <footer class="print-export-dialog-footer">
+                <div class="mc-print-footer-info"><p id="mcPrintCount" role="status"></p><p id="mcPrintStatus" role="status"></p></div>
+                <div class="mc-print-footer-actions">
+                    <button class="print-export-cancel" data-mc-print-action="preview" type="button">Предпросмотр</button>
+                    <button class="print-export-cancel" data-mc-print-action="download" type="button">Скачать PDF</button>
+                    <button class="print-export-download" data-mc-print-action="print" type="button">Печать</button>
+                </div>
+            </footer>
+            <section id="mcPrintPreview" hidden aria-label="Предпросмотр печатного листа">
+                <div id="mcPrintPreviewBar">
+                    <button type="button" class="print-export-cancel" id="mcPrintPreviewClose">Назад</button>
+                    <button type="button" class="print-export-cancel" id="mcPrintOpenPdf">Открыть PDF</button>
+                </div>
+                <iframe id="mcPrintFrame" title="Предпросмотр печати" src="about:blank"></iframe>
+            </section>
+        </section>`;
         document.body.append(overlay);
         $('mcPrintClose').addEventListener('click', close);
         overlay.addEventListener('click', event => { if (event.target === overlay) close(); });
-        overlay.querySelector('.mc-print-selection').addEventListener('change', () => { $('mcPrintStatus').textContent = ''; update(); });
+        overlay.querySelector('.mc-print-modes').addEventListener('change', selectionChanged);
         for (const [id, checked] of [['mcPrintSelectAll', true], ['mcPrintClear', false]]) $(id).addEventListener('click', () => {
-            $('mcPrintSeries').querySelectorAll('input').forEach(input => { input.checked = checked; }); update();
+            draft.series.forEach(series => setSeriesIncluded(series, checked));
+            selectionChanged();
         });
-        overlay.querySelectorAll('[data-mc-print-action]').forEach(button => button.addEventListener('click', () => exportSeries(button.dataset.mcPrintAction)));
+        function filterTasks() {
+            draft.limit = taskPageSize;
+            $('mcPrintTaskResults').scrollTop = 0;
+            renderTaskResults();
+            selectionChanged();
+        }
+        $('mcPrintTaskSearch').addEventListener('input', filterTasks);
+        $('mcPrintOnlyPicked').addEventListener('change', filterTasks);
+        $('mcPrintTaskMore').addEventListener('click', () => {
+            const firstNew = draft.limit;
+            draft.limit += taskPageSize;
+            renderTaskResults(firstNew);
+            update();
+        });
+        $('mcPrintPickMatches').addEventListener('click', () => {
+            draft.matches.forEach(task => draft.picked.add(task));
+            renderTaskResults(0);
+            selectionChanged();
+        });
+        $('mcPrintClearPicked').addEventListener('click', () => {
+            draft.picked.clear();
+            renderTaskResults();
+            selectionChanged();
+            $('mcPrintTaskSearch').focus();
+        });
+        overlay.querySelectorAll('[data-mc-print-action]').forEach(button => button.addEventListener('click', () => exportHandouts(button.dataset.mcPrintAction)));
         $('mcPrintPreviewClose').addEventListener('click', () => { clearPreview(); overlay.querySelector('[data-mc-print-action="preview"]').focus(); });
         $('mcPrintOpenPdf').addEventListener('click', () => { if (previewUrl && authToken) window.open(previewUrl, '_blank', 'noopener'); });
         document.addEventListener('keydown', event => {
@@ -135,32 +349,38 @@
     function isOpen() { return !!overlay && !overlay.hidden; }
     async function open() {
         if (isOpen() || !sourceTasks().length) return;
+        const token = revision;
         await loadStyles();
-        if (isOpen() || !sourceTasks().length) return;
+        const tasks = sourceTasks().sort(byTaskNumber);
+        if (token !== revision || isOpen() || !tasks.length) return;
         createDialog();
         lastFocus = document.activeElement === document.body ? $('mcPrintButton') : document.activeElement;
         clearPreview();
-        $('mcPrintSeries').replaceChildren(...available().map(series => {
-            const label = document.createElement('label'), input = document.createElement('input');
-            input.type = 'checkbox'; input.value = series.key; input.setAttribute('aria-label', series.title);
-            input.checked = series.key === getSelectedMatcenterSeries()?.key;
-            const name = document.createElement('span'); name.textContent = series.title;
-            const range = document.createElement('small'); range.textContent = matcenterSeriesRange(series);
-            label.append(input, name, range); return label;
-        }));
-        overlay.querySelector('[name="mcPrintSource"][value="' + (available().length ? 'series' : 'unsolved') + '"]').checked = true;
-        $('mcPrintStatus').textContent = '';
-        update();
+        const series = MatcenterWorkspaceModel.seriesList(tasks, currentGrade).map(createSeriesOption);
+        const selectedSeriesKey = getSelectedMatcenterSeries()?.key;
+        series.forEach(item => setSeriesIncluded(item, item.key === selectedSeriesKey));
+        draft = {
+            grade: currentGrade, tasks, series, picked: new Set(), limit: taskPageSize,
+            unreviewed: tasks.filter(t => ['Н', 'От', 'П'].includes(t.status))
+        };
+        $('mcPrintSeries').scrollTop = 0;
+        $('mcPrintTaskSearch').value = '';
+        $('mcPrintOnlyPicked').checked = false;
+        overlay.querySelector('[name="mcPrintSource"][value="' + (series.length ? 'series' : 'unsolved') + '"]').checked = true;
+        selectionChanged();
         overlay.hidden = false;
         document.body.classList.add('print-export-dialog-open');
         [...document.body.children].filter(node => node !== overlay).forEach(node => { background.set(node, node.inert); node.inert = true; });
         requestAnimationFrame(() => { if (isOpen()) { overlay.classList.add('is-open'); overlay.querySelector('[name="mcPrintSource"]:checked').focus({ preventScroll: true }); } });
     }
     function close(restoreFocus = true) {
+        revision++;
         if (!overlay) return;
-        revision++; busy = false;
+        busy = false;
+        draft = null;
         clearPreview();
         $('mcPrintSeries').replaceChildren();
+        $('mcPrintTaskList').replaceChildren();
         $('mcPrintCount').textContent = '';
         $('mcPrintStatus').textContent = '';
         overlay.hidden = true;

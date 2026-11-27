@@ -72,7 +72,9 @@ const adminFiles = new Set([
 // with the other educational pages.
 const matcenterFiles = new Set([
   "matcenter.html", "matcenter/20-auth.js", "matcenter/50-render.js",
-  "styles/matcenter-refresh.css", "e2e/matcenter-workspace.spec.js",
+  "matcenter/75-print.js", "matcenter/runtime.js",
+  "styles/matcenter-refresh.css", "styles/matcenter-print.css",
+  "e2e/matcenter-workspace.spec.js", "tests/matcenter-performance.test.js",
 ]);
 // These sources only feed the educational pages. A new or shared path falls
 // back to the full suite until its dependencies have been reviewed.
