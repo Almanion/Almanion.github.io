@@ -769,7 +769,8 @@ test('mobile task header gives admins compact hint editing next to the link', as
     const link = firstTask.getByRole('button', { name: 'Скопировать ссылку на задачу 2' });
     await expect(firstTask.locator('.mc-task-hint-toggle + .mc-task-hint-edit + .mc-task-link')).toHaveCount(1);
     await expect(edit.locator('svg')).toBeVisible();
-    expect(await edit.boundingBox()).toMatchObject({ width: 32, height: 32 });
+    // The task's entrance can briefly scale every control in the card.
+    await expect.poll(() => edit.boundingBox()).toMatchObject({ width: 32, height: 32 });
     const linkBox = await link.boundingBox();
     expect(linkBox.x + linkBox.width).toBeLessThanOrEqual(320);
     await edit.click();
