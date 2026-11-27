@@ -87,6 +87,13 @@ assert.deepEqual(classify([note, "sw.js"]), { suite: "web", campaign: false });
 assert.deepEqual(classify([note, "game-source/signal-frontier/src/engine.js"]), { suite: "all", campaign: true });
 assert.deepEqual(classify([note, "unreviewed.js"]), { suite: "all", campaign: true });
 assert.deepEqual(classify(["tools/signal-ci-scope.js"]), { suite: "all", campaign: true });
+const matcenterInterface = ["matcenter.html", "matcenter/50-render.js",
+  "styles/matcenter-refresh.css", "e2e/matcenter-workspace.spec.js"];
+assert.deepEqual(classify([...matcenterInterface, "script.js", "note-runtime.js", "styles/note-filter.css"]),
+  { suite: "reader", campaign: false });
+assert.deepEqual(classify([...matcenterInterface, "game-source/signal-frontier/src/engine.js"]),
+  { suite: "all", campaign: true });
+assert.deepEqual(classify(["matcenter/unreviewed.js"]), { suite: "all", campaign: true });
 const readerTests = require("../tools/run-tests").listTests(".", "reader");
 assert.ok(readerTests.some(file => file.endsWith("signal-ci-scope.test.js")));
 assert.ok(readerTests.some(file => file.endsWith("reader-tools.test.js")));

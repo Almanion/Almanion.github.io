@@ -68,10 +68,16 @@ const adminFiles = new Set([
   "e2e/site.spec.js", "tests/admin-structure.test.js", "tests/admin-login.test.js",
   "tests/analytics-identity.test.js",
 ]);
+// These assets only feed MatCenter. Its interface and access checks still run
+// with the other educational pages.
+const matcenterFiles = new Set([
+  "matcenter.html", "matcenter/20-auth.js", "matcenter/50-render.js",
+  "styles/matcenter-refresh.css", "e2e/matcenter-workspace.spec.js",
+]);
 // These sources only feed the educational pages. A new or shared path falls
 // back to the full suite until its dependencies have been reviewed.
 function isReaderFile(file) {
-  return adminFiles.has(file)
+  return adminFiles.has(file) || matcenterFiles.has(file)
     || /^content\/(?:subjects\.json$|[\w-]+\/(?:manifest\.json$|sections\/[\w-]+\.json$))/.test(file)
     || /^(?:physics(?:-10|-exam)?|chemistry(?:-10)?|math|geometry(?:-formulas)?|russian-ege|likbez|literature-10|duty-10-1|offline|contests)\.html$/.test(file)
     || /^(?:script|note-runtime|experimental-reader|search(?:-text)?|offline-library|russian-ege|english-ui|duty|note-filter|experiment-notebook|knowledge-check|bookmarks|print-export|pdf-download)\.js$/.test(file)
@@ -80,8 +86,7 @@ function isReaderFile(file) {
     || /^contests(?:-core)?\.js$/.test(file)
     || /^styles\/(?:duty|contests|reader-tools|note-filter|print|knowledge-check|site\/20-layout-content)\.css$/.test(file)
     || /^tools\/build-(?:notes|offline)\.js$/.test(file)
-    || /^(?:e2e|tests)\/(?:reader-tools|site-improvements|network-resilience|duty-extra|russian-ege|experiment-notebook|image-viewer|offline-catalogue|contests|reader-study-layout|layout-usability|learning-label|knowledge-tables|note-runtime)\.(?:spec|test)\.js$/.test(file)
-    || file === "matcenter/20-auth.js";
+    || /^(?:e2e|tests)\/(?:reader-tools|site-improvements|network-resilience|duty-extra|russian-ege|experiment-notebook|image-viewer|offline-catalogue|contests|reader-study-layout|layout-usability|learning-label|knowledge-tables|note-runtime)\.(?:spec|test)\.js$/.test(file);
 }
 const routing = new Set([".github/workflows/pages.yml", "tools/signal-ci-scope.js", "tests/signal-ci-scope.test.js", "tools/run-tests.js"]);
 const offlineFiles = new Set(["sw.js", "performance/sw-shell.json", "tests/service-worker-resilience.test.js"]);
