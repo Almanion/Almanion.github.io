@@ -371,10 +371,14 @@ function createTaskElement(task) {
         </button>
     ` : '';
     
-    // Бейдж статуса: в летних сериях статусы не используются — вообще ничего не показываем.
-    // В обычных классах: показываем статус, а для админа дополнительно даём поставить.
+    // Статус «П» обозначен цветом карточки. Администратор может сменить его через номер задачи.
+    const statusOnNumber = isAdmin && !isSummerTask && task.status === 'П';
+    const numberTag = statusOnNumber ? 'button' : 'span';
+    const numberAction = statusOnNumber
+        ? ` type="button" aria-haspopup="menu" aria-label="Изменить статус задачи ${escapeHtml(numberText)}" title="Изменить статус"`
+        : '';
     let statusBadgeHTML = '';
-    if (!isSummerTask) {
+    if (!isSummerTask && task.status !== 'П') {
         if (task.status) {
             statusBadgeHTML = isAdmin
                 ? `<button type="button" class="task-status-badge clickable" data-task-number="${escapeHtml(numberText)}" aria-haspopup="menu">${getStatusText(task.status)}</button>`
@@ -395,10 +399,10 @@ function createTaskElement(task) {
                     <svg class="task-solved-check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
                     <span class="task-solved-burst" aria-hidden="true"></span>
                 </button>
-                <span class="task-number">
+                <${numberTag} class="task-number"${numberAction}>
                     <span class="task-number-label">Задача ${displayNumber}</span>
                     <span class="task-solved-strike" aria-hidden="true"></span>
-                </span>
+                </${numberTag}>
                 <span class="task-solved-caption" ${personallySolved ? '' : 'hidden'}>решено</span>
             </div>
             <div class="mc-task-actions">${statusBadgeHTML}${hintToggleHTML}${adminButtonHTML}</div>
@@ -468,11 +472,11 @@ function createTaskElement(task) {
     
     // Обработчик клика на статус для админов
     if (isAdmin) {
-        const statusBadge = taskCard.querySelector('.task-status-badge.clickable');
-        if (statusBadge) {
-            statusBadge.addEventListener('click', (e) => {
+        const statusControl = taskCard.querySelector('button.task-number, .task-status-badge.clickable');
+        if (statusControl) {
+            statusControl.addEventListener('click', (e) => {
                 e.stopPropagation();
-                showStatusDropdown(statusBadge, task);
+                showStatusDropdown(statusControl, task);
             });
         }
     }

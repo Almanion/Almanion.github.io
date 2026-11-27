@@ -768,11 +768,18 @@ test('mobile task header gives admins compact hint editing next to the link', as
     const edit = firstTask.getByRole('button', { name: 'Изменить подсказку' });
     const link = firstTask.getByRole('button', { name: 'Скопировать ссылку на задачу 2' });
     await expect(firstTask.locator('.mc-task-hint-toggle + .mc-task-hint-edit + .mc-task-link')).toHaveCount(1);
+    await expect(firstTask.locator('.mc-task-actions > *')).toHaveCount(3);
+    await expect(firstTask.locator('.mc-task-actions')).toHaveText('');
     await expect(edit.locator('svg')).toBeVisible();
     // The task's entrance can briefly scale every control in the card.
     await expect.poll(() => edit.boundingBox()).toMatchObject({ width: 32, height: 32 });
     const linkBox = await link.boundingBox();
     expect(linkBox.x + linkBox.width).toBeLessThanOrEqual(320);
+    const status = firstTask.getByRole('button', { name: 'Изменить статус задачи 2' });
+    await status.press('Enter');
+    await expect(page.locator('.status-dropdown')).toBeVisible();
+    await page.locator('#allTasksTitle').click();
+    await expect(page.locator('.status-dropdown')).toBeHidden();
     await edit.click();
     await expect(page.getByRole('dialog', { name: 'Подсказка к задаче №2' })).toBeVisible();
     await expect(page.locator('#hintTextarea')).toHaveValue('Проверьте рисунок');
@@ -881,7 +888,7 @@ for (const dark of [false, true]) test(`camp menu order and proportional three-d
         await page.setViewportSize({width,height:844});
         await page.goto('/matcenter.html?grade=grade-camp-2026');
         await ready(page);
-        await expect(page.locator('link[href*="styles/matcenter-refresh.css"]')).toHaveAttribute('href', 'styles/matcenter-refresh.css?v=20261127-hint-icons');
+        await expect(page.locator('link[href*="styles/matcenter-refresh.css"]')).toHaveAttribute('href', 'styles/matcenter-refresh.css?v=20261127-hint-row');
         expect(await page.locator('#gradeSwitcher [data-grade]').evaluateAll(els=>els.map(el=>el.dataset.grade))).toEqual(order);
         expect(await page.locator('#mcSidebarGrade option').evaluateAll(els=>els.map(el=>el.value))).toEqual(order);
         const active = page.locator('#gradeSwitcher [data-grade="grade-camp-2026"]');

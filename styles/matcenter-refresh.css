@@ -184,6 +184,8 @@ body.matcenter-page .matcenter-task-view .part-title { font-size: 1.15rem; }
 body.matcenter-page .task-header { gap:.3rem .5rem; flex-wrap:wrap; margin-bottom:0; }
 body.matcenter-page .task-number-wrap { flex: 1 1 auto; min-width: 0; flex-wrap:wrap; gap:.4rem; }
 body.matcenter-page .task-number { flex:0 1 auto; }
+body.matcenter-page button.task-number { padding: 0; border: 0; background: transparent; font-family: inherit; text-align: inherit; cursor: pointer; }
+body.matcenter-page button.task-number:hover { text-decoration: underline; }
 body.matcenter-page .mc-task-actions { display:inline-flex; align-items:center; flex:0 0 auto; gap:.3rem; margin-left:auto; }
 body.matcenter-page .mc-task-actions :is(.mc-task-link, .mc-task-hint-toggle, .mc-task-hint-edit) {
     display: inline-grid; place-items: center; flex: 0 0 32px; width: 32px; height: 32px;
@@ -192,7 +194,8 @@ body.matcenter-page .mc-task-actions :is(.mc-task-link, .mc-task-hint-toggle, .m
 }
 body.matcenter-page .mc-task-actions :is(.mc-task-link, .mc-task-hint-toggle, .mc-task-hint-edit):hover,
 body.matcenter-page .mc-task-hint-toggle[aria-expanded="true"] { border-color: var(--mc-line); color: var(--mc-accent); }
-body.matcenter-page .mc-task-actions :focus-visible { outline: 2px solid var(--mc-accent); outline-offset: 2px; }
+body.matcenter-page .mc-task-actions :focus-visible,
+body.matcenter-page button.task-number:focus-visible { outline: 2px solid var(--mc-accent); outline-offset: 2px; }
 body.matcenter-page .mc-task-actions :is(.mc-task-link, .mc-task-hint-toggle, .mc-task-hint-edit) svg { width: 18px !important; height: 18px !important; }
 body.matcenter-page .task-hint[hidden] { display: none; }
 body.matcenter-page.mc-reading .tasks-container { display: flex !important; flex-direction: column; gap: .85rem; max-width: 920px; margin: 0 auto; }
