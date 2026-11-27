@@ -13,6 +13,7 @@ for (const route of ['physics.html', 'physics-10.html', 'likbez.html', 'russian-
         await page.goto('/' + route);
         const launch = page.locator('#knowledgeCheckBtn');
         await expect(launch).toHaveAccessibleName('Учить');
+        await page.waitForFunction(() => !document.getElementById('accountBtn')?.disabled);
         await launch.click();
         await expect(page.locator('#kcSelectTitle')).toHaveText('Учить');
         await expect(page.locator('.kc-topic-group .kc-deck').first()).toBeInViewport();

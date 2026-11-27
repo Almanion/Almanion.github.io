@@ -66,7 +66,8 @@ body.kc-dialog-open { overflow: hidden; }
     cursor: pointer;
 }
 #kcSelectModal .kc-show-types:hover { background: var(--kc-subtle); }
-#kcSelectModal .kc-type-list { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+#kcSelectModal .kc-type-list { display: flex; flex-wrap: wrap; }
+#kcSelectModal .kc-type-chip { flex: 1 1 auto; gap: .35rem; padding-inline: .5rem; }
 #kcExtraTypeList,
 #kcExtraTypesSelected { margin-block: .45rem 0; }
 
@@ -110,6 +111,7 @@ body.kc-dialog-open { overflow: hidden; }
 #kcSelectModal > .kc-actions {
     display: grid;
     gap: .5rem;
+    background: transparent;
 }
 
 .kc-selection-status,
@@ -521,10 +523,8 @@ body.experimental .kc-return { color: var(--exp-accent-contrast); }
     #kcSelectModal .kc-session-resume > strong { grid-column: 1 / -1; }
 }
 @media (max-width: 480px) {
-    #kcSelectModal .kc-type-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-    #kcSelectModal #kcPrimaryTypeList { display: flex; flex-wrap: wrap; gap: .32rem; }
+    #kcSelectModal #kcPrimaryTypeList { gap: .32rem; }
     #kcSelectModal #kcPrimaryTypeList .kc-type-chip {
-        flex: 1 1 auto;
         grid-template-columns: minmax(0, 1fr);
         justify-items: center;
         align-content: center;

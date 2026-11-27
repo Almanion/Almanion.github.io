@@ -90,7 +90,9 @@ for (const width of [320, 390, 430, 768, 1024, 1440]) {
         if (width < 769) {
             await page.locator('.kc-select-scroll').evaluate(el => {
                 for (const [type, y] of [['touchstart', 300], ['touchmove', 340], ['touchmove', 430], ['touchend', 430]]) {
-                    el.dispatchEvent(new TouchEvent(type, { bubbles: true, cancelable: true, touches: type === 'touchend' ? [] : [new Touch({ identifier: 1, target: el, clientX: 100, clientY: y })] }));
+                    const event = new Event(type, { bubbles: true, cancelable: true });
+                    Object.defineProperty(event, 'touches', { value: type === 'touchend' ? [] : [{ clientY: y }] });
+                    el.dispatchEvent(event);
                 }
             });
             await page.waitForTimeout(300);

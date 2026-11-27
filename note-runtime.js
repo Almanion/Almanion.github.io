@@ -23,7 +23,7 @@
         search: 'search.js?v=20261122-4',
         print: 'print-export.js?v=20261123-4',
         knowledge: 'knowledge-check.js?v=20261127-study-setup',
-        knowledgeStyles: 'styles/knowledge-check.css?v=20261127-study-setup',
+        knowledgeStyles: 'styles/knowledge-check.css?v=20261127-study-setup-2',
         studyInk: 'study-ink.js?v=2',
         newyear: 'newyear.js?v=20261002-1',
         firebaseApp: 'https://www.gstatic.com/firebasejs/12.18.0/firebase-app-compat.js',
