@@ -259,7 +259,8 @@ function build(options) {
         let published = updated
             .replace(/(href=["'](?:\.\.\/)?styles\/site\/(?:index|reader|features)\.css)(?:\?[^"']*)?(["'])/g, '$1?v=20261127-1$2')
             .replace(/(src=["'](?:\.\.\/)?settings\.js)(?:\?[^"']*)?(["'])/g, '$1?v=20261127-1$2')
-            .replace(/(src=["'](?:\.\.\/)?(?:account|note-runtime)\.js)(?:\?[^"']*)?(["'])/g, '$1?v=20261127-forecast-inbox$2');
+            .replace(/(src=["'](?:\.\.\/)?note-runtime\.js)(?:\?[^"']*)?(["'])/g, '$1?v=20261127-2$2')
+            .replace(/(src=["'](?:\.\.\/)?account\.js)(?:\?[^"']*)?(["'])/g, '$1?v=20261127-forecast-inbox$2');
         // The browser decides whether to take a navigation snapshot before
         // deferred scripts run. Make the opt-in available with the first bytes of HTML.
         const transitionLink = /[ \t]*<link rel="stylesheet" href="styles\/page-transitions\.css[^"]*">\n/;

@@ -19,9 +19,13 @@ if (process.env.ALMANION_TEST_SITE) {
         const content = fs.readFileSync(path.join(process.env.ALMANION_TEST_SITE, file));
         assert.deepStrictEqual(BuildSite.normalizePublicText(file, content), content, `${file}: generated output must also use canonical line endings`);
     }
-    for (const [page, script] of [['forecast.html', 'account.js'], ['index.html', 'note-runtime.js'], ['profile.html', 'account.js']]) {
+    for (const [page, script] of [
+        ['forecast.html', 'account.js?v=20261127-forecast-inbox'],
+        ['index.html', 'note-runtime.js?v=20261127-2'],
+        ['profile.html', 'account.js?v=20261127-forecast-inbox']
+    ]) {
         const html = fs.readFileSync(path.join(process.env.ALMANION_TEST_SITE, page), 'utf8');
-        assert.ok(html.includes(`src="${script}?v=20261127-forecast-inbox"`), `${page} must fetch the updated notification loader`);
+        assert.ok(html.includes(`src="${script}"`), `${page} must fetch the updated notification loader`);
     }
 }
 
