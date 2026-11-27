@@ -18,6 +18,20 @@ function captureTaskCardUiState(container) {
     return { open, hintOpen };
 }
 
+function setTaskHintExpanded(card, expanded) {
+    const button = card.querySelector('.mc-task-hint-toggle');
+    const panel = card.querySelector('.task-hint');
+    if (!button || !panel) return;
+
+    const label = expanded ? 'Скрыть подсказку' : 'Показать подсказку';
+    card.classList.toggle('hint-open', expanded);
+    panel.hidden = !expanded;
+    button.setAttribute('aria-expanded', String(expanded));
+    button.setAttribute('aria-label', label);
+    button.title = label;
+    if (expanded) renderLatexInElement(panel);
+}
+
 function restoreTaskCardUiState(container, uiState) {
     if (!container || !uiState) return;
 
@@ -38,19 +52,7 @@ function restoreTaskCardUiState(container, uiState) {
             }
         }
 
-        if (uiState.hintOpen.has(key)) {
-            card.classList.add('hint-open');
-            const hintToggleBtn = card.querySelector('.hint-toggle');
-            if (hintToggleBtn) {
-                hintToggleBtn.innerHTML = '<span class="toggle-icon"><span class="eic eic-bulb" aria-hidden="true"></span></span> Скрыть подсказку';
-                hintToggleBtn.classList.add('active');
-                hintToggleBtn.setAttribute('aria-expanded', 'true');
-            }
-            const hintElement = card.querySelector('.task-hint');
-            if (hintElement && typeof renderLatexInElement === 'function') {
-                renderLatexInElement(hintElement);
-            }
-        }
+        if (uiState.hintOpen.has(key)) setTaskHintExpanded(card, true);
     });
 }
 
@@ -356,29 +358,18 @@ function createTaskElement(task) {
     const hint = task.hint || null;
     const hasHint = hint !== null && !isSummerTask;
 
-    // Формируем HTML подсказки
-    let hintHTML = '';
-    if (hasHint) {
-        // Обрезаем начальные и конечные пробелы/переносы, но сохраняем внутренние переносы
-        const trimmedHint = hint.trim();
-        hintHTML = `
-            <button class="task-toggle hint-toggle" aria-expanded="false" aria-controls="hint-${taskDomKey}">
-                <span class="toggle-icon"><span class="eic eic-bulb" aria-hidden="true"></span></span>
-                Показать подсказку
-            </button>
-            <div class="task-hint" id="hint-${taskDomKey}" data-hint-id="hint-${taskDomKey}">${escapeHtml(trimmedHint)}</div>
-        `;
-    }
-    
-    // Формируем HTML кнопки для админа (в летних сериях подсказок нет — кнопку не показываем)
-    let adminButtonHTML = '';
-    if (isAdmin && !isSummerTask) {
-        adminButtonHTML = `
-            <button class="admin-hint-button" title="${hint !== null ? 'Изменить подсказку' : 'Добавить подсказку'}">
-                <span class="eic eic-bulb" aria-hidden="true"></span> Подсказка
-            </button>
-        `;
-    }
+    const hintId = `hint-${taskDomKey}`;
+    const hintToggleHTML = hasHint ? `
+        <button type="button" class="mc-task-hint-toggle" aria-expanded="false" aria-controls="${hintId}" aria-label="Показать подсказку" title="Показать подсказку">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18h6m-5 4h4m-2-20a6 6 0 0 0-4 10.5c.7.6 1 1.5 1 2.5h6c0-1 .3-1.9 1-2.5A6 6 0 0 0 12 2Z"/></svg>
+        </button>
+    ` : '';
+    const editHintLabel = hasHint ? 'Изменить подсказку' : 'Добавить подсказку';
+    const adminButtonHTML = isAdmin && !isSummerTask ? `
+        <button type="button" class="mc-task-hint-edit" aria-haspopup="dialog" aria-label="${editHintLabel}" title="${editHintLabel}">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 5 4 4M4 20l4.5-1 11-11a2.8 2.8 0 0 0-4-4l-11 11L4 20Z"/></svg>
+        </button>
+    ` : '';
     
     // Бейдж статуса: в летних сериях статусы не используются — вообще ничего не показываем.
     // В обычных классах: показываем статус, а для админа дополнительно даём поставить.
@@ -410,7 +401,7 @@ function createTaskElement(task) {
                 </span>
                 <span class="task-solved-caption" ${personallySolved ? '' : 'hidden'}>решено</span>
             </div>
-            <div class="mc-task-actions">${statusBadgeHTML}</div>
+            <div class="mc-task-actions">${statusBadgeHTML}${hintToggleHTML}${adminButtonHTML}</div>
         </div>
         <button class="task-toggle task-condition-toggle" aria-expanded="false" aria-controls="description-${taskDomKey}">
             <span class="toggle-icon">▼</span>
@@ -419,8 +410,7 @@ function createTaskElement(task) {
         <div class="task-description" id="description-${taskDomKey}">
             <div class="task-description-inner">${escapeHtml(description)}</div>
         </div>
-        ${hintHTML}
-        ${adminButtonHTML}
+        ${hasHint ? `<div class="task-hint" id="${hintId}" data-hint-id="${hintId}" hidden>${escapeHtml(hint.trim())}</div>` : ''}
     `;
     if (typeof decoratePersonalTaskParts === 'function') decoratePersonalTaskParts(taskCard, task);
     
@@ -446,28 +436,12 @@ function createTaskElement(task) {
     }
     
     // Обработчик раскрытия/скрытия подсказки
-    const hintToggleBtn = taskCard.querySelector('.hint-toggle');
-    if (hintToggleBtn) {
-        hintToggleBtn.addEventListener('click', () => {
-            const isOpen = taskCard.classList.toggle('hint-open');
-            hintToggleBtn.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
-            hintToggleBtn.innerHTML = isOpen
-                ? '<span class="toggle-icon"><span class="eic eic-bulb" aria-hidden="true"></span></span> Скрыть подсказку'
-                : '<span class="toggle-icon"><span class="eic eic-bulb" aria-hidden="true"></span></span> Показать подсказку';
-            if(isOpen){hintToggleBtn.classList.add('active');}else{hintToggleBtn.classList.remove('active');}
-            
-            // Рендерим LaTeX формулы при первом открытии
-            if (isOpen) {
-                const hintElement = taskCard.querySelector('.task-hint');
-                if (hintElement && !hintElement.dataset.latexRendered && typeof renderLatexInElement === 'function') {
-                    renderLatexInElement(hintElement);
-                }
-            }
-        });
-    }
+    taskCard.querySelector('.mc-task-hint-toggle')?.addEventListener('click', () => {
+        setTaskHintExpanded(taskCard, !taskCard.classList.contains('hint-open'));
+    });
     
     // Обработчик кнопки админа для добавления/изменения подсказки
-    const adminButton = taskCard.querySelector('.admin-hint-button');
+    const adminButton = taskCard.querySelector('.mc-task-hint-edit');
     if (adminButton) {
         adminButton.addEventListener('click', async (e) => {
             e.stopPropagation();

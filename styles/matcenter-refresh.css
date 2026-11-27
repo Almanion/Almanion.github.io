@@ -185,9 +185,16 @@ body.matcenter-page .task-header { gap:.3rem .5rem; flex-wrap:wrap; margin-botto
 body.matcenter-page .task-number-wrap { flex: 1 1 auto; min-width: 0; flex-wrap:wrap; gap:.4rem; }
 body.matcenter-page .task-number { flex:0 1 auto; }
 body.matcenter-page .mc-task-actions { display:inline-flex; align-items:center; flex:0 0 auto; gap:.3rem; margin-left:auto; }
-body.matcenter-page .mc-task-link { flex: 0 0 32px; width: 32px; height: 32px; padding: 6px; border: 1px solid transparent; border-radius: 7px; color: var(--mc-muted); background: transparent; cursor: pointer; }
-body.matcenter-page .mc-task-link:hover { border-color: var(--mc-line); color: var(--mc-accent); }
-body.matcenter-page .mc-task-link svg { display: block; width: 18px !important; height: 18px !important; }
+body.matcenter-page .mc-task-actions :is(.mc-task-link, .mc-task-hint-toggle, .mc-task-hint-edit) {
+    display: inline-grid; place-items: center; flex: 0 0 32px; width: 32px; height: 32px;
+    padding: 6px; border: 1px solid transparent; border-radius: 7px;
+    color: var(--mc-muted); background: transparent; cursor: pointer;
+}
+body.matcenter-page .mc-task-actions :is(.mc-task-link, .mc-task-hint-toggle, .mc-task-hint-edit):hover,
+body.matcenter-page .mc-task-hint-toggle[aria-expanded="true"] { border-color: var(--mc-line); color: var(--mc-accent); }
+body.matcenter-page .mc-task-actions :focus-visible { outline: 2px solid var(--mc-accent); outline-offset: 2px; }
+body.matcenter-page .mc-task-actions :is(.mc-task-link, .mc-task-hint-toggle, .mc-task-hint-edit) svg { width: 18px !important; height: 18px !important; }
+body.matcenter-page .task-hint[hidden] { display: none; }
 body.matcenter-page.mc-reading .tasks-container { display: flex !important; flex-direction: column; gap: .85rem; max-width: 920px; margin: 0 auto; }
 body.matcenter-page.mc-reading .task-condition-toggle { display: none; }
 body.matcenter-page.mc-reading .task-card { content-visibility: visible; }

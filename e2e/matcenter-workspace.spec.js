@@ -29,9 +29,9 @@ async function setup(page, options = {}) {
             }
             const tasks = url.pathname.includes('AKfycbw_') ? summer : (options.tasks || [...legacy, ...future]);
             return route.fulfill({ json: data.action === 'capabilities' ? { success: true, authVersion: options.authVersion || 3 }
-                : data.action === 'accessStatus' ? { success: true, allowed: accessGranted, isAdmin: false }
+                : data.action === 'accessStatus' ? { success: true, allowed: accessGranted, isAdmin: !!options.admin }
                 : { success: true, tasks: data.action === 'campTasks' ? (options.campTasks || camp)
-                    : data.action === 'academicYearTasks' ? (options.yearTasks || []) : tasks, isAdmin: false } });
+                    : data.action === 'academicYearTasks' ? (options.yearTasks || []) : tasks, isAdmin: !!options.admin } });
         }
         if (['127.0.0.1', 'localhost'].includes(url.hostname)) {
             if (/\/(firebase-analytics|analytics)\.js$/.test(url.pathname) || (/\/account\.js$/.test(url.pathname) && !options.realAccount)) return route.fulfill({ contentType: 'application/javascript', body: '' });
@@ -715,9 +715,18 @@ test('compact layout, opt-in series, legacy progress, reading and exact archive 
     const firstFormula = page.locator('#tasksContainer .task-description').first().locator('.katex');
     await expect(firstFormula).toBeVisible();
     await expect(firstFormula.locator('annotation')).toHaveText('r=2');
-    await expect(page.locator('#tasksContainer .hint-toggle').first()).toHaveAttribute('aria-expanded', 'false');
+    const firstTask = page.locator('#tasksContainer .task-card').first();
+    const hintButton = firstTask.getByRole('button', { name: 'Показать подсказку' });
+    await expect(hintButton).toHaveAttribute('aria-expanded', 'false');
+    await expect(firstTask.locator('.task-hint')).toBeHidden();
+    await expect(firstTask.locator('.mc-task-hint-toggle + .mc-task-link')).toHaveCount(1);
+    await hintButton.press('Enter');
+    await expect(firstTask.locator('.task-hint')).toHaveText('Не открывать автоматически');
+    await expect(firstTask.locator('.task-hint')).toBeVisible();
     await page.locator('[data-mc-view="compact"]').click();
     await expect(page.locator('#tasksContainer .task-card.open')).toHaveCount(0);
+    await firstTask.getByRole('button', { name: 'Скрыть подсказку' }).click();
+    await expect(firstTask.locator('.task-hint')).toBeHidden();
     await page.locator('#searchInput').fill('№12');
     await page.locator('#mcSearchScope').selectOption('archive');
     await expect(page.locator('#tasksContainer .task-card')).toHaveCount(3);
@@ -743,6 +752,34 @@ test('compact layout, opt-in series, legacy progress, reading and exact archive 
     await expect(page.locator('#mcResultSummary')).toContainText('130');
     await page.locator('#gradeSwitcher [data-grade="grade-10"]').click();
     await page.screenshot({ path: info.outputPath('desktop.png') });
+    expect(errors).toEqual([]);
+});
+
+test('mobile task header gives admins compact hint editing next to the link', async ({ page }) => {
+    await page.setViewportSize({ width: 320, height: 800 });
+    const errors = await setup(page, { admin: true, dark: true, tasks: [
+        { ...legacy[0], hint: '' },
+        { ...legacy[1], status: 'П', hint: 'Проверьте рисунок' }
+    ] });
+    await page.goto('/matcenter.html?grade=grade-9&view=compact');
+    await ready(page);
+
+    const firstTask = page.locator('#tasksContainer .task-card').first();
+    const edit = firstTask.getByRole('button', { name: 'Изменить подсказку' });
+    const link = firstTask.getByRole('button', { name: 'Скопировать ссылку на задачу 2' });
+    await expect(firstTask.locator('.mc-task-hint-toggle + .mc-task-hint-edit + .mc-task-link')).toHaveCount(1);
+    await expect(edit.locator('svg')).toBeVisible();
+    expect(await edit.boundingBox()).toMatchObject({ width: 32, height: 32 });
+    const linkBox = await link.boundingBox();
+    expect(linkBox.x + linkBox.width).toBeLessThanOrEqual(320);
+    await edit.click();
+    await expect(page.getByRole('dialog', { name: 'Подсказка к задаче №2' })).toBeVisible();
+    await expect(page.locator('#hintTextarea')).toHaveValue('Проверьте рисунок');
+    await page.locator('#hintCancelBtn').click();
+    const secondTask = page.locator('#tasksContainer .task-card').nth(1);
+    await expect(secondTask.getByRole('button', { name: 'Показать подсказку' })).toHaveCount(0);
+    await secondTask.getByRole('button', { name: 'Добавить подсказку' }).click();
+    await expect(page.locator('#hintTextarea')).toHaveValue('');
     expect(errors).toEqual([]);
 });
 
@@ -843,7 +880,7 @@ for (const dark of [false, true]) test(`camp menu order and proportional three-d
         await page.setViewportSize({width,height:844});
         await page.goto('/matcenter.html?grade=grade-camp-2026');
         await ready(page);
-        await expect(page.locator('link[href*="styles/matcenter-refresh.css"]')).toHaveAttribute('href', 'styles/matcenter-refresh.css?v=20261114-password');
+        await expect(page.locator('link[href*="styles/matcenter-refresh.css"]')).toHaveAttribute('href', 'styles/matcenter-refresh.css?v=20261127-hint-icons');
         expect(await page.locator('#gradeSwitcher [data-grade]').evaluateAll(els=>els.map(el=>el.dataset.grade))).toEqual(order);
         expect(await page.locator('#mcSidebarGrade option').evaluateAll(els=>els.map(el=>el.value))).toEqual(order);
         const active = page.locator('#gradeSwitcher [data-grade="grade-camp-2026"]');
