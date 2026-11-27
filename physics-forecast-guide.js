@@ -15,14 +15,14 @@
         return !seen;
     }
 
-    window.createForecastGuide = function () {
+    window.createForecastGuide = function (beforeTour) {
         const byId = id => document.getElementById(id);
         const guide = byId('marketGuide'), tour = byId('marketTour');
         const body = guide.querySelector('.forecast-guide-body'), card = tour.querySelector('.forecast-tour-card');
         const ring = tour.querySelector('.forecast-tour-focus'), mainLink = document.querySelector('[data-market-guide="start"]');
         const start = byId('startMarketTour'), next = byId('nextMarketTour'), back = byId('backMarketTour');
         const phone = matchMedia('(max-width: 759px), (orientation: landscape) and (max-width: 1024px) and (max-height: 540px) and (pointer: coarse)');
-        let market = null, phase = '', winner = '', index = 0, frame = 0, returnTop = 0, trigger = mainLink;
+        let market = null, phase = '', winner = '', index = 0, frame = 0, returnTop = 0, trigger = mainLink, returnToDraft;
 
         function openGuide(button) {
             trigger = button;
@@ -47,15 +47,15 @@
 
         const steps = [
             ['eventPicker', 'Выбери событие', 'В «Событиях» можно открыть другой прогноз или посмотреть исход завершённого.'],
-            ['probChart', 'Посмотри вероятность', 'Выбери вариант ответа над графиком. Проведи по графику или передвинь ползунок, чтобы увидеть оценку в выбранный момент.'],
-            ['ticketChoices', 'Купи или продай доли', 'Выбери действие и исход. Можно совершить сделку сразу или задать свою цену. Перед подтверждением увидишь расчёт.'],
-            ['portfolio', 'Проверь свой портфель', 'Сверху видны доступные для этого события очки и общий резерв по всем прогнозам. Открой портфель, чтобы увидеть доли, заявки и историю сделок.']
+            ['probChart', 'Посмотри вероятность', 'Сравни все исходы на графике или выбери один. Передвинь ползунок, чтобы увидеть оценку в выбранный момент.'],
+            ['marketOutcomes', 'Купи или продай доли', 'Выбери исход, затем действие. Можно провести сделку сразу или задать свою цену. Перед подтверждением увидишь расчёт.'],
+            ['portfolio', 'Проверь свой портфель', 'Сверху видны доступные для этого события очки и общий резерв по всем прогнозам. В портфеле можно найти свои доли и перейти к заявкам.']
         ];
         const phoneSteps = [
             'Открой список, чтобы сменить событие или посмотреть его итог.',
-            'Выбери исход над графиком. Коснись линии и проведи по ней, чтобы посмотреть прошлые значения.',
-            'Выбери «Купить» или «Продать» и нужный исход. Перед отправкой проверь расчёт.',
-            'Здесь твои очки и доли. Ниже — открытые заявки и история сделок.'
+            'Сравни исходы на графике. Коснись линии и проведи по ней, чтобы посмотреть прошлые оценки.',
+            'Коснись нужного исхода, чтобы открыть форму. Затем выбери «Купить» или «Продать» и проверь расчёт.',
+            'Здесь твои очки и доли по событиям. Нажми на резерв, чтобы открыть соответствующую заявку.'
         ];
         const finished = { lock: 'Торги закрыты. Владелец объявит исход здесь.',
             void: 'Событие отменено. Очки за сделки по нему возвращены.' };
@@ -91,7 +91,7 @@
         }
         function showStep() {
             const [target, title, text] = steps[index];
-            const result = target === 'ticketChoices' && (finished[phase] || (winner && 'Итог — «' + winner + '». За каждую оставшуюся долю «' + winner + '» начислено 1 очко.'));
+            const result = target === 'marketOutcomes' && (finished[phase] || (winner && 'Итог — «' + winner + '». За каждую оставшуюся долю «' + winner + '» начислено 1 очко.'));
             byId('tourProgress').textContent = 'Шаг ' + (index + 1) + ' из ' + steps.length;
             byId('tourTitle').textContent = result ? 'Проверь итог' : title;
             const ownerHint = target === 'eventPicker' && !byId('forecastAdminLink').hidden ? ' Кнопка «Админ-панель» откроет управление этим событием.' : '';
@@ -104,6 +104,7 @@
         start.addEventListener('click', () => {
             if (!market) return;
             guide.close();
+            returnToDraft = beforeTour();
             index = 0;
             tour.showModal();
             showStep();
@@ -121,6 +122,7 @@
         tour.addEventListener('close', () => {
             cancelAnimationFrame(frame); frame = 0;
             window.scrollTo({ top: returnTop, behavior: 'instant' });
+            returnToDraft?.(); returnToDraft = undefined;
             restoreFocus();
         });
         window.addEventListener('scroll', scheduleLayout, { passive: true });

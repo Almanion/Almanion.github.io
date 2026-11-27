@@ -125,6 +125,7 @@
                     <div class="forecast-chart-sides" role="group" aria-label="Исход на графике">
                         <button type="button" data-chart-side="yes" aria-pressed="true">Да</button>
                         <button type="button" data-chart-side="no" aria-pressed="false">Нет</button>
+                        ${statistics ? '' : '<button type="button" data-chart-side="all" aria-pressed="false">Все</button>'}
                     </div>
                     <span class="forecast-chart-choice" hidden>
                         <span id="chartSideLabel" aria-hidden="true"></span>
@@ -144,6 +145,7 @@
                     <button type="button" data-range="all" aria-pressed="true">Всё</button>
                 </div>
             </div>
+            ${statistics ? '' : '<ul id="chartLegend" aria-label="Оценки исходов" hidden></ul>'}
             <div class="forecast-chart-stage">
                 <div class="forecast-plot">
                     <div class="forecast-canvas">
@@ -151,10 +153,10 @@
                             <defs><linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1" gradientUnits="userSpaceOnUse"><stop stop-color="currentColor" stop-opacity=".24"/><stop offset="1" stop-color="currentColor" stop-opacity=".02"/></linearGradient></defs>
                             <path class="chart-grid" id="chartGrid"/><path class="chart-grid" id="chartTimeGrid"/>
                             <path id="chartGuide"/>
-                            <g id="chartSeries"><path id="chartArea" fill="url(#chartGradient)"/><path id="chartLine"/>${statistics ? '<path id="chartVolumes"/>' : ''}</g>
+                            <g id="chartSeries"><path id="chartArea" fill="url(#chartGradient)"/><path id="chartLine"/>${statistics ? '<path id="chartVolumes"/>' : '<g id="chartComparison"></g>'}</g>
                             <path id="chartChange" fill="none" stroke="currentColor" opacity="0" stroke-width="4"/>
                             <g id="chartMarker"><circle class="chart-halo" r="7"/><circle class="chart-dot" r="3.6"/></g>
-                            <g id="chartInspection" visibility="hidden"><path id="chartHair"/>${statistics ? '<path id="chartActiveVolume"/>' : ''}<circle id="chartDot" class="chart-dot" r="4"/></g>
+                            <g id="chartInspection" visibility="hidden"><path id="chartHair"/>${statistics ? '<path id="chartActiveVolume"/>' : '<g id="chartComparisonDots"></g>'}<circle id="chartDot" class="chart-dot" r="4"/></g>
                         </svg>
                     </div>
                     <div class="forecast-scale-column" aria-hidden="true"><div id="chartScale" class="forecast-scale"><span></span><span></span><span></span><span></span><span></span></div><b id="chartPriceTag"></b>${statistics ? '<small>доли</small>' : ''}</div>
@@ -188,12 +190,13 @@
         const returnButton = el('chartReturn'), strip = el('chartStrip');
         const axis = el('chartAxis'), previousPoint = el('chartPrev'), nextPoint = el('chartNext');
         const probability = el('probability'), sideLabel = el('chartSideLabel');
+        const legend = el('chartLegend'), comparison = el('chartComparison'), comparisonDots = el('chartComparisonDots');
         const compact = matchMedia('(max-width: 759px), (orientation: landscape) and (max-width: 1024px) and (max-height: 540px)');
         const reduced = matchMedia('(prefers-reduced-motion: reduce)');
         const sideSelect = el('chartSideSelect');
         let market = null, online = false, lastSeen = 0, range = 'all', side = 'yes', frame = null, inView = true;
         let pinnedAt = null, pinnedEnd = null, hoverAt = null, pointer = null, previousPrice = null, previousTrades = 0, reveal = true;
-        let scheduledReading = 0;
+        let scheduledReading = 0, comparisonRows = [];
         spacer.className = 'forecast-chart-space';
         spacer.setAttribute('aria-hidden', 'true');
         if (!statistics) {
@@ -205,6 +208,25 @@
             card.append(trade);
         }
         const mobileChart = () => !statistics && compact.matches;
+        const displayedSides = () => side === 'all' ? market.sides : [side];
+
+        function buildComparison(m) {
+            if (statistics) return;
+            comparisonRows = m.sides.map(id => {
+                const item = document.createElement('li'), name = document.createElement('span'), value = document.createElement('strong');
+                const line = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                const dot = document.createElementNS(line.namespaceURI, 'circle');
+                for (const element of [item, line, dot]) element.style.setProperty('--outcome', 'var(--' + id + ')');
+                line.dataset.outcomeLine = id;
+                dot.setAttribute('r', '3.5');
+                name.textContent = m.answers[id];
+                item.append(name, value);
+                return { id, item, value, line, dot };
+            });
+            legend.replaceChildren(...comparisonRows.map(row => row.item));
+            comparison.replaceChildren(...comparisonRows.map(row => row.line));
+            comparisonDots.replaceChildren(...comparisonRows.map(row => row.dot));
+        }
 
         function motionLevel() {
             const mode = document.documentElement.dataset.pageMotion, classes = document.body.classList;
@@ -230,6 +252,8 @@
             side = next; card.dataset.side = next; previousPrice = null; reveal = true;
             sideSelect.value = next;
             sideLabel.textContent = sideSelect.selectedOptions[0]?.textContent ?? '';
+            probability.hidden = next === 'all';
+            if (legend) legend.hidden = next !== 'all';
             for (const button of sides) button.setAttribute('aria-pressed', String(button.dataset.chartSide === next));
         }
 
@@ -292,20 +316,37 @@
             if (!frame) return;
             const { start, end, x, y, h, w, volume, barPaths, live, current } = frame;
             const inspected = hoverAt ?? pinnedAt, at = clamp(inspected ?? end, start, end);
-            const line = market.series[side], price = line[pointAt(line, at)].p;
+            const all = side === 'all', line = market.series[side];
+            const price = all ? null : line[pointAt(line, at)].p;
             const position = inspected === null || start === end ? 100 : 100 * (at - start) / (end - start);
             const sameDay = window.PhysicsForecast.dayKey(at) === window.PhysicsForecast.dayKey(end);
             const timeText = (sameDay ? seconds : dated).format(at);
             const qty = volume ? volume.bins[volume.indexAt(at)] : 0;
             const mobile = mobileChart();
-            const headline = percent(mobile && inspected !== null ? price : current);
-            if (probability.textContent !== headline) probability.textContent = headline;
+            let description;
+            if (all) {
+                description = comparisonRows.map(({ id, value, dot }) => {
+                    const series = market.series[id], p = series[pointAt(series, at)].p;
+                    const label = percent(p);
+                    if (value.textContent !== label) value.textContent = label;
+                    if (inspected !== null) {
+                        dot.setAttribute('cx', x(at)); dot.setAttribute('cy', y(p));
+                    }
+                    return market.answers[id] + ' ' + label;
+                }).join(', ');
+            } else {
+                const headline = percent(mobile && inspected !== null ? price : current);
+                if (probability.textContent !== headline) probability.textContent = headline;
+                description = '«' + market.answers[side] + '» ' + percent(price);
+            }
             slider.value = String(position);
             slider.style.setProperty('--cursor-position', position + '%');
-            slider.setAttribute('aria-valuetext', timeText + ' по Москве, «' + market.answers[side] + '» ' + percent(price) + (statistics ? ', объём за интервал ' + fmt.format(qty) : ''));
-            el('chartReadout').textContent = timeText + ' мск' + (inspected === null ? '' : ' · ' + percent(price));
-            el('chartState').textContent = inspected !== null ? 'История' : live ? 'Сейчас' : !online ? 'Нет связи' : 'Последняя цена';
-            el('chartState').dataset.state = inspected === null && live ? 'live' : 'idle';
+            slider.setAttribute('aria-valuetext', timeText + ' по Москве, ' + description + (statistics ? ', объём за интервал ' + fmt.format(qty) : ''));
+            el('chartReadout').textContent = timeText + ' мск' + (inspected === null || all ? '' : ' · ' + percent(price));
+            const beforeFirstTrade = !statistics && (!market.trades.length || market.trades[0].at > at);
+            el('chartState').textContent = inspected !== null ? 'История' : !online ? 'Нет связи'
+                : beforeFirstTrade ? 'До первой сделки' : live ? 'Сейчас' : 'При закрытии';
+            el('chartState').dataset.state = inspected === null && live && !beforeFirstTrade ? 'live' : 'idle';
             returnButton.hidden = pinnedAt === null;
             previousPoint.disabled = at <= start;
             nextPoint.disabled = at >= end;
@@ -313,10 +354,10 @@
             el('chartInspection').setAttribute('visibility', inspected === null ? 'hidden' : 'visible');
             tip.hidden = inspected === null;
             if (inspected === null) return;
-            const px = x(at), py = y(price);
+            const px = x(at), py = all ? 8 : y(price);
             el('chartHair').setAttribute('d', 'M' + px + ' 3V' + (h - 2));
             el('chartDot').setAttribute('cx', px); el('chartDot').setAttribute('cy', py);
-            tip.children[0].textContent = mobile ? 'История' : market.answers[side] + ' · ' + percent(price);
+            tip.children[0].textContent = mobile ? 'История' : all ? 'Все исходы' : market.answers[side] + ' · ' + percent(price);
             tip.children[1].textContent = timeText + ' мск';
             if (statistics) {
                 el('chartActiveVolume').setAttribute('d', barPaths[volume.indexAt(at)]);
@@ -330,19 +371,24 @@
 
         function draw(at) {
             if (!market || !svg.clientWidth || !svg.clientHeight) return;
-            const points = market.series[side];
-            const latest = Math.max(market.openedAt, Math.min(online ? Math.max(at, points.at(-1).at) : lastSeen, market.closedAt ?? market.endAt));
+            const all = side === 'all', lines = displayedSides().map(id => market.series[id]);
+            const lastMark = Math.max(...lines.map(line => line.at(-1).at));
+            const latest = Math.max(market.openedAt, Math.min(online ? Math.max(at, lastMark) : lastSeen, market.closedAt ?? market.endAt));
             const span = rangeSpans[range];
             // Keep a point and its time window steady while a phone user reads or drags the history.
             const frozenEnd = mobileChart() ? pointer?.end ?? pinnedEnd : null;
             const end = Math.min(latest, frozenEnd ?? (pinnedAt === null ? latest : pinnedAt + span));
             const start = Math.max(market.openedAt, end - span);
-            const first = pointAt(points, start), last = pointAt(points, end);
-            const lastPrice = points[last].p, current = points[pointAt(points, latest)].p;
-            let low = points[first].p, high = low;
-            for (let i = first + 1; i <= last; i++) {
-                const p = points[i].p;
-                low = Math.min(low, p); high = Math.max(high, p);
+            const indices = lines.map(points => [pointAt(points, start), pointAt(points, end)]);
+            const [points] = lines, [[first, last]] = indices;
+            const lastPrice = points[last].p, current = all ? null : points[pointAt(points, latest)].p;
+            let low = 100, high = 0;
+            for (const [index, line] of lines.entries()) {
+                const [from, to] = indices[index];
+                for (let i = from; i <= to; i++) {
+                    const p = line[i].p;
+                    low = Math.min(low, p); high = Math.max(high, p);
+                }
             }
             const { bottom, top, step } = scaleFor(low, high);
             const w = svg.clientWidth, h = svg.clientHeight, right = w - pad, plotWidth = right - pad;
@@ -353,7 +399,7 @@
             const live = online && market.phase === 'open' && at < market.endAt;
             const barPaths = [];
             frame = { start, end, x, y, h, w, volume, live, barPaths, current };
-            previousPoint.hidden = nextPoint.hidden = last === first;
+            previousPoint.hidden = nextPoint.hidden = indices.every(([from, to]) => from === to);
             const returnLabel = live ? 'К текущей цене' : 'К последней цене';
             if (returnButton.getAttribute('aria-label') !== returnLabel || !returnButton.title) {
                 returnButton.querySelector('.chart-return-full').textContent = returnLabel;
@@ -369,7 +415,7 @@
                 const value = top - i * step, py = y(value);
                 ticks[i].textContent = percent(value);
                 ticks[i].style.top = py + 'px';
-                ticks[i].style.visibility = Math.abs(py - y(lastPrice)) < 16 ? 'hidden' : '';
+                ticks[i].style.visibility = !all && Math.abs(py - y(lastPrice)) < 16 ? 'hidden' : '';
                 grid += 'M' + pad + ' ' + py + 'H' + right;
             }
             el('chartGrid').setAttribute('d', grid);
@@ -383,11 +429,22 @@
                 if (align === 'middle') timeGrid += 'M' + (pad + plotWidth * fraction) + ' ' + pad + 'V' + floor;
             });
             el('chartTimeGrid').setAttribute('d', timeGrid);
-            const path = stepPath(points, first, last, x, y, start, end, plotWidth);
-            el('chartLine').setAttribute('d', path);
-            el('chartArea').setAttribute('d', path + 'V' + floor + 'H' + x(start) + 'Z');
-            el('chartGuide').setAttribute('d', 'M' + pad + ' ' + y(lastPrice) + 'H' + right);
-            el('chartMarker').setAttribute('transform', 'translate(' + right + ' ' + y(lastPrice) + ')');
+            let labels;
+            if (all) {
+                labels = comparisonRows.map(({ id, line }, i) => {
+                    const [from, to] = indices[i];
+                    line.setAttribute('d', stepPath(lines[i], from, to, x, y, start, end, plotWidth));
+                    return market.answers[id] + ' ' + percent(lines[i][to].p);
+                }).join(', ');
+            } else {
+                labels = '«' + market.answers[side] + '» ' + percent(lastPrice);
+                const path = stepPath(points, first, last, x, y, start, end, plotWidth);
+                el('chartLine').setAttribute('d', path);
+                el('chartArea').setAttribute('d', path + 'V' + floor + 'H' + x(start) + 'Z');
+                el('chartGuide').setAttribute('d', 'M' + pad + ' ' + y(lastPrice) + 'H' + right);
+                el('chartMarker').setAttribute('transform', 'translate(' + right + ' ' + y(lastPrice) + ')');
+                el('chartPriceTag').textContent = percent(lastPrice); el('chartPriceTag').style.top = y(lastPrice) + 'px';
+            }
             if (statistics) {
                 const maxBin = Math.max(1, ...volume.bins), binWidth = plotWidth / volume.bins.length;
                 volume.bins.forEach((qty, i) => {
@@ -398,8 +455,8 @@
                 el('chartVolumes').setAttribute('d', barPaths.join(''));
             }
             svg.dataset.live = String(live && end === latest);
-            svg.setAttribute('aria-label', market.question + ' Вероятность «' + market.answers[side] + '» в конце графика ' + percent(lastPrice) + '. Шкала от ' + percent(bottom) + ' до ' + percent(top) + '.');
-            el('chartPriceTag').textContent = percent(lastPrice); el('chartPriceTag').style.top = y(lastPrice) + 'px';
+            svg.setAttribute('aria-label', market.question + ' Оценка в конце графика — ' + labels
+                + '. Шкала от ' + percent(bottom) + ' до ' + percent(top) + '.');
             if (statistics) {
                 el('chartLow').textContent = percent(low); el('chartHigh').textContent = percent(high);
                 el('chartVolume').textContent = fmt.format(volume.total);
@@ -417,7 +474,7 @@
                         : [{ opacity: .65 }, { opacity: 1 }];
                     el('chartSeries').animate?.(frames, { duration: motion === 'full' ? 380 : 160, easing: 'ease-out' });
                 } else if (live && latest === end && !(mobileChart() && (pinnedAt !== null || hoverAt !== null))) {
-                    if (previousPrice !== null && current !== previousPrice) {
+                    if (!all && previousPrice !== null && current !== previousPrice) {
                         const frames = [{ opacity: .62 }, { opacity: 1 }];
                         if (motion === 'full') {
                             frames[0].transform = current > previousPrice ? 'translateY(4px)' : 'translateY(-4px)';
@@ -445,16 +502,22 @@
                 sides[0].parentElement.hidden = !compactChoices;
                 sideSelect.parentElement.hidden = compactChoices;
                 sideSelect.replaceChildren(...next.sides.map(id => new Option(next.answers[id], id)));
-                sideLabel.textContent = sideSelect.selectedOptions[0]?.textContent ?? '';
-                for (const button of sides) button.textContent = next.answers[button.dataset.chartSide];
+                if (!statistics) sideSelect.prepend(new Option('Все исходы', 'all'));
+                for (const button of sides) if (button.dataset.chartSide !== 'all') button.textContent = next.answers[button.dataset.chartSide];
+                buildComparison(next);
+                selectSide(!statistics && next.sides.length > 2 ? 'all' : next.sides[0]);
             }
             const at = clock();
-            const lastMark = next.series[side].at(-1).at;
+            const lastMark = Math.max(...next.sides.map(id => next.series[id].at(-1).at));
             if (connected || online) lastSeen = Math.max(at, lastMark);
             else if (!lastSeen) lastSeen = lastMark;
-            market = next; online = connected; draw(at);
+            market = next; online = connected; refresh();
         }
         function tick(at) { if (frame?.live && inView) draw(at); }
+        function refresh() {
+            if (!statistics) el('chartTrade').hidden = !market || side === 'all' || window.PhysicsForecast.status(market, clock()) !== 'open';
+            draw(clock());
+        }
         function fromPointer(event) {
             const rect = svg.getBoundingClientRect();
             const ratio = clamp((event.clientX - rect.left - pad) / Math.max(1, rect.width - 2 * pad), 0, 1);
@@ -464,9 +527,9 @@
             if (button.dataset.range !== range) { selectRange(button.dataset.range); draw(clock()); }
         });
         for (const button of sides) button.addEventListener('click', () => {
-            if (button.dataset.chartSide !== side) { selectSide(button.dataset.chartSide); draw(clock()); }
+            if (button.dataset.chartSide !== side) { selectSide(button.dataset.chartSide); refresh(); }
         });
-        sideSelect.addEventListener('change', () => { selectSide(sideSelect.value); draw(clock()); });
+        sideSelect.addEventListener('change', () => { selectSide(sideSelect.value); refresh(); });
         function pin(at, announce = true) {
             hoverAt = null; pinnedAt = at;
             pinnedEnd = at === null ? null : frame.end;
@@ -475,7 +538,9 @@
         }
         function step(forward) {
             if (!frame) return;
-            const at = adjacentTime(market.series[side], frame.start, frame.end, pinnedAt ?? frame.end, forward);
+            const times = displayedSides().map(id => adjacentTime(market.series[id], frame.start, frame.end, pinnedAt ?? frame.end, forward))
+                .filter(time => time !== null);
+            const at = times.length ? (forward ? Math.min(...times) : Math.max(...times)) : null;
             if (at !== null) pin(forward && at === frame.end ? null : at);
         }
         previousPoint.addEventListener('click', () => step(false));

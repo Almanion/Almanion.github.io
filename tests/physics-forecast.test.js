@@ -199,6 +199,9 @@ function fixture() {
     assert.equal(f.add({ kind:'cancel', target:resting.id },'b').error,'missing');
     assert.ok(!f.add({ kind:'cancel', target:resting.id },'a').error);
     assert.equal(M.held(m,'a').yes,0);
+    const entry = m.orderHistory.get(resting.id);
+    assert.deepEqual([entry.qty, entry.filled, entry.cash, entry.cancelledAt],
+        [4, 2, 108, f.log.at(-1)[1].at]);
     assert.ok(f.add({kind:'yes'}).error);
     f.add({kind:'lock'}); assert.equal(f.order('a','yes','buy',1,99).error,'closed');
     assert.ok(f.add({kind:'yes'}).error); // A tomorrow market cannot resolve today.
@@ -219,6 +222,9 @@ function fixture() {
     assert.equal(M.position(f.m,'b').yes,2);
     assert.ok(!f.m.orders.some(o => o.id === a.id));
     assert.equal(f.m.orders.find(o => o.id === b.id).qty,2);
+    assert.equal(f.m.orderHistory.get(a.id).filled, 4);
+    assert.equal(f.m.orderHistory.get(b.id).filled, 2);
+    assert.equal(f.m.orderHistory.get(b.id).cash, 100);
     f.order('c','no','sell',3,47); // Normalised YES bid; another owner's sell can merge the complete set.
     f.order('a','yes','sell',3,46,'market');
     const positions = [...f.m.positions.values()];

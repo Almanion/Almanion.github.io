@@ -6,8 +6,13 @@ test.use({ serviceWorkers: 'block' });
 async function placeOrder(page) {
     await page.locator('#placeOrder').click();
     await page.locator('#reviewConfirm').click();
-    await expect(page.locator('#reviewTitle')).toHaveText('Сделка принята');
+    await expect(page.locator('#reviewTitle')).toHaveText(/Сделка принята|Заявка выставлена/);
     await page.locator('#reviewBack').click();
+    await expect(page.locator('#tradeSheet')).toBeHidden();
+}
+
+async function chooseOutcome(page, side = 'yes') {
+    await page.locator('#outcomeList button[data-outcome="' + side + '"]').click();
 }
 
 async function mockClass(page, who = 'classmate', firstVisit = false, accounts = {}) {
@@ -29,11 +34,20 @@ function fixture({ who, owner, firstVisit, accounts }) {
         return path.split('/').filter(Boolean).reduce((obj,k)=>obj?.[k],data) ?? null;
     }
     function snap(path) { const val = structuredClone(value(path)); return { val:()=>val, exists:()=>val!==null,
+        numChildren:()=>val && typeof val === 'object' ? Object.keys(val).length : 0,
         forEach:cb=>Object.entries(val || {}).sort((a,b)=>a[1].n-b[1].n).forEach(([key,v])=>cb({key,val:()=>v})) }; }
     function emit(path) { listeners.get(path)?.forEach(cb => cb(snap(path))); }
     let serial = data.physicsForecast.head?.n || 1;
     function ref(path='') { return {
-        child:key=>ref([path,key].filter(Boolean).join('/')), orderByChild:()=>ref(path), get:async()=>snap(path), once:async()=>snap(path),
+        child:key=>ref([path,key].filter(Boolean).join('/')), orderByChild:()=>ref(path), get:async()=>{
+            const result = snap(path);
+            if (path === 'physicsForecast/events' && window.beforeReturningForecastEvents) {
+                const update = window.beforeReturningForecastEvents;
+                delete window.beforeReturningForecastEvents;
+                await update();
+            }
+            return result;
+        }, once:async()=>snap(path),
         push:()=>({key:String(serial++).padStart(20,'0')}), on:(_type,cb)=>{
             if (!listeners.has(path)) listeners.set(path,new Set());
             listeners.get(path).add(cb); queueMicrotask(()=>{ if(listeners.get(path)?.has(cb)) cb(snap(path)); });
@@ -112,14 +126,13 @@ for (const [count, width] of [[2, 320], [3, 390], [4, 1280]]) {
         await expect(page.locator('#manageStatus')).toContainText('09:02 мск');
         await page.locator('#forecastMarketLink').click();
         await expect(page.locator('#marketDeadline')).toContainText('09:02 мск');
-        await expect(page.locator('#tradeAnswers [name=side]')).toHaveCount(count);
+        await expect(page.locator('#outcomeList button')).toHaveCount(count);
         await page.locator('#chartSideSelect').selectOption(selected);
         await expect(page.locator('#probChart')).toHaveAttribute('aria-label', new RegExp(winning));
         await expect(page.locator('#probability')).toHaveText(count === 3 ? '33,3%' : count === 4 ? '25%' : '50%');
-        await page.locator('#tradeAnswers label').last().click();
+        await chooseOutcome(page, selected);
         await expect(page.locator('#bookSide')).toHaveValue(selected);
-        await page.locator('#bookSide').selectOption('yes');
-        await expect(page.locator('#tradeAnswers :checked')).toHaveValue(selected);
+        await expect(page.locator('#tradeForm [name=side]')).toHaveValue(selected);
         await expect(page.locator('#bookAsks tr')).toHaveCount(3);
         const fits = () => page.evaluate(() => {
             const cells = [...document.querySelectorAll('#publicOrders tr')].filter(row => row.cells.length === 2);
@@ -129,18 +142,24 @@ for (const [count, width] of [[2, 320], [3, 390], [4, 1280]]) {
         expect(await fits()).toBe(true);
         await page.locator('#buyUnit').selectOption('shares'); await page.locator('#quantity').fill('6');
         await placeOrder(page);
+        await page.locator('#bookSide').selectOption('yes');
+        await expect(page.locator('#tradeForm [name=side]')).toHaveValue(selected);
         await expect(page.locator('#tradeHistory')).toContainText(winning);
         const holding = page.locator('[data-holding="' + selected + '"]');
         await expect(holding.locator('dd span')).toHaveText('6');
         await page.locator('#walletToggle').click();
         await holding.getByRole('button').click(); await page.locator('#quantity').fill('1'); await placeOrder(page);
         await expect(holding.locator('dd span')).toHaveText('5');
+        await page.locator('#walletToggle').click();
+        await holding.getByRole('button').click();
         await page.locator('label:has([value=limit])').click(); await page.locator('#limitPrice').fill('0,98');
         await placeOrder(page); await expect(page.locator('#myOrders')).toContainText(winning);
         await page.clock.fastForward(122000);
         await expect(page.locator('#roundState')).toHaveText('Торги закрыты');
         await expect(page.locator('#publicOrders')).toBeHidden();
-        await expect(page.locator('#myOrders button')).toHaveCount(0);
+        await expect(page.locator('.forecast-orders button[data-order-id]:visible')).toHaveCount(0);
+        await expect(page.locator('#orderHistory')).toContainText('Торги закрыты');
+        await expect(page.locator('#orderHistory')).toContainText('Резерв снят · 1 доля');
         await page.locator('#forecastAdminLink').click();
         await expect(page.locator('#editDeadline')).toBeHidden();
         await expect(page.locator('[data-winner]:visible')).toHaveCount(count);
@@ -162,18 +181,29 @@ test('expiry in another event releases the shared balance while the selected mar
         const root = window.AlmanionAccount.database.ref('physicsForecast'), key = '00000000000000000902';
         const open = { n:2, at, day:key, kind:'open', actor:core.OWNER, question:'Другой прогноз?',
             endAt:core.deadline(day,'09:01'), eventEnd:core.endOfDay(day) };
-        const order = { n:3, at:at+1, day:key, actor:'classmate', kind:'order', mode:'limit', action:'buy', side:'yes', qty:50, limit:10 };
-        await root.update({ ['events/'+key]:open, 'events/00000000000000000903':order, head:{ n:3, id:'00000000000000000903', v:3 } });
+        const buy = { n:3, at:at+1, day:key, actor:'classmate', kind:'order', mode:'market', action:'buy', side:'yes', qty:2, limit:51 };
+        const order = { ...buy, n:4, at:at+2, mode:'limit', qty:50, limit:10 };
+        await root.update({ ['events/'+key]:open, 'events/00000000000000000903':buy, 'events/00000000000000000904':order,
+            head:{ n:4, id:'00000000000000000904', v:3 } });
     });
     await expect(page.locator('#lessonQuestion')).toHaveText(M.physics.question);
-    await expect(page.locator('#walletCash')).toHaveText('95 оч.');
+    await expect(page.locator('#walletCash')).toHaveText('93,98 оч.');
     await expect(page.locator('#walletHeld')).toHaveText('5 оч.');
-    await expect(page.locator('#walletOtherList')).toContainText('Другой прогноз');
-    await page.clock.fastForward(61000);
-    await expect(page.locator('#walletCash')).toHaveText('100 оч.');
-    await expect(page.locator('#roundState')).toHaveText('Торги открыты');
+    await page.locator('#walletToggle').click();
+    const other = page.locator('#walletOtherList');
+    await expect(other).toContainText('Другой прогноз');
+    await expect(other.locator('[data-holding="yes"]')).toContainText('2 доли');
+    await other.locator('[data-wallet-order]').click();
+    await expect(page.locator('#lessonQuestion')).toHaveText('Другой прогноз?');
+    await expect(page.locator('#myOrders [data-order="00000000000000000904"]')).toBeFocused();
     await page.locator('#eventPicker').click();
     const events = page.getByRole('dialog', { name:'События' });
+    await expect(events.getByRole('button', { name:/Другой прогноз\?/ })).toContainText('У тебя 2 доли · Заявки · 1');
+    await events.getByRole('button', { name:/Будет ли работа по физике/ }).click();
+    await page.clock.fastForward(61000);
+    await expect(page.locator('#walletCash')).toHaveText('98,98 оч.');
+    await expect(page.locator('#roundState')).toHaveText('Торги открыты');
+    await page.locator('#eventPicker').click();
     await expect(events.getByRole('heading', { name:'Ждут итога' })).toBeVisible();
     await expect(events.getByRole('button', { name:/Другой прогноз\?/ })).toBeVisible();
 });
@@ -251,14 +281,14 @@ test('first visit explains the market and guides the phone through real controls
     await page.locator('#nextMarketTour').click(); await expectSpotlight(page, 'probChart');
     await page.locator('#backMarketTour').click(); await expectSpotlight(page, 'eventPicker');
     await page.locator('#nextMarketTour').click(); await page.locator('#nextMarketTour').click();
-    await expectSpotlight(page, 'ticketChoices');
-    await page.setViewportSize({width:568,height:320}); await expectSpotlight(page, 'ticketChoices');
+    await expectSpotlight(page, 'marketOutcomes');
+    await page.setViewportSize({width:568,height:320}); await expectSpotlight(page, 'marketOutcomes');
     await page.locator('#nextMarketTour').click(); await expectSpotlight(page, 'portfolio');
     await expect(page.locator('#tourProgress')).toHaveText('Шаг 4 из 4');
     await page.getByRole('button', {name:'Готово',exact:true}).click();
     await expect(page.locator('#marketTour')).toBeHidden();
     await expect(page.locator('[data-market-guide=start]')).toBeFocused();
-    await expect(page.locator('#walletCash')).toHaveText('100 оч.'); await expect(page.locator('#walletYes')).toHaveText('0');
+    await expect(page.locator('#walletCash')).toHaveText('100 оч.'); await expect(page.locator('#walletYes')).toHaveCount(0);
     await page.reload(); await expect(page.locator('#gameSurface')).toBeVisible(); await expect(rules).toBeHidden();
     const nextTab = await context.newPage();
     await mockClass(nextTab, 'classmate', true); await nextTab.goto('/forecast.html');
@@ -285,6 +315,7 @@ test('rules remain available to guests and the tour can be replayed, skipped and
 
 test('empty offers explain which side is missing and a guide can be opened from a draft without losing it', async ({page}) => {
     await page.setViewportSize({width:360,height:740}); await mockClass(page); await page.goto('/forecast.html');
+    await chooseOutcome(page);
     await page.locator('#buyUnit').selectOption('shares'); await page.locator('#quantity').fill('3'); await placeOrder(page);
     await expect(page.locator('#walletYes')).toHaveText('3');
     await page.evaluate(async () => {
@@ -295,14 +326,15 @@ test('empty offers explain which side is missing and a guide can be opened from 
                 day:window.PhysicsForecast.dayKey(at), n, at, side, qty, action:'buy', mode:'market', limit:99}});
         }
     });
-    await expect(page.locator('#yesAsk')).toHaveText('Нет продавцов');
+    await chooseOutcome(page);
+    await expect(page.locator('#ticketBuyPrice')).toHaveText('Нет продавцов');
     await expect(page.locator('#quotePreview')).toHaveText('Сейчас никто не продаёт доли «Да».');
     await expect(page.locator('#bookAsks')).toContainText('Пока нет продавцов');
     await page.locator('#explainDepth').click(); await expect(page.locator('#guideOrders summary')).toBeFocused();
     await page.locator('#startMarketTour').click(); await page.locator('#nextMarketTour').click(); await page.locator('#skipMarketTour').click();
     await expect(page.locator('#explainDepth')).toBeFocused(); await expect(page.locator('#quantity')).toHaveValue('3');
     await page.locator('label:has([value=sell])').click();
-    await expect(page.locator('#yesAsk')).toHaveText('Нет покупателей');
+    await expect(page.locator('#ticketSellPrice')).toHaveText('Нет покупателей');
     await expect(page.locator('#bookBids')).toContainText('Пока нет покупателей');
     await expect(page.locator('#quotePreview')).toHaveText('Сейчас никто не покупает доли «Да».');
     await page.locator('#useLimit').click(); await page.locator('#limitPrice').fill('0,70'); await page.locator('#quantity').fill('3'); await placeOrder(page);
@@ -363,8 +395,9 @@ test.describe('registered player on a phone', () => {
         await logo.tap(); await logo.tap(); await logo.tap();
         await expect(page).toHaveURL(/\/forecast\.html/);
         await expect(page.locator('#walletCash')).toHaveText('100 оч.');
+        await chooseOutcome(page);
         await page.locator('#budget').fill('0,51');
-        await expect(page.locator('#placeOrder')).toHaveText('Купить 1 долю «Да»');
+        await expect(page.locator('#quotePreview')).toContainText('К оплате сейчас · 1 доля');
         await placeOrder(page);
         await expect(page.locator('#walletYes')).toHaveText('1');
         await expect(page.locator('#forecastAdminLink')).toBeHidden();
@@ -395,7 +428,7 @@ test('the compact portfolio stays at the top on desktop and phone', async ({ pag
         })).toBe(true);
         await expect(page.locator('#walletCash')).toHaveText('100 оч.');
         await controls.click();
-        await expect(page.locator('#walletYes')).toBeVisible();
+        await expect(page.locator('#walletEmpty')).toBeVisible();
         await page.getByRole('link', { name: /^История сделок/ }).click();
         await expect(portfolio).toHaveJSProperty('open', false);
         await expect(history).toBeInViewport();
@@ -416,7 +449,7 @@ test.describe('market navigation on a narrow phone', () => {
 
         const dock = page.getByRole('navigation', { name:'Разделы прогноза' });
         const chart = dock.getByRole('link', { name:'График', exact:true });
-        const trade = dock.getByRole('link', { name:'Сделка', exact:true });
+        const trade = dock.getByRole('link', { name:'Рынок', exact:true });
         const offers = dock.getByRole('link', { name:'Цены', exact:true });
         const portfolio = dock.getByRole('link', { name:'Портфель', exact:true });
         const portfolioLinks = page.getByRole('navigation', { name:'Разделы портфеля' });
@@ -433,18 +466,17 @@ test.describe('market navigation on a narrow phone', () => {
         await expect(dock.getByRole('link')).toHaveCount(4);
         await dockIsReachable();
         await trade.tap();
-        await expect(page.locator('#ticketTitle')).toBeInViewport();
+        await expect(page.locator('#outcomesTitle')).toBeInViewport();
         await expect(trade).toHaveAttribute('aria-current', 'location');
-        const submitClearsDock = () => page.locator('#placeOrder').evaluate(button => {
+        await chooseOutcome(page);
+        await expect(dock).toBeHidden();
+        const submitFitsSheet = () => page.locator('#placeOrder').evaluate(button => {
             const rect = button.getBoundingClientRect();
-            const dock = document.getElementById('forecastJumps').getBoundingClientRect();
-            return rect.top >= 0 && rect.bottom <= dock.top;
+            return rect.top >= 0 && rect.bottom <= innerHeight;
         });
-        await expect.poll(submitClearsDock).toBe(true);
+        await expect.poll(submitFitsSheet).toBe(true);
         await page.setViewportSize({ width:844, height:390 });
-        await chart.tap();
-        await trade.tap();
-        await expect.poll(submitClearsDock).toBe(true);
+        await expect.poll(submitFitsSheet).toBe(true);
         await page.setViewportSize({ width:320, height:568 });
         await page.locator('#budget').fill('0,51');
         expect(await page.locator('#budget').evaluate(element => parseFloat(getComputedStyle(element).fontSize))).toBeGreaterThanOrEqual(16);
@@ -556,25 +588,25 @@ test.describe('market navigation on a narrow phone', () => {
         await page.locator('#forecastEvents').getByRole('button', { name:new RegExp(question.replace('?', '\\?')) }).tap();
         await expect(page.locator('#lessonQuestion')).toHaveText(question);
         const terms = page.locator('#eventCriteria'), toggle = page.locator('#criteriaToggle');
-        const compactHeight = (await terms.boundingBox()).height;
+        await expect(terms).toBeHidden();
         await toggle.tap();
         await expect(toggle).toHaveAttribute('aria-expanded', 'true');
-        expect((await terms.boundingBox()).height).toBeGreaterThan(compactHeight * 1.5);
+        await expect(terms).toHaveText(criteria);
         await toggle.tap();
         await expect(toggle).toHaveAttribute('aria-expanded', 'false');
 
-        await page.locator('#forecastJumps').getByRole('link', { name:'Сделка' }).tap();
-        const choices = page.locator('#tradeAnswers label');
+        await page.locator('#forecastJumps').getByRole('link', { name:'Рынок' }).tap();
+        const choices = page.locator('#outcomeList button');
         await expect(choices).toHaveCount(count);
         await choices.last().tap();
-        await expect(page.locator('#tradeAnswers :checked')).toHaveValue(sides.at(-1));
+        await expect(page.locator('#tradeForm [name=side]')).toHaveValue(sides.at(-1));
+        await expect(page.locator('#ticketOutcome')).toHaveText(names[count - 1]);
         await page.locator('#changeOutcome').click();
         const outcomeRowsFit = await choices.evaluateAll(labels => labels.every(label => {
             const card = label.getBoundingClientRect();
-            const name = label.querySelector('input + span > span');
-            const price = label.querySelector('b');
-            return name.getBoundingClientRect().width > card.width * .55 &&
-                name.getBoundingClientRect().right <= price.getBoundingClientRect().left + 1 &&
+            const name = label.querySelector('.forecast-outcome-name').getBoundingClientRect();
+            const value = label.querySelector('.forecast-outcome-value').getBoundingClientRect();
+            return name.width > card.width * .8 && name.bottom <= value.top &&
                 card.left >= 0 && card.right <= innerWidth + 1;
         }));
         expect(outcomeRowsFit).toBe(true);
@@ -584,6 +616,7 @@ test.describe('market navigation on a narrow phone', () => {
     test('the ranked nickname, score and close button fit after a trade', async ({ page }) => {
         await mockClass(page);
         await page.goto('/forecast.html');
+        await chooseOutcome(page);
         await page.locator('#budget').fill('7,85');
         await placeOrder(page);
         await expect(page.locator('#walletYes')).toHaveText('15');
@@ -637,6 +670,7 @@ for (const width of [360,1280]) {
         await page.locator('#rankClose').click();
         await expect(page.locator('#probability')).toHaveText('50%');
         await expect(page.locator('#walletCash')).toHaveText('100 оч.');
+        await chooseOutcome(page);
         await page.locator('#buyUnit').selectOption('shares');
         await page.locator('#quantity').fill('15'); await expect(page.locator('#quotePreview')).toContainText('7,85');
         await placeOrder(page);
@@ -656,6 +690,7 @@ for (const width of [360,1280]) {
         await page.keyboard.press('Escape');
         await expect(page.locator('#rankOpen')).toBeFocused();
         await expect(page.locator('#probability')).toHaveText('52%');
+        await chooseOutcome(page);
         await page.locator('label:has(input[name=action][value=sell])').click();
         await page.locator('#orderMode label:has([value=limit])').click();await page.locator('#limitPrice').fill('0,70');await page.locator('#quantity').fill('4');
         await placeOrder(page);await expect(page.locator('#myOrders')).toContainText('4 доли по 0,7 оч.');
@@ -668,27 +703,47 @@ for (const width of [360,1280]) {
     });
 }
 
+test('desktop orders stay just below the ticket even when the market chart is taller', async ({ page }) => {
+    await mockClass(page);
+    await page.goto('/forecast.html');
+    await expect(page.locator('#orderListTitle')).toBeVisible();
+    for (const width of [768, 1280]) {
+        await page.setViewportSize({ width, height: 900 });
+        await expect.poll(() => page.evaluate(() => {
+            const ticket = document.getElementById('tradeTicket').getBoundingClientRect();
+            const orders = document.querySelector('.forecast-orders').getBoundingClientRect();
+            const graph = document.getElementById('marketChart').getBoundingClientRect();
+            return Math.abs(ticket.left - orders.left) <= 1 && orders.top >= ticket.bottom
+                && orders.top - ticket.bottom < 24 && graph.bottom > orders.top;
+        })).toBe(true);
+    }
+});
+
 test('point budget buys whole shares at actual prices and a limit order separates fills from reserved points', async ({ page }) => {
     await mockClass(page);
     await page.goto('/forecast.html');
     const budget = page.getByLabel('Лимит покупки'), submit = page.locator('#placeOrder');
-    await expect(submit).toHaveText('Купить 9 долей «Да»');
-    await expect(page.locator('#quotePreview')).toContainText('4,59 оч.');
+    const quote = page.locator('#quotePreview');
+    await expect(submit).toHaveText('Проверить покупку');
+    await expect(quote).toContainText('К оплате сейчас · 9 долей');
+    await expect(quote).toContainText('4,59 оч.');
     await budget.fill('0,50');
     await expect(submit).toBeDisabled();
     await expect(page.locator('#quotePreview')).toContainText('0,51');
     await budget.fill('7.84');
-    await expect(submit).toHaveText('Купить 14 долей «Да»');
+    await expect(quote).toContainText('К оплате сейчас · 14 долей');
     await budget.fill('7,85');
-    await expect(submit).toHaveText('Купить 15 долей «Да»');
+    await expect(quote).toContainText('К оплате сейчас · 15 долей');
     await page.getByRole('button', {name:'1 оч.',exact:true}).click();
-    await expect(submit).toHaveText('Купить 1 долю «Да»');
+    await expect(quote).toContainText('К оплате сейчас · 1 доля');
     await page.locator('#orderMode label:has([value=limit])').click();
     await page.locator('#limitPrice').fill('1.00');
     await expect(submit).toBeDisabled();
     await page.locator('#limitPrice').fill('0,53');
     await budget.fill('6,16');
-    await expect(submit).toContainText('11 долей');
+    await expect(submit).toHaveText('Проверить заявку');
+    await expect(quote).toContainText('К оплате сейчас · 10 долей');
+    await expect(quote).toContainText('В резерв на 1 долю');
     await budget.fill('6,36');
     await expect(page.locator('#quotePreview')).toContainText('5,1 оч.');
     await expect(page.locator('#quotePreview')).toContainText('1,06 оч.');
@@ -705,11 +760,11 @@ test('point budget buys whole shares at actual prices and a limit order separate
 test('a 67-point buying limit shows the actual cost and empty offers after the available shares are bought and sold', async ({ page }) => {
     await mockClass(page);
     await page.goto('/forecast.html');
-    await page.locator('label:has(input[value=no])').click();
+    await chooseOutcome(page, 'no');
     const budget = page.getByLabel('Лимит покупки'), submit = page.locator('#placeOrder');
     const quote = page.locator('#quotePreview');
     await budget.fill('67');
-    await expect(submit).toHaveText('Купить 85 долей «Нет»');
+    await expect(quote).toContainText('К оплате сейчас · 85 долей');
     await expect(quote).toContainText('51,35 оч.');
     await expect(quote).toContainText('15,65 оч.');
     await placeOrder(page);
@@ -721,9 +776,10 @@ test('a 67-point buying limit shows the actual cost and empty offers after the a
     await page.locator('#walletToggle').click();
     await page.locator('[data-sell="no"]').click();
     await page.locator('#sizePresets button').last().click();
-    await expect(submit).toHaveText('Продать 85 долей «Нет»');
+    await expect(submit).toHaveText('Проверить продажу');
+    await expect(quote).toContainText('К получению сейчас · 85 долей');
     await placeOrder(page);
-    await expect(page.locator('#walletNo')).toHaveText('0');
+    await expect(page.locator('#walletNo')).toHaveCount(0);
     await expect(page.locator('#walletCash')).toHaveText('82,3 оч.');
     await page.locator('label:has(input[value=buy])').click();
     await budget.fill('99');
@@ -737,14 +793,13 @@ test('owner can replenish an exhausted legacy market and its existing round and 
     await mockClass(page, 'owner');
     const switchToParticipant = () => page.evaluate(() => window.changeForecastAccount({ uid:'classmate', isAnonymous:false }));
     const savedLedger = () => page.evaluate(() => JSON.parse(sessionStorage.getItem('forecast-test-data')));
-    const buyNo = page.locator('#tradeAnswers label:has(input[value=no])');
-    const submit = page.locator('#placeOrder');
+    const quote = page.locator('#quotePreview');
 
     await page.goto('/forecast.html');
     await switchToParticipant();
-    await buyNo.click();
+    await chooseOutcome(page, 'no');
     await page.getByLabel('Лимит покупки').fill('67');
-    await expect(submit).toHaveText('Купить 85 долей «Нет»');
+    await expect(quote).toContainText('К оплате сейчас · 85 долей');
     await placeOrder(page);
     await expect(page.locator('#walletNo')).toHaveText('85');
     await expect(page.locator('#quotePreview')).toHaveText('Сейчас никто не продаёт доли «Нет».');
@@ -769,10 +824,10 @@ test('owner can replenish an exhausted legacy market and its existing round and 
     await page.locator('#forecastMarketLink').click();
     await switchToParticipant();
     await expect(page.locator('#walletNo')).toHaveText('85');
-    await buyNo.click();
+    await chooseOutcome(page, 'no');
     await page.locator('#buyUnit').selectOption('shares');
     await page.locator('#quantity').fill('1');
-    await expect(submit).toHaveText('Купить 1 долю «Нет»');
+    await expect(quote).toContainText('К оплате сейчас · 1 доля');
     await placeOrder(page);
     await expect(page.locator('#walletNo')).toHaveText('86');
     expect((await savedLedger()).head.v).toBe(5);
@@ -781,18 +836,20 @@ test('owner can replenish an exhausted legacy market and its existing round and 
 test('selling the selected holding respects reservations, supports half or all and never trades until confirmed', async ({ page }) => {
     await page.setViewportSize({width:320,height:740}); await mockClass(page);
     await page.goto('/forecast.html');
-    await page.locator('label:has(input[value=no])').click();
+    await chooseOutcome(page, 'no');
     await placeOrder(page);
     await expect(page.locator('#walletNo')).toHaveText('9');
-    await page.locator('label:has(input[value=yes])').click();
+    await chooseOutcome(page);
     await page.locator('label:has(input[value=sell])').click();
-    await expect(page.locator('input[value=yes]')).toBeChecked();
-    await page.locator('label:has(input[value=no])').click();
+    await expect(page.locator('#tradeForm [name=side]')).toHaveValue('yes');
+    await page.locator('#changeOutcome').click();
+    await chooseOutcome(page, 'no');
+    await page.locator('label:has(input[value=sell])').click();
     await page.locator('#orderMode label:has([value=limit])').click();
     await page.locator('#limitPrice').fill('0.75');
     await page.locator('#quantity').fill('3');
     await placeOrder(page);
-    await expect(page.locator('#heldNo')).toHaveText('В продаже 3 из 9');
+    await expect(page.locator('#walletBalances .forecast-reserve')).toHaveText('В продаже 3 доли');
     await page.locator('#walletToggle').click();
     await page.getByRole('button', {name:'Продать доли «Нет»',exact:true}).click();
     await expect(page.locator('#ticketTitle')).toBeFocused();
@@ -805,9 +862,10 @@ test('selling the selected holding respects reservations, supports half or all a
     await placeOrder(page);
     await expect(page.locator('#walletNo')).toHaveText('3');
     await expect(page.locator('#feedback')).toContainText('Продажа · 6 долей «Нет» за 2,94 оч.');
+    await chooseOutcome(page, 'no');
     await expect(page.locator('#showOrders')).toBeVisible();
     await page.locator('#showOrders').click(); await page.locator('#myOrders button').click();
-    await expect(page.locator('#heldNo')).toBeHidden();
+    await expect(page.locator('#walletBalances .forecast-reserve')).toHaveCount(0);
     await page.locator('#walletToggle').click();
     await expect(page.getByRole('button', {name:'Продать доли «Нет»',exact:true})).toBeEnabled();
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
@@ -828,7 +886,7 @@ test('insufficient depth offers an executable quantity or a resting order and an
     await expect(page.locator('#limitPrice')).toBeFocused();
     await expect(page.locator('#quantity')).toHaveValue('100');
     await expect(page.locator('#placeOrder')).toBeEnabled();
-    await expect(page.locator('#walletYes')).toHaveText('0');
+    await expect(page.locator('#walletYes')).toHaveCount(0);
 });
 
 test('owner enters the dashboard at the current event, closes it, settles and returns to the market', async ({page}) => {
@@ -956,6 +1014,7 @@ test('owner manages multiple events, sees reconciled statistics and preserves ev
     await page.locator('#forecastMarketLink').click();
     await expect(page.locator('#lessonQuestion')).toHaveText(match);
     await expect(page.locator('#eventCriteria')).toHaveText('Победа по итоговому счёту.');
+    await chooseOutcome(page);
     await page.locator('#budget').fill('7,85'); await placeOrder(page);
     await expect(page.locator('#walletYes')).toHaveText('15');
     await page.locator('#forecastAdminLink').click(); await expect(picker).toHaveValue(first);
@@ -1019,6 +1078,7 @@ test('owner sets available points on mobile while an existing order remains fund
     await page.goto('/forecast.html');
     await page.evaluate(() => window.changeForecastAccount({ uid:'classmate', isAnonymous:false }));
     await expect(page.locator('#walletCash')).toHaveText('100 оч.');
+    await chooseOutcome(page);
     await page.locator('#buyUnit').selectOption('shares');
     await page.locator('#orderMode label:has([value=limit])').click();
     await page.locator('#limitPrice').fill('0,25');
@@ -1092,7 +1152,7 @@ test('a peer trade moves the live chart while a historical reading stays pinned;
     await page.locator('[data-chart-side=no]').click();
     await expect(page.locator('#probability')).toHaveText('48%');
     await expect(page.locator('#chartTip b')).toHaveText('Нет · 50%');
-    await expect(page.locator('[name=side][value=yes]')).toBeChecked();
+    await expect(page.locator('#tradeForm [name=side]')).toHaveValue('yes');
     await expect(page.locator('#chartPriceTag')).toHaveText('48%');
     await page.locator('#chartReturn').click();
     await expect(page.locator('#chartTip')).toBeHidden();
@@ -1233,14 +1293,17 @@ test.describe('touch chart', () => {
         await expect(page.locator('#chartTip')).toBeVisible();
         await expect(page.locator('#chartState')).toHaveText('История');
         await page.locator('#chartReturn').tap();
-        await expect(page.locator('#chartState')).toHaveText('Сейчас');
-        await page.getByRole('link',{name:'Сделка',exact:true}).tap();
+        await expect(page.locator('#chartState')).toHaveText('До первой сделки');
+        await page.getByRole('link',{name:'Рынок',exact:true}).tap();
+        await chooseOutcome(page);
         await expect(page.locator('#budget')).toBeInViewport();
     });
 });
 
 
-for (const width of [320, 390]) test('reviews long-outcome purchases and sales at ' + width + 'px', async ({ page }) => {
+for (const width of [320, 390]) test('reviews long-outcome purchases and sales at ' + width + 'px', {
+    tag: '@mobile-market'
+}, async ({ page }) => {
     await page.setViewportSize({ width, height: width === 320 ? 568 : 844 });
     await mockClass(page);
     const event = '00000000000000000902';
@@ -1259,8 +1322,10 @@ for (const width of [320, 390]) test('reviews long-outcome purchases and sales a
     }, { event, question, labels });
     await page.reload();
     await expect(page.locator('#lessonQuestion')).toHaveText(question);
-    await page.locator('#tradeAnswers label').last().click();
-    await expect(page.locator('#tradeAnswers label:visible')).toHaveCount(1);
+    await expect(page.locator('#outcomeList button')).toHaveCount(4);
+    await expect(page.locator('#chartLegend strong')).toHaveText(['25%', '25%', '25%', '25%']);
+    await chooseOutcome(page, 'fourth');
+    await expect(page.locator('#ticketOutcome')).toHaveText(labels[3]);
     await expect(page.locator('#changeOutcome')).toBeVisible();
     await page.locator('#budget').fill('1,04');
     const confirm = page.locator('#reviewConfirm'), dialog = page.locator('#tradeReview');
@@ -1274,7 +1339,7 @@ for (const width of [320, 390]) test('reviews long-outcome purchases and sales a
     };
     await page.locator('#budget').press('Enter');
     await reviewFits();
-    await expect(page.locator('#walletFourth')).toHaveText('0');
+    await expect(page.locator('#walletFourth')).toHaveCount(0);
     await page.evaluate(() => window.setForecastConnection(false));
     await expect(confirm).toBeHidden();
     await page.locator('#reviewBack').click();
@@ -1283,6 +1348,8 @@ for (const width of [320, 390]) test('reviews long-outcome purchases and sales a
     await page.locator('#placeOrder').click();
     await reviewFits();
     await expect(page.locator('#reviewQuote')).toContainText('1,04 оч.');
+    await expect(page.locator('#reviewQuote')).toContainText('Средняя цена за долю');
+    await expect(page.locator('#reviewQuote')).toContainText('+2,96 оч.');
     await confirm.click();
     await expect(page.locator('#reviewStatus')).toContainText('Покупка · 4 доли');
     await expect(confirm).toBeHidden();
@@ -1304,4 +1371,139 @@ for (const width of [320, 390]) test('reviews long-outcome purchases and sales a
     await expect(page.locator('#walletFourth')).toHaveText('2');
     await expect(page.locator('#walletCash')).toHaveText('99,44 оч.');
     await expect(page.locator('#tradeHistory .forecast-row')).toHaveCount(2);
+
+    await page.locator('#bookSide').selectOption('fourth');
+    await page.locator('#bookAsks button[data-book-price="26"]').click();
+    await expect(page.locator('#ticketOutcome')).toHaveText(labels[3]);
+    await expect(page.locator('#limitPrice')).toHaveValue('0,26');
+    await expect(page.locator('#quantity')).toHaveValue('');
+    await page.locator('#quantity').fill('4');
+    await page.locator('#placeOrder').click();
+    await reviewFits();
+    await expect(page.locator('#reviewQuote')).toContainText('К оплате сейчас · 1 доля');
+    await expect(page.locator('#reviewQuote')).toContainText('В резерв на 3 доли');
+    await expect(page.locator('#reviewQuote')).toContainText('0,78 оч.');
+    await confirm.click();
+    await expect(page.locator('#reviewTitle')).toHaveText('Заявка выставлена');
+    await page.locator('#reviewOrders').click();
+    const openOrder = page.locator('#myOrders [data-order]');
+    await expect(openOrder).toBeFocused();
+    await expect(openOrder).toContainText('Исполнено · 1 доля за 0,26 оч.');
+    await expect(page.locator('#walletHeld')).toHaveText('0,78 оч.');
+    await page.reload();
+    await expect(page.locator('#walletFourth')).toHaveText('3');
+    await expect(page.locator('#walletCash')).toHaveText('98,4 оч.');
+    await page.locator('#walletToggle').click();
+    await page.locator('#walletEventOrders button').click();
+    await expect(openOrder).toBeFocused();
+    await openOrder.getByRole('button', { name:'Снять заявку' }).click();
+    await expect(page.locator('#walletHeld')).toHaveText('0 оч.');
+    await expect(page.locator('#walletCash')).toHaveText('99,18 оч.');
+    await page.locator('#allOrders').click();
+    await expect(page.locator('#orderHistory [data-order]').first()).toContainText('Резерв снят · 0,78 оч.');
+    await expect(page.locator('#orderHistory [data-order]').first()).toContainText('Снята');
+});
+
+test('an updated order book invalidates an open confirmation before the player can buy', async ({ page }) => {
+    await page.setViewportSize({ width:390, height:844 });
+    await mockClass(page);
+    await page.goto('/forecast.html');
+    await chooseOutcome(page);
+    await page.locator('#buyUnit').selectOption('shares');
+    await page.locator('#quantity').fill('1');
+    await page.locator('#placeOrder').click();
+    await expect(page.locator('#reviewQuote')).toContainText('0,51 оч.');
+    await page.evaluate(async () => {
+        const at = Date.now(), day = PhysicsForecast.dayKey(at), id = '00000000000000000902';
+        const root = window.AlmanionAccount.database.ref('physicsForecast');
+        await root.update({ head:{ id, n:2 }, ['events/' + id]: { kind:'order', day, n:2, at,
+            actor:'peer', action:'buy', side:'yes', mode:'market', limit:51, qty:10 } });
+    });
+    await expect(page.locator('#reviewConfirm')).toBeHidden();
+    await expect(page.locator('#reviewStatus')).toContainText('Условия изменились');
+    await expect(page.locator('#walletCash')).toHaveText('100 оч.');
+    await page.locator('#reviewBack').click();
+    await page.locator('#placeOrder').click();
+    await expect(page.locator('#reviewQuote')).toContainText('0,55 оч.');
+    await page.locator('#reviewConfirm').click();
+    await expect(page.locator('#reviewStatus')).toContainText('за 0,55 оч.');
+    await expect(page.locator('#walletCash')).toHaveText('99,45 оч.');
+});
+
+test('the receipt follows a resting order filled while its submission is being confirmed', { tag:'@mobile-market' }, async ({ page }) => {
+    await page.setViewportSize({ width:390, height:844 });
+    await mockClass(page);
+    await page.goto('/forecast.html');
+    await chooseOutcome(page);
+    await page.locator('#buyUnit').selectOption('shares');
+    await page.locator('#orderMode label:has([value=limit])').click();
+    await page.locator('#limitPrice').fill('0,50');
+    await page.locator('#quantity').fill('3');
+    await page.locator('#placeOrder').click();
+    await expect(page.locator('#reviewQuote')).toContainText('В резерв на 3 доли');
+    await page.evaluate(() => {
+        window.beforeReturningForecastEvents = async () => {
+            const at = Date.now(), day = PhysicsForecast.dayKey(at), id = '00000000000000000903';
+            const root = window.AlmanionAccount.database.ref('physicsForecast');
+            await root.update({ head:{ id, n:3 }, ['events/' + id]: { kind:'order', day, n:3, at,
+                actor:'peer', action:'buy', side:'no', mode:'market', limit:50, qty:2 } });
+        };
+    });
+    await page.locator('#reviewConfirm').click();
+    await expect(page.locator('#reviewStatus')).toContainText('Покупка · 2 доли «Да» за 1 оч.');
+    await expect(page.locator('#reviewStatus')).toContainText('В открытой заявке 1 доля');
+    await expect(page.locator('#walletYes')).toHaveText('2');
+    await expect(page.locator('#walletHeld')).toHaveText('0,5 оч.');
+    await page.evaluate(async () => {
+        const at = Date.now(), day = PhysicsForecast.dayKey(at), id = '00000000000000000904';
+        await window.AlmanionAccount.database.ref('physicsForecast').update({
+            head:{ id, n:4 }, ['events/' + id]:{ kind:'order', day, n:4, at,
+                actor:'peer', action:'buy', side:'no', mode:'market', limit:50, qty:1 }
+        });
+    });
+    await expect(page.locator('#reviewTitle')).toHaveText('Сделка принята');
+    await expect(page.locator('#reviewStatus')).toHaveText('Покупка · 3 доли «Да» за 1,5 оч.');
+    await page.locator('#reviewOrders').click();
+    await expect(page.locator('#orderHistory [data-order]')).toBeFocused();
+    await expect(page.locator('#orderHistory')).toContainText('Исполнено · 3 доли за 1,5 оч.');
+    await expect(page.locator('#walletHeld')).toHaveText('0 оч.');
+});
+
+test('the phone keeps the amount visible with a reduced visual viewport and returns to the same price', {
+    tag:'@mobile-market'
+}, async ({ page }) => {
+    await page.setViewportSize({ width:320, height:568 });
+    await mockClass(page);
+    await page.goto('/forecast.html');
+    const level = page.locator('#bookAsks [data-book-price="51"]'), sheet = page.locator('#tradeSheet');
+    await level.evaluate(button => button.scrollIntoView({ block:'center', behavior:'instant' }));
+    const scroll = await page.evaluate(() => window.scrollY);
+    await level.click();
+    await expect(page.locator('#limitPrice')).toHaveValue('0,51');
+    const quantity = page.locator('#quantity');
+    await quantity.fill('7');
+    await page.evaluate(() => {
+        Object.defineProperty(visualViewport, 'height', { configurable:true, value:300 });
+        visualViewport.dispatchEvent(new Event('resize'));
+    });
+    await expect(sheet).toHaveAttribute('data-keyboard', '');
+    await expect.poll(() => quantity.evaluate(input => {
+        const rect = input.getBoundingClientRect(), bar = document.querySelector('#tradeSheet .forecast-section-head');
+        return rect.top >= bar.getBoundingClientRect().bottom && rect.bottom <= window.visualViewport.height;
+    })).toBe(true);
+    await page.evaluate(async () => {
+        delete visualViewport.height;
+        visualViewport.dispatchEvent(new Event('resize'));
+        const at = Date.now(), day = PhysicsForecast.dayKey(at), id = '00000000000000000902';
+        await window.AlmanionAccount.database.ref('physicsForecast').update({
+            head:{ id, n:2 }, ['events/' + id]:{ kind:'order', day, n:2, at,
+                actor:'peer', action:'buy', side:'yes', mode:'market', limit:51, qty:1 }
+        });
+    });
+    await expect(sheet).not.toHaveAttribute('data-keyboard', '');
+    await expect(quantity).toHaveValue('7');
+    await page.locator('#closeTradeSheet').click();
+    await expect(level).toBeFocused();
+    await expect.poll(() => page.evaluate(top => Math.abs(window.scrollY - top), scroll)).toBeLessThanOrEqual(1);
+    await expect(page.locator('#walletCash')).toHaveText('100 оч.');
 });

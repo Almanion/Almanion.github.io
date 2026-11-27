@@ -183,7 +183,7 @@
         const series = Object.fromEntries(sides.map(id => [id, []]));
         const market = { id: e.day, ...details, answers, sides, series, marks: {}, lastPrices: {},
             openedAt: e.at, eventEnd: e.eventEnd ?? e.endAt, endAt: e.endAt, phase: 'open', orders: [],
-            positions: new Map(), trades: [], closedAt: null };
+            positions: new Map(), trades: [], orderHistory: new Map(), closedAt: null };
         if (e.liquidity === 1) market.liquidity = { extraSets: 0 };
         function seed(side, action, limit, qty) {
             market.orders.push({ id: 'seed-' + side + limit, actor: MAKER, side, action, limit, qty, priority: 0 });
@@ -333,10 +333,18 @@
     function match(state, market, e, id) {
         const plan = preview(state, e, e.at);
         if (plan.error) return { error: plan.error };
+        // Rebuilt from the same journal as positions and reserves.
+        market.orderHistory.set(id, { id, actor: e.actor, at: e.at, side: e.side, action: e.action,
+            mode: e.mode, limit: e.limit, qty: e.qty, filled: plan.filled, cash: plan.cash, cancelledAt: null });
         for (const { maker, qty, price } of plan.fills) {
             bookFill(market, e, qty, price);
             bookFill(market, maker, qty, maker.limit);
             maker.qty -= qty;
+            const resting = market.orderHistory.get(maker.id);
+            if (resting) {
+                resting.filled += qty;
+                resting.cash += qty * maker.limit;
+            }
             market.lastPrices[e.side] = price;
             if (market.sides.length === 2) market.lastPrices[e.side === 'yes' ? 'no' : 'yes'] = 100 - price;
             market.trades.push({ at: e.at, qty, price, makerPrice: maker.limit, taker: e.actor, maker: maker.actor,
@@ -371,6 +379,8 @@
                 const index = market.orders.findIndex(o => o.id === e.target && o.actor === e.actor);
                 if (index < 0) receipt = { error: 'missing' };
                 else {
+                    const entry = market.orderHistory.get(e.target);
+                    if (entry) entry.cancelledAt = e.at;
                     market.orders.splice(index, 1);
                     refillAsks(market, e);
                     recordMark(market, e.at);
