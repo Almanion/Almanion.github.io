@@ -92,17 +92,18 @@ function isNoteContent(file) {
 const appearanceFiles = new Set([
   "images/almanion-wordmark.svg", "favicon.ico", "home-stars.js", "tools/build-favicons.js",
   "e2e/appearance.spec.js", "e2e/star-waves.spec.js", "tests/star-waves.test.js", "tests/site-branding.test.js",
-  "tests/favicon-theme.test.js",
+  "tests/favicon-theme.test.js", "e2e/profile-cover-motion.spec.js",
 ]);
 
 function isAppearanceAsset(file) {
   return appearanceFiles.has(file)
+    || /^images\/profile-covers\/[\w-]+\.webp$/.test(file)
     || /^favicons\/[\w-]+\.(svg|ico|png)$/.test(file)
     || /^(?:style-new|styles\/(?:[\w-]+\/)*[\w-]+|constructor\/index|watch\/watch|games\/catalog)\.css$/.test(file);
 }
 
 function mayReferenceAppearance(file) {
-  return file.endsWith(".html") || ["manifest.json", "performance/sw-shell.json", "favicon-theme.js"].includes(file);
+  return file.endsWith(".html") || ["manifest.json", "performance/sw-shell.json", "favicon-theme.js", "profile-covers.js"].includes(file);
 }
 
 // Compare the complete contents of mixed files. A logo revision or its intrinsic
@@ -111,7 +112,15 @@ function normalizeAppearanceReferences(file, source) {
   if (file === "favicon-theme.js") {
     return source.replace(/^(\s*var ASSET_VERSION = ')[\w.-]+(';\s*)$/m, "$1VERSION$2");
   }
-  const asset = /(images\/almanion-wordmark\.svg|favicons\/[\w-]+\.(?:svg|png|ico)|(?:favicon-theme|home-stars)\.js|\.css)\?v=[\w.-]+(?=["'])/g;
+  if (file === "profile-covers.js") {
+    // These templates contain only declarative SVG. Keep interpolations,
+    // executable markup and changes to the surrounding renderer in the diff.
+    const art = /^( {8}(?:waves|eclipse|aurora): `)([^`$]*)(`)(?=,?\r?$)/gm;
+    const otherMarkup = /<(?!\/?(?:defs|linearGradient|radialGradient|stop|rect|g|path|circle|ellipse|image)(?=[\s/>]))|\bon[\w:-]+\s*=|javascript\s*:/i;
+    return source.replace(art, (original, start, markup, end) =>
+      otherMarkup.test(markup) ? original : start + "ARTWORK" + end);
+  }
+  const asset = /(images\/almanion-wordmark\.svg|favicons\/[\w-]+\.(?:svg|png|ico)|(?:favicon-theme|home-stars|profile-covers)\.js|\.css)\?v=[\w.-]+(?=["'])/g;
   const normalized = source.replace(asset, "$1");
   if (!file.endsWith(".html")) return normalized;
   return normalized.replace(/<img\s[^<>]*>/gi, tag => {

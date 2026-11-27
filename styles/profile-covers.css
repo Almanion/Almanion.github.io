@@ -15,6 +15,16 @@
 .profile-cover-shimmer {
     --cover-motion: profile-cover-glow var(--cover-time, 6s) ease-in-out var(--cover-delay, 0s) infinite alternate;
 }
+.profile-cover-swell {
+    --cover-motion: profile-cover-swell var(--cover-time) ease-in-out var(--cover-delay) infinite alternate;
+    transform-box: view-box;
+    transform-origin: center;
+}
+.profile-cover-veil {
+    --cover-motion: profile-cover-fold var(--cover-time) ease-in-out var(--cover-delay) infinite alternate;
+    transform-box: view-box;
+    transform-origin: center bottom;
+}
 .profile-cover-orbit-upright { --orbit-direction: -1; }
 .profile-cover-orbit-turn, .profile-cover-orbit-upright {
     --cover-motion: profile-cover-revolve var(--cover-time) linear infinite;
@@ -49,7 +59,7 @@
     html:not([data-page-motion="off"], [data-page-motion="medium"]) .profile-page
         :is(#profileCoverArt, [data-profile-cover-live]):not([hidden]) > .profile-cover-art:not([hidden])
         :is(.profile-cover-float, .profile-cover-orbit-turn, .profile-cover-orbit-upright, .profile-cover-flow,
-            .profile-cover-sway, .profile-cover-beacon, .profile-cover-scan) {
+            .profile-cover-sway, .profile-cover-beacon, .profile-cover-scan, .profile-cover-swell, .profile-cover-veil) {
         animation: var(--cover-motion);
         animation-play-state: var(--cover-play-state, running);
     }
@@ -65,6 +75,13 @@
 @keyframes profile-cover-glow {
     from { opacity: var(--cover-floor, .36); }
     to { opacity: var(--cover-ceiling, 1); }
+}
+@keyframes profile-cover-swell {
+    from { transform: scale(1.025); }
+    to { transform: translate(5px, -2px) scale(1.066); }
+}
+@keyframes profile-cover-fold {
+    to { transform: translate(var(--cover-dx), var(--cover-dy)) skewX(var(--cover-skew)); }
 }
 @keyframes profile-cover-revolve {
     /* WebKit can fold matching endpoints of a full turn into a stationary transform. */

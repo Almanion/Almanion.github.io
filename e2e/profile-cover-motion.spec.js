@@ -81,3 +81,45 @@ test('each illustrated cover has live motion while the plain cover stays still',
     expect(artwork.filter(([id]) => id !== 'plain').every(([, count]) => count > 0)).toBe(true);
     expect(artwork.find(([id]) => id === 'plain')).toEqual(['plain', 0]);
 });
+
+test('the illustrated covers load and animate their own layers only in the live preview', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await openCovers(page);
+    const live = page.locator('#profileCoverArt');
+    for (const [id, layer, name, property] of [
+        ['waves', '.profile-cover-swell', 'profile-cover-swell', 'transform'],
+        ['eclipse', '.profile-cover-shimmer', 'profile-cover-glow', 'opacity'],
+        ['aurora', '.profile-cover-veil', 'profile-cover-fold', 'transform']
+    ]) {
+        await page.emulateMedia({ reducedMotion: 'no-preference' });
+        const download = page.waitForResponse(response => response.url().endsWith('/' + id + '-cel.webp'));
+        await live.evaluate((element, preset) => {
+            const markup = window.AlmanionProfileCovers.markup;
+            element.innerHTML = markup(preset);
+            document.getElementById('thumbnail').innerHTML = markup(preset);
+        }, id);
+        expect((await download).ok()).toBe(true);
+        await expect(live.locator('svg')).toHaveAttribute('preserveAspectRatio', 'xMidYMid slice');
+
+        const animated = live.locator(layer).first();
+        await expect(animated).toHaveCSS('animation-name', name);
+        await expect(page.locator('#thumbnail ' + layer).first()).toHaveCSS('animation-name', 'none');
+        const frames = await animated.evaluate(async (element, cssProperty) => {
+            const animation = element.getAnimations()[0];
+            animation.pause();
+            await animation.ready;
+            const { delay, duration } = animation.effect.getTiming();
+            return [0.2, 0.75].map(phase => {
+                animation.currentTime = delay + duration * phase;
+                return getComputedStyle(element).getPropertyValue(cssProperty);
+            });
+        }, property);
+        expect(frames[0]).not.toBe(frames[1]);
+
+        await live.evaluate(element => element.setAttribute('data-cover-paused', ''));
+        await expect(animated).toHaveCSS('animation-play-state', 'paused');
+        await live.evaluate(element => element.removeAttribute('data-cover-paused'));
+        await page.emulateMedia({ reducedMotion: 'reduce' });
+        await expect(animated).toHaveCSS('animation-name', 'none');
+    }
+});

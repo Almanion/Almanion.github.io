@@ -108,6 +108,7 @@ const revised = original.replace("v=one", "v=two").replace('height="23"', 'heigh
 const embedded = src => '<img src="data:image/svg+xml;base64,' + src + '" width="74" alt="Almanion">';
 for (const [file, before, after] of [
   ["physics.html", original, revised],
+  ["profile.html", '<script src="profile-covers.js?v=one"></script>', '<script src="profile-covers.js?v=two"></script>'],
   ["games/orbital-courier/offline.html", embedded("YWJj"), embedded("ZGVm")],
   ["manifest.json", '"src":"/favicons/app-icon.svg?v=one"', '"src":"/favicons/app-icon.svg?v=two"'],
   ["favicon-theme.js", "var ASSET_VERSION = 'one';", "var ASSET_VERSION = 'two';"],
@@ -118,6 +119,17 @@ for (const [file, before, after] of [
 }
 assert.notEqual(normalizeAppearanceReferences("index.html", revised.replace("images/", "other/")),
   normalizeAppearanceReferences("index.html", revised));
+const profileArtwork = content => 'const designs = {\n        aurora: `\n' + content + '`,\n};';
+const normalizeProfileArt = value => normalizeAppearanceReferences("profile-covers.js", value);
+const coverBefore = profileArtwork('<path d="M0 0H12"/>');
+const coverAfter = profileArtwork('<image href="images/profile-covers/aurora-cel.webp"/>');
+const artOnly = value => normalizeProfileArt(coverBefore) === normalizeProfileArt(value);
+assert.equal(artOnly(coverAfter), true);
+assert.deepEqual(classify(["profile-covers.js", "images/profile-covers/aurora-cel.webp", "styles/profile-covers.css",
+  "e2e/profile-cover-motion.spec.js"], { appearanceEdit: file => file === "profile-covers.js" && artOnly(coverAfter) }), fast);
+assert.equal(artOnly(coverAfter + "\ninitialize();"), false);
+assert.equal(artOnly(profileArtwork('<image href="cover.webp" onload="initialize()"/>')), false);
+assert.equal(artOnly(profileArtwork('${initialize()}')), false);
 assert.ok(require("../tools/run-tests").listTests(".", "appearance").some(file => file.endsWith("site-branding.test.js")));
 assert.match(workflow, /if: needs\.scope\.outputs\.suite == 'appearance'\s+run: npx playwright test e2e\/appearance\.spec\.js/);
 assert.match(workflow, /needs: \[scope, build, campaign\]/);

@@ -97,9 +97,9 @@ jobs:
         if: needs.scope.outputs.suite != 'reader' && needs.scope.outputs.suite != 'content' && needs.scope.outputs.suite != 'appearance'
         run: npx playwright test e2e/game-pages.spec.js --grep "Control and middle" --workers 1
 
-      - name: Check branding, contrast and homepage appearance on desktop and mobile
+      - name: Check branding, contrast and appearance on desktop and mobile
         if: needs.scope.outputs.suite == 'appearance'
-        run: npx playwright test e2e/appearance.spec.js e2e/contrast.spec.js e2e/star-waves.spec.js
+        run: npx playwright test e2e/appearance.spec.js e2e/contrast.spec.js e2e/star-waves.spec.js e2e/profile-cover-motion.spec.js
 
       - name: Check Signal desktop and mobile interfaces
         if: needs.scope.outputs.suite == 'signal'

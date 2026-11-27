@@ -146,49 +146,75 @@
             </g>`,
         waves: `
             <defs>
-                <linearGradient id="@sea" x2="0" y2="1"><stop stop-color="#10284b"/><stop offset="1" stop-color="#3b9ba2"/></linearGradient>
-                <linearGradient id="@crest" x2=".9" y2="1"><stop stop-color="#96e4cc"/><stop offset=".38" stop-color="#297e97"/><stop offset="1" stop-color="#0c304e"/></linearGradient>
-            </defs>
-            <rect width="720" height="240" fill="url(#@sea)"/>
-            <circle cx="486" cy="71" r="37" fill="#bce6d1" opacity=".52"/>
-            <path d="M-18 125C86 164 163 80 250 100c49 11 88 52 141 66 108 30 181-57 347-68v142H-18Z" fill="#237587"/>
-            <path d="M-18 196c113 10 234-156 331-129 50 14 28 64 2 63 25-26 4-35-33-23-75 24-103 82-151 133H-18Z" fill="url(#@crest)"/>
-            <path d="M68 240c112-58 171-99 258-76 50 13 81 38 155 25 72-13 126-81 243-66v117Z" fill="#15506e"/>
-            <path d="M199 246c103-31 141-53 216-35 59 15 131-4 174-21 49-19 89-26 145-19v75Z" fill="#113850"/>
-            <g class="profile-cover-float" fill="none" stroke="#b6f3da" stroke-linecap="round"
-                style="--cover-dx:9px;--cover-dy:-7px;--cover-time:8s">
-                <path d="M42 192c123-65 209-148 271-125 31 12 36 41 15 57" opacity=".8" stroke-width="2.2"/>
-                <path d="M53 210c113-62 180-127 247-130m-193 118c74-39 128-89 176-94" opacity=".54"/>
-                <path d="M258 131c30-15 45-23 58-19m80 63c67 22 130 3 177-21 67-35 103-45 160-40M399 203c44 9 89 10 137-13" opacity=".46"/>
-            </g>
-            <path class="profile-cover-flow" pathLength="100" d="M-20 205c125-49 219-162 306-145 43 8 70 45 41 73"
-                fill="none" stroke="#ecffdf" stroke-width="2.4" stroke-linecap="round" opacity=".63" style="--cover-time:14s"/>
-            <g fill="#c6f7e0" opacity=".67"><circle cx="344" cy="100" r="2.5"/><circle cx="343" cy="116" r="1.1"/><circle cx="333" cy="131" r="2"/><circle cx="352" cy="113" r="1.4"/><circle cx="375" cy="155" r="1.3"/><circle cx="573" cy="138" r="2"/></g>`,
-        aurora: `
-            <defs>
-                <linearGradient id="@night" x2=".23" y2="1"><stop stop-color="#110d31"/><stop offset=".63" stop-color="#173752"/><stop offset="1" stop-color="#315f64"/></linearGradient>
-                <linearGradient id="@light" x2=".75" y2="1">
-                    <stop stop-color="#b197ff" stop-opacity=".14"/><stop offset=".45" stop-color="#7edadd" stop-opacity=".8"/>
-                    <stop offset=".8" stop-color="#aef3b0"/><stop offset="1" stop-color="#52c2bd" stop-opacity=".12"/>
+                <linearGradient id="@sea-light" gradientUnits="userSpaceOnUse" x1="230" y1="168" x2="468" y2="123">
+                    <stop stop-color="#9ceedf" stop-opacity="0"/>
+                    <stop offset=".46" stop-color="#c0fce8" stop-opacity=".68"/>
+                    <stop offset=".75" stop-color="#efffed"/>
+                    <stop offset="1" stop-color="#a5efdb" stop-opacity=".14"/>
                 </linearGradient>
             </defs>
-            <rect width="720" height="240" fill="url(#@night)"/>
-            <g fill="#d3e7fb">
-                <path d="M180 52l1.6 4.4 4.4 1.6-4.4 1.6-1.6 4.4-1.6-4.4-4.4-1.6 4.4-1.6Z"/>
-                <circle cx="69" cy="71" r="1.3"/><circle cx="131" cy="104" r="1.5"/><circle cx="216" cy="30" r="1.4"/><circle cx="248" cy="77" r="1.8"/>
-                <circle cx="347" cy="22" r="1.2"/><circle cx="446" cy="62" r="1.4"/><circle cx="508" cy="44" r="2"/><circle cx="533" cy="90" r="1.2"/>
-                <circle cx="605" cy="51" r="1.3"/><circle cx="643" cy="88" r="1.7"/><circle cx="389" cy="142" r="1.1"/>
-            </g>
-            <g class="profile-cover-float" style="--cover-dx:-18px;--cover-dy:-12px;--cover-time:15s">
-                <g class="profile-cover-shimmer" style="--cover-floor:.65;--cover-time:9s">
-                    <path d="M-55 16c149-47 198 115 339 115 167 0 164-104 312-88 48 5 103 20 157 7v33c-104 32-165-29-242 4-97 42-128 96-245 73C115 132 65 33-55 56Z" fill="url(#@light)" opacity=".82"/>
-                    <path d="M-38 48C68 18 171 140 272 145c130 6 179-113 310-90 64 10 118 33 171 9v10c-82 52-150-11-242 28-79 33-156 78-228 60C175 143 77 57-38 78Z" fill="url(#@light)"/>
-                    <path d="M-38 77c145-23 213 147 350 103 78-25 125-66 214-63 72 3 134 32 227 2" fill="none" stroke="#8eeed2" stroke-width="2" opacity=".6"/>
+            <rect width="720" height="240" fill="#092857"/>
+            <g class="profile-cover-swell" style="--cover-time:13s;--cover-delay:-3s">
+                <image href="images/profile-covers/waves-cel.webp" width="720" height="240"/>
+                <path class="profile-cover-flow" pathLength="100"
+                    d="M477 177C423 184 380 163 362 144c-15-17-9-36 14-43 17-5 37 0 50 10"
+                    fill="none" stroke="url(#@sea-light)" stroke-width="2.4" stroke-linecap="round"
+                    style="--cover-time:8s;--cover-delay:-2s"/>
+                <path class="profile-cover-flow" pathLength="100"
+                    d="M83 165c75-23 124 25 214 33s138-44 232-27c27 5 58 11 89 17"
+                    fill="none" stroke="#bcf7e5" stroke-width="1.6" stroke-linecap="round" opacity=".7"
+                    style="--cover-time:12s;--cover-delay:-7s"/>
+                <g class="profile-cover-float" style="--cover-dx:12px;--cover-dy:-9px;--cover-time:4.2s;--cover-delay:-2s">
+                    <g class="profile-cover-shimmer" fill="#d6fdec" opacity=".55"
+                        style="--cover-floor:.12;--cover-ceiling:.85;--cover-time:2.1s;--cover-delay:-.6s">
+                        <path d="M354 54q6-3 10 2-6 2-10-2Zm78 24q5 0 8 6-6-1-8-6Zm21 31q4 1 5 6-4-2-5-6Z"/>
+                        <circle cx="326" cy="68" r="1.2"/><circle cx="410" cy="68" r="1.6"/><circle cx="463" cy="100" r="1.2"/>
+                    </g>
+                </g>
+            </g>`,
+        aurora: `
+            <defs>
+                <linearGradient id="@mint" gradientUnits="userSpaceOnUse" x1="70" y1="176" x2="458" y2="27">
+                    <stop stop-color="#43e2b1" stop-opacity="0"/>
+                    <stop offset=".55" stop-color="#88ffc0" stop-opacity=".24"/>
+                    <stop offset=".8" stop-color="#cbffe2" stop-opacity=".59"/>
+                    <stop offset="1" stop-color="#67eabb" stop-opacity="0"/>
+                </linearGradient>
+                <linearGradient id="@violet" gradientUnits="userSpaceOnUse" x1="154" y1="126" x2="642" y2="71">
+                    <stop stop-color="#8eaeff" stop-opacity="0"/>
+                    <stop offset=".26" stop-color="#bd9ffc" stop-opacity=".53"/>
+                    <stop offset=".6" stop-color="#85eafb" stop-opacity=".15"/>
+                    <stop offset=".85" stop-color="#e3c6ff" stop-opacity=".54"/>
+                    <stop offset="1" stop-color="#b1a2ff" stop-opacity="0"/>
+                </linearGradient>
+                <linearGradient id="@reflection">
+                    <stop stop-color="#69e1bc" stop-opacity="0"/>
+                    <stop offset=".55" stop-color="#bbffcf" stop-opacity=".63"/>
+                    <stop offset="1" stop-color="#97acf9" stop-opacity="0"/>
+                </linearGradient>
+            </defs>
+            <rect width="720" height="240" fill="#0e254a"/>
+            <image href="images/profile-covers/aurora-cel.webp" width="720" height="240"/>
+            <g class="profile-cover-veil" style="--cover-dx:-7px;--cover-dy:4px;--cover-skew:-2deg;--cover-time:12s;--cover-delay:-4s">
+                <g class="profile-cover-shimmer" opacity=".54" style="--cover-floor:.23;--cover-ceiling:.82;--cover-time:6.5s">
+                    <path fill="url(#@mint)" d="M64 178c69-23 129-11 194-27 43-10 61-29 104-43 55-18 96-62 99-124
+                        14 65-29 105-81 123-42 14-60 31-104 46-64 21-143 8-212 25Z"/>
+                    <path d="M120 166c69-14 99-7 148-23s70-33 99-40c42-13 72-39 84-63"
+                        fill="none" stroke="url(#@mint)" stroke-width="1.5" stroke-linecap="round"/>
                 </g>
             </g>
-            <path d="M-19 230 68 185l72 27 68-31 68 32 53-19 63 28 113-54 35 23 27-8 166 50v21H-19Z" fill="#1b394e"/>
-            <path d="m-19 224 124-38 107 42 104-11 84 6 78-25 87 23 107-29 61 19v30H-19Z" fill="#121e38"/>
-            <path d="m505 168-37 18 32-4 12 13 12-11 16 7Z" fill="#88aaa9" opacity=".7"/>`,
+            <g class="profile-cover-veil" style="--cover-dx:10px;--cover-dy:-5px;--cover-skew:2deg;--cover-time:17s;--cover-delay:-9s">
+                <path fill="url(#@violet)" opacity=".69" d="M135 137c64-37 114-42 204-33 80 8 110 30 170 17
+                    51-11 113-34 136-67-17 36-83 62-135 73-61 14-94-10-170-18-100-10-145-1-205 28Z"/>
+                <path class="profile-cover-flow" pathLength="100" d="M148 131c71-34 135-39 217-22s102 23 151 13 106-33 133-66"
+                    fill="none" stroke="#e2d1ff" stroke-width="1.7" stroke-linecap="round" opacity=".65"
+                    style="--cover-time:15s;--cover-delay:-4s"/>
+            </g>
+            <g class="profile-cover-float" style="--cover-dx:19px;--cover-dy:0px;--cover-time:9s;--cover-delay:-5s">
+                <path class="profile-cover-shimmer" fill="url(#@reflection)" opacity=".43"
+                    d="M229 212l138-2 124 2-135 2Zm40 7 104-2 96 1-107 3Zm54 6 48-1 35 1-48 1Z"
+                    style="--cover-floor:.23;--cover-ceiling:.9;--cover-time:5s;--cover-delay:-1s"/>
+            </g>`,
         contours: `
             <defs><linearGradient id="@map" x2="1" y2="1"><stop stop-color="#293849"/><stop offset=".52" stop-color="#476059"/><stop offset="1" stop-color="#77735b"/></linearGradient></defs>
             <rect width="720" height="240" fill="url(#@map)"/>
@@ -325,31 +351,26 @@
             </g>`,
         eclipse: `
             <defs>
-                <linearGradient id="@space" x2=".9" y2="1"><stop stop-color="#110d20"/><stop offset=".72" stop-color="#3c2638"/><stop offset="1" stop-color="#25192f"/></linearGradient>
-                <radialGradient id="@fire">
-                    <stop offset=".42" stop-color="#ffd58d"/><stop offset=".46" stop-color="#ffdc93"/><stop offset=".51" stop-color="#f19471" stop-opacity=".98"/>
-                    <stop offset=".65" stop-color="#ca5e61" stop-opacity=".51"/><stop offset="1" stop-color="#a6425c" stop-opacity="0"/>
+                <radialGradient id="@corona">
+                    <stop offset=".56" stop-color="#ffca92" stop-opacity="0"/>
+                    <stop offset=".61" stop-color="#ffd18e" stop-opacity=".32"/>
+                    <stop offset=".75" stop-color="#fa7d55" stop-opacity=".16"/>
+                    <stop offset="1" stop-color="#eb567b" stop-opacity="0"/>
                 </radialGradient>
-                <radialGradient id="@moon" cx=".38" cy=".29" r=".83"><stop stop-color="#141221"/><stop offset="1" stop-color="#2b1a29"/></radialGradient>
             </defs>
-            <rect width="720" height="240" fill="url(#@space)"/>
-            <circle class="profile-cover-shimmer" cx="371" cy="119" r="119" fill="url(#@fire)" style="--cover-floor:.66;--cover-time:7s"/>
-            <path d="M123 153c110-35 298-59 489-42m-491 51c129-35 279-56 488-42" fill="none" stroke="#eaa987" stroke-width="1" opacity=".28"/>
-            <g fill="none" stroke="#ffd6a1">
-                <circle cx="371" cy="119" r="76" stroke-dasharray="1 5" opacity=".48"/>
-                <circle cx="371" cy="119" r="90" opacity=".23"/>
-                <circle cx="371" cy="119" r="110" opacity=".12"/>
-                <path d="M371 14v19m0 173v20M266 119h19m171 0h19" opacity=".44"/>
-            </g>
-            <circle cx="371" cy="119" r="52" fill="url(#@moon)"/>
-            <path class="profile-cover-shimmer" d="M322 103a52 52 0 0 1 86-20" fill="none" stroke="#ffebbc" stroke-width="1.3" stroke-linecap="round"
-                style="--cover-floor:.65;--cover-ceiling:.94;--cover-time:5s;--cover-delay:-2s"/>
-            <g fill="#f1bf99" opacity=".68">
-                <circle cx="158" cy="118" r="1.4"/><circle cx="185" cy="167" r="2"/><circle cx="201" cy="62" r="1.6"/><circle cx="261" cy="37" r=".9"/>
-                <circle cx="492" cy="44" r="1.3"/><circle cx="540" cy="142" r="1.4"/><circle cx="582" cy="63" r="2"/><circle cx="616" cy="97" r="1.8"/>
-                <circle cx="571" cy="202" r="1.4"/><circle cx="474" cy="198" r="1.7"/>
-            </g>
-            <path d="M232 189l2 5 5 2-5 2-2 5-2-5-5-2 5-2zm297-125 1.3 3.7 3.7 1.3-3.7 1.3-1.3 3.7-1.3-3.7-3.7-1.3 3.7-1.3Z" fill="#f6c491"/>`
+            <rect width="720" height="240" fill="#1e0a20"/>
+            <image href="images/profile-covers/eclipse-cel.webp" width="720" height="240"/>
+            <circle class="profile-cover-shimmer" cx="360" cy="120" r="122" fill="url(#@corona)" opacity=".56"
+                style="--cover-floor:.28;--cover-ceiling:1;--cover-time:6.4s;--cover-delay:-1.6s"/>
+            <circle class="profile-cover-flow" cx="360" cy="120" r="70.5" pathLength="100"
+                fill="none" stroke="#fff8d9" stroke-width="2.2" stroke-linecap="round" opacity=".92"
+                style="--cover-time:17s;--cover-delay:-5s"/>
+            <g class="profile-cover-float" style="--cover-dx:6px;--cover-dy:-5px;--cover-time:12s;--cover-delay:-7s">
+                <g class="profile-cover-shimmer" fill="none" stroke="#ffd197" stroke-width="1" stroke-linecap="round" opacity=".49"
+                    style="--cover-floor:.19;--cover-ceiling:.69;--cover-time:4s;--cover-delay:-1s">
+                    <path d="M439 87c13-8 27-21 44-28m-224 65c-15 5-25 8-40 6m234 43c12 8 24 12 38 15"/>
+                </g>
+            </g>`
     };
 
     let sequence = 0;
