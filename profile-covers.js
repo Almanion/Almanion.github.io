@@ -473,35 +473,81 @@
             ${fireflies}`,
         signal: `
             <defs>
-                <linearGradient id="@scope" x2=".85" y2="1"><stop stop-color="#100f31"/><stop offset=".53" stop-color="#18294d"/><stop offset="1" stop-color="#211844"/></linearGradient>
-                <radialGradient id="@field"><stop stop-color="#3a7b9e" stop-opacity=".46"/><stop offset="1" stop-color="#35658a" stop-opacity="0"/></radialGradient>
-                <linearGradient id="@trace"><stop stop-color="#779bef"/><stop offset=".47" stop-color="#a9ffdf"/><stop offset=".71" stop-color="#76deff"/><stop offset="1" stop-color="#b392ff"/></linearGradient>
-                <linearGradient id="@scan" x2="0" y2="1"><stop stop-color="#9ceefa" stop-opacity="0"/><stop offset=".72" stop-color="#9ceefa" stop-opacity=".09"/><stop offset="1" stop-color="#acf4fa" stop-opacity=".25"/></linearGradient>
-                <pattern id="@grid" width="30" height="24" patternUnits="userSpaceOnUse"><path d="M30 0H0v24" fill="none" stroke="#91afdc" stroke-opacity=".22"/><circle r="1.15" fill="#a8c6ea" opacity=".49"/></pattern>
+                <linearGradient id="@signal-night" x2=".92" y2="1">
+                    <stop stop-color="#121529"/><stop offset=".59" stop-color="#292449"/><stop offset="1" stop-color="#181a36"/>
+                </linearGradient>
+                <radialGradient id="@signal-pool">
+                    <stop stop-color="#675691" stop-opacity=".39"/><stop offset="1" stop-color="#675691" stop-opacity="0"/>
+                </radialGradient>
+                <linearGradient id="@signal-split-ink" x2=".7" y2="1">
+                    <stop stop-color="#7baff1" stop-opacity=".19"/><stop offset=".54" stop-color="#7761ba" stop-opacity=".14"/>
+                    <stop offset="1" stop-color="#c68dea" stop-opacity=".23"/>
+                </linearGradient>
+                <pattern id="@signal-grid" width="36" height="30" patternUnits="userSpaceOnUse">
+                    <path d="M36 0H0v30" fill="none" stroke="#a5a4d9" stroke-opacity=".08"/>
+                    <circle r="1.15" fill="#b0a7df" opacity=".24"/>
+                </pattern>
+                <path id="@signal-in" pathLength="100" d="M-24 120H82l18-12h51l16 12h77"/>
+                <path id="@signal-up" pathLength="100" d="M244 120l32-41h34l36-31h37l27 27h33l33 45"/>
+                <path id="@signal-center" pathLength="100" d="M244 120h39l17-16h27l16 16h31l19-16h31l16 16h36"/>
+                <path id="@signal-down" pathLength="100" d="M244 120l34 40h35l37 33h44l29-25h19l34-48"/>
+                <path id="@signal-out" pathLength="100" d="M476 120h55l18 15h40l22-21h31l17 6h85"/>
             </defs>
-            <rect width="720" height="240" fill="url(#@scope)"/>
-            <ellipse cx="366" cy="126" rx="360" ry="143" fill="url(#@field)"/>
-            <path d="M0 12h720v216H0Z" fill="url(#@grid)"/>
-            <g fill="#afcbff" opacity=".23">
-                <path d="M0 16h111v3H0Zm77 14h77v4H77Zm477-4h166v3H554Zm-32 10h109v3H522ZM0 189h76v3H0Zm70 12h167v2H70Zm336 9h54v3h-54Zm155-15h159v5H561Zm57 16h67v3h-67Z"/>
-                <path d="M174 46h17v2h-17Zm48-18h76v2h-76Zm194 15h42v3h-42Zm73 170h62v3h-62Zm-293-12h17v2h-17Z"/>
+            <rect width="720" height="240" fill="url(#@signal-night)"/>
+            <ellipse cx="374" cy="122" rx="320" ry="152" fill="url(#@signal-pool)"/>
+            <rect width="720" height="240" fill="url(#@signal-grid)"/>
+
+            <g fill="none" stroke="#a3a0de" stroke-width="1.2" opacity=".36" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M-6 71h91l17-15h77l22 20h31m-238 101h111l26-21h35l22 16h52
+                         M488 66h28l29-21h89l21 16h76m-221 133h31l31-18h52l18 15h89"/>
+                <path d="M269 41h34l21-16h69l22 21h30m-175 150h34l28 22h79l21-15h25"/>
+                <circle cx="232" cy="76" r="3.4"/><circle cx="240" cy="172" r="3.7"/>
+                <circle cx="488" cy="66" r="3.4"/><circle cx="510" cy="194" r="3.7"/>
             </g>
-            <path d="M22 49V25h29m618 0h29v24M51 215H22v-24m676 0v24h-29M360 12v14m0 188v14" fill="none" stroke="#a8b6ed" stroke-width="1.4" opacity=".65"/>
-            <path d="M-10 121h740" fill="none" stroke="#9dc4e2" stroke-dasharray="2 7" opacity=".46"/>
-            <path class="profile-cover-float" d="${signalTrace}" fill="none" stroke="#e78cf9" stroke-width="2" stroke-linejoin="round" opacity=".46"
-                style="--cover-dx:12px;--cover-dy:8px;--cover-time:10s;--cover-delay:-4s"/>
-            <path d="${signalTrace}" transform="translate(-4 4)" fill="none" stroke="#7167f0" stroke-width="2.4" stroke-linejoin="round" opacity=".64"/>
-            <path class="profile-cover-shimmer" d="${signalTrace}" fill="none" stroke="#7deaff" stroke-width="9" stroke-linejoin="round" style="--cover-floor:.08;--cover-ceiling:.24;--cover-time:7s" opacity=".19"/>
-            <path d="${signalTrace}" fill="none" stroke="url(#@trace)" stroke-width="2.7" stroke-linejoin="round"/>
-            <path class="profile-cover-flow" pathLength="100" d="${signalTrace}" fill="none" stroke="#e8faff" stroke-width="3.1"
-                stroke-linejoin="round" opacity=".77" style="--cover-time:20s;--cover-delay:-8s"/>
-            <g class="profile-cover-float" fill="#a7dffb" opacity=".6" style="--cover-dx:25px;--cover-dy:0px;--cover-time:8s;--cover-delay:-2s">
-                <path d="M89 60h25v2H89zm460 114h31v2h-31zm31-125h16v2h-16zM134 181h71v2h-71Z"/>
-                <path d="M46 73h6v3h-6zm320 108h11v3h-11zm261-21h12v2h-12z" fill="#f4a8e1"/>
+            <path d="${signalTrace}" transform="translate(35 9) scale(.28 .25)" fill="none"
+                stroke="#9cc9f0" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" opacity=".27"/>
+            <g fill="#afa1d2" opacity=".45">
+                <path d="M135 196h22v3h-22zm38 0h9v3h-9zm360-153h23v2h-23zm31 0h8v2h-8z
+                    M34 146h11v2H34zm635-54h22v2h-22zM189 212h26v2h-26zm329-6h12v2h-12z"/>
+                <circle cx="126" cy="52" r="1.5"/><circle cx="583" cy="49" r="1.5"/>
+                <circle cx="74" cy="207" r="1.6"/><circle cx="647" cy="79" r="1.2"/>
             </g>
-            <g class="profile-cover-scan">
-                <rect y="-57" width="720" height="57" fill="url(#@scan)"/>
-                <path d="M0 0h720" stroke="#cdf1ff" stroke-opacity=".23"/>
+
+            <path d="M244 120l32-41h34l36-31h37l27 27h33l33 45-34 48h-19l-29 25h-44l-37-33h-35Z"
+                fill="url(#@signal-split-ink)"/>
+            <path d="M347 49l15-14h33l24 22h-22l-14-8Zm4 143 16 11h44l13-16-28 5Z"
+                fill="#9687d9" opacity=".29"/>
+            <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+                <g stroke="#14162f" stroke-width="11" opacity=".68">
+                    <use href="#@signal-in"/><use href="#@signal-up"/><use href="#@signal-center"/>
+                    <use href="#@signal-down"/><use href="#@signal-out"/>
+                </g>
+                <g stroke-width="3">
+                    <use href="#@signal-in" stroke="#8c9bff" stroke-width="4.3"/>
+                    <use href="#@signal-up" stroke="#848ee6"/>
+                    <use href="#@signal-center" stroke="#6ebaa9" stroke-width="3.5"/>
+                    <use href="#@signal-down" stroke="#a577d0"/>
+                    <use href="#@signal-out" stroke="#9d92e8" stroke-width="4.3"/>
+                </g>
+                <g stroke-width="6">
+                    <use href="#@signal-in" class="profile-cover-signal-packet" stroke="#d9e8ff"
+                        style="--signal-pass:profile-cover-signal-arrive"/>
+                    <g style="--signal-pass:profile-cover-signal-split">
+                        <use href="#@signal-up" class="profile-cover-signal-packet" stroke="#b0d4ff"/>
+                        <use href="#@signal-center" class="profile-cover-signal-packet" stroke="#c0ffe9"/>
+                        <use href="#@signal-down" class="profile-cover-signal-packet" stroke="#f0baed"/>
+                    </g>
+                    <use href="#@signal-out" class="profile-cover-signal-packet" stroke="#e5d9ff"
+                        style="--signal-pass:profile-cover-signal-leave"/>
+                </g>
+            </g>
+            <g fill="#252341" stroke="#a4addd" stroke-width="1.45">
+                <circle cx="244" cy="120" r="6.3"/><circle cx="476" cy="120" r="6.3"/>
+            </g>
+            <g class="profile-cover-shimmer" fill="#cce3f4" opacity=".75"
+                style="--cover-floor:.45;--cover-ceiling:1;--cover-time:4.4s;--cover-delay:-1.2s">
+                <circle cx="244" cy="120" r="2.7"/><circle cx="476" cy="120" r="2.7"/>
+                <path d="M361 82h12v2h-12zm17 0h5v2h-5zm-22 73h8v2h-8zm17 0h15v2h-15z"/>
             </g>`,
         eclipse: `
             <defs>

@@ -164,3 +164,47 @@ test('the eclipse moves the moon across a stationary sun and aligns both discs a
     await expect(moon).toHaveCSS('animation-name', 'none');
     await expect(corona).toHaveCSS('animation-name', 'none');
 });
+
+test('the signal packet splits on three connected branches and rejoins the outgoing track', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await openCovers(page);
+    const live = page.locator('#profileCoverArt');
+    await live.evaluate(element => {
+        const markup = window.AlmanionProfileCovers.markup;
+        element.innerHTML = markup('signal');
+        document.getElementById('thumbnail').innerHTML = markup('signal');
+    });
+
+    const packets = live.locator('.profile-cover-signal-packet');
+    await expect(packets).toHaveCount(5);
+    await expect(page.locator('#thumbnail .profile-cover-signal-packet').first()).toHaveCSS('animation-name', 'none');
+    const { tracks, stages } = await packets.evaluateAll(async elements => {
+        const tracks = elements.map(element => {
+            const path = document.getElementById(element.getAttribute('href').slice(1));
+            const start = path.getPointAtLength(0);
+            const end = path.getPointAtLength(path.getTotalLength());
+            return [[start.x, start.y], [end.x, end.y]];
+        });
+        const motions = elements.map(element => element.getAnimations()[0]);
+        for (const motion of motions) motion.pause();
+        await Promise.all(motions.map(motion => motion.ready));
+        const stages = [.15, .46, .78].map(phase => {
+            for (const motion of motions) {
+                const { delay, duration } = motion.effect.getTiming();
+                motion.currentTime = delay + duration * (2 + phase);
+            }
+            return elements.flatMap((element, index) => {
+                const style = getComputedStyle(element);
+                return Number(style.opacity) > .9 && parseFloat(style.strokeDashoffset) < 0 ? [index] : [];
+            });
+        });
+        return { tracks, stages };
+    });
+    for (const branch of tracks.slice(1, 4)) {
+        expect(branch[0]).toEqual(tracks[0][1]);
+        expect(branch[1]).toEqual(tracks[4][0]);
+    }
+    expect(stages).toEqual([[0], [1, 2, 3], [4]]);
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await expect(packets.first()).toHaveCSS('animation-name', 'none');
+});

@@ -63,8 +63,10 @@
     transform-box: view-box;
     transform-origin: 0 0;
 }
-.profile-cover-scan {
-    --cover-motion: profile-cover-refresh 9s linear -3s infinite;
+.profile-cover-signal-packet {
+    --cover-motion: var(--signal-pass) 10.5s linear -3.7s infinite;
+    stroke-dasharray: 12 114;
+    stroke-dashoffset: 12;
     opacity: 0;
 }
 
@@ -76,7 +78,7 @@
     html:not([data-page-motion="off"], [data-page-motion="medium"]) .profile-page
         :is(#profileCoverArt, [data-profile-cover-live]):not([hidden]) > .profile-cover-art:not([hidden])
         :is(.profile-cover-float, .profile-cover-orbit-turn, .profile-cover-orbit-upright, .profile-cover-flow,
-            .profile-cover-scan, .profile-cover-swell, .profile-cover-veil, .profile-cover-ink-spread, .profile-cover-leaf-open,
+            .profile-cover-signal-packet, .profile-cover-swell, .profile-cover-veil, .profile-cover-ink-spread, .profile-cover-leaf-open,
             .profile-cover-lustre, .profile-cover-eclipse-corona, .profile-cover-eclipse-moon) {
         animation: var(--cover-motion);
         animation-play-state: var(--cover-play-state, running);
@@ -138,8 +140,22 @@
     from { transform: rotate(var(--leaf-fold, -13deg)) scaleX(.7); }
     to { transform: rotate(0deg) scaleX(1); }
 }
-@keyframes profile-cover-refresh {
-    from { opacity: 0; transform: translateY(-3px); }
-    8%, 91% { opacity: 1; }
-    to { opacity: 0; transform: translateY(298px); }
+/* Each packet overlaps the next at its junction, then clears the track before restarting. */
+@keyframes profile-cover-signal-arrive {
+    from { opacity: 0; stroke-dashoffset: 12; }
+    3% { opacity: 1; }
+    31% { opacity: 1; stroke-dashoffset: -100; }
+    34%, to { opacity: 0; stroke-dashoffset: -112; }
+}
+@keyframes profile-cover-signal-split {
+    0%, 28% { opacity: 0; stroke-dashoffset: 12; }
+    32% { opacity: 1; }
+    64% { opacity: 1; stroke-dashoffset: -100; }
+    67%, to { opacity: 0; stroke-dashoffset: -112; }
+}
+@keyframes profile-cover-signal-leave {
+    0%, 61% { opacity: 0; stroke-dashoffset: 12; }
+    65% { opacity: 1; }
+    95% { opacity: 1; stroke-dashoffset: -100; }
+    98%, to { opacity: 0; stroke-dashoffset: -112; }
 }

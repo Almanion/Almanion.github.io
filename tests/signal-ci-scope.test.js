@@ -142,6 +142,12 @@ const relief = (fill, levels = 9) => profileArtwork(
 ).replace('aurora:', 'contours:');
 assert.equal(normalizeProfileArt(relief("navy")), normalizeProfileArt(relief("teal")));
 assert.notEqual(normalizeProfileArt(relief("navy")), normalizeProfileArt(relief("teal", 7)));
+const signalArtwork = markup => profileArtwork(markup).replace('aurora:', 'signal:');
+const signalPath = '<path d="${signalTrace}"/>';
+assert.equal(normalizeProfileArt(signalArtwork('<pattern/>' + signalPath.repeat(2))),
+  normalizeProfileArt(signalArtwork('<g>' + signalPath + '</g>')));
+assert.notEqual(normalizeProfileArt(signalArtwork(signalPath)),
+  normalizeProfileArt(signalArtwork('<path d="${drawSignal()}"/>')));
 assert.ok(require("../tools/run-tests").listTests(".", "appearance").some(file => file.endsWith("site-branding.test.js")));
 assert.match(workflow, /if: needs\.scope\.outputs\.suite == 'appearance'\s+run: npx playwright test e2e\/appearance\.spec\.js/);
 assert.match(workflow, /needs: \[scope, build, campaign\]/);

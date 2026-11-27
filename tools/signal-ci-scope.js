@@ -114,14 +114,14 @@ function normalizeAppearanceReferences(file, source) {
   }
   if (file === "profile-covers.js") {
     // Preserve the existing drawing expressions and the rest of the renderer.
-    const art = /^( {8}(?:orbit|hills|waves|eclipse|aurora|contours|terrazzo|ink|garden): `)([^`]*)(`)(?=,?\r?$)/gm;
+    const art = /^( {8}(?:orbit|hills|waves|eclipse|aurora|contours|terrazzo|ink|garden|signal): `)([^`]*)(`)(?=,?\r?$)/gm;
     const drawingSlot = /^[ \t]*\$\{(?:orbitTracks|contourLines\(\d+, \d+, \d+, \d*\.\d+\))\}(?=[ \t]*\r?$)/gm;
-    const riverSlot = /\bd="\$\{riverRoute\}"/g;
-    const otherMarkup = /<(?!\/?(?:defs|linearGradient|radialGradient|stop|rect|g|path|circle|ellipse|image|clipPath|mask|use)(?=[\s/>]))|\bon[\w:-]+\s*=|javascript\s*:/i;
+    const pathSlot = /\bd="\$\{(?:riverRoute|signalTrace)\}"/g;
+    const otherMarkup = /<(?!\/?(?:defs|linearGradient|radialGradient|stop|rect|g|path|circle|ellipse|image|clipPath|mask|use|pattern)(?=[\s/>]))|\bon[\w:-]+\s*=|javascript\s*:/i;
     return source.replace(art, (original, start, markup, end) => {
-      const svg = markup.replace(drawingSlot, "").replace(riverSlot, 'd=""');
+      const svg = markup.replace(drawingSlot, "").replace(pathSlot, 'd=""');
       if (svg.includes("$") || otherMarkup.test(svg)) return original;
-      const slots = [...(markup.match(drawingSlot) || []), ...(markup.match(riverSlot) || [])]
+      const slots = [...(markup.match(drawingSlot) || []), ...new Set(markup.match(pathSlot) || [])]
         .map(slot => slot.trim()).join("");
       return start + "ARTWORK" + slots + end;
     });
