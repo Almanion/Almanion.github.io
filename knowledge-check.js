@@ -2461,7 +2461,13 @@
                 target.addEventListener('blur', () => target.removeAttribute('tabindex'), { once: true });
             }
             target.focus({ preventScroll: true });
-            target.scrollIntoView({ behavior: 'auto', block: 'center' });
+            const showTarget = () => target.scrollIntoView({ behavior: 'instant', block: 'center' });
+            showTarget();
+            // WebKit may restore the pre-dialog scroll offset as it unlocks the page.
+            requestAnimationFrame(() => {
+                const rect = target.getBoundingClientRect();
+                if (document.activeElement === target && (rect.bottom <= 0 || rect.top >= innerHeight)) showTarget();
+            });
             target.classList.add('nav-highlight');
             setTimeout(() => target.classList.remove('nav-highlight'), 1500);
         });
