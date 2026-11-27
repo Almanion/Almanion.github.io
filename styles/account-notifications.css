@@ -269,6 +269,7 @@ body:has(.account-notifications[open]) { overflow: hidden; }
 }
 
 body.exp-prism .account-notifications-entry[data-kind="art"] { --notification-kind: var(--t-lemma); }
+.account-notifications-entry[data-unread] { border-inline-start: 3px solid var(--notification-accent); }
 
 .account-notifications-entry-icon {
     display: grid;
@@ -325,7 +326,7 @@ body.exp-prism .account-notifications-entry[data-kind="art"] { --notification-ki
     border-top: 1px solid var(--notification-border);
 }
 
-.account-notifications-footer a {
+.account-notifications-footer :is(a, button) {
     display: inline-flex;
     align-items: center;
     min-height: 44px;
@@ -334,6 +335,11 @@ body.exp-prism .account-notifications-entry[data-kind="art"] { --notification-ki
     font-weight: 680;
     text-decoration: none;
 }
+.account-notifications-mark {
+    padding: 4px 8px; border: 1px solid var(--notification-border); border-radius: 8px;
+    background: transparent; cursor: pointer;
+}
+.forecast-header .account-notifications-trigger { order: 0; border-radius: 12px; color: var(--signal); background: var(--surface); }
 
 @media (hover: hover) and (pointer: fine) {
     .account-notifications-trigger:hover { color: var(--accent-color); background: var(--bg-tertiary); }
@@ -341,7 +347,7 @@ body.exp-prism .account-notifications-entry[data-kind="art"] { --notification-ki
         background: var(--notification-tint);
         color: var(--notification-ink);
     }
-    .account-notifications-footer a:hover { text-decoration: underline; }
+    .account-notifications-footer :is(a, button):hover { text-decoration: underline; }
 }
 
 @media (max-width: 420px) {

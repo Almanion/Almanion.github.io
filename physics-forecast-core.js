@@ -17,7 +17,7 @@
         question: 'Будет ли работа по физике?',
         criteria: 'Работа — любое письменное задание, за которое выставляется оценка.'
     };
-    const QUESTION_LIMIT = 160, CRITERIA_LIMIT = 400;
+    const QUESTION_LIMIT = 160, CRITERIA_LIMIT = 400, RESULT_NOTE_LIMIT = 280, RESULT_URL_LIMIT = 512;
     const moscow = new Intl.DateTimeFormat('sv-SE', { timeZone: 'Europe/Moscow', year: 'numeric', month: '2-digit', day: '2-digit' });
     const dayKey = time => moscow.format(new Date(time));
 
@@ -164,6 +164,15 @@
             && !value.startsWith(' ') && !value.endsWith(' ') && !/[\r\n\t]/.test(value);
     }
 
+    function resultSource(value) {
+        if (typeof value !== 'string' || value.length > RESULT_URL_LIMIT || !/^https?:\/\/[^/@?#]+(?:[/?#]|$)/.test(value)
+            || /[\s\\\x00-\x1f\x7f]/u.test(value)) return '';
+        try {
+            const url = new URL(value);
+            return url.hostname && !url.username && !url.password ? url.href : '';
+        } catch { return ''; }
+    }
+
     function eventDetails(e, id) {
         if (!(e.endAt > e.at) || (e.liquidity !== undefined && e.liquidity !== 1)) return null;
         // The original ledger used the Moscow calendar date as the market key.
@@ -183,7 +192,7 @@
         const series = Object.fromEntries(sides.map(id => [id, []]));
         const market = { id: e.day, ...details, answers, sides, series, marks: {}, lastPrices: {},
             openedAt: e.at, eventEnd: e.eventEnd ?? e.endAt, endAt: e.endAt, phase: 'open', orders: [],
-            positions: new Map(), trades: [], orderHistory: new Map(), closedAt: null };
+            positions: new Map(), trades: [], orderHistory: new Map(), closedAt: null, resolution: null };
         if (e.liquidity === 1) market.liquidity = { extraSets: 0 };
         function seed(side, action, limit, qty) {
             market.orders.push({ id: 'seed-' + side + limit, actor: MAKER, side, action, limit, qty, priority: 0 });
@@ -322,6 +331,34 @@
         return low;
     }
 
+    function instantSale(state, market, actor, side, at) {
+        const free = position(market, actor)[side] - held(market, actor, at)[side];
+        if (status(market, at) !== 'open' || !free) return { free, qty: 0, cash: 0 };
+        const order = { day: market.id, actor, side, action: 'sell', mode: 'market', limit: 1 };
+        const first = preview(state, { ...order, qty: Math.min(free, MAX_QTY) }, at);
+        if (!first.error) return { free, qty: first.filled, cash: first.cash };
+        const qty = maxOrderSize(state, order, at);
+        if (qty) return { free, qty, cash: preview(state, { ...order, qty }, at).cash };
+        return { free, qty, cash: 0, error: preview(state, { ...order, qty: 1 }, at).error };
+    }
+
+    function participantTrades(market, uid) {
+        return market.trades.flatMap(trade => {
+            if (trade.taker === uid) return [{ at: trade.at, qty: trade.qty, price: trade.price, side: trade.side, action: trade.action }];
+            if (trade.maker === uid) return [{ at: trade.at, qty: trade.qty, price: trade.makerPrice, side: trade.makerSide, action: trade.makerAction }];
+            return [];
+        });
+    }
+
+    function settlement(market, uid) {
+        const winning = market.sides.includes(market.phase), voided = market.phase === 'void';
+        if (!winning && !voided) return null;
+        const pos = position(market, uid), qty = winning ? pos[market.phase] : 0;
+        const payout = qty * 100;
+        return { qty, payout, net: voided ? 0 : pos.cash + payout, refund: voided ? Math.max(0, -pos.cash) : 0,
+            reversed: voided ? Math.max(0, pos.cash) : 0 };
+    }
+
     function bookFill(market, order, qty, price) {
         const pos = position(market, order.actor);
         const change = order.action === 'buy' ? qty : -qty;
@@ -335,7 +372,8 @@
         if (plan.error) return { error: plan.error };
         // Rebuilt from the same journal as positions and reserves.
         market.orderHistory.set(id, { id, actor: e.actor, at: e.at, side: e.side, action: e.action,
-            mode: e.mode, limit: e.limit, qty: e.qty, filled: plan.filled, cash: plan.cash, cancelledAt: null });
+            mode: e.mode, limit: e.limit, qty: e.qty, filled: plan.filled, cash: plan.cash, cancelledAt: null,
+            lastFill: plan.filled ? { id, n: e.n, at: e.at } : null });
         for (const { maker, qty, price } of plan.fills) {
             bookFill(market, e, qty, price);
             bookFill(market, maker, qty, maker.limit);
@@ -344,6 +382,7 @@
             if (resting) {
                 resting.filled += qty;
                 resting.cash += qty * maker.limit;
+                resting.lastFill = { id, n: e.n, at: e.at };
             }
             market.lastPrices[e.side] = price;
             if (market.sides.length === 2) market.lastPrices[e.side === 'yes' ? 'no' : 'yes'] = 100 - price;
@@ -399,6 +438,10 @@
                 if (market.phase === 'open') market.closedAt = Math.min(e.at, market.endAt);
                 market.phase = e.kind;
                 market.orders.length = 0;
+                if (e.kind !== 'lock') {
+                    const note = validText(e.resultNote, RESULT_NOTE_LIMIT) && e.resultNote.trim() === e.resultNote ? e.resultNote : '';
+                    market.resolution = { id, n: e.n, at: e.at, note, url: note ? resultSource(e.resultUrl) : '' };
+                }
                 receipt = {};
             }
         }
@@ -406,8 +449,9 @@
         return receipt;
     }
     const api = { DAY, OWNER, MAKER, INITIAL, MAX_BALANCE, MAX_QTY, physics, QUESTION_LIMIT, CRITERIA_LIMIT, SIDE_IDS, DEFAULT_ANSWERS, ANSWER_LIMIT,
+        RESULT_NOTE_LIMIT, RESULT_URL_LIMIT, resultSource,
         dayKey, endOfDay, deadline, validDeadline, validAnswers, create, status, held, position, available,
-        ranked, quotePrice, midpoint, standings, preview, maxOrderSize, validBalanceChange, apply, errors };
+        ranked, quotePrice, midpoint, standings, preview, maxOrderSize, instantSale, participantTrades, settlement, validBalanceChange, apply, errors };
     if (typeof module === 'object' && module.exports) module.exports = api;
     else root.PhysicsForecast = api;
 }(globalThis));

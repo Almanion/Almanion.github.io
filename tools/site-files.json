@@ -78,6 +78,7 @@
     "physics-forecast.js",
     "physics-forecast-core.js",
     "physics-forecast-ledger.js",
+    "physics-forecast-notifications.js",
     "physics-forecast-chart.js",
     "physics-forecast-guide.js",
     "physics-forecast-ranking.js",

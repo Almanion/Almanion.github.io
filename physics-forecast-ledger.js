@@ -7,6 +7,15 @@
     const cutoff = (at, eventDate) => (M.dayKey(at) === eventDate ? '' : date(M.dayKey(at)) + ', ') + time.format(at) + ' мск';
     const phaseLabel = (market, phase) => ({ open: 'Торги открыты', lock: 'Торги закрыты', void: 'Прогноз отменён' })[phase]
         || (market?.answers[phase] ? 'Итог «' + market.answers[phase] + '»' : '');
+    function eventUrl(base, id, { order, result } = {}) {
+        const url = new URL('forecast.html', base);
+        url.searchParams.set('event', id);
+        if (order) {
+            url.searchParams.set('order', order);
+            url.hash = 'orderListTitle';
+        } else if (result) url.hash = 'eventResult';
+        return url;
+    }
     const groupFor = phase => phase === 'open' ? 0 : phase === 'lock' ? 1 : 2;
     const pickerVersions = new WeakMap();
 
@@ -121,5 +130,5 @@
         throw Error('Рынок изменился. Проверь состояние и попробуй ещё раз.');
     }
 
-    window.ForecastLedger = { date, time, cutoff, phaseLabel, orderedMarkets, fillPicker, createReader, append };
+    window.ForecastLedger = { date, time, cutoff, phaseLabel, eventUrl, orderedMarkets, fillPicker, createReader, append };
 }());

@@ -87,6 +87,8 @@
         const panel = $('ownerTools'), form = $('createRound'), date = $('newDay');
         const template = $('eventTemplate'), question = $('eventQuestion'), criteria = $('newCriteria');
         const clockInput = $('newTime'), editTime = $('manageDeadline'), deadlineEditor = $('editDeadline');
+        const confirmation = $('confirmAction'), resultFields = $('resultFields');
+        const resultNote = $('resultNote'), resultUrl = $('resultUrl');
         const addAnswer = $('addAnswer'), editor = $('answerEditor'), actions = panel.querySelector('.forecast-manager-actions');
         const commands = () => [...actions.querySelectorAll('[data-command]')];
         const localMinute = at => M.dayKey(at) + 'T' + window.ForecastLedger.time.format(at);
@@ -94,6 +96,8 @@
         let current, markets = [], creating = false, busy = false, disabled = true, pending = null, initialized = false;
         question.maxLength = M.QUESTION_LIMIT;
         criteria.maxLength = M.CRITERIA_LIMIT;
+        resultNote.maxLength = M.RESULT_NOTE_LIMIT;
+        resultUrl.maxLength = M.RESULT_URL_LIMIT;
         const presets = new Map();
         for (const [groupLabel, items] of Object.entries(templateGroups)) {
             const group = document.createElement('optgroup');
@@ -159,8 +163,12 @@
         }
         function dismiss() {
             pending = null;
-            $('confirmAction').hidden = true;
+            confirmation.hidden = true;
+            confirmation.reset();
+            resultFields.hidden = resultFields.disabled = true;
             $('confirmText').textContent = '';
+            resultNote.setCustomValidity('');
+            resultUrl.setCustomValidity('');
         }
         function displayMode() {
             const create = creating || !current;
@@ -227,6 +235,13 @@
             $('manageTitle').textContent = current.question;
             $('manageCriteria').textContent = current.criteria;
             $('manageCriteria').hidden = !current.criteria;
+            const { note, url } = current.resolution || {};
+            $('manageResultNote').textContent = note || '';
+            $('manageResultNote').hidden = !note;
+            const source = $('manageResultSource');
+            source.hidden = !url;
+            if (url) source.href = url;
+            else source.removeAttribute('href');
             const status = phase === 'lock' && now() < current.eventEnd - M.DAY ? 'Итог можно указать в день события' : phaseLabel(current, phase);
             $('manageStatus').textContent = formatDate(current.date) + ' · ' + status + (phase === 'open' ? ' до ' + window.ForecastLedger.cutoff(current.endAt, current.date) : '');
             for (const button of commands()) {
@@ -236,6 +251,8 @@
             }
             if (pending && (pending.day !== current.id || !canApply(pending.kind, phase))) dismiss();
             $('confirmGo').disabled = disabled;
+            $('confirmBack').disabled = busy;
+            resultFields.disabled = resultFields.hidden || busy;
             $('repeatEvent').disabled = busy;
             $('nextPending').hidden = !anotherPending();
             $('nextPending').disabled = busy;
@@ -324,20 +341,46 @@
             if (!button || !current || disabled || panel.hidden) return;
             const kind = button.dataset.command;
             if (!canApply(kind, M.status(current, now()))) return;
+            if (!confirmation.hidden && pending?.kind === kind) {
+                (resultFields.hidden ? $('confirmBack') : resultNote).focus();
+                return;
+            }
+            dismiss();
             pending = { kind, day: current.id };
             const message = confirmations[kind] || 'Объявить итог «' + current.answers[kind] + '» и начислить выплаты?';
             $('confirmText').textContent = current.question + ' · ' + formatDate(current.date) + '. ' + message;
-            $('confirmAction').hidden = false;
-            $('confirmBack').focus();
+            confirmation.hidden = false;
+            const evidence = kind === 'void' || current.sides.includes(kind);
+            resultFields.hidden = resultFields.disabled = !evidence;
+            $('resultNoteLabel').textContent = kind === 'void' ? 'Причина отмены' : 'Что произошло';
+            resultNote.placeholder = kind === 'void' ? 'Почему нельзя определить исход' : 'Коротко опиши факт по условиям прогноза';
+            (evidence ? resultNote : $('confirmBack')).focus();
         });
         $('confirmBack').addEventListener('click', () => {
             const button = commands().find(b => b.dataset.command === pending?.kind);
             dismiss(); button?.focus();
         });
-        $('confirmGo').addEventListener('click', () => {
+        for (const field of [resultNote, resultUrl]) field.addEventListener('input', () => field.setCustomValidity(''));
+        confirmation.addEventListener('submit', async event => {
+            event.preventDefault();
             const command = pending;
-            dismiss();
-            if (command && current?.id === command.day && !disabled && canApply(command.kind, M.status(current, now()))) send(command);
+            if (!command || current?.id !== command.day || disabled || !canApply(command.kind, M.status(current, now()))) return;
+            const payload = { ...command };
+            if (!resultFields.hidden) {
+                const note = clean(resultNote.value), url = resultUrl.value.trim();
+                if (!note || note.length > M.RESULT_NOTE_LIMIT) {
+                    resultNote.setCustomValidity('Заполни короткое пояснение.'); resultNote.reportValidity(); return;
+                }
+                if (url && !M.resultSource(url)) {
+                    resultUrl.setCustomValidity('Введи ссылку целиком, начиная с https:// или http://.'); resultUrl.reportValidity(); return;
+                }
+                payload.resultNote = note;
+                if (url) payload.resultUrl = url;
+            }
+            const saved = await send(payload);
+            if (pending !== command) return;
+            if (saved) dismiss();
+            else if (document.activeElement === document.body) $('confirmGo').focus();
         });
         return { render, reset, resetForm, showSelected: () => setMode(false) };
     };

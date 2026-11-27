@@ -15,7 +15,7 @@
     <link rel="stylesheet" href="styles/buttons.css?v=20260929-2">
     <link rel="stylesheet" href="style-new.css?v=20260929-2">
     <link rel="stylesheet" href="styles/typography.css?v=20261002-1">
-    <link rel="stylesheet" href="styles/physics-forecast.css?v=20261127-workspace">
+    <link rel="stylesheet" href="styles/physics-forecast.css?v=20261127-results">
 </head>
 <body class="forecast-page" data-no-math>
     <script>window.AlmanionThemeBootstrap.applyBody();</script>
@@ -27,9 +27,9 @@
             <img class="almanion-wordmark" src="images/almanion-wordmark.svg?v=20261124-aligned-a" width="96" height="20" alt="Almanion">
         </a>
         <span class="forecast-context">Прогнозы</span>
-        <a class="forecast-admin-link" id="forecastAdminLink" href="admin.html#forecasts" hidden>
+        <a class="forecast-admin-link" id="forecastAdminLink" href="admin.html#forecasts" aria-label="Админ-панель" title="Админ-панель" hidden>
             <svg viewBox="0 0 20 20" aria-hidden="true"><rect x="3" y="3" width="5.5" height="5.5" rx="1.2"/><rect x="11.5" y="3" width="5.5" height="5.5" rx="1.2"/><rect x="3" y="11.5" width="5.5" height="5.5" rx="1.2"/><rect x="11.5" y="11.5" width="5.5" height="5.5" rx="1.2"/></svg>
-            Админ-панель
+            <span>Админ-панель</span>
         </a>
         <div class="sidebar-header-buttons"></div>
     </header>
@@ -84,15 +84,32 @@
             </div>
             <div class="forecast-event-meta">
                 <span class="forecast-state" id="roundState"></span>
+                <p class="forecast-kicker" id="lessonDate" hidden></p>
                 <time id="marketDeadline" hidden></time>
             </div>
             <h1 id="lessonQuestion">Прогнозы класса</h1>
             <div class="forecast-event-details">
                 <button type="button" id="criteriaToggle" aria-controls="eventCriteria" aria-expanded="false" hidden>Условия прогноза</button>
-                <p class="forecast-kicker" id="lessonDate" hidden></p>
+                <button class="forecast-share" type="button" id="shareForecast" hidden>
+                    <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M8 12l4-4m-7 2-1.5 1.5a3.5 3.5 0 0 0 5 5L10 15m5-5 1.5-1.5a3.5 3.5 0 0 0-5-5L10 5"/></svg>
+                    <span id="shareForecastLabel">Поделиться</span>
+                </button>
+                <span class="forecast-sr" id="shareForecastStatus" role="status"></span>
             </div>
             <p class="forecast-definition" id="eventCriteria" hidden></p>
-            <p class="forecast-notice" id="eventResult" hidden></p>
+            <section class="forecast-result" id="eventResult" aria-labelledby="eventResultTitle" tabindex="-1" hidden>
+                <div class="forecast-section-head">
+                    <h2 id="eventResultTitle"></h2>
+                    <time id="eventResultTime" hidden></time>
+                </div>
+                <p id="eventResultNote" hidden></p>
+                <a id="eventResultSource" target="_blank" rel="noopener noreferrer" hidden>Источник итога <span aria-hidden="true">↗</span></a>
+                <p id="eventResultSummary"></p>
+                <details id="eventCalculation" hidden>
+                    <summary>Мой расчёт</summary>
+                    <dl id="eventResultAmounts"></dl>
+                </details>
+            </section>
         </header>
 
         <noscript>Для прогнозов включите JavaScript в браузере.</noscript>
@@ -115,6 +132,15 @@
                         <ul id="outcomeList"></ul>
                     </section>
                     <section class="forecast-panel forecast-chart-card" id="marketChart" aria-labelledby="chartTitle" tabindex="-1">
+                    </section>
+                    <section class="forecast-panel forecast-market-tape" id="marketTape" aria-labelledby="marketTapeTitle">
+                        <div class="forecast-section-head">
+                            <h2 id="marketTapeTitle">Последние сделки</h2>
+                            <span id="marketTapeStatus" hidden>До отмены</span>
+                        </div>
+                        <p class="forecast-footnote" id="marketTapeEmpty">По этому прогнозу пока нет сделок.</p>
+                        <ol id="marketTapeList" aria-labelledby="marketTapeTitle"></ol>
+                        <button type="button" class="forecast-secondary" id="marketTapeMore" aria-controls="marketTapeList" hidden>Показать ещё</button>
                     </section>
                     <section class="forecast-panel forecast-book" id="publicOrders" aria-labelledby="bookTitle" tabindex="-1">
                         <div class="forecast-book-heading">
@@ -226,6 +252,12 @@
             </footer>
         </dialog>
         <dialog id="chartDialog" aria-labelledby="chartDialogQuestion chartTitle"></dialog>
+        <dialog id="shareForecastDialog" class="forecast-panel" aria-labelledby="shareForecastTitle">
+            <h2 id="shareForecastTitle">Ссылка на прогноз</h2>
+            <label for="shareForecastUrl">Выдели и скопируй ссылку</label>
+            <input type="url" id="shareForecastUrl" readonly>
+            <form method="dialog"><button class="forecast-secondary" type="submit">Готово</button></form>
+        </dialog>
         <dialog id="marketGuide" aria-labelledby="marketGuideTitle">
             <header class="forecast-guide-head">
                 <h2 id="marketGuideTitle" tabindex="-1" autofocus>Как устроен рынок</h2>
@@ -315,12 +347,13 @@
     <script defer src="kc-storage.js?v=20260911-1"></script>
     <script defer src="script.js?v=20260906-1"></script>
     <script defer src="settings.js?v=20261009-1"></script>
-    <script defer src="account.js?v=20261126-forecast-phone"></script>
-    <script defer src="physics-forecast-core.js?v=20261127-orders"></script>
+    <script defer src="account.js?v=20261127-forecast-inbox"></script>
+    <script defer src="physics-forecast-core.js?v=20261127-results"></script>
     <script defer src="physics-forecast-chart.js?v=20261127-market"></script>
-    <script defer src="physics-forecast-ledger.js?v=20261126-liquidity"></script>
-    <script defer src="physics-forecast-guide.js?v=20261127-market"></script>
+    <script defer src="physics-forecast-ledger.js?v=20261127-results"></script>
+    <script defer src="physics-forecast-notifications.js?v=20261127-results"></script>
+    <script defer src="physics-forecast-guide.js?v=20261127-results"></script>
     <script defer src="physics-forecast-ranking.js?v=20261127-review"></script>
-    <script defer src="physics-forecast.js?v=20261127-workspace"></script>
+    <script defer src="physics-forecast.js?v=20261127-results"></script>
 </body>
 </html>

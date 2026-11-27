@@ -22,12 +22,15 @@
     }
     const ledger = window.ForecastLedger;
     const { date, phaseLabel } = ledger;
-    let outcomesVersion = '', walletVersion = '', bookVersion = '';
+    let outcomesVersion = '', walletVersion = '', bookVersion = '', tapeVersion = '';
     let engine = M.create(), readLedger = ledger.createReader(), selectedId = '', user = null, connected = false, offset = 0, ready = false, busy = false;
     let epoch = 0, clock = 0, connectionTimer, feedOff, pendingSnapshot, historyLimit = 12, ticket = null;
     const review = $('tradeReview'), sheet = $('tradeSheet'), tradeForm = $('tradeForm'), tradeTicket = $('tradeTicket');
     let reviewedOrder = null, receivedOrder = '', sheetOrigin = null;
     let orderLimit = 12;
+    const initialTapeLimit = 3;
+    let tapeLimit = initialTapeLimit;
+    let pendingDestination = true, shareTimer, shareOrigin;
     let firstPaint = true, renderedToday = '', nextClose = Infinity;
     let buyQuantity = '5';
     const api = window.AlmanionAccount;
@@ -113,12 +116,22 @@
     wallet.addEventListener('toggle', updateJumps);
     document.addEventListener('click', event => {
         const target = event.target;
-        if (target.closest('a[href="#portfolio"]') && !wallet.hidden
-            && !event.ctrlKey && !event.metaKey && !event.shiftKey && !event.altKey) {
+        const jump = target.closest('#forecastJumps a, .forecast-portfolio-jumps a');
+        const ordinaryClick = !event.ctrlKey && !event.metaKey && !event.shiftKey && !event.altKey;
+        if (target.closest('a[href="#portfolio"]') && !wallet.hidden && ordinaryClick) {
             event.preventDefault();
             if (location.hash !== '#portfolio') history.pushState(history.state, '', '#portfolio');
             wallet.open = true;
             walletToggle.focus({ preventScroll: true });
+        } else if (ordinaryClick && jump && !jumpBar.hidden) {
+            const destination = $(jump.hash.slice(1));
+            if (jump.hidden || !destination || destination.closest('[hidden]')) return;
+            event.preventDefault();
+            wallet.open = false;
+            if (location.hash !== jump.hash) history.pushState(history.state, '', jump.hash);
+            if (!event.detail) destination.focus({ preventScroll: true });
+            destination.scrollIntoView({ block: 'start', behavior: 'instant' });
+            updateJumps();
         } else if (wallet.open && (!wallet.contains(target) || target.closest('.forecast-portfolio-jumps a'))) {
             wallet.open = false;
         }
@@ -268,11 +281,18 @@
         $('feedback').textContent = text;
     }
 
+    function publishNoticeFeed(status) {
+        window.dispatchEvent(new CustomEvent('almanion-forecast-feed', {
+            detail: { uid: user?.uid, engine: status === 'ready' ? engine : undefined, status }
+        }));
+    }
+
     function syncSnapshot(snapshot) {
         engine = readLedger(snapshot);
         ready = true;
         ranking.update(engine, user);
         paint();
+        publishNoticeFeed('ready');
     }
 
     function clearMarket() {
@@ -280,7 +300,11 @@
         if (review.open) review.close();
         reviewedOrder = null; receivedOrder = '';
         closeTradeSheet(false);
-        outcomesVersion = walletVersion = bookVersion = '';
+        outcomesVersion = walletVersion = bookVersion = tapeVersion = '';
+        pendingDestination = true;
+        tapeLimit = initialTapeLimit;
+        $('eventCalculation').open = false;
+        resetShare();
         for (const id of ['walletBalances', 'walletEventOrders', 'walletOtherList', 'walletFinishedList']) $(id).replaceChildren();
         if (feedOff) feedOff();
         feedOff = undefined;
@@ -290,29 +314,39 @@
         resetDraft(); expandBook(false); toggleCriteria(false);
         $('forecastAdminLink').href = 'admin.html#forecasts';
         $('feedback').textContent = $('orderFeedback').textContent = '';
+        for (const id of ['eventResultTitle', 'eventResultTime', 'eventResultNote', 'eventResultSummary', 'eventResultAmounts', 'walletOutcome']) $(id).replaceChildren();
+        $('eventResultSource').removeAttribute('href');
+        $('eventResultTime').removeAttribute('datetime');
         if (eventDialog.open) eventDialog.close();
         eventList.replaceChildren();
         eventListVersion = '';
-        for (const id of ['outcomeList', 'tradeHistory', 'myOrders', 'orderHistory', 'bookAsks', 'bookBids']) $(id).replaceChildren();
+        for (const id of ['outcomeList', 'tradeHistory', 'myOrders', 'orderHistory', 'bookAsks', 'bookBids', 'marketTapeList']) $(id).replaceChildren();
     }
 
     function subscribe() {
         gate('Загружаем рынок…', 'Получаем заявки и сделки класса.');
         const session = epoch;
         connectionTimer = setTimeout(() => {
-            if (session === epoch && !ready) gate('Нет ответа сервера', 'Продолжим, как только появится подключение.', 'retry');
+            if (session === epoch && !ready) {
+                gate('Нет ответа сервера', 'Продолжим, как только появится подключение.', 'retry');
+                publishNoticeFeed('error');
+            }
         }, 8000);
         const query = api.database.ref('physicsForecast/events').orderByChild('n');
         const loaded = snapshot => {
             if (session !== epoch) return;
             if (busy) { pendingSnapshot = snapshot; return; }
             try { syncSnapshot(snapshot); }
-            catch { clearMarket(); gate('Не удалось прочитать рынок', 'Обнови данные, чтобы продолжить.', 'retry'); }
+            catch {
+                clearMarket(); gate('Не удалось прочитать рынок', 'Обнови данные, чтобы продолжить.', 'retry');
+                publishNoticeFeed('error');
+            }
         };
         feedOff = () => query.off('value', loaded);
         query.on('value', loaded, () => {
             if (session !== epoch) return;
             clearMarket(); gate('Рынок недоступен', 'Проверь подключение и доступ к игре.', 'retry');
+            publishNoticeFeed('error');
         });
     }
 
@@ -428,13 +462,40 @@
         moreBookLevels.textContent = expanded ? 'Свернуть уровни цен' : 'Все уровни цен';
     }
 
-    function renderHistory(m) {
-        const trades = m.trades.filter(t => t.taker === user.uid || t.maker === user.uid).reverse();
-        const rows = trades.slice(0, historyLimit).map(t => {
-            const isMaker = t.maker === user.uid;
-            const side = isMaker ? t.makerSide : t.side;
-            const action = isMaker ? t.makerAction : t.action;
-            const price = isMaker ? t.makerPrice : t.price;
+    function renderMarketTape(m) {
+        const last = m.trades.slice(-tapeLimit).reverse();
+        const version = JSON.stringify([m.id, m.phase, m.trades.length, tapeLimit,
+            last.map(({ at, side, qty, price }) => [at, side, qty, price])]);
+        if (version === tapeVersion) return;
+        tapeVersion = version;
+        $('marketTapeList').replaceChildren(...last.map(trade => {
+            const row = node('li'), time = node('time', stampFmt.format(trade.at) + ' мск');
+            row.dataset.outcome = trade.side;
+            row.style.setProperty('--outcome', 'var(--' + trade.side + ')');
+            time.dateTime = new Date(trade.at).toISOString();
+            const outcome = node('strong', m.answers[trade.side], 'forecast-tape-outcome');
+            const price = node('b', points(trade.price), 'forecast-tape-price');
+            price.title = 'Цена одной доли';
+            row.append(outcome, price, time, node('small', shares(trade.qty)));
+            return row;
+        }));
+        $('marketTapeStatus').hidden = m.phase !== 'void' || !last.length;
+        $('marketTapeEmpty').hidden = Boolean(last.length);
+        $('marketTapeMore').hidden = m.trades.length <= initialTapeLimit;
+        $('marketTapeMore').textContent = tapeLimit >= m.trades.length ? 'Свернуть' : 'Показать ещё';
+    }
+
+    $('marketTapeMore').addEventListener('click', () => {
+        const m = market();
+        const collapse = tapeLimit >= m.trades.length;
+        tapeLimit = collapse ? initialTapeLimit : Math.min(m.trades.length, tapeLimit + 10);
+        renderMarketTape(m);
+        if (collapse) $('marketTapeMore').scrollIntoView({ block: 'nearest' });
+    });
+
+    function renderHistory(m, trades = M.participantTrades(m, user.uid)) {
+        const rows = trades.slice(-historyLimit).reverse().map(t => {
+            const { action, side, price } = t;
             const row = node('div', undefined, 'forecast-row');
             const info = node('div'); info.append(node('b', (action === 'buy' ? 'Покупка' : 'Продажа') + ' · ' + m.answers[side]),
                 node('small', stampFmt.format(t.at) + ' мск · ' + shares(t.qty) + ' по ' + points(price)));
@@ -631,21 +692,55 @@
         showEstimate(order, plan, free, unusedLimit);
     }
 
-    function settlementText(m, phase, pos) {
+    function settlementText(phase, result) {
         if (phase === 'lock') return 'Торги завершены. Ждём объявления результата.';
         if (phase === 'void') {
-            if (pos.cash < 0) return 'Возвращено ' + points(-pos.cash);
-            if (pos.cash > 0) return 'Отменён доход по событию · ' + points(pos.cash);
+            if (result.refund) return 'Возвращено ' + points(result.refund);
+            if (result.reversed) return 'Отменён доход по событию · ' + points(result.reversed);
             return 'Баланс по событию восстановлен.';
         }
-        if (m.sides.includes(phase)) {
-            const payout = pos[phase] * 100, net = pos.cash + payout;
-            return 'Выплата ' + points(payout) + ' · результат ' + (net > 0 ? '+' : '') + points(net);
-        }
+        if (result) return 'Выплата ' + points(result.payout) + ' · результат ' + signedPoints(result.net);
         return '';
     }
+    const signedPoints = value => (value > 0 ? '+' : '') + points(value);
 
-    function walletHoldings({ item, phase, pos, reserve }) {
+    function renderResult(m, phase, trades) {
+        const { note, url, at } = m.resolution || {}, result = M.settlement(m, user.uid);
+        const winner = m.answers[phase];
+        $('eventResultTitle').textContent = winner ? 'Итог · ' + winner : phaseLabel(m, phase);
+        $('eventResultSummary').textContent = result && !trades.length ? 'У тебя не было сделок по этому прогнозу.'
+            : settlementText(phase, result);
+        const detail = $('eventResultNote'), source = $('eventResultSource'), calculation = $('eventCalculation');
+        detail.textContent = note || '';
+        detail.hidden = !note;
+        source.hidden = !url;
+        if (url) source.href = url;
+        else source.removeAttribute('href');
+        const resolvedAt = $('eventResultTime');
+        resolvedAt.hidden = at === undefined;
+        if (at !== undefined) {
+            resolvedAt.dateTime = new Date(at).toISOString();
+            resolvedAt.textContent = stampFmt.format(at) + ' мск';
+        }
+        calculation.hidden = !result || !trades.length;
+        if (calculation.hidden) return;
+        let spent = 0, earned = 0;
+        for (const trade of trades) {
+            if (trade.action === 'buy') spent += trade.qty * trade.price;
+            else earned += trade.qty * trade.price;
+        }
+        const rows = [['Потрачено на покупки', points(spent)], ['Получено от продаж', points(earned)]];
+        if (winner) rows.push(['Выигравшие доли', shares(result.qty)], ['Выплата за доли', points(result.payout)]);
+        else rows.push(result.reversed ? ['Возвращено из дохода', points(result.reversed)] : ['Возврат на баланс', points(result.refund)]);
+        rows.push(['Результат по прогнозу', signedPoints(result.net)]);
+        $('eventResultAmounts').replaceChildren(...rows.map(([term, value]) => {
+            const row = node('div');
+            row.append(node('dt', term), node('dd', value));
+            return row;
+        }));
+    }
+
+    function walletHoldings({ item, phase, pos, reserve, sales }) {
         if (phase !== 'open' && phase !== 'lock') return [];
         return item.sides.filter(side => pos[side] > 0).map(side => {
             const holding = node('div'), value = node('dd'), quantity = node('span', String(pos[side]));
@@ -653,15 +748,25 @@
             holding.style.setProperty('--outcome', 'var(--' + side + ')');
             if (item.id === selectedId) quantity.id = 'wallet' + suffix(side);
             value.append(quantity, node('small', ' ' + shareForms[plurals.select(pos[side])]));
-            if (phase === 'open' && pos[side] > reserve[side]) {
-                const sell = node('button', 'Продать');
-                sell.type = 'button'; sell.dataset.sell = side; sell.dataset.market = item.id;
-                sell.setAttribute('aria-label', 'Продать доли «' + item.answers[side] + '»');
-                sell.disabled = busy || !connected;
-                value.append(sell);
-            }
             holding.append(node('dt', item.answers[side]), value);
             if (reserve[side]) holding.append(node('dd', 'В продаже ' + shares(reserve[side]), 'forecast-reserve'));
+            if (phase === 'open' && pos[side] > reserve[side]) {
+                const quote = sales[side];
+                const sell = node('button', quote?.error === 'own' ? 'К встречной заявке' : !connected || quote?.qty ? 'Продать' : 'Выставить заявку');
+                sell.type = 'button'; sell.dataset.sell = side; sell.dataset.market = item.id;
+                sell.setAttribute('aria-label', sell.textContent === 'Продать'
+                    ? 'Продать доли «' + item.answers[side] + '»' : sell.textContent + ' · ' + item.answers[side]);
+                sell.disabled = busy || !connected;
+                const estimate = node('dd', undefined, 'forecast-sale-estimate');
+                const label = !quote ? 'Оценка недоступна без связи'
+                    : quote.qty ? (quote.qty === quote.free ? 'Сразу · ' + shares(quote.qty) : 'Сразу · ' + quote.qty + ' из ' + quote.free + ' долей')
+                    : quote.error === 'own' ? 'Сначала сними встречную заявку' : 'Сейчас нет покупателей';
+                estimate.append(node('small', label));
+                if (quote?.qty) estimate.append(node('strong', '≈ ' + points(quote.cash)));
+                const action = node('dd', undefined, 'forecast-sale-action');
+                action.append(sell);
+                holding.append(estimate, action);
+            }
             return holding;
         });
     }
@@ -678,14 +783,14 @@
     }
 
     function walletGroup(entry) {
-        const { item, phase, pos } = entry;
+        const { item, phase } = entry;
         const group = node('section', undefined, 'forecast-wallet-event');
         const holdings = node('dl'), orders = node('div', undefined, 'forecast-wallet-orders');
         const open = node('button', 'Открыть событие');
         open.type = 'button'; open.dataset.walletEvent = item.id; open.disabled = busy;
         holdings.append(...walletHoldings(entry)); orders.append(...walletOrderButtons(entry));
         group.append(node('h4', item.question), holdings,
-            node('p', settlementText(item, phase, pos), 'forecast-footnote'), orders, open);
+            node('p', settlementText(phase, M.settlement(item, user.uid)), 'forecast-footnote'), orders, open);
         return group;
     }
 
@@ -693,7 +798,13 @@
         const entries = markets.map(item => {
             const phase = M.status(item, at), pos = M.position(item, user.uid), reserve = M.held(item, user.uid, at);
             const orders = phase === 'open' ? item.orders.filter(order => order.actor === user.uid) : [];
-            return { item, phase, pos, reserve, orders };
+            const sales = {};
+            if (phase === 'open' && connected) {
+                for (const side of item.sides) {
+                    if (pos[side] > reserve[side]) sales[side] = M.instantSale(engine, item, user.uid, side, at);
+                }
+            }
+            return { item, phase, pos, reserve, orders, sales };
         });
         const current = entries.find(({ item }) => item.id === selectedId);
         const active = [], finished = [];
@@ -707,9 +818,8 @@
         $('walletCash').textContent = points(M.available(engine, user.uid, selectedId, at));
         $('walletHeld').textContent = points(entries.reduce((sum, { reserve }) => sum + reserve.cash, 0));
         $('walletOrderCount').textContent = fmt.format(current.orders.length);
-        $('eventResult').textContent = settlementText(current.item, current.phase, current.pos);
-        const version = JSON.stringify([selectedId, busy, connected, [current, ...active, ...finished].map(({ item, phase, pos, reserve, orders }) =>
-            [item.id, phase, pos, reserve, orders])]);
+        const version = JSON.stringify([selectedId, busy, connected, [current, ...active, ...finished].map(({ item, phase, pos, reserve, orders, sales }) =>
+            [item.id, phase, pos, reserve, orders, sales])]);
         if (walletVersion === version) return;
         walletVersion = version;
         const focused = wallet.contains(document.activeElement) ? document.activeElement.dataset : null;
@@ -717,7 +827,7 @@
         $('walletEventTitle').textContent = current.item.question;
         $('walletBalances').replaceChildren(...holdings);
         $('walletEmpty').hidden = holdings.length > 0 || !['open', 'lock'].includes(current.phase);
-        $('walletOutcome').textContent = $('eventResult').textContent;
+        $('walletOutcome').textContent = settlementText(current.phase, M.settlement(current.item, user.uid));
         $('walletEventOrders').replaceChildren(...walletOrderButtons(current));
         $('walletOtherEvents').hidden = !active.length;
         $('walletOtherList').replaceChildren(...active.map(walletGroup));
@@ -838,6 +948,66 @@
         $('eventCriteria').textContent = m?.criteria || '';
         $('eventCriteria').hidden = !m?.criteria || $('criteriaToggle').getAttribute('aria-expanded') !== 'true';
         $('criteriaToggle').hidden = !m?.criteria;
+        $('shareForecast').hidden = !m;
+    }
+
+    function resetShare() {
+        clearTimeout(shareTimer);
+        shareOrigin = null;
+        $('shareForecastLabel').textContent = 'Поделиться';
+        $('shareForecastStatus').textContent = '';
+        if ($('shareForecastDialog').open) $('shareForecastDialog').close();
+        $('shareForecastUrl').value = '';
+    }
+
+    $('shareForecast').addEventListener('click', async () => {
+        const m = market();
+        if (!m) return;
+        const base = location.protocol === 'file:' ? 'https://almanion.github.io/' : location.href;
+        const url = ledger.eventUrl(base, m.id).href;
+        try {
+            await navigator.clipboard.writeText(url);
+            if (m !== market()) return;
+            clearTimeout(shareTimer);
+            $('shareForecastLabel').textContent = 'Скопировано';
+            $('shareForecastStatus').textContent = 'Ссылка на прогноз скопирована.';
+            shareTimer = setTimeout(resetShare, 2400);
+        } catch {
+            if (m !== market()) return;
+            resetShare();
+            const input = $('shareForecastUrl');
+            input.value = url;
+            shareOrigin = m;
+            $('shareForecastDialog').showModal();
+            input.focus();
+            input.select();
+        }
+    });
+    $('shareForecastDialog').addEventListener('close', () => {
+        if ($('shareForecastDialog').open) return;
+        if (shareOrigin && shareOrigin === market()) $('shareForecast').focus({ preventScroll: true });
+        shareOrigin = null;
+    });
+
+    function followDestination(m) {
+        if (!pendingDestination) return;
+        pendingDestination = false;
+        const { hash, searchParams } = new URL(location.href);
+        const order = searchParams.get('order');
+        const anchor = $(hash === '#tradeTicket' ? 'marketOutcomes' : hash.slice(1));
+        const orderLink = hash === '#orderListTitle' && Boolean(order);
+        const resultLink = hash === '#eventResult';
+        if (!anchor || anchor.closest('[hidden]')) return;
+        requestAnimationFrame(() => {
+            if (market() !== m || location.hash !== hash || anchor.closest('[hidden]')) return;
+            if (orderLink) openOrderHistory(order);
+            else if (resultLink) {
+                const calculation = $('eventCalculation');
+                if (!calculation.hidden) calculation.open = true;
+                anchor.focus({ preventScroll: true });
+                anchor.scrollIntoView({ block: 'start' });
+            } else if (phone.matches && $('roundBody').contains(anchor)) anchor.scrollIntoView({ block: 'start' });
+        });
     }
 
     function paint() {
@@ -845,10 +1015,8 @@
         $('rankOpen').hidden = false;
         $('accessGate').hidden = true; $('gameSurface').hidden = false; $('connectionNotice').hidden = connected;
         const at = now(), markets = ledger.orderedMarkets(engine, at);
-        if (!engine.markets.has(selectedId)) {
-            const requested = new URLSearchParams(location.search).get('event');
-            selectedId = engine.markets.has(requested) ? requested : markets[0]?.id || '';
-        }
+        const requested = new URLSearchParams(location.search).get('event');
+        if (!engine.markets.has(selectedId)) selectedId = requested === null ? markets[0]?.id || '' : requested;
         const m = market();
         renderedToday = M.dayKey(at);
         nextClose = Infinity;
@@ -863,13 +1031,15 @@
         }
         renderHeading(m);
         $('emptyRound').hidden = !!m; $('roundBody').hidden = !m; jumpBar.hidden = !m;
+        $('emptyRound').textContent = requested === null ? 'Открытых и завершённых прогнозов пока нет.'
+            : markets.length ? 'Прогноз по этой ссылке не найден. Выбери другой в разделе «События».' : 'Прогноз по этой ссылке не найден.';
         const walletWasHidden = wallet.hidden;
         wallet.hidden = !m;
         if (!m) wallet.open = false;
         else if (walletWasHidden) applyWalletHash();
         if (wallet.hidden !== walletWasHidden) updateWalletSize();
         const phase = m ? M.status(m, at) : '';
-        guide.setMarket(m, m ? phase : 'empty');
+        guide.setMarket(m, m ? phase : 'empty', requested === null);
         $('roundState').textContent = phaseLabel(m, phase); $('roundState').dataset.state = phase;
         $('marketDeadline').hidden = !m || phase !== 'open';
         if (phase === 'open') {
@@ -883,17 +1053,16 @@
         if (!m) { chart.reset(); return; }
         $('roundSummary').textContent = phase === 'open' ? '' : phase === 'lock' ? 'Торги закрыты. Ждём итог события.' : phaseLabel(m, phase) + '.';
         renderOutcomes(m, phase); chart.update(m, connected);
-        renderTicket(); renderBook(m, phase); renderWallet(markets, at); renderOrders(m, phase); renderHistory(m);
+        const trades = M.participantTrades(m, user.uid);
+        if (phase !== 'open') renderResult(m, phase, trades);
+        renderTicket(); renderBook(m, phase); renderMarketTape(m); renderWallet(markets, at); renderOrders(m, phase); renderHistory(m, trades);
         renderReceipt(m, phase);
         if (reviewedOrder && !sameReview()) invalidateReview();
         updateJumps();
         if (firstPaint) {
             firstPaint = false; $('gameSurface').classList.add('forecast-enter');
-            const anchor = $(location.hash === '#tradeTicket' ? 'marketOutcomes' : location.hash.slice(1));
-            if (phone.matches && anchor && !anchor.closest('[hidden]') && $('roundBody').contains(anchor)) {
-                requestAnimationFrame(() => anchor.scrollIntoView({ block: 'start' }));
-            }
         }
+        followDestination(m);
     }
 
     async function send(command) {
@@ -931,13 +1100,18 @@
     }
 
     function selectMarket(key, record = true) {
-        if (!engine.markets.has(key)) return;
+        if (record && !engine.markets.has(key)) return;
         selectedId = key; historyLimit = 12;
+        tapeLimit = initialTapeLimit;
+        $('eventCalculation').open = false;
+        resetShare();
         const url = new URL(location.href);
         if (review.open) review.close();
         closeTradeSheet(false);
         if (record && url.searchParams.get('event') !== key && /^https?:$/.test(url.protocol)) {
             url.searchParams.set('event', key);
+            url.searchParams.delete('order');
+            if (url.hash !== '#portfolio') url.hash = '';
             history.pushState(history.state, '', url);
         }
         resetDraft(); expandBook(false); toggleCriteria(false);
@@ -946,9 +1120,13 @@
     }
     window.addEventListener('popstate', () => {
         if (!ready) return;
-        const requested = new URL(location.href).searchParams.get('event');
-        const key = engine.markets.has(requested) ? requested : ledger.orderedMarkets(engine, now())[0]?.id;
-        if (key && key !== selectedId) selectMarket(key, false);
+        const { hash, searchParams } = new URL(location.href);
+        const requested = searchParams.get('event');
+        const key = requested ?? ledger.orderedMarkets(engine, now())[0]?.id ?? '';
+        pendingDestination = true;
+        if (key !== selectedId) selectMarket(key, false);
+        else if (hash === '#eventResult' || (hash === '#orderListTitle' && searchParams.has('order'))) followDestination(market());
+        else pendingDestination = false;
     });
     function selectedOutcome() {
         return $('outcomeList').querySelector('[aria-current="true"]') || $('marketOutcomes');
@@ -998,7 +1176,7 @@
         updateTradeViewport();
     }
 
-    function tradeSide(side, trigger, { action, price } = {}) {
+    function tradeSide(side, trigger, { action, price, qty, limit = false } = {}) {
         const m = market(), phase = m && M.status(m, now());
         if (!m?.sides.includes(side) || phase !== 'open' || busy) return;
         const fields = tradeForm.elements;
@@ -1006,8 +1184,9 @@
         if (changed || action) {
             fields.action.value = action || 'buy';
             fields.side.value = side;
-            fields.execution.value = price === undefined ? 'market' : 'limit';
-            $('quantity').value = fields.action.value === 'sell' ? '1' : buyQuantity;
+            fields.execution.value = price !== undefined || limit ? 'limit' : 'market';
+            $('quantity').value = fields.action.value === 'sell' ? String(qty || 1) : buyQuantity;
+            if (limit && price === undefined) suggestPrice();
         }
         if (price !== undefined) {
             $('limitPrice').value = priceInput(price);
@@ -1101,7 +1280,13 @@
         const id = eventId || walletEvent;
         const changed = id !== selectedId;
         if (changed) selectMarket(id);
-        if (sell) tradeSide(sell, changed ? null : walletToggle, { action: 'sell' });
+        if (sell) {
+            const m = market();
+            if (!m || !connected || M.status(m, now()) !== 'open') return;
+            const quote = M.instantSale(engine, m, user.uid, sell, now());
+            if (quote.error === 'own') openOrderHistory(M.ranked(m, 'bid', sell)[0]?.id);
+            else tradeSide(sell, changed ? null : walletToggle, { action: 'sell', qty: quote.qty, limit: !quote.qty });
+        }
         else if (walletOrder) openOrderHistory(walletOrder);
         else {
             $('marketOutcomes').focus({ preventScroll: true });
@@ -1209,5 +1394,10 @@
     clock = window.setInterval(tick, 1000);
     document.addEventListener('visibilitychange', tick);
     window.addEventListener('pagehide', () => clearInterval(clock));
-    window.addEventListener('pageshow', e => { if (e.persisted) { tick(); clock = window.setInterval(tick, 1000); } });
+    window.addEventListener('pageshow', e => {
+        if (!e.persisted) return;
+        tick();
+        clock = window.setInterval(tick, 1000);
+        if (ready) publishNoticeFeed('ready');
+    });
 }());

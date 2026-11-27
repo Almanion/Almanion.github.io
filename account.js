@@ -51,6 +51,10 @@
     let reviewPanel = null;
     let reviewAssets = null;
     let reviewCount = 0;
+    let notificationUid = '';
+    let forecastAssets, forecastWatch, forecastPresenceOff, marketNoticeFeed;
+    let forecastParticipant = false, forecastPresenceKnown = false;
+    const isForecastPage = () => document.body?.classList.contains('forecast-page');
     const appleEnabled = typeof appleAuthEnabled !== 'undefined' && appleAuthEnabled === true
         && typeof firebase.auth.OAuthProvider === 'function';
 
@@ -273,6 +277,7 @@
         if (anchor) container.insertBefore(btn, anchor);
         else container.appendChild(btn);
         updateButton();
+        if (isForecastPage()) mountReviewPanel();
     }
 
     function updateButton() {
@@ -281,10 +286,11 @@
         btn.classList.toggle('is-loading', !authStateKnown);
         if (user) {
             const name = identity.nickname || user.displayName || user.email || '';
+            const forecastCount = reviewSources.forecast?.count || 0;
             btn.classList.add('signed-in');
             btn.title = name || 'Аккаунт';
             btn.setAttribute('aria-label', 'Аккаунт: ' + (name || 'вошли') +
-                (reviewCount && !reviewPanel?.bell.isConnected ? '. Версий на проверке: ' + reviewCount : ''));
+                (reviewCount && !reviewPanel?.bell.isConnected ? (forecastCount ? '. Уведомления: ' : '. Версий на проверке: ') + reviewCount : ''));
             btn.innerHTML = avatarMarkup(identity, name);
             if (reviewCount && !reviewPanel?.bell.isConnected) {
                 const count = document.createElement('span');
@@ -306,6 +312,8 @@
     }
 
     function updateReviewLink() {
+        const forecastLink = document.getElementById('accountForecastInbox');
+        if (forecastLink) forecastLink.textContent = reviewCount ? 'Уведомления · ' + reviewCount : 'Уведомления';
         const link = document.getElementById('accountReviewLink');
         if (!link) return;
         const onlyArt = reviewSources.art?.count && !reviewSources.notes?.count;
@@ -317,8 +325,8 @@
     }
 
     function showReviewCounts() {
-        if (reviewPanel && reviewOwnerUid) reviewPanel.update(reviewSources);
-        const count = (reviewSources.notes?.count || 0) + (reviewSources.art?.count || 0);
+        if (reviewPanel && notificationUid) reviewPanel.update(reviewSources);
+        const count = Object.values(reviewSources).reduce((sum, source) => sum + source.count, 0);
         if (reviewCount !== count) {
             reviewCount = count;
             updateButton();
@@ -326,20 +334,24 @@
         updateReviewLink();
     }
 
+    function loadNotificationAsset(node) {
+        return new Promise((resolve, reject) => {
+            const fail = () => { clearTimeout(timeout); node.remove(); reject(Error('Notification asset unavailable')); };
+            const timeout = setTimeout(fail, 12000);
+            node.onload = () => { clearTimeout(timeout); resolve(); };
+            node.onerror = fail;
+            document.head.append(node);
+        });
+    }
+
     function loadReviewAssets() {
         if (reviewAssets) return reviewAssets;
         const script = document.createElement('script');
-        script.src = new URL('account-notifications.js?v=20261126-1', profileUrl).href;
+        script.src = new URL('account-notifications.js?v=20261127-forecast-inbox', profileUrl).href;
         const css = document.createElement('link');
         css.rel = 'stylesheet';
-        css.href = new URL('styles/account-notifications.css?v=20261126-1', profileUrl).href;
-        // The review panel is only used by the owner. Other accounts retain the existing account payload.
-        const load = node => new Promise((resolve, reject) => {
-            node.onload = resolve;
-            node.onerror = reject;
-            document.head.append(node);
-        });
-        reviewAssets = Promise.all([load(css), load(script)])
+        css.href = new URL('styles/account-notifications.css?v=20261127-forecast-inbox', profileUrl).href;
+        reviewAssets = Promise.all([loadNotificationAsset(css), loadNotificationAsset(script)])
             .then(() => {
                 if (!window.AlmanionAccountNotifications?.create) throw new Error('Review panel unavailable');
                 return true;
@@ -354,25 +366,126 @@
     }
 
     function mountReviewPanel() {
-        if (!reviewOwnerUid || typeof HTMLDialogElement === 'undefined' || !HTMLDialogElement.prototype.showModal) return;
-        loadReviewAssets().then(loaded => {
-            if (!loaded || !reviewOwnerUid || !isReviewOwner(user)) return;
+        const uid = notificationUid;
+        if (!uid || (!reviewOwnerUid && !reviewSources.forecast) || !canShowNotifications()) return Promise.resolve(null);
+        return loadReviewAssets().then(loaded => {
+            if (!loaded || notificationUid !== uid) return null;
             if (!reviewPanel) reviewPanel = window.AlmanionAccountNotifications.create({
                 baseUrl: profileUrl,
                 retry() {
                     for (const kind of Object.keys(reviewPaths)) {
-                        if (reviewSources[kind].status === 'error') watchReviewSource(kind);
+                        if (reviewSources[kind]?.status === 'error') watchReviewSource(kind);
                     }
+                    if (reviewSources.forecast?.status === 'error') retryForecastNotices();
+                },
+                markForecast(id, afterClick) {
+                    forecastWatch?.inbox?.mark(id, afterClick);
                 }
             });
-            const homeControls = document.getElementById('homeControls');
-            if (homeControls && !reviewPanel.bell.isConnected) {
-                const accountButton = homeControls.querySelector('#accountBtn');
-                homeControls.insertBefore(reviewPanel.bell, accountButton);
+            const controls = isForecastPage() ? document.querySelector('.forecast-header .sidebar-header-buttons')
+                : (reviewOwnerUid || forecastParticipant) && document.getElementById('homeControls');
+            if (controls && !reviewPanel.bell.isConnected) {
+                controls.insertBefore(reviewPanel.bell, controls.querySelector('#accountBtn'));
             }
             showReviewCounts();
             updateButton();
+            return reviewPanel;
         });
+    }
+
+    function canShowNotifications() {
+        return typeof HTMLDialogElement !== 'undefined' && typeof HTMLDialogElement.prototype.showModal === 'function';
+    }
+
+    const forecastNoticeState = status => ({ status, count: 0, entries: [] });
+
+    function loadForecastAssets() {
+        if (window.ForecastNotifications) return Promise.resolve();
+        if (!forecastAssets) {
+            forecastAssets = (async () => {
+                for (const [name, file] of [['PhysicsForecast', 'physics-forecast-core.js'],
+                    ['ForecastLedger', 'physics-forecast-ledger.js'], ['ForecastNotifications', 'physics-forecast-notifications.js']]) {
+                    if (window[name]) continue;
+                    const script = document.createElement('script');
+                    script.src = new URL(file + '?v=20261127-results', profileUrl).href;
+                    await loadNotificationAsset(script);
+                }
+            })().catch(error => { forecastAssets = null; throw error; });
+        }
+        return forecastAssets;
+    }
+
+    function startForecastNotices() {
+        if (!notificationUid || forecastWatch) return;
+        const uid = notificationUid, watch = {};
+        forecastWatch = watch;
+        const current = () => forecastWatch === watch && notificationUid === uid;
+        reviewSources.forecast = forecastNoticeState('loading');
+        mountReviewPanel();
+        loadForecastAssets().then(() => {
+            if (!current()) return;
+            watch.inbox = window.ForecastNotifications.create({ uid, baseUrl: profileUrl, read: sGet, write: sSet, changed(source) {
+                if (!current()) return;
+                reviewSources.forecast = source;
+                showReviewCounts();
+            } });
+            if (isForecastPage()) {
+                if (marketNoticeFeed?.uid === uid) watch.inbox.update(marketNoticeFeed.engine, marketNoticeFeed.status);
+                return;
+            }
+            const query = db.ref('physicsForecast/events').orderByChild('n');
+            const read = window.ForecastLedger.createReader();
+            const fail = () => { if (current()) watch.inbox.update(undefined, 'error'); };
+            const timeout = setTimeout(fail, 10000);
+            const receive = snapshot => {
+                if (!current()) return;
+                clearTimeout(timeout);
+                try { watch.inbox.update(read(snapshot)); } catch { fail(); }
+            };
+            watch.detach = () => { clearTimeout(timeout); query.off('value', receive); };
+            query.on('value', receive, () => { clearTimeout(timeout); fail(); });
+        }).catch(() => {
+            if (!current()) return;
+            reviewSources.forecast = forecastNoticeState('error');
+            showReviewCounts();
+        });
+    }
+
+    function stopForecastNotices() {
+        const watch = forecastWatch;
+        forecastWatch = null;
+        watch?.detach?.();
+        watch?.inbox?.stop();
+    }
+
+    function retryForecastNotices() {
+        if (isForecastPage() && marketNoticeFeed?.status === 'error') { location.reload(); return; }
+        stopForecastNotices();
+        startForecastNotices();
+    }
+
+    window.addEventListener('almanion-forecast-feed', event => {
+        const feed = event.detail;
+        if (!feed || feed.uid !== notificationUid) return;
+        marketNoticeFeed = feed;
+        forecastWatch?.inbox?.update(feed.engine, feed.status);
+    });
+
+    function watchForecastPresence(uid) {
+        // One per-user key avoids replaying the market on unrelated pages for people who have never traded.
+        const ref = db.ref('physicsForecast/lastBy/' + uid);
+        const receive = snapshot => {
+            if (uid !== notificationUid) return;
+            forecastPresenceKnown = true;
+            if (!snapshot.val?.()) return;
+            forecastParticipant = true;
+            forecastPresenceOff?.();
+            forecastPresenceOff = null;
+            startForecastNotices();
+            mountReviewPanel();
+        };
+        forecastPresenceOff = () => ref.off('value', receive);
+        ref.on?.('value', receive, () => {});
     }
 
     function announceReview(kind) {
@@ -437,21 +550,34 @@
         showReviewCounts();
     }
 
-    function watchReviewInbox(account) {
+    function watchNotificationInbox(account) {
+        const uid = account?.uid || '';
+        if (notificationUid === uid) return;
         const ownerUid = isReviewOwner(account) ? account.uid : '';
-        if (reviewOwnerUid === ownerUid) return;
+        notificationUid = uid;
         reviewOwnerUid = ownerUid;
         for (const stop of reviewWatches.values()) stop();
         reviewWatches.clear();
-        for (const kind of Object.keys(reviewPaths)) reviewSources[kind] = { status: 'loading', count: 0, entries: [] };
+        forecastPresenceOff?.();
+        forecastPresenceOff = null;
+        stopForecastNotices();
+        forecastParticipant = forecastPresenceKnown = false;
+        marketNoticeFeed = null;
+        for (const kind of Object.keys(reviewSources)) delete reviewSources[kind];
         const announcement = document.getElementById('accountReviewAnnouncement');
         announcement?.remove();
         reviewPanel?.reset();
         reviewPanel = null;
         showReviewCounts();
-        if (!ownerUid) return;
-        for (const kind of Object.keys(reviewPaths)) watchReviewSource(kind);
-        mountReviewPanel();
+        if (!uid) return;
+        if (ownerUid) {
+            for (const kind of Object.keys(reviewPaths)) watchReviewSource(kind);
+            mountReviewPanel();
+        }
+        if (canShowNotifications()) {
+            if (isForecastPage()) startForecastNotices();
+            else watchForecastPresence(uid);
+        }
     }
 
     function onAccountClick() {
@@ -890,7 +1016,8 @@
                 '<div class="account-error" id="accError" hidden></div>' +
                 '<a class="auth-submit account-editor-link" id="accProfile">Мой профиль</a>' +
                 '<div class="account-editor-slot" id="accountEditorSlot"></div>' +
-                (isReviewOwner(user) ? '<a class="auth-submit account-editor-link" id="accountReviewLink"></a>' : '') +
+                (isReviewOwner(user) ? '<a class="auth-submit account-editor-link" id="accountReviewLink"></a>'
+                    : '<a class="auth-submit account-editor-link" id="accountForecastInbox">Уведомления</a>') +
                 '<a class="auth-submit account-editor-link" href="/watch/connect.html">Мои часы</a>' +
                 (appleEnabled
                     ? '<p class="account-notice" id="accAppleStatus" role="status" tabindex="-1"' + (appleLinked ? '>Вход с Apple подключён' : ' hidden>') + '</p>' +
@@ -910,6 +1037,25 @@
                 event.preventDefault();
                 hideOverlay();
                 reviewPanel.show(document.getElementById('accountBtn'));
+            });
+        }
+        const inboxLink = ov.querySelector('#accountForecastInbox');
+        if (inboxLink) {
+            inboxLink.href = new URL('forecast.html', profileUrl).href;
+            if (canShowNotifications()) inboxLink.setAttribute('aria-haspopup', 'dialog');
+            updateReviewLink();
+            inboxLink.addEventListener('click', async event => {
+                if (!canShowNotifications() || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+                event.preventDefault();
+                if (!reviewSources.forecast) {
+                    if (forecastPresenceKnown && !forecastParticipant) reviewSources.forecast = forecastNoticeState('ready');
+                    else startForecastNotices();
+                }
+                const panel = await mountReviewPanel();
+                if (!inboxLink.isConnected || ov.classList.contains('hidden')) return;
+                if (!panel) { showError('Не удалось открыть уведомления. Попробуй ещё раз.'); return; }
+                hideOverlay();
+                panel.show(document.getElementById('accountBtn'));
             });
         }
         const verifyLink = ov.querySelector('#accVerifyEmail');
@@ -1681,7 +1827,7 @@
         }
         user = u;
         watchIdentity(u);
-        watchReviewInbox(u);
+        watchNotificationInbox(u);
         if (kcStorage) kcStorage.setScope(u ? u.uid : 'guest');
         updateButton();
         updateHomeAccessLinks();
@@ -1698,7 +1844,7 @@
         authStateKnown = true;
         user = null;
         watchIdentity(null);
-        watchReviewInbox(null);
+        watchNotificationInbox(null);
         hideOverlay();
         if (kcStorage) kcStorage.setScope('guest');
         updateButton();
@@ -1710,13 +1856,13 @@
     window.addEventListener('pageshow', function (event) {
         if (!event.persisted) return;
         updateHomeAccessLinks();
-        watchReviewInbox(user);
+        watchNotificationInbox(user);
     });
 
     window.addEventListener('pagehide', function (event) {
         if (!event.persisted) return;
         homeAccessGeneration++;
-        watchReviewInbox(null);
+        watchNotificationInbox(null);
         updateContestsLinks(false);
         detachHomeRolesListener();
         const slot = document.getElementById('homePrivilegedActions');

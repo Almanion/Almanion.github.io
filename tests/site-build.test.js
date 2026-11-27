@@ -36,7 +36,7 @@ assert.strictEqual(BuildSite.isPublishable('private-helper.js', config), false);
 assert.strictEqual(BuildSite.isPublishable('styles/site/index.css', config), true);
 assert.strictEqual(BuildSite.isPublishable('russian-ege.html', config), true);
 assert.strictEqual(BuildSite.isPublishable('content/physics/manifest.json', config), true);
-for (const asset of ['forecast.html', 'physics-forecast.html', 'physics-forecast-core.js', 'physics-forecast-admin.js', 'admin-forecasts.js', 'physics-forecast-ledger.js', 'physics-forecast-chart.js', 'physics-forecast-guide.js', 'physics-forecast.js', 'styles/physics-forecast.css']) {
+for (const asset of ['forecast.html', 'physics-forecast.html', 'physics-forecast-core.js', 'physics-forecast-admin.js', 'admin-forecasts.js', 'physics-forecast-ledger.js', 'physics-forecast-chart.js', 'physics-forecast-guide.js', 'physics-forecast-notifications.js', 'physics-forecast.js', 'styles/physics-forecast.css']) {
     assert.equal(BuildSite.isPublishable(asset, config), true, asset);
 }
 assert.strictEqual(BuildSite.isPublishable('dead souls/text/chapter-1.txt', config), true);

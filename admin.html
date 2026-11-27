@@ -13,7 +13,7 @@
     <link rel="stylesheet" href="style-new.css?v=20260929-2">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="styles/typography.css?v=20261002-1">
-    <link rel="stylesheet" href="styles/physics-forecast.css?v=20261126-phone-layout">
+    <link rel="stylesheet" href="styles/physics-forecast.css?v=20261127-results">
     <link rel="stylesheet" href="styles/admin.css?v=20261125-balances">
     <link rel="stylesheet" href="styles/admin-reviews.css?v=20261126-art">
 </head>
@@ -292,6 +292,8 @@
                             <section id="manageRound" aria-labelledby="manageTitle" hidden>
                                 <h3 id="manageTitle"></h3>
                                 <p class="forecast-footnote" id="manageStatus"></p>
+                                <p class="forecast-definition" id="manageResultNote" hidden></p>
+                                <a id="manageResultSource" target="_blank" rel="noopener noreferrer" hidden>Источник итога</a>
                                 <p class="forecast-definition" id="manageCriteria" hidden></p>
                                 <details class="forecast-deadline-editor" id="editDeadline" hidden>
                                     <summary>Изменить время закрытия</summary>
@@ -305,11 +307,19 @@
                                     <button type="button" class="forecast-secondary" data-command="lock">Закрыть торги</button>
                                     <button type="button" class="forecast-secondary" data-command="void">Отменить с возвратом очков</button>
                                 </div>
-                                <div class="forecast-confirm" id="confirmAction" hidden>
+                                <form class="forecast-confirm" id="confirmAction" hidden>
                                     <p id="confirmText"></p>
-                                    <button type="button" class="forecast-primary" id="confirmGo">Подтвердить</button>
+                                    <fieldset class="forecast-result-fields" id="resultFields" hidden disabled>
+                                        <label><span id="resultNoteLabel">Обоснование итога</span>
+                                            <textarea id="resultNote" maxlength="280" rows="3" required></textarea>
+                                        </label>
+                                        <label>Ссылка на источник (необязательно)
+                                            <input type="url" id="resultUrl" inputmode="url" placeholder="https://" maxlength="512">
+                                        </label>
+                                    </fieldset>
+                                    <button type="submit" class="forecast-primary" id="confirmGo">Подтвердить</button>
                                     <button type="button" class="forecast-secondary" id="confirmBack">Назад</button>
-                                </div>
+                                </form>
                                 <div class="forecast-admin-links">
                                     <button type="button" id="repeatEvent">Повторить на другую дату</button>
                                     <button type="button" id="nextPending" hidden>Следующее без итога</button>
@@ -408,10 +418,10 @@
     <script src="firebase-config.js?v=20260903-3"></script>
     <script src="admin-dialogs.js?v=20261118-workspace"></script>
     <script src="admin-app.js?v=20261118-workspace"></script>
-    <script src="physics-forecast-core.js?v=20261126-liquidity"></script>
-    <script src="physics-forecast-ledger.js?v=20261126-liquidity"></script>
+    <script src="physics-forecast-core.js?v=20261127-results"></script>
+    <script src="physics-forecast-ledger.js?v=20261127-results"></script>
     <script src="physics-forecast-chart.js?v=20261126-phone-layout"></script>
-    <script src="physics-forecast-admin.js?v=20261127-1"></script>
+    <script src="physics-forecast-admin.js?v=20261127-results"></script>
     <script src="admin-forecasts.js?v=20261127-1"></script>
     <script src="constructor/config.js?v=20261126-1"></script>
     <script src="constructor/model.js?v=20261126-1"></script>

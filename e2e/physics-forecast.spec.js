@@ -15,12 +15,12 @@ async function chooseOutcome(page, side = 'yes') {
     await page.locator('#outcomeList button[data-outcome="' + side + '"]').click();
 }
 
-async function mockClass(page, who = 'classmate', firstVisit = false, accounts = {}) {
+async function mockClass(page, who = 'classmate', firstVisit = false, accounts = {}, withAccount = false) {
     await page.route('https://www.gstatic.com/firebasejs/**', route => route.fulfill({ contentType:'application/javascript', body:'' }));
-    await page.route('**/account.js*', route => route.fulfill({ contentType:'application/javascript', body:'' }));
-    await page.addInitScript(fixture, { who, owner: M.OWNER, firstVisit, accounts });
+    if (!withAccount) await page.route('**/account.js*', route => route.fulfill({ contentType:'application/javascript', body:'' }));
+    await page.addInitScript(fixture, { who, owner: M.OWNER, firstVisit, accounts, withAccount });
 }
-function fixture({ who, owner, firstVisit, accounts }) {
+function fixture({ who, owner, firstVisit, accounts, withAccount }) {
     if (!firstVisit) localStorage.setItem('almanion:forecast:guide-seen:v1', '1');
     const clock = Date.now(), d = new Date(clock + 10800000).toISOString().slice(0,10);
     const id = '00000000000000000000';
@@ -58,15 +58,21 @@ function fixture({ who, owner, firstVisit, accounts }) {
                 const parent=keys.reduce((o,k)=>o[k]||(o[k]={}),data);parent[last]=val;
             }
             sessionStorage.setItem('forecast-test-data', JSON.stringify(data.physicsForecast)); emit('physicsForecast/events');
+            const updated = Object.keys(patches).map(key => [path, key].filter(Boolean).join('/'));
+            for (const key of updated) if (key.startsWith('physicsForecast/lastBy/')) emit(key);
         } }; }
     const database = () => ({ref});
     database.ServerValue = {TIMESTAMP:{'.sv':'timestamp'}};
     const auth = {
         currentUser: who === 'guest' ? null : { uid:who === 'owner' ? owner : who, email:who+'@example.test', isAnonymous:who === 'anonymous' },
-        onAuthStateChanged(cb) { sessions.add(cb); queueMicrotask(()=>cb(auth.currentUser)); },
+        onAuthStateChanged(cb) { sessions.add(cb); queueMicrotask(()=>cb(auth.currentUser)); return () => sessions.delete(cb); },
+        useDeviceLanguage() {}, setPersistence: async () => {},
         async signOut() { window.changeForecastAccount(null); }
     };
-    window.firebase = { initializeApp(){}, database, auth:()=>auth };
+    const authFactory = () => auth;
+    authFactory.Auth = { Persistence:{ LOCAL:'local', SESSION:'session', NONE:'none' } };
+    const app = { auth:authFactory, database, options:{} };
+    window.firebase = { initializeApp: () => app, apps:[app], app:() => app, database, auth:authFactory };
     window.changeForecastAccount = user => { auth.currentUser = user; sessions.forEach(cb=>cb(user)); };
     window.setForecastConnection = connected => { data['.info'].connected = connected; emit('.info/connected'); };
     window.setRankProfile = (uid, identity, visible) => {
@@ -75,7 +81,17 @@ function fixture({ who, owner, firstVisit, accounts }) {
         emit('accountProfiles/' + uid + '/rankVisible');
         emit('accountProfiles/' + uid + '/identity');
     };
-    window.AlmanionAccount = { database:database(), auth, profile: { avatarMarkup: () => '' }, openLogin:()=>{document.body.dataset.loginOpened='true';} };
+    window.forecastFixtureAppend = async ({ kind, day, actor, ...fields }) => {
+        const ledger = ref('physicsForecast'), key = ledger.child('events').push().key;
+        const eventDay = day || (kind === 'open' ? key : d);
+        const e = { day:eventDay, kind, actor:actor || owner, n:data.physicsForecast.head.n + 1, at:Date.now(), ...fields };
+        const patch = { head:{ id:key, n:e.n, v:3 }, ['events/' + key]:e, ['lastBy/' + e.actor]:key };
+        if (kind === 'open') patch['rounds/' + eventDay] = { last:key, phase:'open', endAt:e.endAt, eventEnd:e.eventEnd };
+        await ledger.update(patch);
+        return key;
+    };
+    if (!withAccount) window.AlmanionAccount = { database:database(), auth, profile: { avatarMarkup: () => '' },
+        openLogin:()=>{document.body.dataset.loginOpened='true';} };
 }
 
 async function expectSpotlight(page, targetId) {
@@ -153,6 +169,7 @@ for (const [count, width] of [[2, 320], [3, 390], [4, 1280]]) {
         await page.locator('#walletToggle').click();
         await holding.getByRole('button').click();
         await page.locator('label:has([value=limit])').click(); await page.locator('#limitPrice').fill('0,98');
+        await page.locator('#quantity').fill('1');
         await placeOrder(page); await expect(page.locator('#myOrders')).toContainText(winning);
         await page.clock.fastForward(122000);
         await expect(page.locator('#roundState')).toHaveText('Торги закрыты');
@@ -164,13 +181,198 @@ for (const [count, width] of [[2, 320], [3, 390], [4, 1280]]) {
         await expect(page.locator('#editDeadline')).toBeHidden();
         await expect(page.locator('[data-winner]:visible')).toHaveCount(count);
         await page.locator('[data-command="' + selected + '"]').click();
-        await expect(page.locator('#confirmText')).toContainText(winning); await page.locator('#confirmGo').click();
+        await expect(page.locator('#confirmText')).toContainText(winning);
+        if (count === 2) {
+            await page.locator('#confirmGo').click();
+            await expect(page.locator('#resultNote')).toBeFocused();
+        }
+        await page.locator('#resultNote').fill(winning + ' победил по итогам матча.');
+        if (count === 2) {
+            await page.locator('#resultUrl').fill('javascript:alert(1)');
+            await page.locator('#confirmGo').click();
+            await expect(page.locator('#confirmAction')).toBeVisible();
+            await expect(page.locator('#manageStatus')).toContainText('Торги закрыты');
+        }
+        await page.locator('#resultUrl').fill('https://example.test/results?match=1');
+        await page.locator('#confirmGo').click();
         await expect(page.locator('#manageStatus')).toContainText('Итог «' + winning + '»');
         await page.locator('#forecastMarketLink').click();
         await expect(page.locator('#walletOutcome')).toContainText('Выплата 5 оч.');
         await expect(page.locator('#roundState')).toHaveText('Итог «' + winning + '»');
+        await expect(page.locator('#eventResultNote')).toContainText(winning);
+        await expect(page.locator('#eventResultSource')).toHaveAttribute('href', 'https://example.test/results?match=1');
     });
 }
+
+test('shares a finished forecast through the legacy address and sign-in, with a copy fallback', { tag:'@forecast-next' }, async ({ page }) => {
+    await page.setViewportSize({ width:320, height:640 });
+    await mockClass(page, 'guest', true);
+    await page.addInitScript(() => Object.defineProperty(navigator, 'clipboard', { value:{ async writeText(value) {
+        if (window.clipboardBlocked) throw Error('Clipboard unavailable');
+        window.copiedForecast = value;
+    } } }));
+    await page.goto('/forecast.html');
+    const event = await page.evaluate(async () => {
+        const endAt = PhysicsForecast.endOfDay(PhysicsForecast.dayKey(Date.now()));
+        const day = await forecastFixtureAppend({ kind:'open', endAt, eventEnd:endAt, question:'Состоится ли финал школьного турнира?' });
+        await forecastFixtureAppend({ kind:'void', day, resultNote:'Турнир перенесли на следующий месяц.' });
+        return day;
+    });
+    await page.goto('/physics-forecast.html?event=' + event + '#portfolio');
+    await expect(page.locator('#gateTitle')).toHaveText('Войди, чтобы открыть рынок');
+    await expect(page).toHaveURL(new RegExp('forecast\\.html\\?event=' + event + '#portfolio$'));
+    await page.locator('#gateAction').click();
+    await page.evaluate(() => window.changeForecastAccount({uid:'classmate'}));
+    await expect(page.locator('#lessonQuestion')).toHaveText('Состоится ли финал школьного турнира?');
+    await expect(page.locator('#eventResultNote')).toHaveText('Турнир перенесли на следующий месяц.');
+    await expect(page.locator('#portfolio')).toHaveAttribute('open', '');
+    await page.locator('#walletToggle').click();
+    await page.locator('#shareForecast').click();
+    const url = await page.evaluate(() => window.copiedForecast);
+    expect(url).toBe(new URL('/forecast.html?event=' + event, page.url()).href);
+    await expect(page.locator('#shareForecastLabel')).toHaveText('Скопировано');
+    await page.evaluate(() => { window.clipboardBlocked = true; });
+    await page.locator('#shareForecast').click();
+    await expect(page.getByRole('dialog', { name:'Ссылка на прогноз' })).toBeVisible();
+    await expect(page.locator('#shareForecastUrl')).toHaveValue(url);
+    await expect(page.locator('#shareForecastUrl')).toBeFocused();
+    await page.keyboard.press('Escape');
+    await expect(page.locator('#shareForecast')).toBeFocused();
+});
+
+test.describe('portfolio sale estimate and public executions on a phone', () => {
+    test.use({ isMobile:true, hasTouch:true });
+    for (const width of [320, 390]) test('quotes partial executable depth for a long outcome at ' + width + 'px', { tag:'@forecast-next' }, async ({ page }) => {
+        await page.setViewportSize({ width, height:width === 320 ? 568 : 844 });
+        await mockClass(page);
+        await page.goto('/forecast.html');
+        const question = 'Какая команда станет чемпионом школьного турнира после всех очных встреч и дополнительного матча?';
+        const answers = { yes:'Сборная северного учебного корпуса', no:'Объединённая команда выпускников' };
+        const event = await page.evaluate(({ question, answers }) => {
+            const endAt = PhysicsForecast.endOfDay(PhysicsForecast.dayKey(Date.now()));
+            return forecastFixtureAppend({ kind:'open', endAt, eventEnd:endAt, question, answers, criteria:'Итог по протоколу.' });
+        }, { question, answers });
+        await page.goto('/forecast.html?event=' + event);
+        await expect(page.locator('#lessonQuestion')).toHaveText(question);
+        await expect(page.locator('#marketTapeEmpty')).toContainText('пока нет сделок');
+        await chooseOutcome(page);
+        await page.locator('#budget').fill('4,59');
+        await placeOrder(page);
+        await expect(page.locator('#walletYes')).toHaveText('9');
+        await page.evaluate(async day => {
+            await forecastFixtureAppend({ kind:'order', day, actor:'classmate', side:'yes', action:'sell', mode:'limit', qty:2, limit:99 });
+            await forecastFixtureAppend({ kind:'order', day, actor:'other-participant', side:'no', action:'buy', mode:'market', qty:85, limit:99 });
+        }, event);
+        const wallet = page.locator('#walletToggle'), holding = page.locator('#walletBalances [data-holding=yes]');
+        await wallet.tap();
+        await expect(holding.locator('.forecast-reserve')).toHaveText('В продаже 2 доли');
+        await expect(holding.locator('.forecast-sale-estimate')).toHaveText('Сейчас нет покупателей');
+        await page.evaluate(day => forecastFixtureAppend({ kind:'order', day, actor:'other-participant',
+            side:'yes', action:'buy', mode:'limit', qty:3, limit:40 }), event);
+        await expect(holding.locator('.forecast-sale-estimate')).toContainText('3 из 7 долей');
+        await expect(holding.locator('.forecast-sale-estimate strong')).toHaveText('≈ 1,2 оч.');
+        await page.evaluate(() => window.setForecastConnection(false));
+        await expect(holding.locator('.forecast-sale-estimate')).toHaveText('Оценка недоступна без связи');
+        await expect(holding.getByRole('button')).toBeDisabled();
+        await page.evaluate(() => window.setForecastConnection(true));
+        await expect(holding.locator('.forecast-sale-estimate')).toContainText('3 из 7 долей');
+        await expect(holding.locator('dt')).toHaveText(answers.yes);
+        await holding.getByRole('button').tap();
+        await expect(page.locator('#quantity')).toHaveValue('3');
+        await expect(page.locator('#quotePreview')).toContainText('1,2 оч.');
+        await placeOrder(page);
+        const tape = page.locator('#marketTapeList');
+        expect(await tape.locator('li').count()).toBe(3);
+        await expect(tape.locator('li').first()).toContainText(answers.yes);
+        await expect(tape.locator('li').first()).toContainText('0,4 оч.');
+        await expect(tape.locator('li').first()).toContainText('3 доли');
+        await expect(tape.locator('time').first()).toContainText('мск');
+        await expect(tape).not.toContainText(/classmate|other-participant|@liquidity/);
+        await page.locator('#marketTapeMore').tap();
+        await expect(tape.locator('li')).toHaveCount(5);
+        await expect(page.locator('#tradeHistory > .forecast-row')).toHaveCount(2);
+        expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true);
+        await page.reload();
+        await expect(page.locator('#walletCash')).toHaveText('96,61 оч.');
+        await expect(page.locator('#walletYes')).toHaveText('6');
+        await expect(tape.locator('li').first()).toContainText('0,4 оч.');
+    });
+});
+
+test('account bell updates a partial fill, opens the exact order and explains its payout', { tag:'@forecast-next' }, async ({ page }) => {
+    await page.setViewportSize({ width:320, height:640 });
+    await mockClass(page, 'classmate', false, {}, true);
+    await page.goto('/forecast.html');
+    const bell = page.locator('#accountNotificationsBtn'), badge = bell.locator('.account-review-count');
+    await expect(bell).toBeVisible();
+    const { day, id } = await page.evaluate(async () => {
+        const day = PhysicsForecast.dayKey(Date.now());
+        const id = await forecastFixtureAppend({ kind:'order', day, actor:'classmate', side:'yes', action:'buy', mode:'limit', qty:6, limit:50 });
+        await forecastFixtureAppend({ kind:'order', day, actor:'peer', side:'yes', action:'buy', mode:'market', qty:6, limit:99 });
+        await forecastFixtureAppend({ kind:'order', day, actor:'peer', side:'yes', action:'sell', mode:'market', qty:2, limit:1 });
+        return { day, id };
+    });
+    await expect(badge).toHaveText('1');
+    const panel = page.getByRole('dialog', { name:'Уведомления' });
+    await bell.click();
+    const partial = panel.getByRole('link', { name:/Заявка исполнена частично/ });
+    await expect(partial).toContainText('2 из 6 долей');
+    await expect(partial).toHaveAttribute('href', new RegExp('event=' + day + '&order=' + id + '#orderListTitle$'));
+    await partial.click();
+    const row = page.locator('[data-order="' + id + '"]');
+    await expect(row).toBeFocused();
+    await expect(row).toContainText('Частично исполнена');
+    await expect(badge).toBeHidden();
+    await page.evaluate(day => forecastFixtureAppend({ kind:'order', day, actor:'peer', side:'yes', action:'sell', mode:'market', qty:4, limit:1 }), day);
+    await expect(badge).toHaveText('1');
+    await page.goto('/');
+    await expect(badge).toHaveText('1');
+    await bell.click();
+    await expect(panel.getByRole('link', { name:/Заявка исполнена/ })).toHaveCount(1);
+    await expect(panel).not.toContainText('Заявка исполнена частично');
+    await panel.getByRole('link', { name:/Заявка исполнена/ }).click();
+    await expect(row).toBeFocused();
+    await expect(page.locator('#allOrders')).toHaveAttribute('aria-pressed', 'true');
+    await expect(row).toContainText('Исполнена');
+    await page.evaluate(async day => {
+        await forecastFixtureAppend({ kind:'lock', day });
+        await forecastFixtureAppend({ kind:'yes', day, resultNote:'Матч завершился победой.', resultUrl:'https://example.test/protocol' });
+    }, day);
+    await expect(badge).toHaveText('1');
+    await bell.click();
+    const payout = panel.getByRole('link', { name:/Начислена выплата/ });
+    await expect(payout).toContainText('выплата 6 оч.');
+    await payout.click();
+    await expect(page.locator('#eventResult')).toBeFocused();
+    await expect(page.locator('#eventCalculation')).toHaveAttribute('open', '');
+    await expect(page.locator('#eventResultSummary')).toHaveText('Выплата 6 оч. · результат +3 оч.');
+    await expect(page.locator('#eventResultAmounts > div').filter({ hasText:'Потрачено на покупки' }).locator('dd')).toHaveText('3 оч.');
+    await expect(page.locator('#eventResultSource')).toHaveAttribute('href', 'https://example.test/protocol');
+    const canceled = await page.evaluate(async () => {
+        const endAt = PhysicsForecast.endOfDay(PhysicsForecast.dayKey(Date.now()));
+        const day = await forecastFixtureAppend({ kind:'open', question:'Будет ли контрольная?', endAt, eventEnd:endAt });
+        await forecastFixtureAppend({ kind:'order', day, actor:'classmate', side:'yes', action:'buy', mode:'market', qty:1, limit:99 });
+        await forecastFixtureAppend({ kind:'void', day, resultNote:'Контрольную отменили.' });
+        return day;
+    });
+    await expect(badge).toHaveText('2');
+    await bell.click();
+    await expect(panel.getByRole('link', { name:/Очки возвращены/ })).toHaveAttribute('href', new RegExp('event=' + canceled + '#eventResult$'));
+    await panel.getByRole('button', { name:'Прочитать все' }).click();
+    await expect(badge).toBeHidden();
+    await expect(panel.getByRole('link', { name:/Очки возвращены/ })).toBeVisible();
+    await page.evaluate(() => window.changeForecastAccount({uid:'someone-else'}));
+    await expect(panel).toBeHidden();
+    await expect(page.getByText('Контрольную отменили.', { exact:true })).toHaveCount(0);
+    await page.locator('#accountBtn').click();
+    await page.locator('#accountForecastInbox').click();
+    await expect(panel.getByText('По прогнозам пока нет уведомлений')).toBeVisible();
+    await page.evaluate(uid => window.changeForecastAccount({uid}), M.OWNER);
+    await expect(panel).toBeHidden();
+    await expect(page.getByRole('link', { name:'Админ-панель' })).toBeVisible();
+    await expect(bell).toBeVisible();
+    expect(await page.locator('.forecast-header').evaluate(header => header.scrollWidth <= header.clientWidth)).toBe(true);
+});
 
 test('expiry in another event releases the shared balance while the selected market stays open', async ({ page }) => {
     await page.clock.install({ time: new Date('2026-11-26T06:00:02Z') });
@@ -567,7 +769,7 @@ test.describe('market navigation on a narrow phone', () => {
         await mockClass(page);
         const event = '00000000000000000002';
         await page.goto('/forecast.html?event=' + event);
-        await expect(page.locator('#walletCash')).toHaveText('100 оч.');
+        await expect(page.locator('#emptyRound')).toContainText('Прогноз по этой ссылке не найден');
 
         const question = 'Какая сборная получит первое место в товарищеском матче учебного корпуса в конце следующей недели?';
         const criteria = 'Считаются результаты основного времени и дополнительных раундов. ' +
@@ -854,7 +1056,7 @@ test('selling the selected holding respects reservations, supports half or all a
     await page.getByRole('button', {name:'Продать доли «Нет»',exact:true}).click();
     await expect(page.locator('#ticketTitle')).toBeFocused();
     await expect(page.locator('#orderMode [value=market]')).toBeChecked();
-    await expect(page.locator('#quantity')).toHaveValue('1');
+    await expect(page.locator('#quantity')).toHaveValue('6');
     await expect(page.locator('#walletNo')).toHaveText('9');
     await page.getByRole('button',{name:'50% · 3 доли',exact:true}).click();
     await expect(page.locator('#quotePreview')).toContainText('1,47 оч.');
@@ -901,7 +1103,9 @@ test('owner enters the dashboard at the current event, closes it, settles and re
     await expect(page.locator('#forecastOpen')).toHaveText('1');
     await page.locator('[data-command=lock]').click(); await page.locator('#confirmGo').click();
     await expect(page.locator('#forecastPending')).toHaveText('1');
-    await page.locator('[data-command=yes]').click(); await page.locator('#confirmGo').click();
+    await page.locator('[data-command=yes]').click();
+    await page.locator('#resultNote').fill('Условие прогноза выполнено.');
+    await page.locator('#confirmGo').click();
     await expect(page.locator('#manageStatus')).toContainText('Итог «Да»');
     await page.locator('#forecastMarketLink').click();
     await expect(page.locator('#roundState')).toHaveText('Итог «Да»');
@@ -1038,7 +1242,9 @@ test('owner manages multiple events, sees reconciled statistics and preserves ev
     await expect(picker.locator('option')).toHaveCount(4);
     await picker.selectOption(first); await page.locator('[data-command=lock]').click(); await page.locator('#confirmGo').click();
     await picker.selectOption(second); await page.locator('#nextPending').click(); await expect(picker).toHaveValue(first);
-    await page.locator('[data-command=yes]').click(); await page.locator('#confirmGo').click();
+    await page.locator('[data-command=yes]').click();
+    await page.locator('#resultNote').fill('Матч завершился победой класса.');
+    await page.locator('#confirmGo').click();
     await picker.selectOption(second); await page.locator('#forecastMarketLink').click();
     await expect(page.locator('#roundState')).toHaveText('Торги открыты');
     await expect(page.locator('#walletCash')).toHaveText('107,15 оч.');
@@ -1056,17 +1262,22 @@ test('offline management disables confirmation and a cancelled forecast refunds 
     await expect(page.locator('#walletCash')).toHaveText('99,49 оч.');
     await page.locator('#forecastAdminLink').click();
     await page.locator('[data-command=void]').click();
+    await page.locator('#resultNote').fill('Событие перенесли без новой даты.');
     const confirm = page.locator('#confirmGo');
     await page.evaluate(() => window.setForecastConnection(false));
     await expect(confirm).toBeDisabled();
     await expect(page.locator('#forecastLoadStatus')).toContainText('Нет связи');
     await page.evaluate(() => window.setForecastConnection(true));
+    await expect(page.locator('#resultNote')).toHaveValue('Событие перенесли без новой даты.');
     await expect(confirm).toBeEnabled(); await confirm.click();
     await expect(page.locator('#manageStatus')).toContainText('Прогноз отменён');
     await expect(page.locator('[data-command=void]')).toBeHidden();
     await page.locator('#forecastMarketLink').click();
     await expect(page.locator('#placeOrder')).toBeDisabled();
     await expect(page.locator('#walletCash')).toHaveText('100 оч.');
+    await expect(page.locator('#eventResultNote')).toHaveText('Событие перенесли без новой даты.');
+    await page.locator('#eventCalculation summary').click();
+    await expect(page.locator('#eventResultAmounts > div').filter({ hasText:'Возврат на баланс' }).locator('dd')).toHaveText('0,51 оч.');
 });
 
 test('owner sets available points on mobile while an existing order remains funded', async ({ page }) => {
@@ -1311,7 +1522,7 @@ for (const width of [320, 390]) test('reviews long-outcome purchases and sales a
     const labels = ['Сборная северного учебного корпуса', 'Сборная южного учебного корпуса',
         'Объединённая команда выпускников', 'Гости из соседнего учебного корпуса'];
     await page.goto('/forecast.html?event=' + event);
-    await expect(page.locator('#roundBody')).toBeVisible();
+    await expect(page.locator('#emptyRound')).toContainText('Прогноз по этой ссылке не найден');
     await page.evaluate(async ({ event, question, labels }) => {
         const m = window.PhysicsForecast, at = Date.now(), end = m.endOfDay(m.dayKey(at));
         const answers = Object.fromEntries(m.SIDE_IDS.map((side, i) => [side, labels[i]]));

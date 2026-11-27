@@ -387,4 +387,41 @@ function fixture() {
     f.add({ kind: 'void' }, M.OWNER, later);
     assert.deepEqual(M.standings(f.state).map(r => r.score), [10049,10049,9949]);
 }
-console.log('Forecast market passed matching, payouts, standings, deadlines and replay.');
+{
+    const f = fixture(), { state, m } = f;
+    const at = m.openedAt + 5000;
+    f.order('seller', 'yes', 'buy', 9, 99, 'market');
+    f.order('seller', 'yes', 'sell', 2, 99);
+    f.order('peer', 'no', 'buy', 85, 99, 'market');
+    const bid = f.order('peer', 'yes', 'buy', 3, 40);
+    assert.deepEqual(M.instantSale(state, m, 'seller', 'yes', at), { free:7, qty:3, cash:120 });
+    const own = f.order('seller', 'yes', 'buy', 1, 45);
+    assert.deepEqual(M.instantSale(state, m, 'seller', 'yes', at), { free:7, qty:0, cash:0, error:'own' });
+    f.add({ kind:'cancel', target:own.id }, 'seller');
+    assert.equal(f.order('seller', 'yes', 'sell', 3, 1, 'market').cash, 120);
+    assert.equal(m.orderHistory.get(bid.id).filled, 3);
+    assert.equal(m.orderHistory.get(bid.id).lastFill.n, state.n);
+    assert.deepEqual(M.participantTrades(m, 'seller').map(({ qty, price, action }) => [qty, price, action]),
+        [[9, 51, 'buy'], [3, 40, 'sell']]);
+    f.time(M.endOfDay(day) - M.DAY + 1000);
+    f.add({ kind:'lock' });
+    assert.equal(M.instantSale(state, m, 'seller', 'yes', m.closedAt).qty, 0);
+    f.add({ kind:'yes', resultNote:'Подтверждено протоколом.', resultUrl:'https://example.test/protocol#match' });
+    assert.equal(m.resolution.url, 'https://example.test/protocol#match');
+    assert.deepEqual(M.settlement(m, 'seller'), { qty:6, payout:600, net:261, refund:0, reversed:0 });
+    const replay = M.create();
+    for (const [id, event] of f.log) M.apply(replay, event, id);
+    assert.deepEqual(replay, state);
+}
+{
+    const f = fixture();
+    f.order('player', 'yes', 'buy', 5, 99, 'market');
+    f.order('player', 'yes', 'sell', 2, 1, 'market');
+    f.add({ kind:'void', resultNote:'Матч отменён.', resultUrl:'javascript:alert(1)' });
+    assert.equal(f.m.resolution.note, 'Матч отменён.');
+    assert.equal(f.m.resolution.url, '');
+    assert.deepEqual(M.settlement(f.m, 'player'), { qty:0, payout:0, net:0, refund:157, reversed:0 });
+    for (const url of ['https:///test', 'https://user@host.test/', '\\https://bad.test/', 'http://host.test/a b'])
+        assert.equal(M.resultSource(url), '');
+}
+console.log('Forecast market passed matching, executable sale quotes, settlement detail, standings, deadlines and replay.');

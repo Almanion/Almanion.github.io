@@ -132,7 +132,7 @@
 
         let introductionPending = true;
         return {
-            setMarket(event, status) {
+            setMarket(event, status, introduce = true) {
                 const id = event?.id;
                 if (market !== id) {
                     const example = event?.answers[event.sides[0]] || 'Да';
@@ -142,7 +142,7 @@
                 const phaseChanged = status !== phase;
                 market = id; phase = status; winner = event?.answers[status] || '';
                 start.hidden = !id;
-                if (id && introductionPending) {
+                if (id && introductionPending && introduce) {
                     introductionPending = false;
                     if (firstVisit() && !guide.open) openGuide(mainLink);
                 }

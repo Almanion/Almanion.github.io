@@ -45,6 +45,7 @@ const M = require('../physics-forecast-core');
         await assertFails(at(a).update(patch('a',2,'order',{qty:-1})));
         await assertFails(at(a).update(patch('a',2,'order',{expires:Date.now()-1000})));
         await assertFails(at(a).update(patch('a',2,'order',{totalLimit:0})));
+        await assertFails(at(a).update(patch('a',2,'order',{resultNote:'Обоснование для чужого итога'})));
         const missing = patch('a',2,'order');
         delete missing.head; await assertFails(at(a).update(missing));
         const spoof = patch('a',2,'order'); spoof.wallet = {a:99999}; await assertFails(at(a).update(spoof));
@@ -64,6 +65,7 @@ const M = require('../physics-forecast-core');
         await assertFails(at(a).update(patch('a',6,'lock')));
         await assertFails(at(siteAdmin).update(patch('site-admin',6,'void')));
         await assertFails(at(owner).update(patch(M.OWNER,6,'yes')));
+        await assertFails(at(owner).update(patch(M.OWNER,6,'lock',{resultNote:'Слишком рано объявлять итог'})));
         await assertSucceeds(at(owner).update(patch(M.OWNER,6,'lock')));
         await assertFails(at(owner).update(patch(M.OWNER,7,'order')));
         for (const kind of ['yes','no','void']) await assertFails(at(siteAdmin).update(patch('site-admin',7,kind)));
@@ -102,10 +104,28 @@ const M = require('../physics-forecast-core');
         other.head.v = 2;
         await assertFails(at(b).update(other));
         for (const [n, kind] of [[11, 'lock'], [12, 'yes']]) {
-            const action = patch(M.OWNER, n, kind, { day: first.head.id });
+            const evidence = { resultNote:'Класс выиграл со счётом 3:1.', resultUrl:'https://example.test/match?date=nov#results' };
+            if (kind === 'yes') {
+                const invalid = [
+                    { resultUrl:evidence.resultUrl }, { resultNote:'  ' }, { resultNote:'а'.repeat(M.RESULT_NOTE_LIMIT + 1) },
+                    { ...evidence, resultUrl:'javascript:alert(1)' }, { ...evidence, resultUrl:'https://owner@host.test/' },
+                    { ...evidence, resultUrl:'https://host.test/a b' }, { ...evidence, resultUrl:'https:///result' }
+                ];
+                for (const fields of invalid) {
+                    const attempt = patch(M.OWNER, n, kind, { day:first.head.id, ...fields });
+                    attempt.head.v = 2;
+                    await assertFails(at(owner).update(attempt));
+                }
+            }
+            const action = patch(M.OWNER, n, kind, { day: first.head.id, ...(kind === 'yes' ? evidence : {}) });
             action.head.v = 2;
             await assertFails(at(siteAdmin).update(action));
             await assertSucceeds(at(owner).update(action));
+            if (kind === 'yes') {
+                const result = (await at(a).child('events/' + action.head.id).once('value')).val();
+                assert.equal(result.resultNote, evidence.resultNote);
+                assert.equal(result.resultUrl, evidence.resultUrl);
+            }
         }
         assert.equal((await at(b).child('rounds/' + second.head.id + '/phase').once('value')).val(), 'open');
         const book = at(owner);

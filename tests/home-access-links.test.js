@@ -35,8 +35,8 @@ assert.match(account, /generation !== homeAccessGeneration \|\| user !== checked
     'stale permission checks must not reveal actions after an account change');
 assert.match(account, /slot\.dataset\.accessSignature === signature\) return/,
     'unchanged role snapshots must preserve focus and avoid replaying animations');
-assert.match(account, /addEventListener\('pageshow', function \(event\) \{\s*if \(!event\.persisted\) return;\s*updateHomeAccessLinks\(\);\s*watchReviewInbox\(user\);/,
-    'BFCache restores must recheck home access and reconnect the owner inbox');
+assert.match(account, /addEventListener\('pageshow', function \(event\) \{\s*if \(!event\.persisted\) return;\s*updateHomeAccessLinks\(\);\s*watchNotificationInbox\(user\);/,
+    'BFCache restores must recheck home access and reconnect the notification inbox');
 assert.match(account, /addEventListener\('pagehide'[\s\S]*if \(!event\.persisted\) return;[\s\S]*clearHomeAccessLinks\(slot\)/,
     'privileged actions must be cleared before a page enters BFCache');
 

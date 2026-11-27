@@ -3,7 +3,8 @@
 
     const kinds = {
         notes: { label: 'Конспекты', page: 'admin.html', section: 'reviews', icon: 'notes' },
-        art: { label: 'Фон', page: 'index.html', section: 'background-review', icon: 'art' }
+        art: { label: 'Фон', page: 'index.html', section: 'background-review', icon: 'art' },
+        forecast: { label: 'Прогнозы', page: 'forecast.html', section: '', icon: 'forecast' }
     };
     const subjects = {
         physics: 'Физика · 9 класс', 'physics-10': 'Физика · 10 класс',
@@ -14,6 +15,7 @@
         bell: '<path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9m-8 12a2 2 0 0 0 4 0"/>',
         notes: '<path d="M12 6a8 8 0 0 0-8-1v14a8 8 0 0 1 8 1 8 8 0 0 1 8-1V5a8 8 0 0 0-8 1v14M7 9h2m6 0h2m-2 4h2"/>',
         art: '<rect x="3" y="4" width="18" height="16" rx="3"/><circle cx="9" cy="9" r="1.5"/><path d="m4 17 4-4 4 3 4-5 4 5"/>',
+        forecast: '<path d="M4 5v14h16M7 14l4-4 3 2 5-6"/><path d="M15 6h4v4"/>',
         close: '<path d="m6 6 12 12M18 6 6 18"/>',
         arrow: '<path d="m9 6 6 6-6 6"/>',
         check: '<path d="m7 12 3 3 7-7"/><circle cx="12" cy="12" r="9"/>',
@@ -27,6 +29,14 @@
     const dateShort = new Intl.DateTimeFormat('ru-RU', { timeZone: zone, day: 'numeric', month: 'long' });
     const time = new Intl.DateTimeFormat('ru-RU', { timeZone: zone, hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
     const formatter = new Intl.NumberFormat('ru-RU');
+
+    function counts(model) {
+        const awaiting = (model.notes?.count || 0) + (model.art?.count || 0);
+        const unread = model.forecast?.count || 0;
+        const summary = [awaiting && formatter.format(awaiting) + ' на проверке',
+            unread && formatter.format(unread) + (unread === 1 ? ' новое' : ' новых')].filter(Boolean).join(' · ');
+        return { count: awaiting + unread, summary };
+    }
 
     function element(tag, className, text) {
         const node = document.createElement(tag);
@@ -56,7 +66,7 @@
         return { key, label: (sameYear ? dateShort : dateLong).format(at) };
     }
 
-    function create({ baseUrl, retry }) {
+    function create({ baseUrl, retry, markForecast }) {
         const bell = button('account-notifications-trigger');
         bell.id = 'accountNotificationsBtn';
         bell.setAttribute('aria-haspopup', 'dialog');
@@ -86,7 +96,7 @@
         filters.setAttribute('role', 'group');
         filters.setAttribute('aria-label', 'Тип уведомления');
         const filterButtons = {};
-        for (const [key, label] of [['all', 'Все'], ['notes', 'Конспекты'], ['art', 'Фон']]) {
+        for (const [key, label] of [['all', 'Все'], ...Object.entries(kinds).map(([key, kind]) => [key, kind.label])]) {
             const filterButton = button('', label);
             filterButton.addEventListener('click', () => {
                 filter = key;
@@ -102,7 +112,14 @@
         const groups = element('div', 'account-notifications-groups');
         scroll.append(state, groups);
         const footer = element('footer', 'account-notifications-footer');
-        footer.append(linkTo('notes', '', 'К проверке конспектов'), linkTo('art', '', 'К проверке фона'));
+        const footerLinks = {
+            notes: linkTo('notes', '', 'К проверке конспектов'),
+            art: linkTo('art', '', 'К проверке фона'),
+            forecast: linkTo('forecast', '', 'К прогнозам')
+        };
+        const markAll = button('account-notifications-mark', 'Прочитать все');
+        markAll.addEventListener('click', () => { close.focus({ preventScroll: true }); markForecast(); });
+        footer.append(...Object.values(footerLinks), markAll);
         dialog.append(head, filters, scroll, footer);
 
         let model = null;
@@ -122,17 +139,22 @@
 
         function renderEntry(item) {
             const row = element('li');
-            const link = linkTo(item.kind, item.id);
+            const link = item.href ? element('a') : linkTo(item.kind, item.id);
+            if (item.href) link.href = item.href;
             link.className = 'account-notifications-entry';
             link.dataset.kind = item.kind;
             link.dataset.notificationKey = item.kind + ':' + item.id;
+            if (item.seenKey) link.dataset.seenKey = item.seenKey;
+            link.toggleAttribute('data-unread', Boolean(item.unread));
             const decoration = element('span', 'account-notifications-entry-icon');
             icon(decoration, kinds[item.kind].icon);
             const copy = element('span', 'account-notifications-entry-copy');
-            const context = item.kind === 'notes' ? subjects[item.subject] || 'Конспекты' : 'Фон главной';
+            const context = item.context || (item.kind === 'notes' ? subjects[item.subject] || 'Конспекты' : 'Фон главной');
             copy.append(element('span', 'account-notifications-context', context),
                 element('strong', 'account-notifications-entry-title', item.title));
             if (item.author) copy.append(element('span', 'account-notifications-author', item.author));
+            if (item.description) copy.append(element('span', 'account-notifications-author', item.description));
+            if (item.unread) link.append(element('span', 'account-review-sr', 'Новое уведомление'));
             const tail = element('span', 'account-notifications-entry-tail');
             if (item.at) {
                 const stamp = element('time', '', time.format(item.at));
@@ -164,7 +186,7 @@
             groups.replaceChildren(fragment);
         }
 
-        function renderState(status, compact) {
+        function renderState(status, compact, forecasts) {
             state.hidden = !status;
             state.replaceChildren();
             if (!status) return;
@@ -174,7 +196,7 @@
             icon(decoration, status === 'empty' ? 'check' : status);
             const title = {
                 loading: 'Загружаем уведомления…',
-                empty: 'Нет заявок на проверку',
+                empty: forecasts ? 'По прогнозам пока нет уведомлений' : 'Нет заявок на проверку',
                 error: compact ? 'Часть уведомлений недоступна' : 'Не удалось загрузить уведомления'
             }[status];
             state.append(decoration, element('strong', '', title));
@@ -193,23 +215,29 @@
             const active = document.activeElement;
             const activeKey = active?.dataset.notificationKey;
             const stateWasFocused = state.contains(active);
-            const allCount = model.notes.count + model.art.count;
-            const caption = allCount ? formatter.format(allCount) + ' на проверке' : '';
+            const caption = counts(model).summary;
             if (summary.textContent !== caption) summary.textContent = caption;
             summary.hidden = !caption;
-            filters.hidden = !model.notes.count || !model.art.count;
+            const offerFilter = Object.keys(kinds).filter(kind => kind === 'forecast'
+                ? Boolean(model.forecast) : model[kind]?.count);
+            filters.hidden = offerFilter.length < 2;
+            if (filter !== 'all' && !offerFilter.includes(filter)) filter = 'all';
             if (filters.hidden) {
                 if (filters.contains(active)) close.focus({ preventScroll: true });
                 filter = 'all';
             }
             for (const [key, filterButton] of Object.entries(filterButtons)) {
+                filterButton.hidden = key !== 'all' && !offerFilter.includes(key);
                 filterButton.setAttribute('aria-pressed', String(filter === key));
             }
             const sources = filter === 'all' ? Object.values(model) : [model[filter]];
             const entries = sources.flatMap(source => source.entries).sort((a, b) => b.at - a.at || b.id.localeCompare(a.id));
             const error = sources.some(source => source.status === 'error');
             const loading = sources.some(source => source.status === 'loading');
-            renderState(error ? 'error' : loading && !entries.length ? 'loading' : !entries.length ? 'empty' : '', Boolean(entries.length));
+            renderState(error ? 'error' : loading && !entries.length ? 'loading' : !entries.length ? 'empty' : '',
+                Boolean(entries.length), filter === 'forecast' || Boolean(model.forecast));
+            for (const [kind, link] of Object.entries(footerLinks)) link.hidden = !model[kind] || (filter === 'forecast' && kind !== 'forecast');
+            markAll.hidden = !model.forecast?.count || !['all', 'forecast'].includes(filter);
             renderGroups(entries);
             if (activeKey || stateWasFocused) {
                 const replacement = Array.from(groups.querySelectorAll('.account-notifications-entry'))
@@ -220,10 +248,10 @@
 
         function update(next) {
             model = next;
-            const count = next.notes.count + next.art.count;
+            const { count, summary } = counts(next);
             badge.textContent = count > 99 ? '99+' : String(count);
             badge.hidden = !count;
-            bell.setAttribute('aria-label', count ? 'Уведомления · ' + count + ' на проверке' : 'Уведомления');
+            bell.setAttribute('aria-label', summary ? 'Уведомления · ' + summary : 'Уведомления');
             bell.title = 'Уведомления';
             renderDialog();
         }
@@ -263,7 +291,10 @@
             if (returnFocus?.isConnected) returnFocus.focus({ preventScroll: true });
         });
         dialog.addEventListener('click', event => {
-            if (event.target.closest('a') && !event.metaKey && !event.ctrlKey && !event.shiftKey && !event.altKey) dialog.close();
+            const link = event.target.closest('a');
+            if (!link) return;
+            if (!event.metaKey && !event.ctrlKey && !event.shiftKey && !event.altKey) dialog.close();
+            if (link.hasAttribute('data-unread')) markForecast(link.dataset.seenKey, true);
         });
         const adjustPosition = () => { if (dialog.open) place(); };
         window.addEventListener('resize', adjustPosition);

@@ -113,6 +113,12 @@
           "kind": {
             ".validate": "newData.isString() && newData.val().matches(/^(open|deadline|lock|yes|no|third|fourth|void|order|cancel|balance|liquidity)$/)"
           },
+          "resultNote": {
+            ".validate": "newData.parent().child('kind').val().matches(/^(yes|no|third|fourth|void)$/) && newData.isString() && newData.val().length <= 280 && newData.val().matches(/^[^ ](.*[^ ])?$/) && !newData.val().contains('\\n') && !newData.val().contains('\\r') && !newData.val().contains('\\t')"
+          },
+          "resultUrl": {
+            ".validate": "newData.parent().child('resultNote').exists() && newData.isString() && newData.val().length <= 512 && newData.val().matches(/^https?:\\/\\/[^ \\/@?#]+([\\/?#][^ ]*)?$/) && !newData.val().contains('\\n') && !newData.val().contains('\\r') && !newData.val().contains('\\t')"
+          },
           "endAt": {
             ".validate": "(newData.parent().child('kind').val() === 'open' || newData.parent().child('kind').val() === 'deadline') && newData.isNumber()"
           },
