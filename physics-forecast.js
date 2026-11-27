@@ -26,7 +26,7 @@
     let engine = M.create(), readLedger = ledger.createReader(), selectedId = '', user = null, connected = false, offset = 0, ready = false, busy = false;
     let epoch = 0, clock = 0, connectionTimer, feedOff, pendingSnapshot, historyLimit = 12, ticket = null;
     const review = $('tradeReview'), sheet = $('tradeSheet'), tradeForm = $('tradeForm'), tradeTicket = $('tradeTicket');
-    let reviewedOrder = null, receivedOrder = '', sheetTrigger = null;
+    let reviewedOrder = null, receivedOrder = '', sheetOrigin = null;
     let orderLimit = 12;
     let firstPaint = true, renderedToday = '', nextClose = Infinity;
     let buyQuantity = '5';
@@ -35,7 +35,7 @@
     const chart = window.createPhysicsForecastChart(now);
     const guide = window.createForecastGuide(() => {
         if (!sheet.open) return;
-        const trigger = sheetTrigger, day = selectedId, scroll = sheet.scrollTop;
+        const trigger = sheetOrigin.trigger, day = selectedId, scroll = sheet.scrollTop;
         closeTradeSheet(false);
         return () => {
             if (!ready || day !== selectedId || !phone.matches || M.status(market(), now()) !== 'open') return;
@@ -92,13 +92,17 @@
     }
     function updateTradeViewport() {
         if (!sheet.open || !window.visualViewport) return;
-        const typing = document.activeElement?.matches('#budget, #quantity, #limitPrice');
+        const input = document.activeElement;
+        const typing = input?.matches('#budget, #quantity, #limitPrice');
         const { height, offsetTop } = window.visualViewport;
         sheet.style.setProperty('--trade-viewport-height', height + 'px');
         sheet.style.setProperty('--trade-viewport-top', offsetTop + 'px');
         sheet.toggleAttribute('data-keyboard', Boolean(typing && innerHeight - height > 100));
-        if (typing && document.activeElement.getBoundingClientRect().bottom > offsetTop + height - 12) {
-            document.activeElement.scrollIntoView({ block: 'center', behavior: 'instant' });
+        if (typing) {
+            const bounds = input.getBoundingClientRect();
+            if (bounds.bottom > offsetTop + height - 12) {
+                sheet.scrollBy({ top: bounds.top + bounds.height / 2 - offsetTop - height / 2, behavior: 'instant' });
+            }
         }
     }
     phone.addEventListener('change', updateJumps);
@@ -952,16 +956,18 @@
 
     function closeTradeSheet(restore = true) {
         if (!sheet.contains(tradeTicket)) return;
+        const { trigger, top } = sheetOrigin;
+        sheetOrigin = null;
         if (sheet.open) sheet.close();
         $('ticketPosition').append(tradeTicket);
         if (restore) {
-            const price = bookLevel(sheetTrigger?.dataset);
-            const fallback = sheetTrigger?.dataset.bookPrice && !book.hidden ? $('bookSide') : selectedOutcome();
-            const original = sheetTrigger?.isConnected ? sheetTrigger : price;
-            const trigger = original?.getClientRects().length ? original : fallback;
-            trigger.focus({ preventScroll: true });
+            const price = bookLevel(trigger?.dataset);
+            const fallback = trigger?.dataset.bookPrice && !book.hidden ? $('bookSide') : selectedOutcome();
+            const original = trigger?.isConnected ? trigger : price;
+            const target = original?.getClientRects().length ? original : fallback;
+            target.focus({ preventScroll: true });
+            window.scrollTo({ top, behavior: 'instant' });
         }
-        sheetTrigger = null;
         updateJumps();
     }
 
@@ -985,7 +991,7 @@
 
     function openTradeSheet(trigger) {
         if (sheet.open) return;
-        sheetTrigger = trigger;
+        sheetOrigin = { trigger, top: window.scrollY };
         sheet.append(tradeTicket);
         sheet.showModal();
         sheet.scrollTop = 0;

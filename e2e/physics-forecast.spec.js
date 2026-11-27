@@ -1476,9 +1476,13 @@ test('the phone keeps the amount visible with a reduced visual viewport and retu
     await mockClass(page);
     await page.goto('/forecast.html');
     const level = page.locator('#bookAsks [data-book-price="51"]'), sheet = page.locator('#tradeSheet');
-    await level.evaluate(button => button.scrollIntoView({ block:'center', behavior:'instant' }));
-    const scroll = await page.evaluate(() => window.scrollY);
+    await level.evaluate(button => {
+        button.scrollIntoView({ block:'center', behavior:'instant' });
+        // Record the position when the player opens the ticket, after any scrolling needed for the click.
+        button.addEventListener('click', () => { window.forecastBookScroll = window.scrollY; }, { capture:true, once:true });
+    });
     await level.click();
+    const scroll = await page.evaluate(() => window.forecastBookScroll);
     await expect(page.locator('#limitPrice')).toHaveValue('0,51');
     const quantity = page.locator('#quantity');
     await quantity.fill('7');
@@ -1491,15 +1495,16 @@ test('the phone keeps the amount visible with a reduced visual viewport and retu
         const rect = input.getBoundingClientRect(), bar = document.querySelector('#tradeSheet .forecast-section-head');
         return rect.top >= bar.getBoundingClientRect().bottom && rect.bottom <= window.visualViewport.height;
     })).toBe(true);
-    await page.evaluate(async () => {
+    await page.evaluate(async top => {
         delete visualViewport.height;
         visualViewport.dispatchEvent(new Event('resize'));
+        window.scrollTo({ top:top - 120, behavior:'instant' });
         const at = Date.now(), day = PhysicsForecast.dayKey(at), id = '00000000000000000902';
         await window.AlmanionAccount.database.ref('physicsForecast').update({
             head:{ id, n:2 }, ['events/' + id]:{ kind:'order', day, n:2, at,
                 actor:'peer', action:'buy', side:'yes', mode:'market', limit:51, qty:1 }
         });
-    });
+    }, scroll);
     await expect(sheet).not.toHaveAttribute('data-keyboard', '');
     await expect(quantity).toHaveValue('7');
     await page.locator('#closeTradeSheet').click();
