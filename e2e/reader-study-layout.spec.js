@@ -110,25 +110,43 @@ test('homepage search keeps its results while closing and can be reopened mid-fa
     })).toBe(false);
 });
 
-test('the current paragraph starts a scoped session and preserves the custom deck', async ({ page }) => {
+async function selectCurrentTopic(page) {
+    const topicId = await page.locator('article.exp-reader-current').getAttribute('id');
+    await page.locator('#kcSelectAll').click();
+    await page.locator('.kc-deck[data-topic="' + topicId + '"]').click();
+    return topicId;
+}
+
+async function startCurrentTopic(page, kind) {
+    await selectCurrentTopic(page);
+    if (kind) {
+        const active = await page.locator('#kcPrimaryTypeList [aria-pressed="true"]').evaluateAll(buttons => buttons.map(button => button.dataset.kind));
+        for (const name of active.filter(name => name !== kind)) {
+            await page.locator('#kcPrimaryTypeList [data-kind="' + name + '"]').click();
+        }
+    }
+    await page.locator('#kcStart').click();
+}
+
+test('choosing a topic preserves the scope, preferences and resumable session', async ({ page }) => {
     await page.goto('/physics-10.html');
-    await page.locator('#knowledgeCheckBtn').click();
-    const paragraph = await page.locator('article.exp-reader-current').getAttribute('id');
-    await expect(page.locator('#kcReviewOverlay')).toBeVisible();
-    const saved = await page.evaluate(() => Object.keys(localStorage).map(key => {
-        try { return JSON.parse(localStorage.getItem(key)); } catch { return null; }
-    }).find(value => Array.isArray(value?.selectedTopicIds)));
-    expect(saved.selectedTopicIds).toEqual([paragraph]);
-    await page.locator('#kcChooseTopics').click();
+    const launch = page.locator('#knowledgeCheckBtn');
+    await launch.click();
+    await expect(page.locator('#kcReviewOverlay')).toBeHidden();
+    const paragraph = await selectCurrentTopic(page);
     await page.locator('#kcSizeOptions > summary').click();
     await page.locator('[data-limit="15"]').click();
-    await page.locator('#kcConfigure').click();
+    await page.locator('#kcStart').click();
+    const saved = await page.evaluate(() => JSON.parse(AlmanionKCStorage.get('kc_session_v3_' + location.pathname)));
+    expect(saved.selectedTopicIds).toEqual([paragraph]);
+    await page.locator('#kcChooseTopics').click();
+    await page.locator('#kcResumeSession').click();
     await expect(page.locator('#kcQuestionTitle')).toBeFocused();
     await page.reload();
-    await page.locator('#knowledgeCheckBtn').click();
-    await expect(page.locator('#kcReviewOverlay')).toBeVisible();
-    await page.locator('#kcChooseTopics').click();
+    await launch.click();
+    await expect(page.locator('#kcResumeSession')).toBeVisible();
     await expect(page.locator('[data-limit="15"]')).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.locator('.kc-deck[aria-pressed="true"]')).toHaveCount(1);
 });
 
 const cyclePage = '/physics-10.html#razbor-gazovykh-tsiklov';
@@ -142,13 +160,11 @@ test('tablet learning opens from the toolbar and topic search keeps the selectio
     await expect(page.locator('#sidebar')).toHaveJSProperty('inert', true);
     await expect(page.locator('#knowledgeCheckBtn')).toBeHidden();
     await learn.click();
-    await expect(page.locator('#kcProgressCopy')).toHaveText('Закреплено 0 из 9');
-    await page.getByRole('button', { name: 'Выбрать темы' }).click();
-    await expect(page.locator('#kcQuickStart')).toBeHidden();
-    await expect(page.locator('#kcTypeOptions')).toHaveJSProperty('open', false);
+    await expect(page.locator('#kcReviewOverlay')).toBeHidden();
+    await expect(page.locator('#kcTypeOptions')).toBeVisible();
     expect(await page.locator('#kcDeckList .kc-topic-group').count()).toBeGreaterThan(1);
-    await expect(page.locator('#kcSelectChoices details[open]')).toHaveCount(0);
-    await page.locator('#kcTopicOptions > summary').click();
+    await expect(page.locator('#kcTopicOptions details')).toHaveCount(0);
+    await expect(page.locator('#kcExtraTypeList')).toBeHidden();
     await page.locator('#kcSelectAll').click();
     const search = page.getByRole('searchbox', { name: 'Поиск тем' });
     await search.fill('неизвестная тема');
@@ -157,8 +173,7 @@ test('tablet learning opens from the toolbar and topic search keeps the selectio
     await expect(page.locator('#kcDeckList .kc-deck')).toHaveCount(1);
     await page.locator('#kcSelectAll').click();
     await expect(page.locator('#kcDeckList .kc-deck')).toHaveAttribute('aria-pressed', 'true');
-    await page.locator('#kcTypesHeading').click();
-    await page.locator('#kcTypeList [data-kind="derivation"]').click();
+    await expect(page.locator('#kcPrimaryTypeList [data-kind="derivation"]')).toHaveAttribute('aria-pressed', 'true');
     const count = Number(await page.locator('#kcStartCount').textContent());
     expect(count).toBeGreaterThan(0);
     await page.locator('#kcStart').click();
@@ -172,6 +187,7 @@ test('starting again needs confirmation and cancelling preserves the saved answe
     const launch = page.locator('#knowledgeCheckBtn');
     const session = () => page.evaluate(() => JSON.parse(AlmanionKCStorage.get('kc_session_v3_' + location.pathname)));
     await launch.click();
+    await startCurrentTopic(page);
     await expect(page.locator('#kcFront')).toBeVisible();
     const firstId = (await session()).queue[0].cardId;
     await page.locator('#kcFront').click();
@@ -179,8 +195,7 @@ test('starting again needs confirmation and cancelling preserves the saved answe
     await page.locator('#kcPauseBtn').click();
     const saved = await session();
     expect(saved.reviewed).toBe(1);
-    await expect(page.locator('#kcResumeSession')).toContainText('Осталось 9 карточек');
-    await expect(page.locator('#kcQuickStart')).toBeHidden();
+    await expect(page.locator('#kcResumeSession')).toContainText('Осталось ' + saved.queue.length);
     await page.locator('#kcRestartSession').click();
     await expect(page.locator('#kcStartConfirmation')).toBeVisible();
     expect(await session()).toEqual(saved);
@@ -189,6 +204,7 @@ test('starting again needs confirmation and cancelling preserves the saved answe
     expect(await session()).toEqual(saved);
     await page.reload();
     await launch.click();
+    await page.locator('#kcResumeSession').click();
     await expect(page.locator('#kcReviewOverlay')).toBeVisible();
     expect((await session()).queue).toEqual(saved.queue);
     await page.locator('#kcPauseBtn').click();
@@ -203,6 +219,7 @@ test('starting again needs confirmation and cancelling preserves the saved answe
 test('Enter opens the note source, then Return to card resumes the same question', async ({ page }) => {
     await page.goto(cyclePage);
     await page.locator('#knowledgeCheckBtn').click();
+    await startCurrentTopic(page, 'derivation');
     const question = page.locator('#kcQuestion');
     await expect(question).toContainText('Прямоугольный цикл');
     await expect(question).toContainText('Теплота на каждом участке и КПД');
@@ -241,6 +258,7 @@ test.describe('touch study', () => {
         await page.goto('/physics-10.html');
         const learn = page.locator('#expBottomNav').getByRole('button', { name: 'Учить' });
         await learn.tap();
+        await startCurrentTopic(page);
         const sheet = page.locator('#kcSketch canvas');
         const pad = page.locator('#kcSketch');
         await expect(sheet).toBeVisible();
@@ -279,6 +297,7 @@ test.describe('touch study', () => {
         await page.locator('#kcPauseBtn').tap();
         await page.reload();
         await learn.tap();
+        await page.locator('#kcResumeSession').tap();
         await expect(page.locator('#kcBack')).toBeVisible();
         await pad.getByRole('button', { name: 'Черновик' }).tap();
         expect(await pixel()).toEqual(first);
@@ -297,6 +316,7 @@ test.describe('touch study', () => {
         await page.goto('/physics-10.html');
         const learn = page.locator('#expBottomNav').getByRole('button', { name: 'Учить' });
         await learn.tap();
+        await startCurrentTopic(page);
         const pad = page.locator('#kcSketch');
         const canvas = pad.locator('canvas');
         const reset = pad.getByRole('button', { name: 'Вернуть исходный вид черновика' });
@@ -344,6 +364,7 @@ test.describe('touch study', () => {
         await page.locator('#kcPauseBtn').tap();
         await page.reload();
         await learn.tap();
+        await page.locator('#kcResumeSession').tap();
         await expect(reset).toHaveText('200%');
         await expect.poll(() => opacity(0, 0)).toBeGreaterThan(160);
         await reset.tap();
@@ -384,6 +405,7 @@ test.describe('touch study', () => {
         await page.emulateMedia({ reducedMotion: 'no-preference' });
         await page.goto('/physics-10.html');
         await page.locator('#expBottomNav').getByRole('button', { name: 'Учить' }).tap();
+        await startCurrentTopic(page);
         const art = page.locator('#kcManualPause .kc-pause-art');
         const paths = () => art.locator('.kc-bubble-orbit').evaluateAll(els => els.map(el => el.getAttribute('style')));
         await page.locator('#kcPauseBtn').tap();
@@ -403,9 +425,10 @@ test.describe('touch study', () => {
         await page.goto('/physics-10.html');
         const learn = page.locator('#expBottomNav').getByRole('button', { name: 'Учить' });
         await learn.tap();
+        await startCurrentTopic(page);
         await page.locator('#kcPauseBtn').tap();
         await expect(page.locator('#kcPauseValue')).toHaveText('1 мин');
-        await page.locator('#kcPauseOptions > summary').tap();
+        await page.locator('#kcPauseToggle').tap();
         await page.getByRole('button', { name: '15 с', exact: true }).tap();
         await page.locator('#kcResumeSession').tap();
         await page.locator('#kcFront').tap();
@@ -426,9 +449,10 @@ test.describe('touch study', () => {
         await expect(page.locator('#kcWaitTime')).toHaveCount(0);
         await page.goto('/chemistry-10.html');
         await learn.tap();
+        await startCurrentTopic(page);
         await page.locator('#kcPauseBtn').tap();
         await expect(page.locator('#kcPauseValue')).toHaveText('Без пауз');
-        await page.locator('#kcPauseOptions > summary').tap();
+        await page.locator('#kcPauseToggle').tap();
         await page.getByRole('button', { name: '1 мин', exact: true }).tap();
         await expect(page.locator('#kcPauseValue')).toHaveText('1 мин');
     });
@@ -443,6 +467,7 @@ test.describe('touch study', () => {
         });
         const launch = page.locator('#expBottomNav').getByRole('button', { name: 'Учить' });
         await launch.tap();
+        await startCurrentTopic(page, 'derivation');
         await expect(page.locator('#kcPromptContext img')).toBeVisible();
         await page.locator('#kcFront').tap();
         const content = page.locator('#kcContent');

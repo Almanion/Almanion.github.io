@@ -67,11 +67,7 @@ for (const width of [320, 390, 430, 768, 1024, 1440]) {
         await page.setViewportSize({ width, height: width === 320 ? 568 : 844 });
         await page.goto('/physics-10.html');
         await page.locator('#knowledgeCheckBtn').evaluate(el => el.click());
-        await page.locator('#kcChooseTopics').click();
         await expect(page.locator('#kcCustomOptions')).toBeVisible();
-        await page.locator('#kcTypesHeading').click();
-        await page.locator('#kcTopicOptions > summary').click();
-        await page.locator('.kc-topic-group summary').filter({ hasText: 'Молекулярная физика' }).click();
         await page.waitForTimeout(350);
         const layout = await page.locator('#kcSelectModal').evaluate(modal => {
             const body = modal.querySelector('.kc-select-scroll');
@@ -85,8 +81,10 @@ for (const width of [320, 390, 430, 768, 1024, 1440]) {
         for (const style of layout.labelStyles) { expect(style.whitespace).toBe('normal'); expect(style.overflow).toBeLessThan(2); }
         await page.screenshot({ path: info.outputPath('study-top.png') });
         await page.locator('#kcSizeOptions > summary').click();
-        await page.locator('.kc-select-scroll').evaluate(el => el.scrollTop = el.scrollHeight);
+        await page.locator('[data-limit="all"]').scrollIntoViewIfNeeded();
         await expect(page.locator('[data-limit="all"]')).toBeInViewport();
+        await page.locator('.kc-select-scroll').evaluate(el => el.scrollTop = el.scrollHeight);
+        await expect(page.locator('.kc-deck').last()).toBeInViewport();
         await expect(page.locator('#kcStart')).toBeInViewport();
         await page.screenshot({ path: info.outputPath('study-bottom.png') });
         if (width < 769) {
@@ -160,7 +158,6 @@ test('stress dictionary ignores obsolete generic block filters and retains searc
     await page.locator('#searchInput').fill('вероисповедание');
     await expect(page.locator('#searchResultsPanel')).toContainText('вероисповЕдание');
     await page.locator('#knowledgeCheckBtn').click();
-    await page.locator('#kcChooseTopics').click();
     await expect(page.locator('#kcTypeList [data-kind="stress"]')).toBeEnabled();
 });
 

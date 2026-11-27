@@ -10,7 +10,6 @@ test('study and export load on first intent; displayed formulas are study cards'
     await page.waitForFunction(() => typeof openSettingsModal === 'function');
     expect(await page.evaluate(() => !!window.__kcFSRS || !!window.AlmanionPrintExport || !!window.AlmanionPdfDownload)).toBe(false);
     await page.locator('#knowledgeCheckBtn').click();
-    await page.locator('#kcChooseTopics').click();
     await expect(page.locator('#kcCustomOptions')).toBeVisible();
     const formulas = await page.evaluate(() => window.__kcFSRS.extractCards(Array.from(document.querySelectorAll('article.topic[id]')).map(node => node.id), ['formula']));
     expect(formulas.length).toBeGreaterThan(20);

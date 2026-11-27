@@ -44,6 +44,8 @@
         'В этом параграфе нет карточек. Выберите другую тему.': 'This section has no cards. Choose another topic.',
         'Темы': 'Topics',
         'Типы карточек': 'Card types',
+        'Показать все': 'Show all',
+        'Только основные': 'Main types only',
         'Темы с таблицами': 'Topics with tables',
         'Темы не найдены': 'No matching topics',
         'Выбрать всё': 'Select all',
@@ -92,6 +94,8 @@
         'Поставить сессию на паузу': 'Pause the session',
         'Пауза': 'Pause',
         'Паузы повторения': 'Review pauses',
+        'Как работают паузы повторения': 'How review pauses work',
+        'Пауза задаёт время до повторного показа карточки. Пока она ждёт, можно учить другие. Если готовых карточек нет, появится таймер и кнопка «Повторить сейчас».': 'A pause sets how soon a card can appear again. You can study other cards in the meantime. If none are ready, a timer and a Review now button appear.',
         'Время до повторения карточки': 'Wait before repeating a card',
         'Без пауз': 'No pauses',
         'До повторения': 'Next review in',
@@ -352,6 +356,8 @@
     }));
 
     function translateDynamic(value) {
+        const extraTypes = value.match(/^Дополнительно выбрано (\d+)$/);
+        if (extraTypes) return extraTypes[1] + ' additional ' + (extraTypes[1] === '1' ? 'type' : 'types') + ' selected';
         const patterns = [
             [/^Закреплено (\d+) из (\d+)$/, 'Learned $1 of $2'],
             [/^(\d+) (?:ответ|ответа|ответов) · осталось (\d+)$/, '$1 answers · $2 left'],

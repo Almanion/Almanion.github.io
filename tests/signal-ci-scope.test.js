@@ -93,6 +93,9 @@ assert.ok(readerTests.some(file => file.endsWith("reader-tools.test.js")));
 assert.ok(!readerTests.some(file => file.endsWith("signal-frontier-long-operation.test.js")));
 const workflow = fs.readFileSync(".github/workflows/pages.yml", "utf8");
 const { normalizeAppearanceReferences } = require("../tools/signal-ci-scope");
+assert.deepEqual(classify(["knowledge-check.js", "note-runtime.js", "styles/knowledge-check.css", "english-ui.js",
+  "e2e/learning-label.spec.js", "e2e/reader-study-layout.spec.js", "e2e/layout-usability.spec.js", "e2e/knowledge-tables.spec.js"]),
+  { suite: "reader", campaign: false });
 const brand = ["images/almanion-wordmark.svg", "favicon.ico", "favicons/app-icon-192.png", "tools/build-favicons.js"];
 const fast = { suite: "appearance", campaign: false };
 const full = { suite: "all", campaign: true };

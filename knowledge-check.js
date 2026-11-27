@@ -446,6 +446,17 @@
         { selector: '.example-box', kind: 'example', label: 'Примеры', singular: 'пример', prompt: 'Воспроизведите пример' },
         { selector: 'table', kind: 'table', label: 'Таблицы', singular: 'строку', prompt: 'Восстановите строку таблицы' }
     ];
+    // Group filters in the picker while keeping the card kinds and IDs used by review history.
+    const MERGED_TYPES = {
+        definition: ['definition', 'statement', 'theorem'],
+        derivation: ['derivation', 'proof']
+    };
+    const mergedKinds = new Set(Object.values(MERGED_TYPES).flat());
+    const TYPE_FILTERS = CARD_TYPES
+        .filter(({ kind }) => kind !== 'table' && (!mergedKinds.has(kind) || Object.hasOwn(MERGED_TYPES, kind)))
+        .map(({ kind, label }) => ({ kind, label, kinds: MERGED_TYPES[kind] || [kind] }));
+    const PRIMARY_TYPE_KINDS = new Set(['definition', 'formula', 'derivation', 'stress']);
+
     const GENERIC_TITLES = new Set([
         'определение', 'definition', 'формула', 'formula', 'вывод', 'derivation',
         'замечание', 'замечания', 'remark', 'теорема', 'theorem', 'лемма', 'lemma',
@@ -465,18 +476,10 @@
         return /(?:^|\/)likbez\.html$/i.test(location.pathname);
     }
 
-    function isRussianStressPage() {
-        return document.body?.dataset.noteSubject === 'russian-ege';
-    }
-
     function studyProfile() {
         return {
             types: CARD_TYPES,
-            defaultKinds: isRussianStressPage()
-                ? ['stress']
-                : (isLikbezPage()
-                    ? ['definition', 'theorem', 'lemma', 'statement', 'corollary']
-                    : ['definition']),
+            defaultKinds: TYPE_FILTERS.filter(type => PRIMARY_TYPE_KINDS.has(type.kind)).flatMap(type => type.kinds),
             empty: 'В выбранных темах нет карточек этих типов.'
         };
     }
@@ -1380,7 +1383,7 @@
                 container.appendChild(btn);
             }
         }
-        if (btn && !btn.hasAttribute('data-learn-launcher')) btn.addEventListener('click', event => launchLearning(event.currentTarget));
+        if (btn && !btn.hasAttribute('data-learn-launcher')) btn.addEventListener('click', event => openSelect(event.currentTarget));
 
         // Оверлеи
         const select = document.createElement('div');
@@ -1393,47 +1396,56 @@
                 '<div class="kc-head"><h2 class="kc-title" id="kcSelectTitle">Учить</h2></div>' +
                 '<div class="kc-select-scroll">' +
                 '<div id="kcSelectChoices">' +
-                '<div id="kcQuickOptions">' +
-                    '<div id="kcManualPause" hidden><div class="kc-pause-art" aria-hidden="true"></div>' +
-                        '<button type="button" class="kc-turn-off-pauses" id="kcDisableManualPauses">Отключить паузы</button></div>' +
-                    '<div class="kc-session-resume" id="kcSessionResume" hidden></div>' +
-                    '<div class="kc-paragraph-choice" id="kcQuickChoice" hidden><strong id="kcQuickTopic"></strong>' +
-                        '<button type="button" class="kc-btn kc-btn-primary" id="kcQuickStart"><span>Этот параграф</span><small id="kcQuickCount"></small></button></div>' +
-                '</div>' +
-                '<button type="button" class="kc-btn kc-btn-ghost kc-configure" id="kcConfigure" aria-controls="kcCustomOptions" aria-expanded="false">Выбрать темы</button>' +
                 '<div id="kcCustomOptions">' +
                 '<div class="kc-session-notice kc-session-notice-error" id="kcSelectNotice" hidden aria-live="polite"></div>' +
                 '<div class="kc-study-sections" id="kcStudySections" role="group" aria-label="Вид заданий" hidden>' +
                     '<button type="button" class="kc-size-option" data-section="blocks" aria-pressed="true">Блоки</button>' +
                     '<button type="button" class="kc-size-option" data-section="tables" aria-pressed="false">Таблицы</button>' +
                 '</div>' +
-                '<details class="kc-filter-section kc-study-disclosure" id="kcTypeOptions">' +
-                    '<summary id="kcTypesHeading"><span>Типы карточек</span><small id="kcTypesSelected"></small></summary>' +
-                    '<div class="kc-type-list" id="kcTypeList"></div>' +
-                '</details>' +
-                '<details class="kc-filter-section kc-study-disclosure" id="kcTopicOptions">' +
-                    '<summary><span id="kcTopicsHeading">Темы</span><small id="kcTopicCount" aria-live="polite"></small></summary>' +
-                    '<div class="kc-disclosure-body"><div class="kc-topic-tools">' +
-                    '<label class="kc-topic-search">' +
-                        '<span class="kc-visually-hidden">Поиск тем</span>' +
-                        '<input type="search" id="kcTopicSearch" placeholder="Найти тему" autocomplete="off"></label>' +
-                    '<button type="button" class="kc-btn kc-btn-ghost" id="kcSelectAll">Снять выбор</button></div>' +
+                '<section id="kcTypeOptions" aria-labelledby="kcTypesHeading">' +
+                    '<div class="kc-select-heading"><h3 id="kcTypesHeading">Типы карточек</h3>' +
+                        '<button type="button" class="kc-show-types" id="kcShowTypes" aria-controls="kcExtraTypeList" aria-expanded="false" hidden>Показать все</button></div>' +
+                    '<div id="kcTypeList">' +
+                        '<div class="kc-type-list" id="kcPrimaryTypeList"></div>' +
+                        '<div class="kc-type-list" id="kcExtraTypeList" hidden></div>' +
+                    '</div>' +
+                    '<p class="kc-selection-status" id="kcExtraTypesSelected" hidden></p>' +
+                '</section>' +
+                '<div id="kcManualPause" hidden><div class="kc-pause-art" aria-hidden="true"></div>' +
+                    '<button type="button" class="kc-turn-off-pauses" id="kcDisableManualPauses">Отключить паузы</button></div>' +
+                '<div class="kc-session-resume" id="kcSessionResume" hidden></div>' +
+                '<div class="kc-study-settings">' +
+                    '<details class="kc-study-setting kc-study-disclosure" id="kcSizeOptions">' +
+                        '<summary><span>Карточек за занятие</span><small id="kcSizeValue"></small></summary>' +
+                        '<div class="kc-disclosure-body kc-size-list" id="kcSizeList" role="group" aria-label="Карточек за занятие">' +
+                            '<button type="button" class="kc-size-option" data-limit="15" aria-pressed="false"><span class="kc-size-name">Короткая</span><span class="kc-size-meta">до 15 карточек</span></button>' +
+                            '<button type="button" class="kc-size-option" data-limit="30" aria-pressed="false"><span class="kc-size-name">Обычная</span><span class="kc-size-meta">до 30 карточек</span></button>' +
+                            '<button type="button" class="kc-size-option" data-limit="all" aria-pressed="true"><span class="kc-size-name">Все</span><span class="kc-size-meta">без ограничения</span></button>' +
+                        '</div>' +
+                    '</details>' +
+                    '<div class="kc-study-setting" id="kcPauseOptions">' +
+                        '<div class="kc-pause-heading">' +
+                            '<span id="kcPauseLabel">Паузы повторения</span>' +
+                            '<button type="button" class="kc-pause-help" id="kcPauseHelp" aria-label="Как работают паузы повторения" aria-controls="kcPauseExplanation" aria-expanded="false"><span aria-hidden="true">?</span></button>' +
+                            '<button type="button" class="kc-pause-toggle" id="kcPauseToggle" aria-labelledby="kcPauseLabel kcPauseValue" aria-controls="kcPauseChoices" aria-expanded="false"><small id="kcPauseValue"></small></button>' +
+                        '</div>' +
+                        '<p class="kc-pause-explanation" id="kcPauseExplanation" hidden>Пауза задаёт время до повторного показа карточки. Пока она ждёт, можно учить другие. Если готовых карточек нет, появится таймер и кнопка «Повторить сейчас».</p>' +
+                        '<div class="kc-disclosure-body kc-pause-choices" id="kcPauseChoices" role="group" aria-label="Время до повторения карточки" hidden>' +
+                            [...PAUSE_OPTIONS].map(([seconds, label]) => '<button class="kc-btn kc-btn-ghost" type="button" data-seconds="' + seconds + '">' + label + '</button>').join('') +
+                        '</div>' +
+                    '</div>' +
+                '</div>' +
+                '<section id="kcTopicOptions" aria-labelledby="kcTopicsHeading">' +
+                    '<div class="kc-select-heading"><h3 id="kcTopicsHeading">Темы</h3><small id="kcTopicCount" aria-live="polite"></small></div>' +
+                    '<div class="kc-topic-tools">' +
+                        '<label class="kc-topic-search"><span class="kc-visually-hidden">Поиск тем</span>' +
+                            '<input type="search" id="kcTopicSearch" placeholder="Найти тему" autocomplete="off"></label>' +
+                        '<button type="button" class="kc-btn kc-btn-ghost" id="kcSelectAll">Снять выбор</button>' +
+                    '</div>' +
                     '<div class="kc-deck-list" id="kcDeckList"></div>' +
                     '<p class="kc-no-topics" id="kcNoTopics" role="status" hidden>Темы не найдены</p>' +
-                    '</div></details>' +
-                '<details class="kc-filter-section kc-study-disclosure" id="kcSizeOptions">' +
-                    '<summary><span>Карточек за занятие</span><small id="kcSizeValue"></small></summary>' +
-                    '<div class="kc-disclosure-body kc-size-list" id="kcSizeList" role="group" aria-label="Карточек за занятие">' +
-                        '<button type="button" class="kc-size-option" data-limit="15" aria-pressed="false"><span class="kc-size-name">Короткая</span><span class="kc-size-meta">до 15 карточек</span></button>' +
-                        '<button type="button" class="kc-size-option" data-limit="30" aria-pressed="false"><span class="kc-size-name">Обычная</span><span class="kc-size-meta">до 30 карточек</span></button>' +
-                        '<button type="button" class="kc-size-option" data-limit="all" aria-pressed="true"><span class="kc-size-name">Все</span><span class="kc-size-meta">без ограничения</span></button>' +
-                    '</div></details>' +
+                '</section>' +
                 '</div>' +
-                '<details class="kc-filter-section kc-study-disclosure" id="kcPauseOptions">' +
-                    '<summary><span>Паузы повторения</span><small id="kcPauseValue"></small></summary>' +
-                    '<div class="kc-disclosure-body kc-pause-choices" role="group" aria-label="Время до повторения карточки">' +
-                        [...PAUSE_OPTIONS].map(([seconds, label]) => '<button class="kc-btn kc-btn-ghost" type="button" data-seconds="' + seconds + '">' + label + '</button>').join('') +
-                    '</div></details>' +
                 '</div>' +
                 '<section id="kcStartConfirmation" class="kc-start-confirmation" aria-labelledby="kcConfirmTitle" hidden>' +
                     '<h3 id="kcConfirmTitle" tabindex="-1">Начать новое занятие?</h3>' +
@@ -1503,13 +1515,16 @@
         document.getElementById('kcSelectClose').addEventListener('click', closeSelect);
         document.getElementById('kcReviewClose').addEventListener('click', closeReview);
         document.getElementById('kcChooseTopics').addEventListener('click', () => {
-            if (revealed || session?.reviewed) untouchedQuickStart = null;
             closeReview();
-            openSelect(undefined, 'topics');
+            openSelect();
         });
         document.getElementById('kcPauseBtn').addEventListener('click', pauseSession);
         document.getElementById('kcUndoBtn').addEventListener('click', undoLastGrade);
-        select.addEventListener('click', e => { if (e.target === select) closeSelect(); });
+        select.addEventListener('click', event => {
+            if (event.target === select) closeSelect();
+            else if (!event.target.closest('#kcPauseHelp, #kcPauseExplanation') &&
+                !document.getElementById('kcPauseExplanation').hidden) setPausePanel('kcPauseHelp', false);
+        });
         review.addEventListener('click', e => { if (e.target === review) closeReview(); });
         review.addEventListener('click', event => {
             const details = document.getElementById('kcProgressDetails');
@@ -1523,22 +1538,31 @@
             updateStartBtn();
             document.getElementById('kcResumeSession')?.focus({ preventScroll: true });
         });
-        document.getElementById('kcPauseOptions').addEventListener('click', event => {
+        for (const id of ['kcPauseHelp', 'kcPauseToggle']) {
+            document.getElementById(id).addEventListener('click', event => {
+                const opening = event.currentTarget.getAttribute('aria-expanded') === 'false';
+                const panel = setPausePanel(id, opening);
+                if (!opening) return;
+                setPausePanel(id === 'kcPauseHelp' ? 'kcPauseToggle' : 'kcPauseHelp', false);
+                panel.scrollIntoView({ block: 'nearest' });
+            });
+        }
+        document.getElementById('kcPauseChoices').addEventListener('click', event => {
             const choice = event.target.closest('[data-seconds]');
-            if (choice) { setPause(Number(choice.dataset.seconds)); renderResumeBanner(); updateStartBtn(); }
+            if (!choice) return;
+            setPause(Number(choice.dataset.seconds));
+            renderResumeBanner();
+            updateStartBtn();
+        });
+        document.getElementById('kcShowTypes').addEventListener('click', () => {
+            showAllTypes = !showAllTypes;
+            renderTypeFilters();
         });
         document.getElementById('kcSelectAll').addEventListener('click', toggleSelectAll);
         document.getElementById('kcTopicSearch').addEventListener('input', renderDeckList);
         document.getElementById('kcStart').addEventListener('click', event => requestStart(selected, selectedKinds, sessionLimit, event.currentTarget));
         document.getElementById('kcCancelStart').addEventListener('click', cancelStart);
         document.getElementById('kcConfirmStart').addEventListener('click', confirmStart);
-        document.getElementById('kcQuickStart').addEventListener('click', () => {
-            if (quickChoice) requestStart(quickChoice.ids, quickChoice.kinds, 'all', document.getElementById('kcQuickStart'));
-        });
-        document.getElementById('kcConfigure').addEventListener('click', () => {
-            if (selectMode === 'topics' && resumeAvailable) resumeSavedSession();
-            else setCustomOptions(document.getElementById('kcCustomOptions').hidden);
-        });
         document.querySelectorAll('#kcStudySections [data-section]').forEach(button => {
             button.addEventListener('click', () => {
                 if (studySection === button.dataset.section) return;
@@ -1622,7 +1646,13 @@
             if (event.key === 'Escape') {
                 event.preventDefault();
                 if (pendingStart) cancelStart();
-                else if (overlay.id === 'kcSelectOverlay') closeSelect();
+                else if (overlay.id === 'kcSelectOverlay') {
+                    const help = document.getElementById('kcPauseHelp');
+                    if (help.getAttribute('aria-expanded') === 'true') {
+                        setPausePanel(help.id, false);
+                        help.focus({ preventScroll: true });
+                    } else closeSelect();
+                }
                 else if (document.getElementById('kcProgressDetails').open) {
                     const progress = document.getElementById('kcProgressDetails');
                     progress.open = false;
@@ -1669,43 +1699,19 @@
     let sessionLimit = 'all';
     let studySection = 'blocks';
     let sectionPreferences = {};
-    let quickChoice = null;
     let pendingStart = null;
-    let resumeAvailable = false;
-    let selectMode = 'menu';
-    let untouchedQuickStart = null;
-    const expandedTopicGroups = new Map();
+    let showAllTypes = false;
 
-    function currentParagraphChoice() {
-        const current = document.querySelector('.topic.exp-reader-current')
-            || [...document.querySelectorAll('.main-content article.topic[id]')].find(topic =>
-                topic.getClientRects().length && topic.getBoundingClientRect().bottom > 90);
-        if (!current) return null;
-        const topics = current.id === 'stress-all'
-            ? TOPICS.filter(topic => topic.counts.stress > 0)
-            : TOPICS.filter(topic => topic.id === current.id);
-        const kinds = CARD_TYPES.filter(type => topics.some(topic => topic.counts[type.kind])).map(type => type.kind);
-        return kinds.length ? { ids: topics.map(topic => topic.id), kinds, name: current.querySelector('.topic-title').textContent.trim() } : null;
+    function setPausePanel(buttonId, open) {
+        const button = document.getElementById(buttonId);
+        const panel = document.getElementById(button.getAttribute('aria-controls'));
+        button.setAttribute('aria-expanded', String(open));
+        panel.hidden = !open;
+        return panel;
     }
 
-    function setCustomOptions(open) {
-        document.getElementById('kcCustomOptions').hidden = !open;
-        document.getElementById('kcQuickOptions').hidden = open;
-        document.querySelector('#kcSelectModal > .kc-actions').hidden = !open;
-        const toggle = document.getElementById('kcConfigure');
-        toggle.hidden = selectMode === 'learn' || (!quickChoice && !resumeAvailable);
-        toggle.setAttribute('aria-expanded', String(open));
-        toggle.textContent = open ? 'Назад' : 'Выбрать темы';
-        document.querySelector('#kcSelectModal .kc-select-scroll').scrollTop = 0;
-        if (open) {
-            renderTypeFilters();
-            renderDeckList();
-            renderSessionSize();
-        }
-    }
-
-    function sectionTopics() {
-        return TOPICS.filter(topic => studySection === 'tables' ? topic.counts.table > 0 :
+    function sectionTopics(section = studySection) {
+        return TOPICS.filter(topic => section === 'tables' ? topic.counts.table > 0 :
             Object.keys(topic.counts).some(kind => kind !== 'table' && topic.counts[kind] > 0));
     }
 
@@ -1755,107 +1761,118 @@
         return counts;
     }
 
+    function availableTypeFilters(topics) {
+        const counts = countKinds(topics);
+        return TYPE_FILTERS.filter(type => type.kinds.some(kind => counts[kind] > 0));
+    }
+
+    function primaryTypeFilters(available) {
+        const primary = available.filter(type => PRIMARY_TYPE_KINDS.has(type.kind));
+        return primary.length ? primary : available;
+    }
+
     function applySectionPreferences(saved) {
         const topics = sectionTopics();
-        selected = Array.isArray(saved?.topics)
-            ? saved.topics.filter(id => topics.some(topic => topic.id === id))
-            : topics.map(topic => topic.id);
+        const topicIds = topics.map(topic => topic.id);
+        selected = Array.isArray(saved?.topics) ? saved.topics.filter(id => topicIds.includes(id)) : topicIds;
         if (studySection === 'tables') {
             selectedKinds = ['table'];
             return;
         }
-        const counts = countKinds(topics);
-        const available = CARD_TYPES.filter(type => type.kind !== 'table' && counts[type.kind] > 0).map(type => type.kind);
-        const preferred = Array.isArray(saved?.kinds) ? saved.kinds : studyProfile().defaultKinds;
-        selectedKinds = preferred.filter(kind => available.includes(kind));
-        if (preferred.length && !selectedKinds.length) selectedKinds = available;
+        const available = availableTypeFilters(topics);
+        const primary = primaryTypeFilters(available);
+        const defaults = primary.flatMap(type => type.kinds);
+        if (!Array.isArray(saved?.kinds)) {
+            selectedKinds = defaults;
+            return;
+        }
+        const preferred = available.filter(type => type.kinds.some(kind => saved.kinds.includes(kind)));
+        selectedKinds = !preferred.length && saved.kinds.length ? defaults : preferred.flatMap(type => type.kinds);
     }
 
-    function launchLearning(opener) {
-        return openSelect(opener, 'learn');
-    }
-
-    function openSelect(opener, mode = 'menu') {
+    function openSelect(opener, { paused = false } = {}) {
         if (!uiInitialized) return false;
-        if (opener) lastDialogOpener = opener;
-        selectMode = mode;
-        if (mode !== 'topics') untouchedQuickStart = null;
         cardCache = new Map();
         TOPICS = discoverTopics();
+        if (!TOPICS.length) return false;
+        if (opener) lastDialogOpener = opener;
         if (!session) store = loadStore();
         pauseSeconds = readPause();
-        if (mode === 'learn') {
-            const saved = savedSession();
-            if (saved) {
-                session = saved;
-                openReview(saved.reviewPosition);
-                return true;
-            }
-        }
-        quickChoice = currentParagraphChoice();
-        if (mode === 'learn' && quickChoice && startSession(quickChoice.ids, quickChoice.kinds, 'all', true)) {
-            untouchedQuickStart = session.startedAt;
-            return true;
-        }
         const prefs = loadPreferences();
         sectionPreferences = prefs.sections;
-        studySection = prefs.section === 'tables' && TOPICS.some(t => t.counts.table) ? 'tables' : 'blocks';
+        const hasTables = TOPICS.some(topic => topic.counts.table > 0);
+        studySection = hasTables && (prefs.section === 'tables' || !sectionTopics('blocks').length) ? 'tables' : 'blocks';
         applySectionPreferences(sectionPreferences[studySection] || (studySection === prefs.section ? prefs : null));
         sessionLimit = prefs.limit;
         pendingStart = null;
+        showAllTypes = false;
         document.getElementById('kcSelectChoices').hidden = false;
         document.getElementById('kcStartConfirmation').hidden = true;
-        const notice = document.getElementById('kcSelectNotice');
-        notice.hidden = mode !== 'learn';
-        if (!notice.hidden) notice.textContent = quickChoice
-            ? 'В этом параграфе всё повторено. Можно выбрать другую тему.'
-            : 'В этом параграфе нет карточек. Выберите другую тему.';
+        document.getElementById('kcSelectNotice').hidden = true;
         document.getElementById('kcTopicSearch').value = '';
-        expandedTopicGroups.clear();
-        document.querySelectorAll('#kcSelectChoices details[open]').forEach(details => { details.open = false; });
+        document.getElementById('kcSizeOptions').open = false;
+        setPausePanel('kcPauseHelp', false);
+        setPausePanel('kcPauseToggle', false);
+        document.querySelector('#kcSelectModal > .kc-actions').hidden = false;
         renderPauseOptions();
-        renderStudySection();
-        renderResumeBanner();
+        const hasSavedSession = renderResumeBanner();
         const manualPause = document.getElementById('kcManualPause');
-        manualPause.hidden = mode !== 'pause' || !resumeAvailable;
+        manualPause.hidden = !paused || !hasSavedSession;
         if (!manualPause.hidden) manualPause.querySelector('.kc-pause-art').innerHTML = pauseArtwork('kcManual');
-        setCustomOptions(mode === 'topics' || mode === 'learn' || (!quickChoice && !resumeAvailable));
-        savePreferences();
+        renderStudySection();
+        renderTypeFilters();
+        renderDeckList();
+        renderSessionSize();
         if (storeDirty) { saveStore(); storeDirty = false; }
-        document.getElementById('kcSelectOverlay').classList.remove('hidden');
-        setTimeout(() => document.getElementById('kcSelectModal')?.focus(), 0);
+        const overlay = document.getElementById('kcSelectOverlay');
+        overlay.classList.remove('hidden');
+        overlay.querySelector('.kc-select-scroll').scrollTop = 0;
+        setTimeout(() => {
+            if (!overlay.classList.contains('hidden')) document.getElementById('kcSelectModal').focus({ preventScroll: true });
+        }, 0);
+        return true;
     }
 
     function renderTypeFilters() {
-        const list = document.getElementById('kcTypeList');
-        if (!list) return;
+        if (studySection === 'tables') return;
         const topics = sectionTopics();
-        const counts = countKinds(topics.filter(topic => selected.includes(topic.id)));
-        const available = countKinds(topics);
-        const active = CARD_TYPES.filter(type => selectedKinds.includes(type.kind));
-        document.getElementById('kcTypesSelected').textContent = active.length === 1 ? active[0].label :
-            active.length ? 'Выбрано ' + active.length : 'Выберите типы';
-        list.replaceChildren();
-        CARD_TYPES.forEach(type => {
-            if (type.kind === 'table' || !available[type.kind]) return;
-            const count = counts[type.kind] || 0;
+        const available = availableTypeFilters(topics);
+        const primary = new Set(primaryTypeFilters(available));
+        const extra = available.filter(type => !primary.has(type));
+        const topicSelection = new Set(selected);
+        const counts = countKinds(topics.filter(topic => topicSelection.has(topic.id)));
+        const mainList = document.getElementById('kcPrimaryTypeList');
+        const extraList = document.getElementById('kcExtraTypeList');
+        const toggle = document.getElementById('kcShowTypes');
+        toggle.hidden = extra.length === 0;
+        toggle.setAttribute('aria-expanded', String(showAllTypes && extra.length > 0));
+        toggle.textContent = showAllTypes ? 'Только основные' : 'Показать все';
+        extraList.hidden = !showAllTypes;
+        const extraActive = extra.filter(type => type.kinds.some(kind => selectedKinds.includes(kind))).length;
+        const summary = document.getElementById('kcExtraTypesSelected');
+        summary.hidden = showAllTypes || extraActive === 0;
+        summary.textContent = 'Дополнительно выбрано ' + extraActive;
+        mainList.replaceChildren();
+        extraList.replaceChildren();
+        available.forEach(type => {
+            const active = type.kinds.some(kind => selectedKinds.includes(kind));
+            const count = type.kinds.reduce((sum, kind) => sum + counts[kind], 0);
             const button = document.createElement('button');
             button.type = 'button';
-            button.className = 'kc-type-chip' + (selectedKinds.includes(type.kind) ? ' is-selected' : '');
+            button.className = 'kc-type-chip';
             button.dataset.kind = type.kind;
-            button.setAttribute('aria-pressed', selectedKinds.includes(type.kind) ? 'true' : 'false');
-            button.innerHTML = '<span class="kc-type-icon" aria-hidden="true">' + (selectedKinds.includes(type.kind) ? IC.check : '') + '</span>' +
+            button.setAttribute('aria-pressed', String(active));
+            button.innerHTML = '<span class="kc-type-icon" aria-hidden="true">' + (active ? IC.check : '') + '</span>' +
                 '<span class="kc-type-copy"><span class="kc-type-name">' + escapeHtml(type.label) + '</span></span>' +
                 '<span class="kc-type-count">' + count + '</span>';
             button.addEventListener('click', () => {
-                if (selectedKinds.includes(type.kind)) selectedKinds = selectedKinds.filter(kind => kind !== type.kind);
-                else selectedKinds.push(type.kind);
+                selectedKinds = active ? selectedKinds.filter(kind => !type.kinds.includes(kind)) : selectedKinds.concat(type.kinds);
                 savePreferences();
                 renderTypeFilters();
                 renderDeckList();
-                list.querySelector('[data-kind="' + type.kind + '"]')?.focus({ preventScroll: true });
+                document.querySelector('#kcTypeList [data-kind="' + type.kind + '"]')?.focus({ preventScroll: true });
             });
-            list.appendChild(button);
+            (primary.has(type) ? mainList : extraList).appendChild(button);
         });
     }
 
@@ -1884,7 +1901,6 @@
     function renderResumeBanner() {
         const host = document.getElementById('kcSessionResume');
         const saved = savedSession();
-        resumeAvailable = !!saved;
         host.hidden = !saved;
         host.replaceChildren();
         if (saved) {
@@ -1899,19 +1915,7 @@
                 requestStart(saved.selectedTopicIds, saved.selectedKinds, saved.limit, event.currentTarget));
         }
 
-        const sameParagraph = saved && quickChoice && saved.limit === 'all' &&
-            saved.selectedTopicIds.length === quickChoice.ids.length && saved.selectedTopicIds.every(id => quickChoice.ids.includes(id)) &&
-            saved.selectedKinds.length === quickChoice.kinds.length && saved.selectedKinds.every(kind => quickChoice.kinds.includes(kind));
-        document.getElementById('kcQuickChoice').hidden = !quickChoice || sameParagraph;
-        if (quickChoice && !sameParagraph) {
-            const plan = buildRecommendation(extractCards(quickChoice.ids, quickChoice.kinds), Date.now(), { limit: 'all' });
-            const quick = document.getElementById('kcQuickStart');
-            quick.classList.toggle('kc-btn-primary', !saved);
-            quick.classList.toggle('kc-btn-ghost', !!saved);
-            quick.disabled = !plan.queue.length;
-            document.getElementById('kcQuickTopic').textContent = quickChoice.name;
-            document.getElementById('kcQuickCount').textContent = itemCount(plan.queue.length, quickChoice.kinds);
-        }
+        return !!saved;
     }
 
     function normalizeTopicQuery(value) {
@@ -1940,11 +1944,11 @@
         });
         list.replaceChildren();
         groups.forEach((entries, name) => {
-            const details = document.createElement('details');
-            details.className = 'kc-topic-group kc-study-disclosure';
-            details.open = searching || expandedTopicGroups.get(name) === true;
+            const section = document.createElement('section');
+            section.className = 'kc-topic-group';
             const selectedCount = entries.filter(topic => selected.includes(topic.id)).length;
-            const heading = document.createElement('summary');
+            const heading = document.createElement('h4');
+            heading.className = 'kc-topic-group-heading';
             heading.innerHTML = '<span>' + escapeHtml(name) + '</span><small>' + selectedCount + ' / ' + entries.length + '</small>';
             const cards = document.createElement('div');
             cards.className = 'kc-topic-group-list';
@@ -1971,11 +1975,8 @@
                 });
                 cards.append(card);
             });
-            if (!searching) details.addEventListener('toggle', () => {
-                if (details.isConnected) expandedTopicGroups.set(name, details.open);
-            });
-            details.append(heading, cards);
-            list.append(details);
+            section.append(heading, cards);
+            list.append(section);
         });
         if (focusedTopic) list.querySelector('[data-topic="' + CSS.escape(focusedTopic) + '"]')?.focus({ preventScroll: true });
         document.getElementById('kcNoTopics').hidden = topics.length > 0;
@@ -2026,7 +2027,7 @@
     // ============================================
     function requestStart(ids, kinds, limit, opener) {
         const saved = savedSession();
-        if (!saved || (saved.startedAt === untouchedQuickStart && !saved.reviewed && !saved.reviewPosition?.revealed)) {
+        if (!saved) {
             startSession(ids, kinds, limit);
             return;
         }
@@ -2045,7 +2046,7 @@
         pendingStart = null;
         document.getElementById('kcStartConfirmation').hidden = true;
         document.getElementById('kcSelectChoices').hidden = false;
-        document.querySelector('#kcSelectModal > .kc-actions').hidden = document.getElementById('kcCustomOptions').hidden;
+        document.querySelector('#kcSelectModal > .kc-actions').hidden = false;
         document.querySelector('#kcSelectModal .kc-select-scroll').scrollTop = scrollTop;
         opener?.focus({ preventScroll: true });
     }
@@ -2062,7 +2063,7 @@
         startSession(ids, kinds, limit);
     }
 
-    function startSession(topicIds, kinds, limit, quickLaunch = false) {
+    function startSession(topicIds, kinds, limit) {
         if (!topicIds.length || !kinds.length) return false;
         const now = Date.now();
         const cards = extractCards(topicIds, kinds);
@@ -2071,14 +2072,13 @@
 
         if (storeDirty) { saveStore(); storeDirty = false; }
         if (!queue.length) {
-            if (quickLaunch) return false;
             const notice = document.getElementById('kcSelectNotice');
             notice.hidden = false;
             notice.textContent = 'Пока нет карточек к повторению';
             renderResumeBanner();
             // A stale count can occur when another tab reviewed the deck.
             // Keep the saved session and show the current selection.
-            setCustomOptions(true);
+            renderDeckList();
             return false;
         }
 
@@ -2119,7 +2119,7 @@
                 openSelect(lastDialogOpener);
             } else {
                 renderResumeBanner();
-                setCustomOptions(!quickChoice);
+                document.getElementById('kcSelectModal').focus({ preventScroll: true });
             }
             return;
         }
@@ -2221,7 +2221,6 @@
         }
         if (sketch || !host.isConnected || current !== session || !matchMedia(SKETCH_SCREEN).matches) return;
         host.hidden = false;
-        host.addEventListener('pointerdown', () => { untouchedQuickStart = null; }, { once: true });
         sketch = window.AlmanionStudyInk.mount(host, attempt, scopedStorage?.scope?.() || 'guest');
         if (revealed) sketch?.answer();
     }
@@ -2237,12 +2236,14 @@
         renderCounts();
         const content = document.getElementById('kcContent');
         const context = def.context;
+        const group = TYPE_FILTERS.find(type => type.kinds.includes(def.kind));
+        const kindLabel = group?.label || def.kindLabel;
         const sourceLabel = def.kind === 'table' ? 'К строке в конспекте' : 'К блоку в конспекте';
         content.innerHTML =
             '<div class="kc-card-wrap">' +
                 '<div class="kc-card-context"><div class="kc-topic-label">' + escapeHtml(def.topicName) + '</div>' +
                     '<div class="kc-card-meta">' +
-                        (def.kindLabel ? '<span class="kc-kind-label kc-kind-' + escapeHtml(def.kind || 'definition') + '">' + escapeHtml(def.kindLabel) + '</span>' : '') +
+                        (kindLabel ? '<span class="kc-kind-label kc-kind-' + escapeHtml(group?.kind || def.kind) + '">' + escapeHtml(kindLabel) + '</span>' : '') +
                         '<button type="button" class="kc-tool-btn kc-tool-source" id="kcGoToSource">' + sourceLabel + '</button>' +
                     '</div>' +
                 '</div>' +
@@ -2508,7 +2509,7 @@
             document.getElementById('kcReviewOverlay').classList.add('hidden');
             kcRemove(SESSION_KEY);
             session = null;
-            openSelect(undefined, 'topics');
+            openSelect();
         });
         content.scrollTop = 0;
         document.getElementById('kcDone').focus({ preventScroll: true });
@@ -2541,7 +2542,7 @@
         clearWait();
         session = null;
         document.getElementById('kcReviewOverlay').classList.add('hidden');
-        openSelect(undefined, 'pause');
+        openSelect(undefined, { paused: true });
     }
 
     function finishSession() {
@@ -2617,9 +2618,7 @@
 
     // ---------- Инициализация ----------
     function init() {
-        TOPICS = discoverTopics();
-        if (TOPICS.length === 0) return; // нет тем — нечего повторять
-        cardCache = new Map();
+        if (!document.querySelector('article.topic[id]')) return;
         if (!uiInitialized) {
             buildUI();
             uiInitialized = true;
@@ -2699,7 +2698,7 @@
     // Хук для синхронизации аккаунта (account.js): применить уже объединённый
     // снимок сразу, в том числе если облако ответило во время открытой сессии.
     window.KC = window.KC || {};
-    window.KC.open = launchLearning;
+    window.KC.open = openSelect;
     window.KC.reload = function (key, snapshot) {
         if (key !== STORE_KEY) return;
         store = snapshot && typeof snapshot === 'object' && !Array.isArray(snapshot)
