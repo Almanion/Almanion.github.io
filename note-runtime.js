@@ -16,7 +16,7 @@
         personalNotes: 'personal-notes.js?v=20261121-4',
         offline: 'offline-library.js?v=20261114',
         printStyles: 'styles/print.css?v=20261121-4',
-        filterStyles: 'styles/note-filter.css?v=20261123-4',
+        filterStyles: 'styles/note-filter.css?v=20261127-2',
         filter: 'note-filter.js?v=20261121-4',
         settings: 'settings.js?v=20261127-1',
         searchText: 'search-text.js?v=20261121-2',
@@ -189,6 +189,70 @@
         }
     }
 
+    function mountReaderRail(icons) {
+        if (document.getElementById('readerRail')) return true;
+        const arrow = document.querySelector('.sidebar-expand-btn');
+        if (!arrow || !document.body.classList.contains('tablet-reader-layout') ||
+            !document.querySelector('.main-content article.topic[id]')) return false;
+
+        const english = document.documentElement.lang === 'en';
+        const rail = document.createElement('div');
+        rail.id = 'readerRail';
+        rail.className = 'reader-rail';
+        rail.setAttribute('role', 'group');
+        rail.setAttribute('aria-label', english ? 'Reader shortcuts' : 'Быстрые действия конспекта');
+        const actions = [
+            { key: 'learn', label: english ? 'Learn' : 'Учить', icon: icons.knowledge },
+            { key: 'bookmarks', label: english ? 'Bookmarks' : 'Закладки', icon: icons.bookmarks,
+                feature: 'bookmarks', open: () => window.AlmanionBookmarks.open() },
+            { key: 'pdf', label: english ? 'Download PDF' : 'Скачать PDF', icon: icons.print,
+                feature: 'print', open: () => window.AlmanionPrintExport.open() },
+            { key: 'notes', label: english ? 'Personal notes' : 'Личные пометки', icon: icons.notes,
+                feature: 'bookmarks', open: () => window.AlmanionPersonalNotes.open() }
+        ];
+
+        const group = document.createElement('div');
+        group.className = 'reader-rail-actions';
+        for (const action of actions) {
+            const button = document.createElement('button');
+            button.type = 'button';
+            button.className = 'reader-rail-action';
+            button.dataset.readerTool = action.key;
+            button.title = action.label;
+            button.setAttribute('aria-label', action.label);
+            button.setAttribute('aria-haspopup', 'dialog');
+            button.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + action.icon + '</svg>';
+            button.addEventListener('click', async () => {
+                if (!action.feature) {
+                    await openLearning(button);
+                    return;
+                }
+                if (button.getAttribute('aria-busy') === 'true') return;
+                button.setAttribute('aria-busy', 'true');
+                try {
+                    await ensure(action.feature);
+                    if (!button.getClientRects().length || button.closest('[inert]')) return;
+                    button.focus({ preventScroll: true });
+                    action.open();
+                } catch (_) {
+                    window.AlmanionToast?.show(english ? 'Could not open this tool. Try again.' :
+                        'Не удалось открыть инструмент. Повторите попытку.', { type: 'error' });
+                } finally {
+                    button.removeAttribute('aria-busy');
+                }
+            });
+            group.append(button);
+        }
+        const sidebar = document.getElementById('sidebar');
+        const keepArrowFocus = document.activeElement === arrow;
+        if (sidebar?.parentElement === document.body) sidebar.before(rail);
+        else arrow.before(rail);
+        rail.append(arrow, group);
+        document.getElementById('tabletLearnBtn')?.remove();
+        if (keepArrowFocus) arrow.focus({ preventScroll: true });
+        return true;
+    }
+
     function onIntent(selector, eventName, feature) {
         document.addEventListener(eventName, function (event) {
             if (event.target && event.target.closest(selector)) ensure(feature).catch(function () {});
@@ -257,7 +321,9 @@
         window.addEventListener('almanion-load-newyear', function () { ensure('newyear').catch(function () {}); });
         const icons = {
             knowledge: '<path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="m9 14 2 2 4-4"/>',
-            print: '<path d="M7 3h7l3 3v5M14 3v4h3M6 14h12a2 2 0 0 1 2 2v3H4v-3a2 2 0 0 1 2-2ZM7 19v2h10v-2"/>'
+            print: '<path d="M7 3h7l3 3v5M14 3v4h3M6 14h12a2 2 0 0 1 2 2v3H4v-3a2 2 0 0 1 2-2ZM7 19v2h10v-2"/>',
+            bookmarks: '<path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>',
+            notes: '<path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4Z"/>'
         };
         function launcher(id, feature, label, container) {
             if (!container || document.getElementById(id)) return;
@@ -300,8 +366,13 @@
                 button.dataset.printExclude = 'true';
             }
         }
-        filterReady.then(addTabletLearn);
-        window.addEventListener('almanion:content-ready', () => filterReady.then(addTabletLearn));
+        function addReaderShortcuts() {
+            filterReady.then(() => loadStyle('filterStyles')).then(() => {
+                if (!mountReaderRail(icons)) addTabletLearn();
+            }).catch(() => {});
+        }
+        addReaderShortcuts();
+        window.addEventListener('almanion:content-ready', addReaderShortcuts);
         document.addEventListener('keydown', event => {
             if (window.AlmanionPrintExport || !(event.ctrlKey || event.metaKey) || event.altKey || event.code !== 'KeyP') return;
             event.preventDefault();

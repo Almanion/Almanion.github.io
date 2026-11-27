@@ -32,6 +32,69 @@ test('tablet contents overlay preserves reading width and the desktop preference
     await expect(sidebar).toHaveJSProperty('inert', true);
 });
 
+test('collapsed reader shortcuts have a consistent size and leave room for the note', async ({ page }) => {
+    await page.addInitScript(() => localStorage.setItem('sidebarCollapsed', 'true'));
+    await page.goto('/physics-10.html#opytnye-obosnovaniya-mkt');
+    await page.waitForFunction(() => window.AlmanionSettings?.ready);
+    await page.evaluate(() => AlmanionSettings.update({ noteScale: 1.25 }));
+    const rail = page.locator('#readerRail');
+    const arrow = rail.getByRole('button', { name: 'Развернуть меню навигации' });
+    for (const width of [769, 985, 1050, 1051, 1280, 1440, 1920]) {
+        await page.setViewportSize({ width, height: 900 });
+        await expect(rail).toBeVisible();
+        await expect(arrow).toHaveAttribute('aria-expanded', 'false');
+        await expect(rail.locator('button > svg')).toHaveCount(5);
+        const layout = await rail.evaluate(element => {
+            const panel = element.getBoundingClientRect();
+            const note = document.querySelector('.main-content > .page-header').getBoundingClientRect();
+            const actions = element.querySelector('.reader-rail-actions');
+            return {
+                clearance: note.left - panel.right,
+                divider: getComputedStyle(actions).borderBlockStartWidth,
+                buttons: [...element.querySelectorAll('button')].map(button => ({
+                    width: button.getBoundingClientRect().width,
+                    height: button.getBoundingClientRect().height,
+                    icon: button.querySelector('svg').getBoundingClientRect().width,
+                    text: button.textContent.trim()
+                }))
+            };
+        });
+        expect(layout.clearance).toBeGreaterThanOrEqual(8);
+        expect(layout.divider).toBe('1px');
+        expect(layout.buttons).toEqual(Array(5).fill({ width: 44, height: 44, icon: 18, text: '' }));
+    }
+    await arrow.focus();
+    await page.setViewportSize({ width: 390, height: 844 });
+    await expect(rail).toBeHidden();
+    await expect(page.locator('#expBottomNav').getByRole('button', { name: 'Меню' })).toBeFocused();
+    await page.setViewportSize({ width: 985, height: 900 });
+    await expect(rail).toBeVisible();
+    await page.emulateMedia({ media: 'print' });
+    await expect(rail).toBeHidden();
+});
+
+test('collapsed reader shortcuts open the existing dialogs and reclaim focus', async ({ page }) => {
+    await page.setViewportSize({ width: 985, height: 893 });
+    await page.goto('/physics-10.html');
+    const rail = page.locator('#readerRail');
+    await expect(page.locator('#sidebar')).toHaveJSProperty('inert', true);
+    for (const [name, selector] of [
+        ['Учить', '#kcSelectModal'],
+        ['Закладки', '#bookmarksModal'],
+        ['Скачать PDF', '#printExportDialog'],
+        ['Личные пометки', '.personal-notes-dialog']
+    ]) {
+        const button = rail.getByRole('button', { name, exact: true });
+        await expect(button).toBeInViewport();
+        await button.click();
+        const dialog = page.locator(selector);
+        await expect(dialog).toBeVisible();
+        await page.keyboard.press('Escape');
+        await expect(dialog).toBeHidden();
+        await expect(button).toBeFocused();
+    }
+});
+
 test('home searches across subjects on demand, restores focus and opens the exact paragraph', async ({ page }) => {
     const indices = [];
     page.on('request', request => { if (request.url().endsWith('/search-index.json')) indices.push(request.url()); });
@@ -152,13 +215,14 @@ test('choosing a topic preserves the scope, preferences and resumable session', 
 const cyclePage = '/physics-10.html#razbor-gazovykh-tsiklov';
 const cycleSource = '[data-kc-id="thermo-lesson-rectangle-cycle-calculation"]';
 
-test('tablet learning opens from the toolbar and topic search keeps the selection scoped', async ({ page }) => {
+test('tablet learning opens from the rail and topic search keeps the selection scoped', async ({ page }) => {
     await page.setViewportSize({ width: 820, height: 1000 });
     await page.goto(cyclePage);
-    const learn = page.locator('.note-reader-controls').getByRole('button', { name: 'Учить', exact: true });
+    const learn = page.locator('#readerRail').getByRole('button', { name: 'Учить', exact: true });
     await expect(learn).toBeInViewport();
     await expect(page.locator('#sidebar')).toHaveJSProperty('inert', true);
-    await expect(page.locator('#knowledgeCheckBtn')).toBeHidden();
+    await expect(page.locator('#knowledgeCheckBtn')).not.toBeInViewport();
+    await expect(page.locator('.note-reader-controls .note-reader-learn')).toHaveCount(0);
     await learn.click();
     await expect(page.locator('#kcReviewOverlay')).toBeHidden();
     await expect(page.locator('#kcTypeOptions')).toBeVisible();

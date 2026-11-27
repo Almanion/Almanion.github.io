@@ -590,6 +590,7 @@ function syncSidebarVisibility(sidebar) {
     sidebar.inert = document.body.classList.contains('matcenter-auth-open') || (mobile ? !open : sidebar.classList.contains('collapsed'));
     document.querySelectorAll('#menuToggle, #expBottomNav [aria-controls="sidebar"]').forEach(button => button.setAttribute('aria-expanded', String(open)));
     document.getElementById('menuToggle')?.setAttribute('aria-label', open ? 'Закрыть меню' : 'Открыть меню');
+    document.querySelector('.sidebar-expand-btn')?.setAttribute('aria-expanded', String(!sidebar.inert));
 }
 
 function initMobileMenu() {
@@ -621,12 +622,17 @@ function initMobileMenu() {
     let lastFocused = document.activeElement;
     document.addEventListener('focusin', event => { lastFocused = event.target; });
     matchMedia('(max-width: 768px)').addEventListener('change', event => {
-        const focusInside = sidebar.contains(document.activeElement) || (document.activeElement === document.body && sidebar.contains(lastFocused));
+        const focused = document.activeElement === document.body ? lastFocused : document.activeElement;
+        const focusInside = sidebar.contains(focused);
+        const focusOnRail = focused?.closest('.reader-rail');
         const collapsed = !event.matches && (usesTabletDrawer() || _safeGet('sidebarCollapsed') === 'true');
         sidebar.classList.toggle('collapsed', collapsed);
         document.body.classList.toggle('sidebar-collapsed', collapsed);
         closeMobileMenu(false);
-        if (focusInside && sidebar.inert) (event.matches ? mobileMenuButton() : document.querySelector('.sidebar-expand-btn'))?.focus({ preventScroll: true });
+        if ((focusInside && sidebar.inert) || (event.matches && focusOnRail)) {
+            const target = event.matches ? mobileMenuButton() : document.querySelector('.sidebar-expand-btn');
+            target?.focus({ preventScroll: true });
+        }
     });
     menuToggle.addEventListener('click', () => {
         if (sidebar.classList.contains('open')) closeMobileMenu();
@@ -854,20 +860,20 @@ function initSidebarCollapse() {
         }
     }
     
-    // Создаём кнопку для разворачивания (отдельная, за пределами сайдбара)
+    const isReader = !!mainContent.querySelector('.content-section > .topic') && !document.body.classList.contains('matcenter-page');
+    document.body.classList.toggle('tablet-reader-layout', isReader);
+
     let expandBtn = document.querySelector('.sidebar-expand-btn');
     if (!expandBtn) {
         expandBtn = document.createElement('button');
+        expandBtn.type = 'button';
         expandBtn.className = 'sidebar-expand-btn';
         expandBtn.title = 'Развернуть меню (горячая клавиша [)';
         expandBtn.setAttribute('aria-label', 'Развернуть меню навигации');
         expandBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>';
-        document.body.appendChild(expandBtn);
     }
-    
-    // Восстанавливаем состояние из localStorage
-    const isReader = !!mainContent.querySelector('.content-section > .topic') && !document.body.classList.contains('matcenter-page');
-    document.body.classList.toggle('tablet-reader-layout', isReader);
+    if (!expandBtn.isConnected) document.body.append(expandBtn);
+
     const isCollapsed = usesTabletDrawer() || _safeGet('sidebarCollapsed') === 'true';
     if (isCollapsed && window.innerWidth > 768) {
         sidebar.classList.add('collapsed');
@@ -879,10 +885,12 @@ function initSidebarCollapse() {
         tabletReaderWidth.addEventListener('change', () => {
             const collapsed = usesTabletDrawer() || (window.innerWidth > 768 && _safeGet('sidebarCollapsed') === 'true');
             const focusInside = sidebar.contains(document.activeElement);
+            const focusOnRail = document.activeElement?.closest('.reader-rail');
             sidebar.classList.toggle('collapsed', collapsed);
             document.body.classList.toggle('sidebar-collapsed', collapsed);
             syncSidebarVisibility(sidebar);
             if (collapsed && focusInside) expandBtn.focus({ preventScroll: true });
+            else if (!collapsed && window.innerWidth > 768 && focusOnRail) collapseBtn?.focus({ preventScroll: true });
         });
         sidebar.addEventListener('click', event => {
             if (usesTabletDrawer() && event.target.closest('a.nav-link')) collapseSidebar();
