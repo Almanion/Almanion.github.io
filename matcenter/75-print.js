@@ -134,20 +134,21 @@
         return record;
     }
 
-    function findTasks(query) {
-        if (!query) return draft.tasks;
+    function findTasks(tasks, query) {
+        if (!query) return tasks;
         const ranges = query.replace(/[№#]\s*/g, '').replace(/\s*[-–—]\s*/g, '-')
             .split(/[\s,;]+/).filter(Boolean).map(token => token.match(/^(\d+)(?:-(\d+))?$/));
         if (!ranges.length || ranges.some(range => !range)) return [];
         const limits = ranges.map(([, first, last]) => [Number(first), Number(last ?? first)]);
-        return draft.tasks.filter(task => limits.some(([first, last]) => task.number >= first && task.number <= last));
+        return tasks.filter(task => limits.some(([first, last]) => task.number >= first && task.number <= last));
     }
 
     function renderTaskResults(focusIndex) {
         const filterPicked = $('mcPrintOnlyPicked').checked;
-        const matching = findTasks($('mcPrintTaskSearch').value.trim());
-        draft.matches = filterPicked ? matching.filter(task => draft.picked.has(task)) : matching;
-        const results = draft.matches.slice(0, draft.limit).map(task => createTaskOption(task, draft.picked, true));
+        const { tasks, picked } = draft.displayedPicker;
+        const matching = findTasks(tasks, $('mcPrintTaskSearch').value.trim());
+        draft.matches = filterPicked ? matching.filter(task => picked.has(task)) : matching;
+        const results = draft.matches.slice(0, draft.limit).map(task => createTaskOption(task, picked, true));
         $('mcPrintTaskList').replaceChildren(...results.map(option => option.label));
         $('mcPrintTaskMore').hidden = draft.matches.length <= draft.limit;
         $('mcPrintTaskEmpty').hidden = draft.matches.length > 0;
@@ -157,10 +158,19 @@
 
     function update() {
         const mode = sourceMode();
+        const picker = draft.taskPickers[mode];
+        const showPicker = !!picker?.tasks.length;
         $('mcPrintSeriesSelection').hidden = mode !== 'series';
-        $('mcPrintTaskSelection').hidden = mode !== 'tasks';
-        $('mcPrintUnsolvedNote').hidden = mode !== 'unsolved';
-        if (mode === 'tasks' && !draft.matches) renderTaskResults();
+        $('mcPrintTaskSelection').hidden = !showPicker;
+        $('mcPrintUnsolvedNote').hidden = mode !== 'unsolved' || !showPicker;
+        if (showPicker && picker !== draft.displayedPicker) {
+            draft.displayedPicker = picker;
+            draft.limit = taskPageSize;
+            $('mcPrintTaskSearch').value = '';
+            $('mcPrintOnlyPicked').checked = false;
+            $('mcPrintTaskResults').scrollTop = 0;
+            renderTaskResults();
+        }
         overlay.querySelectorAll('input').forEach(input => {
             input.disabled = busy || (input.name === 'mcPrintSource' && input.value === 'series' && !draft.series.length);
         });
@@ -177,25 +187,32 @@
             seriesCount += count;
             seriesTotal += total;
         }
-        const count = mode === 'series' ? seriesCount : mode === 'tasks' ? draft.picked.size : draft.unreviewed.length;
+        const count = picker ? picker.picked.size : seriesCount;
         $('mcPrintSelectAll').disabled = busy || seriesCount === seriesTotal;
         $('mcPrintClear').disabled = busy || !seriesCount;
-        $('mcPrintClearPicked').disabled = busy || !draft.picked.size;
-        $('mcPrintPickMatches').hidden = !$('mcPrintTaskSearch').value.trim() || $('mcPrintOnlyPicked').checked || !draft.matches?.length;
-        $('mcPrintPickMatches').disabled = busy || !draft.matches?.some(task => !draft.picked.has(task));
-        $('mcPrintTaskMore').disabled = busy;
+        if (showPicker) {
+            const hasQuery = Boolean($('mcPrintTaskSearch').value.trim());
+            const pickMatches = $('mcPrintPickMatches');
+            pickMatches.textContent = hasQuery ? 'Выбрать найденные' : 'Выбрать все';
+            pickMatches.hidden = $('mcPrintOnlyPicked').checked || !draft.matches.length || (!hasQuery && mode !== 'unsolved');
+            pickMatches.disabled = busy || !draft.matches.some(task => !picker.picked.has(task));
+            $('mcPrintClearPicked').disabled = busy || !picker.picked.size;
+            $('mcPrintTaskMore').disabled = busy;
+        }
         overlay.querySelectorAll('[data-mc-print-action]').forEach(button => { button.disabled = busy || !count; });
-        const empty = { series: 'Выберите серии или откройте их состав.', tasks: 'Выберите задачи для печати.', unsolved: 'В разделе нет неразобранных задач.' };
-        $('mcPrintCount').textContent = count ? `${count} ${pluralizeTasks(count)}` : empty[mode];
+        const empty = mode === 'series' ? 'Выберите серии или откройте их состав.'
+            : showPicker ? 'Выберите задачи для печати.' : 'В разделе нет неразобранных задач.';
+        $('mcPrintCount').textContent = count ? `${count} ${pluralizeTasks(count)}` : empty;
     }
 
     async function exportHandouts(mode) {
         if (busy || !isOpen() || !authToken) return;
         const source = sourceMode();
+        const picker = draft.taskPickers[source];
         const series = draft.series.filter(item => item.included.size);
-        const groups = source === 'series'
-            ? series.map(item => ({ tasks: item.tasks.filter(task => item.included.has(task)), heading: /^Добавка\s*№/u.test(item.title) ? item.title : '' }))
-            : [{ tasks: source === 'tasks' ? draft.tasks.filter(task => draft.picked.has(task)) : draft.unreviewed, heading: '' }];
+        const groups = picker
+            ? [{ tasks: picker.tasks.filter(task => picker.picked.has(task)), heading: '' }]
+            : series.map(item => ({ tasks: item.tasks.filter(task => item.included.has(task)), heading: /^Добавка\s*№/u.test(item.title) ? item.title : '' }));
         if (!groups.length || !groups[0].tasks.length) return;
         const token = ++revision;
         // Copy only the original numbers and statements into the PDF.
@@ -266,10 +283,10 @@
                     <div id="mcPrintTaskSelection" hidden>
                         <label class="mc-print-search">
                             <svg viewBox="0 0 20 20" width="17" height="17" aria-hidden="true"><circle cx="8.5" cy="8.5" r="4.75"/><path d="m12 12 4 4"/></svg>
-                            <input id="mcPrintTaskSearch" type="search" aria-label="Номера задач" placeholder="Номера, например 16, 19, 25–30" autocomplete="off">
+                            <input id="mcPrintTaskSearch" type="search" aria-label="Номера задач" placeholder="Номера, например 16, 25–30" autocomplete="off">
                         </label>
                         <div class="mc-print-list-tools mc-print-task-tools">
-                            <label><input type="checkbox" id="mcPrintOnlyPicked">Только выбранные</label>
+                            <label><input type="checkbox" id="mcPrintOnlyPicked" aria-label="Только выбранные">Выбранные</label>
                             <button type="button" id="mcPrintPickMatches" hidden>Выбрать найденные</button>
                             <button type="button" id="mcPrintClearPicked">Снять выбор</button>
                         </div>
@@ -321,12 +338,13 @@
             update();
         });
         $('mcPrintPickMatches').addEventListener('click', () => {
-            draft.matches.forEach(task => draft.picked.add(task));
+            const { picked } = draft.displayedPicker;
+            draft.matches.forEach(task => picked.add(task));
             renderTaskResults(0);
             selectionChanged();
         });
         $('mcPrintClearPicked').addEventListener('click', () => {
-            draft.picked.clear();
+            draft.displayedPicker.picked.clear();
             renderTaskResults();
             selectionChanged();
             $('mcPrintTaskSearch').focus();
@@ -359,13 +377,14 @@
         const series = MatcenterWorkspaceModel.seriesList(tasks, currentGrade).map(createSeriesOption);
         const selectedSeriesKey = getSelectedMatcenterSeries()?.key;
         series.forEach(item => setSeriesIncluded(item, item.key === selectedSeriesKey));
+        const unreviewed = tasks.filter(t => ['Н', 'От', 'П'].includes(t.status));
         draft = {
-            grade: currentGrade, tasks, series, picked: new Set(), limit: taskPageSize,
-            unreviewed: tasks.filter(t => ['Н', 'От', 'П'].includes(t.status))
+            grade: currentGrade, series, taskPickers: {
+                tasks: { tasks, picked: new Set() },
+                unsolved: { tasks: unreviewed, picked: new Set(unreviewed) }
+            }
         };
         $('mcPrintSeries').scrollTop = 0;
-        $('mcPrintTaskSearch').value = '';
-        $('mcPrintOnlyPicked').checked = false;
         overlay.querySelector('[name="mcPrintSource"][value="' + (series.length ? 'series' : 'unsolved') + '"]').checked = true;
         selectionChanged();
         overlay.hidden = false;

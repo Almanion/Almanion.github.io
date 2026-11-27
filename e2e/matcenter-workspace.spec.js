@@ -132,13 +132,13 @@ test('guest password session keeps the real account sign-in available', async ({
 
 test('published HTML must not reuse the old cached Matcenter runtime for printing',async({page})=>{
     const errors=await setup(page);
-    await page.route('**/matcenter/runtime.js?v=20261123-7',route=>route.fulfill({contentType:'application/javascript',
+    await page.route('**/matcenter/runtime.js?v=20261127-task-picker',route=>route.fulfill({contentType:'application/javascript',
         body:'window.MatcenterRuntime={ensure:()=>Promise.reject(new Error("Stale cached runtime"))};'}));
     await page.goto('/matcenter.html?grade=grade-10'); await ready(page);
-    await expect(page.locator('script[src^="matcenter/runtime.js"]')).toHaveAttribute('src','matcenter/runtime.js?v=20261127-task-picker');
+    await expect(page.locator('script[src^="matcenter/runtime.js"]')).toHaveAttribute('src','matcenter/runtime.js?v=20261128-unreviewed-picker');
     await page.locator('#mcPrintButton').click();
     await expect(page.locator('#mcPrintDialog')).toBeVisible();
-    await expect(page.locator('script[data-matcenter-feature="print"]')).toHaveAttribute('src','matcenter/75-print.js?v=20261127-task-picker');
+    await expect(page.locator('script[data-matcenter-feature="print"]')).toHaveAttribute('src','matcenter/75-print.js?v=20261128-unreviewed-picker');
     expect(errors).toEqual([]);
 });
 
@@ -173,7 +173,7 @@ test('series printing keeps every original condition and number, ignores filters
     expect(errors).toEqual([]);
 });
 
-test('multiple series print in list order; unreviewed compilation uses shared status, not personal marks or search',async({page})=>{
+test('multiple series print in list order and unreviewed tasks can be excluded individually',async({page})=>{
     const yearTasks = [
         {number:16,seriesId:'s2',seriesTitle:'Серия 2',status:'Н'},
         {number:17,seriesId:'s2',seriesTitle:'Серия 2',status:'Р'},
@@ -223,14 +223,32 @@ test('multiple series print in list order; unreviewed compilation uses shared st
 
     await page.getByRole('radio',{name:'Неразобранные',exact:true}).check();
     await expect(page.locator('#mcPrintSeriesSelection')).toBeHidden();
-    await expect(page.locator('#mcPrintCount')).toContainText('3 задачи');
+    await expect(page.locator('#mcPrintTaskList input:checked')).toHaveCount(3);
+    await expect(page.locator('#mcPrintCount')).toHaveText('3 задачи');
+    const search = page.getByRole('searchbox',{name:'Номера задач'});
+    const excluded = page.getByRole('checkbox',{name:'Задача 110 · Серия 12',exact:true});
+    await search.fill('110–112');
+    await expect(page.locator('#mcPrintTaskList input')).toHaveCount(2);
+    await excluded.uncheck();
+    await expect(page.locator('#mcPrintCount')).toHaveText('2 задачи');
+    await page.getByRole('radio',{name:'Задачи',exact:true}).check();
+    await excluded.check();
+    await page.getByRole('radio',{name:'Неразобранные',exact:true}).check();
+    await expect(excluded).not.toBeChecked();
+    await expect(page.locator('#mcPrintCount')).toHaveText('2 задачи');
     await page.locator('[data-mc-print-action="preview"]').click();
     await expect(page.locator('#mcPrintPreview')).toBeVisible();
     const snapshot=await page.evaluate(()=>window.__printSnapshot);
-    expect(snapshot.handouts[0].tasks.map(t=>t.number)).toEqual([16,110,111]);
+    expect(snapshot.handouts[0].tasks.map(t=>t.number)).toEqual([16,111]);
     expect(snapshot.handouts[0].tasks.every(t=>Object.keys(t).sort().join(',')==='description,number,numberText')).toBe(true);
     expect(JSON.stringify(snapshot)).not.toContain('НЕ ПЕЧАТАТЬ');
     expect(await page.evaluate(()=>localStorage.getItem('mc-test-remote'))).toBe(marks);
+    await page.getByRole('button',{name:'Назад',exact:true}).click();
+    await page.locator('#mcPrintClearPicked').click();
+    await expect(page.locator('[data-mc-print-action="preview"]')).toBeDisabled();
+    await expect(page.locator('#mcPrintCount')).toHaveText('Выберите задачи для печати.');
+    await page.getByRole('button',{name:'Выбрать все',exact:true}).click();
+    await expect(page.locator('#mcPrintTaskList input:checked')).toHaveCount(3);
     await page.keyboard.press('Escape');expect(errors).toEqual([]);
 });
 
@@ -285,6 +303,9 @@ test('legacy archives can print unreviewed tasks without invented series',async(
     await expect(page.getByRole('radio',{name:'Серии',exact:true})).toBeDisabled();
     await expect(page.getByRole('radio',{name:'Неразобранные',exact:true})).toBeChecked();
     await expect(page.locator('#mcPrintCount')).toContainText('130 задач');
+    await page.getByRole('searchbox',{name:'Номера задач'}).fill('130');
+    await page.getByRole('checkbox',{name:'Задача 130',exact:true}).uncheck();
+    await expect(page.locator('#mcPrintCount')).toHaveText('129 задач');
     await expect(page.locator('[data-mc-print-action="print"]')).toBeEnabled();
     await page.keyboard.press('Escape');expect(errors).toEqual([]);
 });
@@ -411,6 +432,10 @@ for (const old of [false,true]) test(`series print dialog is usable at 320px, ol
     await page.getByRole('checkbox',{name:'Задача 12 · Серия 2. Геометрия',exact:true}).check();
     expect(await page.locator('.mc-print-footer-actions').evaluate(node=>node.scrollWidth<=node.clientWidth)).toBe(true);
     await page.screenshot({path:info.outputPath(`print-task-picker-320-${old}.png`)});
+    await page.getByRole('radio',{name:'Неразобранные',exact:true}).check();
+    await page.getByRole('checkbox',{name:'Задача 12 · Серия 2. Геометрия',exact:true}).uncheck();
+    await expect(page.locator('#mcPrintCount')).toHaveText('5 задач');
+    await page.screenshot({path:info.outputPath(`print-unreviewed-320-${old}.png`)});
     await page.keyboard.press('Escape'); expect(errors).toEqual([]);
 });
 
