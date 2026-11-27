@@ -4,7 +4,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const root = path.resolve(__dirname, '..');
 
-// File names are public URLs. The shapes themselves live in the home page sprite.
+// File names are public URLs. Sections with a homepage tile share its sprite artwork.
 const sections = [
     ['ph', 'physics', 'Физика'], ['ch', 'chemistry', 'Химия'],
     ['al', 'algebra', 'Математика'], ['geo', 'geometry', 'Геометрия'],
@@ -12,7 +12,10 @@ const sections = [
     ['en', 'english', 'English'], ['ph-exam', 'physics-exam', 'Билеты по физике'],
     ['mc', 'matcenter', 'МатЦентр'], ['lik', 'likbez', 'Ликбезы'],
     ['geography', 'geography', 'География'], ['duty', 'duty', 'Дежурство'],
-    ['tour', 'tour', 'Турслёт'], ['games', 'games', 'Игры'], ['contests', 'contests', 'Олимпиады']
+    ['tour', 'tour', 'Турслёт'], ['games', 'games', 'Игры'], ['contests', 'contests', 'Олимпиады'],
+    ['forecast', 'forecast', 'Прогнозы',
+        '<path d="M4 18l5.5-5.5 4.3 3.3L20 7" stroke-width="2.4"/>\n' +
+        '<circle cx="20" cy="7" r="2.7" fill="currentColor" stroke="none"/>']
 ];
 
 const tiles = [
@@ -28,8 +31,8 @@ function buildFavicons() {
     const css = read('styles/home-dashboard.css');
     const bookPath = read('images/almanion-wordmark.svg').match(/<path id="book-a"[^>]*\sd="([^"]+)"/)[1];
     const icons = {};
-    for (const [key, symbol, title] of sections) {
-        const paths = home.match(new RegExp('<symbol id="academic-' + symbol + '"[^>]*>([\\s\\S]*?)</symbol>'))[1].trim();
+    for (const [key, symbol, title, glyph] of sections) {
+        const paths = glyph || home.match(new RegExp('<symbol id="academic-' + symbol + '"[^>]*>([\\s\\S]*?)</symbol>'))[1].trim();
         const subject = symbol === 'algebra' ? 'math' : symbol;
         const palette = css.match(new RegExp('data-subject="' + subject + '"[^{}]*\\{\\s*--subject-light: (#[a-f0-9]+); --subject-dark: (#[a-f0-9]+)', 'i'));
         // Games and contests use the site's default indigo accent on the home page.

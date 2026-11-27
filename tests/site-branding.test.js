@@ -19,6 +19,7 @@ const { buildFavicons } = require('../tools/build-favicons');
 for (const [name, expected] of Object.entries(buildFavicons())) {
     assert.equal(read('favicons/' + name).replace(/\r\n/g, '\n'), expected, name + ': regenerate from the current artwork');
 }
+assert.match(read('forecast.html'), /<link rel="icon" href="favicons\/favicon-forecast\.svg\?v=/);
 const pages = JSON.parse(read('content/subjects.json')).map(subject => subject.page);
 for (const file of [
     ...pages, 'index.html', 'geometry-formulas.html', 'physics-exam.html', 'english.html', 'matcenter.html',
