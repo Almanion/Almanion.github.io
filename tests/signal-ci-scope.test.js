@@ -137,6 +137,11 @@ const newOrbit = orbitArtwork('<mask><rect/></mask><image href="images/profile-c
 assert.equal(normalizeProfileArt(oldOrbit), normalizeProfileArt(newOrbit));
 assert.notEqual(normalizeProfileArt(oldOrbit), normalizeProfileArt(orbitArtwork('<ellipse/>', '')));
 assert.notEqual(normalizeProfileArt(oldOrbit), normalizeProfileArt(orbitArtwork('<ellipse/>', '${buildOrbitTracks()}')));
+const relief = (fill, levels = 9) => profileArtwork(
+  '<g fill="' + fill + '">\n            ${contourLines(225, 85, ' + levels + ', .95)}\n</g>\n<path d="${riverRoute}"/>'
+).replace('aurora:', 'contours:');
+assert.equal(normalizeProfileArt(relief("navy")), normalizeProfileArt(relief("teal")));
+assert.notEqual(normalizeProfileArt(relief("navy")), normalizeProfileArt(relief("teal", 7)));
 assert.ok(require("../tools/run-tests").listTests(".", "appearance").some(file => file.endsWith("site-branding.test.js")));
 assert.match(workflow, /if: needs\.scope\.outputs\.suite == 'appearance'\s+run: npx playwright test e2e\/appearance\.spec\.js/);
 assert.match(workflow, /needs: \[scope, build, campaign\]/);

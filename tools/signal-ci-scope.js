@@ -113,14 +113,16 @@ function normalizeAppearanceReferences(file, source) {
     return source.replace(/^(\s*var ASSET_VERSION = ')[\w.-]+(';\s*)$/m, "$1VERSION$2");
   }
   if (file === "profile-covers.js") {
-    // Retain the orbit track reference and any code outside the SVG templates.
-    const art = /^( {8}(?:orbit|hills|waves|eclipse|aurora|terrazzo): `)([^`]*)(`)(?=,?\r?$)/gm;
-    const trackSlot = /^[ \t]*\$\{orbitTracks\}(?=[ \t]*\r?$)/gm;
+    // Preserve the existing drawing expressions and the rest of the renderer.
+    const art = /^( {8}(?:orbit|hills|waves|eclipse|aurora|contours|terrazzo|ink|garden): `)([^`]*)(`)(?=,?\r?$)/gm;
+    const drawingSlot = /^[ \t]*\$\{(?:orbitTracks|contourLines\(\d+, \d+, \d+, \d*\.\d+\))\}(?=[ \t]*\r?$)/gm;
+    const riverSlot = /\bd="\$\{riverRoute\}"/g;
     const otherMarkup = /<(?!\/?(?:defs|linearGradient|radialGradient|stop|rect|g|path|circle|ellipse|image|clipPath|mask|use)(?=[\s/>]))|\bon[\w:-]+\s*=|javascript\s*:/i;
     return source.replace(art, (original, start, markup, end) => {
-      const svg = markup.replace(trackSlot, "");
+      const svg = markup.replace(drawingSlot, "").replace(riverSlot, 'd=""');
       if (svg.includes("$") || otherMarkup.test(svg)) return original;
-      const slots = (markup.match(trackSlot) || []).map(slot => slot.trim()).join("");
+      const slots = [...(markup.match(drawingSlot) || []), ...(markup.match(riverSlot) || [])]
+        .map(slot => slot.trim()).join("");
       return start + "ARTWORK" + slots + end;
     });
   }

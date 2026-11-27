@@ -225,18 +225,56 @@
                     style="--cover-floor:.23;--cover-ceiling:.9;--cover-time:5s;--cover-delay:-1s"/>
             </g>`,
         contours: `
-            <defs><linearGradient id="@map" x2="1" y2="1"><stop stop-color="#293849"/><stop offset=".52" stop-color="#476059"/><stop offset="1" stop-color="#77735b"/></linearGradient></defs>
-            <rect width="720" height="240" fill="url(#@map)"/>
-            <g fill="none" stroke="#e6dcb0" stroke-width="1.25">
+            <defs>
+                <linearGradient id="@chart" x2="1" y2="1">
+                    <stop stop-color="#112633"/><stop offset=".58" stop-color="#163e41"/><stop offset="1" stop-color="#1c333c"/>
+                </linearGradient>
+                <linearGradient id="@terrain" x1=".16" y1="0" x2=".88" y2="1">
+                    <stop stop-color="#39766c"/><stop offset="1" stop-color="#1e4b53"/>
+                </linearGradient>
+                <path id="@ridge" d="M-182 34c-12-25 15-52 47-62 28-9 42-1 64-21
+                    20-18 40-34 68-29 24 4 38 24 58 25 24 2 52-4 79 9 30 15 47 35 45 54
+                    -4 31-44 38-81 38-24 0-49 0-71 17-21 16-52 18-77 7-22-9-33-17-60-14
+                    -30 2-61 0-72-24Z"/>
+            </defs>
+            <rect width="720" height="240" fill="url(#@chart)"/>
+            <path d="M40 0v240M120 0v240M200 0v240M280 0v240M360 0v240M440 0v240M520 0v240M600 0v240M680 0v240
+                M0 32h720M0 92h720M0 152h720M0 212h720" fill="none" stroke="#a4c8be" stroke-opacity=".10"/>
+            <g fill="none" stroke="#9dbcb0" stroke-width="1" opacity=".43">
                 ${contourLines(225, 85, 9, .95)}
                 ${contourLines(554, 192, 10, 2.5)}
             </g>
-            <path d="${riverRoute}" fill="none" stroke="#b0e7d5" stroke-width="2.3" opacity=".76"/>
-            <path class="profile-cover-flow" pathLength="100" d="${riverRoute}" fill="none" stroke="#e3ffdc" stroke-width="3.6"
-                stroke-linecap="round" opacity=".83" style="--cover-time:17s"/>
-            <path d="M73 77h78m-42-24v50m463-52h69m-33-23v45M351 12v65m-32-33h64" fill="none" stroke="#f5dbad" opacity=".45" stroke-dasharray="2 4"/>
-            <circle cx="340" cy="160" r="7" fill="#e5a77d"/>
-            <g class="profile-cover-beacon" style="--cover-time:5s"><circle cx="340" cy="160" r="12" fill="none" stroke="#e5a77d" opacity=".8"/></g>`,
+            <g fill="none" stroke-linecap="round">
+                <path d="${riverRoute}" stroke="#102d39" stroke-width="10" opacity=".78"/>
+                <path d="${riverRoute}" stroke="#75c9bd" stroke-width="2" opacity=".75"/>
+            </g>
+            <g transform="translate(355 101) rotate(-14)" stroke="#9bcab4" stroke-width="1.5">
+                <use href="#@ridge" fill="url(#@terrain)"/>
+                <use href="#@ridge" transform="scale(.84)" fill="#2b615d" stroke="#82b8a5"/>
+                <use href="#@ridge" transform="scale(.68)" fill="#336d62" stroke="#9bcab4"/>
+                <use href="#@ridge" transform="scale(.52)" fill="#44806d" stroke="#a9d2b6" stroke-width="2.3"/>
+                <use href="#@ridge" transform="scale(.37)" fill="#55957d" stroke="#b3dabb" stroke-width="3.1"/>
+                <use href="#@ridge" transform="scale(.22)" fill="#78aa89" stroke="#ddedc5" stroke-width="4.6"/>
+                <g fill="none" stroke="#e5ffd0" stroke-width="3.2">
+                    <use href="#@ridge" class="profile-cover-contour-pulse" transform="scale(.22)" stroke-width="9" style="--cover-delay:-3s"/>
+                    <use href="#@ridge" class="profile-cover-contour-pulse" transform="scale(.37)" stroke-width="6" style="--cover-delay:-2.45s"/>
+                    <use href="#@ridge" class="profile-cover-contour-pulse" transform="scale(.52)" stroke-width="4.5" style="--cover-delay:-1.9s"/>
+                    <use href="#@ridge" class="profile-cover-contour-pulse" transform="scale(.68)" style="--cover-delay:-1.35s"/>
+                    <use href="#@ridge" class="profile-cover-contour-pulse" transform="scale(.84)" style="--cover-delay:-.8s"/>
+                    <use href="#@ridge" class="profile-cover-contour-pulse" style="--cover-delay:-.25s"/>
+                </g>
+                <path d="M-6 4l6-11 6 11Z" fill="#f1e6ae" stroke="none"/>
+            </g>
+            <g transform="translate(529 205) rotate(157) scale(.43)" fill="#288080" stroke="#94c6ae" stroke-width="3">
+                <use href="#@ridge" fill="#24575c"/>
+                <use href="#@ridge" transform="scale(.74)" fill="#2b6667"/>
+                <use href="#@ridge" transform="scale(.51)" fill="#458879" stroke-width="4.4"/>
+                <use href="#@ridge" transform="scale(.28)" fill="#6aa088" stroke-width="6.4"/>
+            </g>
+            <g fill="none" stroke="#e6d8ab" stroke-width="1" opacity=".54">
+                <path d="M95 37v18m-9-9h18M605 69v20m-10-10h20M251 191v16m-8-8h16"/>
+                <circle cx="95" cy="46" r="12"/><circle cx="605" cy="79" r="13"/>
+            </g>`,
         terrazzo: `
             <defs>
                 <path id="@veins" d="M112 111c10-13 20-17 35-20 17-3 20-16 33-27
@@ -265,38 +303,136 @@
             </g>`,
         ink: `
             <defs>
-                <linearGradient id="@paper" x2=".62" y2="1"><stop stop-color="#efe6dc"/><stop offset="1" stop-color="#b6adc4"/></linearGradient>
-                <linearGradient id="@stroke" x2=".85" y2="1"><stop stop-color="#57355e"/><stop offset=".49" stop-color="#252542"/><stop offset="1" stop-color="#393d73"/></linearGradient>
+                <linearGradient id="@wash-paper" x2="1" y2=".8">
+                    <stop stop-color="#f3e7d8"/><stop offset=".48" stop-color="#e9d9d3"/><stop offset="1" stop-color="#cdb9c8"/>
+                </linearGradient>
+                <linearGradient id="@ink-body" x1=".07" y1="1" x2=".9" y2="0">
+                    <stop stop-color="#4c4159"/><stop offset=".44" stop-color="#352745"/><stop offset="1" stop-color="#68506d"/>
+                </linearGradient>
+                <path id="@ink-gesture" d="M-20 188c89 12 151-5 222-67 54-47 102-82 151-60 39 17 44 50 9 81
+                    -23 20-32 34-12 41 32 12 72-22 99-45 49-42 81-57 131-41 45 14 97 12 161-27
+                    -57 61-113 80-171 63-26-8-58 7-93 37-44 38-104 65-158 46-40-14-42-47-11-79
+                    25-25 52-43 33-54-30-19-73 19-112 52-70 60-142 104-249 76Z"/>
+                <clipPath id="@ink-edge"><use href="#@ink-gesture"/></clipPath>
             </defs>
-            <rect width="720" height="240" fill="url(#@paper)"/>
-            <path d="M-14 208C113 76 156 52 251 75c62 15 75 53 132 53 77 0 74-96 156-111 61-10 122 46 195-4v82c-77 13-137-39-188-24-63 19-76 138-151 147-103 11-121-104-236-62-53 19-107 60-173 84Z" fill="#766088" opacity=".34"/>
-            <path class="profile-cover-float" d="M-18 225C116 119 177 77 245 110c51 25 91 69 146 52 63-20 68-109 128-118 51-7 127 51 221 13-60 56-125 31-185 40-41 7-35 54-78 77-59 32-124 51-226-9-84-49-160 36-269 75Z"
-                fill="url(#@stroke)" style="--cover-dx:-5px;--cover-dy:4px;--cover-time:18s;--cover-delay:-9s"/>
-            <path d="M-16 232c127-91 190-108 243-92 101 30 151 82 252 13 35-24 45-62 86-63 52-1 106 4 163-30" fill="none" stroke="#9d85aa" stroke-width="1.7" opacity=".57"/>
-            <path class="profile-cover-float" d="M63 171c65-63 125-73 160-62 46 15 67 38 96 45m-39 32c98 46 119 28 167 10m23-85c36-70 76-70 134-46" fill="none" stroke="#eee0dd" opacity=".6" stroke-linecap="round" stroke-width="1.3"
-                style="--cover-dx:8px;--cover-dy:6px;--cover-time:12s"/>
-            <g fill="#3c3155" opacity=".76"><circle cx="174" cy="85" r="3"/><circle cx="197" cy="63" r="4.6"/><circle cx="210" cy="85" r="1.4"/><circle cx="264" cy="67" r="1.8"/><circle cx="304" cy="112" r="4.1"/><circle cx="441" cy="62" r="3"/><circle cx="462" cy="31" r="1.9"/><circle cx="478" cy="37" r="4.1"/><circle cx="451" cy="43" r="1.1"/><circle cx="585" cy="130" r="6.1"/><circle cx="612" cy="143" r="2"/><circle cx="589" cy="154" r="1.8"/><circle cx="626" cy="132" r="1.4"/></g>`,
+            <rect width="720" height="240" fill="url(#@wash-paper)"/>
+            <circle cx="446" cy="91" r="54" fill="#d6a08d" opacity=".63"/>
+            <circle cx="446" cy="91" r="65" fill="none" stroke="#aa797b" stroke-width="1" opacity=".52"/>
+            <path d="M-10 172c103 24 177-64 236-93 50-24 118-55 172-16 25 18 15 47 51 44
+                48-3 67-72 131-61 37 6 82 27 152 3-47 41-96 38-136 30-50-10-74 63-142 77
+                -63 13-69-66-122-67-51-1-73 36-120 66-79 51-142 73-222 43Z" fill="#aa839b" opacity=".43"/>
+            <use href="#@ink-gesture" fill="url(#@ink-body)"/>
+            <g clip-path="url(#@ink-edge)">
+                <path class="profile-cover-ink-spread" pathLength="100" d="M-28 200c107 23 187-34 251-89 63-54 111-55 132-30
+                    21 25-31 56-33 91-2 52 80 31 145-24 44-38 74-45 111-31 52 19 106-13 160-48"
+                    fill="none" stroke="#21182f" stroke-width="43" stroke-linecap="round" style="--cover-delay:-5s"/>
+                <g fill="none" stroke-linecap="round">
+                    <path d="M-5 201c87 17 168-36 224-85 56-51 100-67 127-48m19 31c-2 28-37 42-47 66
+                        -18 46 57 53 105 18m30-27c42-37 76-60 111-49 54 17 96 2 159-28" stroke="#d6b6c7" stroke-width="1.8" opacity=".55"/>
+                    <path d="M205 136c59-64 112-78 137-59 22 16-15 36-32 59m24 60c33 22 91-7 120-36
+                        54-52 84-45 126-33" stroke="#a383ac" stroke-width="1.1" opacity=".76"/>
+                    <path d="M38 223c73-3 95-16 138-39m211 19c19-9 35-18 55-37m154-45c28 5 68-9 96-23"
+                        stroke="#d0ace1" opacity=".49"/>
+                </g>
+            </g>
+            <g fill="#4e3c57" opacity=".72">
+                <path d="M177 89q-9 1-6-4 6-5 10-3 3 4-4 7Zm110-40q-2-5 4-7 8 1 4 5-3 2-8 2Zm98 130q11 0 8 4-7 6-12 1-1-3 4-5Zm207-34q0-5 6-6 5 3 2 6-4 3-8 0Z"/>
+                <circle cx="150" cy="100" r="2"/><circle cx="189" cy="80" r="1.5"/><circle cx="300" cy="35" r="2.4"/>
+                <circle cx="376" cy="177" r="1.9"/><circle cx="584" cy="151" r="2.2"/><circle cx="616" cy="145" r="1.4"/>
+            </g>`,
         garden: `
-            <defs><linearGradient id="@grove" x2=".9" y2="1"><stop stop-color="#102e32"/><stop offset=".65" stop-color="#2b514a"/><stop offset="1" stop-color="#587159"/></linearGradient></defs>
-            <rect width="720" height="240" fill="url(#@grove)"/>
-            <g class="profile-cover-sway">
-            <g fill="none" stroke="#dce3be" stroke-width="1.4">
-                <path d="M301 269c26-78-1-167-66-226m50 189c-20-45-79-70-128-101m183 134c21-83 104-143 197-187m-178 164c49-36 139-42 204-39m-229 28c-32-53-4-144 45-183"/>
+            <defs>
+                <linearGradient id="@botanic-paper" x2=".9" y2="1">
+                    <stop stop-color="#142e30"/><stop offset=".55" stop-color="#31544a"/><stop offset="1" stop-color="#263c39"/>
+                </linearGradient>
+                <radialGradient id="@botanic-light">
+                    <stop stop-color="#91a47b" stop-opacity=".28"/><stop offset="1" stop-color="#91a47b" stop-opacity="0"/>
+                </radialGradient>
+                <g id="@rounded-leaf">
+                    <path d="M0 0c-18-6-28-20-25-34 3-16 17-22 26-18 16 0 26 12 24 26C23-11 13-3 0 0Z"/>
+                    <path d="M0 0c10-6 19-12 21-25 2-9-4-17-12-21 4 12 0 28-9 46Z" fill="#3e7471" opacity=".46"/>
+                    <path d="M0-2c1-17 3-27 2-41m0 20-12-9M2-18l11-12" fill="none" stroke="#edf0c4" stroke-opacity=".61" stroke-width="1.25" stroke-linecap="round"/>
+                </g>
+                <g id="@pointed-leaf">
+                    <path d="M0 0c-12-8-16-23-10-35 4-8 12-14 13-25 11 11 16 24 12 36C12-12 8-5 0 0Z"/>
+                    <path d="M0 0c7-14 9-33 3-60 11 11 16 24 12 36C12-12 8-5 0 0Z" fill="#65846e" opacity=".52"/>
+                    <path d="M1-2c5-14 6-28 3-43m2 19 5-9M5-17l-7-10" fill="none" stroke="#e8eabe" stroke-opacity=".68" stroke-width="1.02" stroke-linecap="round"/>
+                </g>
+                <g id="@flower-chip">
+                    <path d="M0 0C-8-1-16-9-13-16c4-5 12-1 14 6-4-11-1-20 5-20 7 4 6 11 2 19 8-9 15-7 17-3 2 6-8 15-25 14Z" fill="#edb382"/>
+                    <path d="M0 0c5-8 14-9 18-6C15-2 8 1 0 0Z" fill="#cb867a"/>
+                    <circle cx="3" cy="-5" r="1.9" fill="#f9df9e"/>
+                </g>
+            </defs>
+            <rect width="720" height="240" fill="url(#@botanic-paper)"/>
+            <ellipse cx="370" cy="104" rx="275" ry="137" fill="url(#@botanic-light)"/>
+            <g fill="none" stroke="#8eae93" stroke-width="1.15" opacity=".26">
+                <path d="M63 202c63-6 104-52 133-121M89 195c-2-20 3-34 15-45 7 12 4 28-15 45Zm36-16c-2-25 6-42 22-54
+                    8 18 0 36-22 54Zm44-42c-1-17 4-33 20-48 4 15-4 31-20 48Zm-30 34c21 2 37-3 49-14-17-7-35-3-49 14Z
+                    M544 209c55-22 88-64 107-111m-62 86c-4-19 2-35 14-47 7 14 3 31-14 47Zm26-30c2-23 10-42 24-50
+                    3 18-8 39-24 50Zm-14 23c19-1 39-10 49-24-18-2-37 8-49 24Z"/>
+                <circle cx="135" cy="69" r="43"/>
+                <path d="M572 46a37 37 0 0 1 25 49M180 192a52 52 0 0 1-54 14"/>
             </g>
-            <g fill="#a9c6a1">
-                <path d="M237 47c-27 6-60-10-73-41 31-2 54 12 73 41ZM254 68c-27-30-16-52 6-63 16 21 12 43-6 63Zm10 18c-39 6-64-6-74-31 30-11 56 6 74 31Zm13 27c-15-30-12-56 9-69 20 22 14 49-9 69Zm11 26c-33 3-68-12-76-33 26-14 51-3 76 33Zm8 29c-13-31-6-52 17-66 12 24 2 47-17 66ZM304 194c-27 6-57-11-62-29 24-8 50 1 62 29Z"/>
-                <path d="M151 127c-1-23-29-37-56-33 5 26 33 35 56 33Zm36 20c-4-22-14-42-39-44 1 24 11 40 39 44Zm7 4c-28 8-49 22-47 38 28-2 45-15 47-38Zm19 10c8-32-3-47-23-65-6 28 3 47 23 65Zm25 18c-21-9-47 0-60 20 22 9 39 2 60-20Z" opacity=".76"/>
-                <path d="M438 146c17-25 23-54 1-72-23 22-16 51-1 72Zm19-13c30-1 54-18 58-43-29 1-52 17-58 43Zm-41 31c3-25-10-48-34-48-6 23 7 44 34 48Zm-12 11c31 9 53 4 73-21-27-10-55-1-73 21Zm65-19c29 11 63 2 77-21-28-14-54-8-77 21Zm-79 44c9-20-1-43-12-52-18 14-12 39 12 52Zm-10 12c17 14 47 10 62-7-17-12-46-11-62 7Z"/>
+
+            <g fill="none" stroke="#b2c6a2" stroke-width="2" stroke-linecap="round">
+                <path d="M298 247c-2-23-6-39-14-55s-13-35-16-50c-4-18-5-35-4-53 0-16 3-30 11-48"/>
+                <path d="M414 247c-4-31 0-52 11-72 14-27 36-53 46-78 6-15 6-26 7-36m-41 94c-4-21-15-43-30-56m44 25c17-9 29-25 32-39m-58 89c-13-14-26-19-42-21"/>
             </g>
-            <g fill="none" stroke="#dce3be" opacity=".51">
-                <path d="m181 19 56 29m10 16 10-42m-54 46 61 20m14 25 10-46m-62 44 62 27m26-20-18 49m160-83-18 63m-48 8 28 10m-2 5 37-7m23-10 49-12m-71 82 83-24"/>
+
+            <g transform="translate(288 201) rotate(-69) scale(.96)" fill="#7fa893">
+                <use href="#@rounded-leaf" class="profile-cover-leaf-open" style="--cover-delay:-8s"/>
             </g>
-            <g fill="#f0c4a0">
-                <path d="M377 62c-4-11-18-13-20-24 8-5 17 0 22 8-7-15-2-26 7-29 9 8 4 19 1 28 8-10 17-14 25-7-1 10-13 16-24 21 14-5 22-1 22 6-12 9-25 1-33-3Zm149 17c-5-10-6-27 1-32 8 3 12 13 11 24 2-15 9-25 18-24 6 9-1 19-7 25 11-6 20-5 23 2-5 10-19 14-35 12Z"/>
-                <circle cx="567" cy="204" r="7"/><circle cx="548" cy="181" r="4"/><circle cx="590" cy="190" r="5"/>
-                <circle cx="226" cy="87" r="2"/><circle cx="384" cy="106" r="2.4"/><circle cx="471" cy="81" r="2.2"/><circle cx="162" cy="169" r="2.1"/>
+            <g transform="translate(282 187) rotate(66) scale(1.05)" fill="#a9c69c">
+                <use href="#@rounded-leaf" class="profile-cover-leaf-open" style="--cover-delay:-7.5s;--leaf-fold:16deg"/>
             </g>
-            <path d="M76 62q34-48 75 0-27 7-75 0Zm468 131q42-36 97-1-38 20-97 1Z" fill="#82aa9b" opacity=".24"/>
+            <g transform="translate(276 169) rotate(-65) scale(1.17)" fill="#9fb18a">
+                <use href="#@rounded-leaf" class="profile-cover-leaf-open" style="--cover-delay:-7s"/>
+            </g>
+            <g transform="translate(268 142) rotate(58) scale(1.16)" fill="#8ab2a0">
+                <use href="#@rounded-leaf" class="profile-cover-leaf-open" style="--cover-delay:-6.5s;--leaf-fold:16deg"/>
+            </g>
+            <g transform="translate(265 122) rotate(-55) scale(1.02)" fill="#a2c59c">
+                <use href="#@rounded-leaf" class="profile-cover-leaf-open" style="--cover-delay:-6s"/>
+            </g>
+            <g transform="translate(264 98) rotate(63) scale(.79)" fill="#b3cda1">
+                <use href="#@rounded-leaf" class="profile-cover-leaf-open" style="--cover-delay:-5.5s;--leaf-fold:16deg"/>
+            </g>
+            <g transform="translate(266 67) rotate(-47) scale(.69)" fill="#83a990">
+                <use href="#@rounded-leaf" class="profile-cover-leaf-open" style="--cover-delay:-5s"/>
+            </g>
+            <g transform="translate(271 51) rotate(17) scale(.69)" fill="#b7cfa4">
+                <use href="#@rounded-leaf" class="profile-cover-leaf-open" style="--cover-delay:-4.5s;--leaf-fold:16deg"/>
+            </g>
+
+            <g transform="translate(419 194) rotate(54)" fill="#bcce9d">
+                <use href="#@pointed-leaf" class="profile-cover-leaf-open" style="--cover-delay:-4s;--leaf-fold:14deg"/>
+            </g>
+            <g transform="translate(424 178) rotate(-74) scale(.83)" fill="#81a987">
+                <use href="#@pointed-leaf" class="profile-cover-leaf-open" style="--cover-delay:-3.45s"/>
+            </g>
+            <g transform="translate(438 154) rotate(68)" fill="#a5c29a">
+                <use href="#@pointed-leaf" class="profile-cover-leaf-open" style="--cover-delay:-2.9s;--leaf-fold:14deg"/>
+            </g>
+            <g transform="translate(460 117) rotate(-40) scale(.78)" fill="#b7cda4">
+                <use href="#@pointed-leaf" class="profile-cover-leaf-open" style="--cover-delay:-2.4s"/>
+            </g>
+            <g transform="translate(478 61) rotate(9) scale(1.22)">
+                <use href="#@flower-chip" class="profile-cover-leaf-open" style="--cover-delay:-1.9s;--leaf-fold:9deg"/>
+            </g>
+            <g transform="translate(407 99) rotate(-24) scale(.99)">
+                <use href="#@flower-chip" class="profile-cover-leaf-open" style="--cover-delay:-1.45s"/>
+            </g>
+            <g transform="translate(483 85) rotate(33) scale(.73)">
+                <use href="#@flower-chip" class="profile-cover-leaf-open" style="--cover-delay:-1s;--leaf-fold:12deg"/>
+            </g>
+            <g transform="translate(383 153) rotate(-53) scale(.57)">
+                <use href="#@flower-chip" class="profile-cover-leaf-open" style="--cover-delay:-.5s"/>
+            </g>
+            <g fill="#dbbf8e" opacity=".64">
+                <circle cx="162" cy="56" r="2.1"/><circle cx="329" cy="56" r="1.65"/><circle cx="350" cy="105" r="1.9"/>
+                <circle cx="557" cy="75" r="2.3"/><circle cx="543" cy="57" r="1.4"/><circle cx="568" cy="177" r="1.7"/>
+                <path d="M347 77q-3-8 2-10 7 4-2 10Zm193 49q-3-7 4-9 5 4-4 9Zm-181 55q-6 1-6-4 6-5 6 4Z"/>
             </g>`,
         fireflies: `
             <defs>

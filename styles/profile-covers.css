@@ -48,15 +48,20 @@
     stroke-dasharray: 7 93;
     stroke-dashoffset: -16;
 }
-.profile-cover-sway {
-    --cover-motion: profile-cover-breeze 11s ease-in-out infinite alternate;
-    transform-box: fill-box;
-    transform-origin: center bottom;
+.profile-cover-contour-pulse {
+    --cover-motion: profile-cover-contour-light 7.6s ease-in-out var(--cover-delay) infinite;
+    opacity: .12;
 }
-.profile-cover-beacon {
-    --cover-motion: profile-cover-ripple var(--cover-time, 5s) ease-out infinite;
-    transform-box: fill-box;
-    transform-origin: center;
+.profile-cover-ink-spread {
+    --cover-motion: profile-cover-ink-wetting 17s ease-in-out var(--cover-delay) infinite;
+    stroke-dasharray: 100 100;
+    stroke-dashoffset: 100;
+    opacity: 0;
+}
+.profile-cover-leaf-open {
+    --cover-motion: profile-cover-leaf-unfurl 11s ease-in-out var(--cover-delay) infinite alternate;
+    transform-box: view-box;
+    transform-origin: 0 0;
 }
 .profile-cover-scan {
     --cover-motion: profile-cover-refresh 9s linear -3s infinite;
@@ -66,11 +71,12 @@
 /* Only the active cover animates. Medium motion keeps brightness changes. */
 @media (prefers-reduced-motion: no-preference) {
     html:not([data-page-motion="off"]) .profile-page
-        :is(#profileCoverArt, [data-profile-cover-live]):not([hidden]) > .profile-cover-art:not([hidden]) .profile-cover-shimmer,
+        :is(#profileCoverArt, [data-profile-cover-live]):not([hidden]) > .profile-cover-art:not([hidden])
+        :is(.profile-cover-shimmer, .profile-cover-contour-pulse),
     html:not([data-page-motion="off"], [data-page-motion="medium"]) .profile-page
         :is(#profileCoverArt, [data-profile-cover-live]):not([hidden]) > .profile-cover-art:not([hidden])
         :is(.profile-cover-float, .profile-cover-orbit-turn, .profile-cover-orbit-upright, .profile-cover-flow,
-            .profile-cover-sway, .profile-cover-beacon, .profile-cover-scan, .profile-cover-swell, .profile-cover-veil,
+            .profile-cover-scan, .profile-cover-swell, .profile-cover-veil, .profile-cover-ink-spread, .profile-cover-leaf-open,
             .profile-cover-lustre, .profile-cover-eclipse-corona, .profile-cover-eclipse-moon) {
         animation: var(--cover-motion);
         animation-play-state: var(--cover-play-state, running);
@@ -118,13 +124,19 @@
 @keyframes profile-cover-current {
     to { stroke-dashoffset: -116; }
 }
-@keyframes profile-cover-breeze {
-    from { transform: rotate(-1.5deg); }
-    to { transform: rotate(1.5deg); }
+@keyframes profile-cover-contour-light {
+    0%, 36%, 100% { opacity: .08; }
+    13% { opacity: .93; }
+    23% { opacity: .35; }
 }
-@keyframes profile-cover-ripple {
-    0% { opacity: .68; transform: scale(.95); }
-    78%, 100% { opacity: 0; transform: scale(1.95); }
+@keyframes profile-cover-ink-wetting {
+    from { stroke-dashoffset: 100; opacity: .1; }
+    62%, 74% { stroke-dashoffset: 0; opacity: .84; }
+    to { stroke-dashoffset: 0; opacity: 0; }
+}
+@keyframes profile-cover-leaf-unfurl {
+    from { transform: rotate(var(--leaf-fold, -13deg)) scaleX(.7); }
+    to { transform: rotate(0deg) scaleX(1); }
 }
 @keyframes profile-cover-refresh {
     from { opacity: 0; transform: translateY(-3px); }

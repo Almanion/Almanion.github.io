@@ -87,35 +87,41 @@ test('illustrated covers load and animate their own layers only in the live prev
     await page.setViewportSize({ width: 390, height: 844 });
     await openCovers(page);
     const live = page.locator('#profileCoverArt');
-    for (const [id, image, layer, name] of [
+    for (const [id, image, layer, name, property = 'transform'] of [
         ['terrazzo', 'terrazzo-cel.webp', '.profile-cover-lustre', 'profile-cover-lustre'],
         ['waves', 'waves-detailed.webp', '.profile-cover-swell', 'profile-cover-swell'],
-        ['aurora', 'aurora-cel.webp', '.profile-cover-veil', 'profile-cover-fold']
+        ['aurora', 'aurora-cel.webp', '.profile-cover-veil', 'profile-cover-fold'],
+        ['contours', null, '.profile-cover-contour-pulse', 'profile-cover-contour-light', 'opacity'],
+        ['ink', null, '.profile-cover-ink-spread', 'profile-cover-ink-wetting', 'stroke-dashoffset'],
+        ['garden', null, '.profile-cover-leaf-open', 'profile-cover-leaf-unfurl']
     ]) {
         await page.emulateMedia({ reducedMotion: 'no-preference' });
-        const download = page.waitForResponse(response => response.url().endsWith('/images/profile-covers/' + image));
+        const download = image
+            ? page.waitForResponse(response => response.url().endsWith('/images/profile-covers/' + image))
+            : null;
         await live.evaluate((element, preset) => {
             const markup = window.AlmanionProfileCovers.markup;
             element.innerHTML = markup(preset);
             document.getElementById('thumbnail').innerHTML = markup(preset);
         }, id);
-        expect((await download).ok()).toBe(true);
+        if (download) expect((await download).ok()).toBe(true);
+        else await expect(live.locator("svg image")).toHaveCount(0);
         await expect(live.locator('svg')).toHaveAttribute('preserveAspectRatio', 'xMidYMid slice');
 
         const animated = live.locator(layer).first();
         await expect(animated).toHaveCSS('animation-name', name);
         await expect(page.locator('#thumbnail ' + layer).first()).toHaveCSS('animation-name', 'none');
-        const frames = await animated.evaluate(async element => {
+        const frames = await animated.evaluate(async (element, cssProperty) => {
             const animation = element.getAnimations()[0];
             animation.pause();
             await animation.ready;
             const { delay, duration } = animation.effect.getTiming();
-            return [0.2, 0.75].map(phase => {
-                animation.currentTime = delay + duration * phase;
-                return getComputedStyle(element).transform;
+            return [.03, .13, .53, .83].map(phase => {
+                animation.currentTime = delay + duration * (2 + phase);
+                return getComputedStyle(element).getPropertyValue(cssProperty);
             });
-        });
-        expect(frames[0]).not.toBe(frames[1]);
+        }, property);
+        expect(new Set(frames).size).toBeGreaterThan(1);
 
         await live.evaluate(element => element.setAttribute('data-cover-paused', ''));
         await expect(animated).toHaveCSS('animation-play-state', 'paused');
