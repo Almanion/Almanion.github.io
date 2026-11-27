@@ -100,8 +100,8 @@ test('knowledge check stays closed until requested and opens as an overlay', asy
     await expect(reviewOverlay).toBeHidden();
 
     await page.locator('#knowledgeCheckBtn').click();
-    await expect(selectOverlay).toBeVisible();
-    const geometry = await selectOverlay.evaluate(function (element) {
+    await expect(reviewOverlay).toBeVisible();
+    const geometry = await reviewOverlay.evaluate(function (element) {
         const bounds = element.getBoundingClientRect();
         return {
             position: getComputedStyle(element).position,
@@ -112,7 +112,8 @@ test('knowledge check stays closed until requested and opens as an overlay', asy
     });
     expect(geometry).toEqual({ position: 'fixed', top: 0, bottom: 800, viewport: 800 });
 
-    await page.locator('#kcSelectClose').click();
+    await page.locator('#kcReviewClose').click();
+    await expect(reviewOverlay).toBeHidden();
     await expect(selectOverlay).toBeHidden();
     await expectNoHorizontalOverflow(page);
 });

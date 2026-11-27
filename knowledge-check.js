@@ -1380,7 +1380,7 @@
                 container.appendChild(btn);
             }
         }
-        if (btn && !btn.hasAttribute('data-learn-launcher')) btn.addEventListener('click', event => openSelect(event.currentTarget));
+        if (btn && !btn.hasAttribute('data-learn-launcher')) btn.addEventListener('click', event => launchLearning(event.currentTarget));
 
         // Оверлеи
         const select = document.createElement('div');
@@ -1402,6 +1402,7 @@
                 '</div>' +
                 '<button type="button" class="kc-btn kc-btn-ghost kc-configure" id="kcConfigure" aria-controls="kcCustomOptions" aria-expanded="false">Выбрать темы</button>' +
                 '<div id="kcCustomOptions">' +
+                '<div class="kc-session-notice kc-session-notice-error" id="kcSelectNotice" hidden aria-live="polite"></div>' +
                 '<div class="kc-study-sections" id="kcStudySections" role="group" aria-label="Вид заданий" hidden>' +
                     '<button type="button" class="kc-size-option" data-section="blocks" aria-pressed="true">Блоки</button>' +
                     '<button type="button" class="kc-size-option" data-section="tables" aria-pressed="false">Таблицы</button>' +
@@ -1427,7 +1428,6 @@
                         '<button type="button" class="kc-size-option" data-limit="30" aria-pressed="false"><span class="kc-size-name">Обычная</span><span class="kc-size-meta">до 30 карточек</span></button>' +
                         '<button type="button" class="kc-size-option" data-limit="all" aria-pressed="true"><span class="kc-size-name">Все</span><span class="kc-size-meta">без ограничения</span></button>' +
                     '</div></details>' +
-                '<div class="kc-session-notice kc-session-notice-error" id="kcSelectNotice" hidden aria-live="polite"></div>' +
                 '</div>' +
                 '<details class="kc-filter-section kc-study-disclosure" id="kcPauseOptions">' +
                     '<summary><span>Паузы повторения</span><small id="kcPauseValue"></small></summary>' +
@@ -1473,6 +1473,7 @@
                         '</div>' +
                     '</details>' +
                     '<div class="kc-game-actions">' +
+                        '<button class="kc-tool-btn" id="kcChooseTopics" type="button" aria-label="Выбрать темы">Темы</button>' +
                         '<button class="kc-icon-btn" id="kcUndoBtn" type="button" aria-label="Отменить последнюю оценку" title="Отменить последнюю оценку" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9 14 4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-2"/></svg></button>' +
                         '<button class="kc-pause-btn" id="kcPauseBtn" type="button" aria-label="Поставить сессию на паузу" title="Пауза"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9 5v14M15 5v14"/></svg></button>' +
                         '<button class="kc-close" id="kcReviewClose" aria-label="Закрыть">' + IC.close + '</button>' +
@@ -1501,6 +1502,11 @@
         // Закрытие
         document.getElementById('kcSelectClose').addEventListener('click', closeSelect);
         document.getElementById('kcReviewClose').addEventListener('click', closeReview);
+        document.getElementById('kcChooseTopics').addEventListener('click', () => {
+            if (revealed || session?.reviewed) untouchedQuickStart = null;
+            closeReview();
+            openSelect(undefined, 'topics');
+        });
         document.getElementById('kcPauseBtn').addEventListener('click', pauseSession);
         document.getElementById('kcUndoBtn').addEventListener('click', undoLastGrade);
         select.addEventListener('click', e => { if (e.target === select) closeSelect(); });
@@ -1530,7 +1536,8 @@
             if (quickChoice) requestStart(quickChoice.ids, quickChoice.kinds, 'all', document.getElementById('kcQuickStart'));
         });
         document.getElementById('kcConfigure').addEventListener('click', () => {
-            setCustomOptions(document.getElementById('kcCustomOptions').hidden);
+            if (selectMode === 'topics' && resumeAvailable) resumeSavedSession();
+            else setCustomOptions(document.getElementById('kcCustomOptions').hidden);
         });
         document.querySelectorAll('#kcStudySections [data-section]').forEach(button => {
             button.addEventListener('click', () => {
@@ -1665,6 +1672,8 @@
     let quickChoice = null;
     let pendingStart = null;
     let resumeAvailable = false;
+    let selectMode = 'menu';
+    let untouchedQuickStart = null;
     const expandedTopicGroups = new Map();
 
     function currentParagraphChoice() {
@@ -1684,7 +1693,7 @@
         document.getElementById('kcQuickOptions').hidden = open;
         document.querySelector('#kcSelectModal > .kc-actions').hidden = !open;
         const toggle = document.getElementById('kcConfigure');
-        toggle.hidden = !quickChoice && !resumeAvailable;
+        toggle.hidden = selectMode === 'learn' || (!quickChoice && !resumeAvailable);
         toggle.setAttribute('aria-expanded', String(open));
         toggle.textContent = open ? 'Назад' : 'Выбрать темы';
         document.querySelector('#kcSelectModal .kc-select-scroll').scrollTop = 0;
@@ -1762,12 +1771,32 @@
         if (preferred.length && !selectedKinds.length) selectedKinds = available;
     }
 
-    function openSelect(opener, paused = false) {
+    function launchLearning(opener) {
+        return openSelect(opener, 'learn');
+    }
+
+    function openSelect(opener, mode = 'menu') {
         if (!uiInitialized) return false;
         if (opener) lastDialogOpener = opener;
+        selectMode = mode;
+        if (mode !== 'topics') untouchedQuickStart = null;
         cardCache = new Map();
         TOPICS = discoverTopics();
         if (!session) store = loadStore();
+        pauseSeconds = readPause();
+        if (mode === 'learn') {
+            const saved = savedSession();
+            if (saved) {
+                session = saved;
+                openReview(saved.reviewPosition);
+                return true;
+            }
+        }
+        quickChoice = currentParagraphChoice();
+        if (mode === 'learn' && quickChoice && startSession(quickChoice.ids, quickChoice.kinds, 'all', true)) {
+            untouchedQuickStart = session.startedAt;
+            return true;
+        }
         const prefs = loadPreferences();
         sectionPreferences = prefs.sections;
         studySection = prefs.section === 'tables' && TOPICS.some(t => t.counts.table) ? 'tables' : 'blocks';
@@ -1776,19 +1805,21 @@
         pendingStart = null;
         document.getElementById('kcSelectChoices').hidden = false;
         document.getElementById('kcStartConfirmation').hidden = true;
-        document.getElementById('kcSelectNotice').hidden = true;
+        const notice = document.getElementById('kcSelectNotice');
+        notice.hidden = mode !== 'learn';
+        if (!notice.hidden) notice.textContent = quickChoice
+            ? 'В этом параграфе всё повторено. Можно выбрать другую тему.'
+            : 'В этом параграфе нет карточек. Выберите другую тему.';
         document.getElementById('kcTopicSearch').value = '';
         expandedTopicGroups.clear();
         document.querySelectorAll('#kcSelectChoices details[open]').forEach(details => { details.open = false; });
-        pauseSeconds = readPause();
         renderPauseOptions();
         renderStudySection();
-        quickChoice = currentParagraphChoice();
         renderResumeBanner();
         const manualPause = document.getElementById('kcManualPause');
-        manualPause.hidden = !paused || !resumeAvailable;
+        manualPause.hidden = mode !== 'pause' || !resumeAvailable;
         if (!manualPause.hidden) manualPause.querySelector('.kc-pause-art').innerHTML = pauseArtwork('kcManual');
-        setCustomOptions(!quickChoice && !resumeAvailable);
+        setCustomOptions(mode === 'topics' || mode === 'learn' || (!quickChoice && !resumeAvailable));
         savePreferences();
         if (storeDirty) { saveStore(); storeDirty = false; }
         document.getElementById('kcSelectOverlay').classList.remove('hidden');
@@ -1995,7 +2026,7 @@
     // ============================================
     function requestStart(ids, kinds, limit, opener) {
         const saved = savedSession();
-        if (!saved) {
+        if (!saved || (saved.startedAt === untouchedQuickStart && !saved.reviewed && !saved.reviewPosition?.revealed)) {
             startSession(ids, kinds, limit);
             return;
         }
@@ -2031,14 +2062,16 @@
         startSession(ids, kinds, limit);
     }
 
-    function startSession(topicIds, kinds, limit) {
-        if (!topicIds.length || !kinds.length) return;
+    function startSession(topicIds, kinds, limit, quickLaunch = false) {
+        if (!topicIds.length || !kinds.length) return false;
         const now = Date.now();
         const cards = extractCards(topicIds, kinds);
         const plan = buildRecommendation(cards, now, { limit, kinds });
         const queue = plan.queue;
 
+        if (storeDirty) { saveStore(); storeDirty = false; }
         if (!queue.length) {
+            if (quickLaunch) return false;
             const notice = document.getElementById('kcSelectNotice');
             notice.hidden = false;
             notice.textContent = 'Пока нет карточек к повторению';
@@ -2046,7 +2079,7 @@
             // A stale count can occur when another tab reviewed the deck.
             // Keep the saved session and show the current selection.
             setCustomOptions(true);
-            return;
+            return false;
         }
 
         session = {
@@ -2075,6 +2108,7 @@
         };
         persistSession();
         openReview();
+        return true;
     }
 
     function resumeSavedSession(sourceButton) {
@@ -2098,6 +2132,7 @@
         document.getElementById('kcReviewNotice').hidden = true;
         document.getElementById('kcSelectOverlay').classList.add('hidden');
         document.getElementById('kcReviewOverlay').classList.remove('hidden');
+        syncDialogAccessibility();
         showCard(position);
     }
 
@@ -2186,6 +2221,7 @@
         }
         if (sketch || !host.isConnected || current !== session || !matchMedia(SKETCH_SCREEN).matches) return;
         host.hidden = false;
+        host.addEventListener('pointerdown', () => { untouchedQuickStart = null; }, { once: true });
         sketch = window.AlmanionStudyInk.mount(host, attempt, scopedStorage?.scope?.() || 'guest');
         if (revealed) sketch?.answer();
     }
@@ -2466,7 +2502,7 @@
             document.getElementById('kcReviewOverlay').classList.add('hidden');
             kcRemove(SESSION_KEY);
             session = null;
-            openSelect();
+            openSelect(undefined, 'topics');
         });
         content.scrollTop = 0;
         document.getElementById('kcDone').focus({ preventScroll: true });
@@ -2499,7 +2535,7 @@
         clearWait();
         session = null;
         document.getElementById('kcReviewOverlay').classList.add('hidden');
-        openSelect(undefined, true);
+        openSelect(undefined, 'pause');
     }
 
     function finishSession() {
@@ -2657,7 +2693,7 @@
     // Хук для синхронизации аккаунта (account.js): применить уже объединённый
     // снимок сразу, в том числе если облако ответило во время открытой сессии.
     window.KC = window.KC || {};
-    window.KC.open = openSelect;
+    window.KC.open = launchLearning;
     window.KC.reload = function (key, snapshot) {
         if (key !== STORE_KEY) return;
         store = snapshot && typeof snapshot === 'object' && !Array.isArray(snapshot)

@@ -8,8 +8,8 @@ async function open(page){
     await page.goto('/chemistry-10.html');
     // Use the existing public launcher even when the sidebar is collapsed.
     await page.locator('#knowledgeCheckBtn').evaluate(e=>e.click());
-    await expect(page.locator('#kcSelectOverlay')).toBeVisible();
-    await page.locator('#kcConfigure').click();
+    await page.locator('#kcChooseTopics').click();
+    await expect(page.locator('#kcCustomOptions')).toBeVisible();
 }
 async function rows(page){return page.evaluate(()=>window.__kcFSRS.extractCards([...document.querySelectorAll('article.topic')].map(t=>t.id),['table']));}
 async function chooseTableTopic(page, id) {
@@ -90,8 +90,7 @@ test('row progress survives reload; paused table session resumes and links back 
     expect(Object.keys(progress).filter(k=>k.includes(':table:'))).toHaveLength(1);
     await page.locator('#kcPauseBtn').click();await page.reload();
     await page.locator('#knowledgeCheckBtn').evaluate(e=>e.click());
-    await expect(page.locator('[data-section="tables"]')).toHaveAttribute('aria-pressed','true');
-    await page.locator('#kcResumeSession').click();
+    await expect(page.locator('#kcReviewOverlay')).toBeVisible();
     await expect(page.locator('#kcProgressCopy')).toHaveText('Закреплено 1 из 35');
     const term=await page.locator('#kcQuestionTitle').textContent();
     await page.locator('#kcGoToSource').click();

@@ -211,7 +211,13 @@ body.kc-dialog-open { overflow: hidden; }
 #kcReviewModal .kc-game-actions { gap: .26rem; }
 #kcReviewModal .kc-game-actions > button { flex-basis: 44px; border-radius: 9px; }
 
-#kcProgressDetails { flex: 1 1 auto; margin: 0; }
+#kcReviewModal #kcChooseTopics {
+    flex: 0 0 auto;
+    inline-size: auto;
+    padding-inline: .5rem;
+    font-size: .82rem;
+}
+#kcProgressDetails { flex: 1 1 auto; min-inline-size: 0; margin: 0; }
 #kcProgressDetails > summary {
     inline-size: fit-content;
     max-inline-size: 100%;

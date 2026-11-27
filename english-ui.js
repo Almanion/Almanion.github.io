@@ -40,6 +40,8 @@
         'Сессия обучения': 'Learning session',
         'Этот параграф': 'This section',
         'Выбрать темы': 'Choose topics',
+        'В этом параграфе всё повторено. Можно выбрать другую тему.': 'Nothing is due in this section. You can choose another topic.',
+        'В этом параграфе нет карточек. Выберите другую тему.': 'This section has no cards. Choose another topic.',
         'Темы': 'Topics',
         'Типы карточек': 'Card types',
         'Темы с таблицами': 'Topics with tables',

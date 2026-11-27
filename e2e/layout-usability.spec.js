@@ -67,8 +67,8 @@ for (const width of [320, 390, 430, 768, 1024, 1440]) {
         await page.setViewportSize({ width, height: width === 320 ? 568 : 844 });
         await page.goto('/physics-10.html');
         await page.locator('#knowledgeCheckBtn').evaluate(el => el.click());
-        await expect(page.locator('#kcSelectOverlay')).toBeVisible();
-        await page.locator('#kcConfigure').click();
+        await page.locator('#kcChooseTopics').click();
+        await expect(page.locator('#kcCustomOptions')).toBeVisible();
         await page.locator('#kcTypesHeading').click();
         await page.locator('#kcTopicOptions > summary').click();
         await page.locator('.kc-topic-group summary').filter({ hasText: 'Молекулярная физика' }).click();
@@ -160,7 +160,7 @@ test('stress dictionary ignores obsolete generic block filters and retains searc
     await page.locator('#searchInput').fill('вероисповедание');
     await expect(page.locator('#searchResultsPanel')).toContainText('вероисповЕдание');
     await page.locator('#knowledgeCheckBtn').click();
-    await page.locator('#kcConfigure').click();
+    await page.locator('#kcChooseTopics').click();
     await expect(page.locator('#kcTypeList [data-kind="stress"]')).toBeEnabled();
 });
 
