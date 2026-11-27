@@ -19,6 +19,7 @@ async function openCovers(page) {
     }));
     await page.goto('/__cover-motion.html');
     await expect(page.locator('#profileCoverArt .profile-cover-orbit-lane')).toHaveCount(3);
+    await expect(page.locator('#profileCoverArt image')).toHaveAttribute('href', 'images/profile-covers/orbit-cel.webp');
 }
 
 test('each moon stays round and centered on its own ellipse through a full turn', async ({ page }) => {
@@ -82,11 +83,13 @@ test('each illustrated cover has live motion while the plain cover stays still',
     expect(artwork.find(([id]) => id === 'plain')).toEqual(['plain', 0]);
 });
 
-test('the illustrated covers load and animate their own layers only in the live preview', async ({ page }) => {
+test('illustrated covers load and animate their own layers only in the live preview', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await openCovers(page);
     const live = page.locator('#profileCoverArt');
     for (const [id, layer, name, property] of [
+        ['hills', '.profile-cover-wind', 'profile-cover-wind', 'transform'],
+        ['terrazzo', '.profile-cover-lustre', 'profile-cover-lustre', 'transform'],
         ['waves', '.profile-cover-swell', 'profile-cover-swell', 'transform'],
         ['eclipse', '.profile-cover-shimmer', 'profile-cover-glow', 'opacity'],
         ['aurora', '.profile-cover-veil', 'profile-cover-fold', 'transform']

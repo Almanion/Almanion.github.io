@@ -91,58 +91,78 @@
     const designs = {
         orbit: `
             <defs>
-                <linearGradient id="@base" x2=".9" y2="1" gradientUnits="objectBoundingBox">
-                    <stop stop-color="#160f33"/><stop offset=".62" stop-color="#3d3673"/><stop offset="1" stop-color="#8a679a"/>
+                <radialGradient id="@planet-halo">
+                    <stop offset=".45" stop-color="#d3a0fb" stop-opacity="0"/>
+                    <stop offset=".56" stop-color="#b381f2" stop-opacity=".24"/>
+                    <stop offset="1" stop-color="#8e6cf0" stop-opacity="0"/>
+                </radialGradient>
+                <linearGradient id="@gas-light" gradientUnits="userSpaceOnUse" x1="277" y1="132" x2="438" y2="80">
+                    <stop stop-color="#ffc485" stop-opacity="0"/>
+                    <stop offset=".58" stop-color="#ffefc6" stop-opacity=".63"/>
+                    <stop offset="1" stop-color="#ffdeac" stop-opacity="0"/>
                 </linearGradient>
-                <radialGradient id="@planet" cx=".35" cy=".27" r=".76">
-                    <stop stop-color="#ffebbf"/><stop offset=".45" stop-color="#e9a8a9"/><stop offset=".68" stop-color="#a06b94"/><stop offset="1" stop-color="#41375e"/>
-                </radialGradient>
-                <radialGradient id="@nebula">
-                    <stop stop-color="#b3a2f1" stop-opacity=".28"/><stop offset="1" stop-color="#b3a2f1" stop-opacity="0"/>
-                </radialGradient>
-                <clipPath id="@planet-cut"><circle cx="386" cy="116" r="44"/></clipPath>
+                <clipPath id="@globe"><ellipse cx="358.5" cy="120.7" rx="82" ry="81"/></clipPath>
+                <clipPath id="@far-side"><rect x="-320" y="-220" width="640" height="220"/></clipPath>
+                <mask id="@orbit-shadow" maskUnits="userSpaceOnUse" x="-320" y="-220" width="640" height="440">
+                    <rect x="-320" y="-220" width="640" height="440" fill="white"/>
+                    <g clip-path="url(#@far-side)">
+                        <ellipse transform="rotate(20)" rx="82.6" ry="81.2" fill="black"/>
+                    </g>
+                </mask>
             </defs>
-            <rect width="720" height="240" fill="url(#@base)"/>
-            <ellipse class="profile-cover-shimmer" cx="358" cy="119" rx="291" ry="120" fill="url(#@nebula)"
-                style="--cover-floor:.53;--cover-ceiling:.92;--cover-time:13s"/>
-            <g transform="translate(386 116) rotate(-23)">
-                <path d="M-298 0h596M0-125v250" fill="none" stroke="#c1adef" stroke-dasharray="1 8" opacity=".24"/>
-                ${orbitTracks}
+            <rect width="720" height="240" fill="#160925"/>
+            <image href="images/profile-covers/orbit-cel.webp" width="720" height="240"/>
+            <circle class="profile-cover-shimmer" cx="358.5" cy="120.7" r="152" fill="url(#@planet-halo)" opacity=".55"
+                style="--cover-floor:.25;--cover-ceiling:.83;--cover-time:13s;--cover-delay:-4s"/>
+            <g clip-path="url(#@globe)" fill="none" stroke="url(#@gas-light)" stroke-linecap="round">
+                <path class="profile-cover-flow" pathLength="100"
+                    d="M274 141c37-23 53-13 83-36 27-21 53-24 82-14"
+                    stroke-width="2.5" style="--cover-time:15s;--cover-delay:-2s"/>
             </g>
-            <circle cx="386" cy="116" r="44" fill="url(#@planet)"/>
-            <g clip-path="url(#@planet-cut)" fill="none" stroke="#ffe7c5" opacity=".38">
-                <path d="M331 103q37-32 107-21m-103 40q49-33 107-21m-105 47q38-29 99-27m-86 38q32-14 74-17" stroke-width="3"/>
-                <path d="M330 90q30-30 99-25m-102 68q42-32 117-26"/>
-            </g>
-            <path class="profile-cover-shimmer" fill="#ffeace" d="M245 47l2 6 6 2-6 2-2 6-2-6-6-2 6-2zm278 139 1 3 3 1-3 1-1 3-1-3-3-1 3-1z"
-                 style="--cover-floor:.45;--cover-ceiling:.9;--cover-time:6s;--cover-delay:-3s"/>
-            <g fill="#e5d6ff" opacity=".63"><circle cx="149" cy="100" r="1.8"/><circle cx="179" cy="176" r="1.2"/><circle cx="593" cy="48" r="1.5"/><circle cx="634" cy="112" r="1.4"/><circle cx="468" cy="34" r="1.1"/><circle cx="272" cy="180" r="1.2"/></g>`,
+            <g transform="translate(358.5 120.7) rotate(-20)">
+                <g mask="url(#@orbit-shadow)">
+                    <g transform="scale(1.14)">
+                        ${orbitTracks}
+                    </g>
+                </g>
+            </g>`,
         hills: `
             <defs>
-                <linearGradient id="@sky" x2="0" y2="1">
-                    <stop stop-color="#38485e"/><stop offset=".55" stop-color="#c58680"/><stop offset="1" stop-color="#edb28b"/>
+                <radialGradient id="@morning">
+                    <stop stop-color="#fff1b3" stop-opacity=".45"/>
+                    <stop offset=".38" stop-color="#ffca9a" stop-opacity=".22"/>
+                    <stop offset="1" stop-color="#ffaf88" stop-opacity="0"/>
+                </radialGradient>
+                <linearGradient id="@high-cloud">
+                    <stop stop-color="#f0c4c5" stop-opacity="0"/>
+                    <stop offset=".57" stop-color="#ffe2cf" stop-opacity=".71"/>
+                    <stop offset="1" stop-color="#ffe2cf" stop-opacity="0"/>
                 </linearGradient>
-                <linearGradient id="@slope" x2=".38" y2="1"><stop stop-color="#597a7c"/><stop offset="1" stop-color="#293c4c"/></linearGradient>
-                <radialGradient id="@sun-haze"><stop stop-color="#fff0c7" stop-opacity=".52"/><stop offset="1" stop-color="#fff0c7" stop-opacity="0"/></radialGradient>
+                <linearGradient id="@valley-mist">
+                    <stop stop-color="#92dce4" stop-opacity="0"/>
+                    <stop offset=".45" stop-color="#c6edfd" stop-opacity=".52"/>
+                    <stop offset=".7" stop-color="#b3dcea" stop-opacity=".38"/>
+                    <stop offset="1" stop-color="#85c8df" stop-opacity="0"/>
+                </linearGradient>
             </defs>
-            <rect width="720" height="240" fill="url(#@sky)"/>
-            <ellipse class="profile-cover-shimmer" cx="462" cy="88" rx="154" ry="108" fill="url(#@sun-haze)"
-                style="--cover-floor:.5;--cover-ceiling:.88;--cover-time:14s"/>
-            <circle cx="462" cy="88" r="39" fill="#ffe0a4"/>
-            <path d="M-18 152 75 86l98 58L249 75 358 167 449 138 542 109l204 46v85H-18Z" fill="#b58f92"/>
-            <path d="m-12 208 105-54 47 15L302 64l45-18 45 44 32 12 44 49 68-18 195 53v54H-12Z" fill="url(#@slope)"/>
-            <path d="m347 46 45 44-31-10-15 8-16-14-28 7 15-24 30-11Z" fill="#f8d3b1" opacity=".9"/>
-            <path d="m347 47-11 22 10 19 25 78-53-40-72 28 54-72 18-24Z" fill="#b6adb1" opacity=".34"/>
-            <g class="profile-cover-float" fill="none" stroke="#efc1a8" stroke-linecap="round" opacity=".25"
-                style="--cover-dx:-18px;--cover-dy:3px;--cover-time:19s;--cover-delay:-8s">
-                <path d="M181 140c37 0 61-7 93-6m133 15c42-4 70-13 108-10" stroke-width="3"/>
-                <path d="M132 153c55-1 97-7 146-7m79-17c51-8 100-11 143-9"/>
+            <rect width="720" height="240" fill="#254877"/>
+            <image href="images/profile-covers/hills-cel.webp" width="720" height="240"/>
+            <ellipse class="profile-cover-shimmer" cx="454" cy="66" rx="57" ry="45" fill="url(#@morning)" opacity=".54"
+                style="--cover-floor:.2;--cover-ceiling:.92;--cover-time:9s;--cover-delay:-2s"/>
+            <g class="profile-cover-wind" fill="url(#@high-cloud)" opacity=".41"
+                style="--cover-from:-106px;--cover-to:136px;--cover-time:31s;--cover-delay:-13s">
+                <path d="M4 46c38-2 62-1 105-4 32-2 57 2 83 1-36 6-64 2-88 5-44 5-65 1-100-2Z"/>
+                <path d="M69 57c56-6 103-2 151-7-34 7-105 9-151 7Z"/>
             </g>
-            <path d="M-15 224l137-60 113 35 77-9 114-36 62 31 52-10 190 44v21H-15Z" fill="#263d43"/>
-            <path d="m-5 237 126-36 83 15 99-13 146 12 72-25 210 30v20H-5Z" fill="#172f38"/>
-            <g fill="none" stroke="#f6bf9a" opacity=".48">
-                <g class="profile-cover-float" style="--cover-dx:23px;--cover-dy:-3px;--cover-time:15s"><path d="M189 52h49m-49 8h22m318 6h70m-39 7h29M50 109h148M505 103h172"/></g>
-                <path d="M402 202c27 2 44 7 69 6m-144 11c21 3 78 2 110 5" opacity=".46"/>
+            <g class="profile-cover-wind" fill="url(#@valley-mist)" opacity=".48"
+                style="--cover-from:-105px;--cover-to:102px;--cover-time:24s;--cover-delay:-5s">
+                <path d="M165 180c63 8 89-14 145-9 32 2 55 13 92 10 29-2 48-9 86-6-39 4-64 14-105 11-27-1-54-11-80-9-67 3-92 20-138 3Z"/>
+                <path d="M272 192c46-5 58-5 102 0 65 6 112-15 177-12-76 6-115 27-178 17-42-7-62-3-101-5Z"/>
+            </g>
+            <g class="profile-cover-wind" fill="url(#@valley-mist)" opacity=".41"
+                style="--cover-from:-88px;--cover-to:140px;--cover-time:19s;--cover-delay:-10s">
+                <path d="M263 209c43-11 101 1 153-5 42-4 79-18 140-15 33 2 51 6 93 3-31 8-59 4-91 2
+                    -53-2-84 16-150 16-52 0-92-7-145-1Z"/>
             </g>`,
         waves: `
             <defs>
@@ -230,21 +250,30 @@
             <g class="profile-cover-beacon" style="--cover-time:5s"><circle cx="340" cy="160" r="12" fill="none" stroke="#e5a77d" opacity=".8"/></g>`,
         terrazzo: `
             <defs>
-                <linearGradient id="@plaster" x2=".8" y2="1"><stop stop-color="#f6dfbf"/><stop offset="1" stop-color="#e6b59e"/></linearGradient>
-                <linearGradient id="@window-light" x2="1" y2=".6">
-                    <stop stop-color="#fff7db" stop-opacity="0"/><stop offset=".45" stop-color="#fff7db" stop-opacity=".47"/>
-                    <stop offset=".58" stop-color="#fff7db" stop-opacity=".34"/><stop offset="1" stop-color="#fff7db" stop-opacity="0"/>
+                <path id="@veins" d="M112 111c10-13 20-17 35-20 17-3 20-16 33-27
+                    M402 90c13-14 12-31 29-40 12-7 25-8 34-21 6-9 7-16 16-24
+                    M339 180c13-3 23-4 34-11 18-11 18-25 59-28
+                    M552 61c-11 4-27 12-29 24-4 12 11 15 27 15 9 0 18 2 27 7
+                    M31 215c12-18 31-21 40-33 10-12 4-23 17-36
+                    M456 199c16-4 36-13 44-20 7-6 12-11 20-15"/>
+                <mask id="@polished-stone" maskUnits="userSpaceOnUse" x="0" y="0" width="720" height="240">
+                    <rect width="720" height="240" fill="white" opacity=".13"/>
+                    <use href="#@veins" stroke="white" stroke-width="11" stroke-linecap="round" fill="none" opacity=".37"/>
+                    <use href="#@veins" stroke="white" stroke-width="3.3" stroke-linecap="round" fill="none"/>
+                </mask>
+                <linearGradient id="@passing-light" gradientUnits="userSpaceOnUse" x1="-222" y1="128" x2="-44" y2="186">
+                    <stop stop-color="#ffe8bb" stop-opacity="0"/>
+                    <stop offset=".43" stop-color="#fff0cf" stop-opacity=".52"/>
+                    <stop offset=".57" stop-color="#fffdfa" stop-opacity=".92"/>
+                    <stop offset="1" stop-color="#fbe4b7" stop-opacity="0"/>
                 </linearGradient>
             </defs>
-            <rect width="720" height="240" fill="url(#@plaster)"/>
-            <path fill="#b8664f" d="m14 37 38-28 46 14 6 40-48 25-46-11zM269-13l61 25 21 52-43 37-39-25-20-55zM453 109l62-22 48 28-5 43-48 18-42-24zM647 166l41-43 53 21-11 75-52 9-45-29Z"/>
-            <path fill="#6f8878" d="m110 125 26-43 33 8 23 37-10 30-55 1zM362 53l31-36 58 3 13 54-52 22-43-17zM199 237l37-44 63 3 21 35-13 20h-93zM564 228l-5-42 38-18 31 32-13 42-37 5Z"/>
-            <path fill="#414655" d="M-15 190l50-54 47 30-6 48-38 33-53-21ZM198 49l21-31 22 16-12 35-34 3Zm139 103 24-32 42 4 12 39-24 25-44-8zm140 65 52-21 9 23-23 24-54 2zm166-175 42-33 32 17-9 49-42-1Z"/>
-            <path fill="#f9ead4" d="m118 18 32-11 34 17-10 38-41 13-18-28zm75 144 31-29 35 11 13 35-62 18zm250-61 28-22 26 5-22 21-21 30zm99-79 45-8 37 17 5 36-42 29-51-29zM91 231l19-34 34-18 45 28-45 38zm334-34 33-23 38 4-42 30z"/>
-            <path fill="#bb8d55" d="m77 108 15-15 12 19-8 15zm148-8 16-12 13 23-28 10zm77 73 11-32 19-4 3 32-18 14zm188-126 10-19 24 7-5 26zm107 78 12-19 24 4-13 29-28 5zm58 112 18-12 20 11-10 15z"/>
-            <g fill="#785b57" opacity=".68"><circle cx="53" cy="112" r="2"/><circle cx="104" cy="85" r="2"/><circle cx="189" cy="96" r="3"/><circle cx="167" cy="172" r="2.2"/><circle cx="286" cy="123" r="2.8"/><circle cx="379" cy="199" r="2"/><circle cx="422" cy="105" r="3"/><circle cx="461" cy="35" r="1.7"/><circle cx="546" cy="84" r="3"/><circle cx="634" cy="82" r="2"/><circle cx="662" cy="101" r="3"/><circle cx="623" cy="164" r="2"/><circle cx="545" cy="179" r="2"/></g>
-            <path class="profile-cover-float" d="M-47 248 149-8h212L164 248Z" fill="url(#@window-light)"
-                style="--cover-dx:425px;--cover-dy:0px;--cover-time:25s;--cover-delay:-6s"/>`,
+            <rect width="720" height="240" fill="#f0d6ad"/>
+            <image href="images/profile-covers/terrazzo-cel.webp" width="720" height="240"/>
+            <g mask="url(#@polished-stone)">
+                <path class="profile-cover-lustre" d="M-290 242-146-2H-4L-148 242Z" fill="url(#@passing-light)"
+                    style="--cover-time:19s;--cover-delay:-6s"/>
+            </g>`,
         ink: `
             <defs>
                 <linearGradient id="@paper" x2=".62" y2="1"><stop stop-color="#efe6dc"/><stop offset="1" stop-color="#b6adc4"/></linearGradient>

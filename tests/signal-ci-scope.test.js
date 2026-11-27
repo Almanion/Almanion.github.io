@@ -130,6 +130,13 @@ assert.deepEqual(classify(["profile-covers.js", "images/profile-covers/aurora-ce
 assert.equal(artOnly(coverAfter + "\ninitialize();"), false);
 assert.equal(artOnly(profileArtwork('<image href="cover.webp" onload="initialize()"/>')), false);
 assert.equal(artOnly(profileArtwork('${initialize()}')), false);
+const orbitArtwork = (content, slot = '${orbitTracks}') =>
+  profileArtwork(content + '\n            ' + slot).replace('aurora:', 'orbit:');
+const oldOrbit = orbitArtwork('<ellipse/>');
+const newOrbit = orbitArtwork('<mask><rect/></mask><image href="images/profile-covers/orbit-cel.webp"/>');
+assert.equal(normalizeProfileArt(oldOrbit), normalizeProfileArt(newOrbit));
+assert.notEqual(normalizeProfileArt(oldOrbit), normalizeProfileArt(orbitArtwork('<ellipse/>', '')));
+assert.notEqual(normalizeProfileArt(oldOrbit), normalizeProfileArt(orbitArtwork('<ellipse/>', '${buildOrbitTracks()}')));
 assert.ok(require("../tools/run-tests").listTests(".", "appearance").some(file => file.endsWith("site-branding.test.js")));
 assert.match(workflow, /if: needs\.scope\.outputs\.suite == 'appearance'\s+run: npx playwright test e2e\/appearance\.spec\.js/);
 assert.match(workflow, /needs: \[scope, build, campaign\]/);

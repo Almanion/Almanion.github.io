@@ -25,6 +25,12 @@
     transform-box: view-box;
     transform-origin: center bottom;
 }
+.profile-cover-wind {
+    --cover-motion: profile-cover-wind var(--cover-time) linear var(--cover-delay) infinite;
+}
+.profile-cover-lustre {
+    --cover-motion: profile-cover-lustre var(--cover-time) ease-in-out var(--cover-delay) infinite;
+}
 .profile-cover-orbit-upright { --orbit-direction: -1; }
 .profile-cover-orbit-turn, .profile-cover-orbit-upright {
     --cover-motion: profile-cover-revolve var(--cover-time) linear infinite;
@@ -59,7 +65,8 @@
     html:not([data-page-motion="off"], [data-page-motion="medium"]) .profile-page
         :is(#profileCoverArt, [data-profile-cover-live]):not([hidden]) > .profile-cover-art:not([hidden])
         :is(.profile-cover-float, .profile-cover-orbit-turn, .profile-cover-orbit-upright, .profile-cover-flow,
-            .profile-cover-sway, .profile-cover-beacon, .profile-cover-scan, .profile-cover-swell, .profile-cover-veil) {
+            .profile-cover-sway, .profile-cover-beacon, .profile-cover-scan, .profile-cover-swell, .profile-cover-veil,
+            .profile-cover-wind, .profile-cover-lustre) {
         animation: var(--cover-motion);
         animation-play-state: var(--cover-play-state, running);
     }
@@ -82,6 +89,14 @@
 }
 @keyframes profile-cover-fold {
     to { transform: translate(var(--cover-dx), var(--cover-dy)) skewX(var(--cover-skew)); }
+}
+@keyframes profile-cover-wind {
+    from { opacity: 0; transform: translateX(var(--cover-from)); }
+    21%, 79% { opacity: .82; }
+    to { opacity: 0; transform: translateX(var(--cover-to)); }
+}
+@keyframes profile-cover-lustre {
+    86%, 100% { transform: translateX(1014px); }
 }
 @keyframes profile-cover-revolve {
     /* WebKit can fold matching endpoints of a full turn into a stationary transform. */
